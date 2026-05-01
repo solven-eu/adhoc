@@ -27,6 +27,8 @@ import java.util.NavigableSet;
 import java.util.Set;
 import java.util.function.Supplier;
 
+import org.jspecify.annotations.Nullable;
+
 import com.google.common.base.Suppliers;
 import com.google.common.collect.ForwardingNavigableSet;
 import com.google.common.collect.ImmutableSet;
@@ -104,7 +106,7 @@ public final class NavigableSetLikeList extends ForwardingNavigableSet<String> i
 
 	// Behave like a Set
 	@Override
-	public boolean equals(Object other) {
+	public boolean equals(@Nullable Object other) {
 		if (other == null) {
 			return false;
 		} else if (other == this) {

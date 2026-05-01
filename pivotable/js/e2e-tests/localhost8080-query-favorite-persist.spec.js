@@ -66,7 +66,7 @@ test("Favorite saved on simple cube survives F5 and restores on reopen", async (
 	// "Favorite" plus an optional " * " span when there are unsaved changes; `name: "Favorite"`
 	// with `exact: false` would also match the plural "Favorites" modal, so we anchor on the
 	// modal trigger via its `data-bs-target`.
-	await page.locator('button[data-bs-target="#queryFavorite"]').click();
+	await page.locator('button[data-bs-target="#queryFavorite"]').first().click();
 	await expect(page.locator("#queryFavorite")).toBeVisible();
 	await page.getByRole("textbox", { name: "Query name" }).fill(favoriteName);
 	await page.locator("#queryFavorite").getByRole("button", { name: "Save", exact: true }).click();
@@ -103,7 +103,10 @@ test("Favorite saved on simple cube survives F5 and restores on reopen", async (
 	await expect(page.locator(".slick-row")).toHaveCount(0);
 
 	// ── Reopen the favorite from the Favorites modal ──
-	await page.locator('button[data-bs-target="#queryFavorites"]').click();
+	// The Submit block's <Transition> may briefly render both the leaving (floating) and entering (docked)
+	// copies during its 0.3s leave animation. `.first()` deterministically picks the docked one (which the
+	// default-mode Transition renders first).
+	await page.locator('button[data-bs-target="#queryFavorites"]').first().click();
 	// Wait for the modal to be fully open before searching its body — Bootstrap
 	// applies the show transition asynchronously, and `getByText` does not retry
 	// across visibility transitions reliably.

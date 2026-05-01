@@ -31,6 +31,8 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
+import org.jspecify.annotations.Nullable;
+
 import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -67,7 +69,8 @@ public final class InMatcher implements IValueMatcher, IColumnToString {
 	}
 
 	@Override
-	public boolean match(Object value) {
+	public boolean match(@Nullable Object value) {
+		@Nullable
 		Object normalizedValue = AdhocPrimitiveHelpers.normalizeValue(value);
 
 		if (operands.contains(normalizedValue)) {

@@ -27,6 +27,7 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -84,14 +85,16 @@ public class KernelFactorizer {
 		// anywhere else
 		Map<Boolean, ImmutableSet<ISliceFilter>> ignorableToOperands =
 				filterOptimizer.partitionByPotentialInteraction(andOperands);
+		// `partitionByPotentialInteraction` always populates both keys; narrow @Nullable Map.get into a non-null local.
+		Set<ISliceFilter> nonIgnorable = Objects.requireNonNull(ignorableToOperands.get(false));
 
 		// Group by operands which are splitable by OR, as we hope to detect combinations which are useless
 		Map<Boolean, ? extends Set<? extends ISliceFilter>> orNotOr = andOperands.stream()
-				.collect(Collectors.partitioningBy(
-						f -> this.hasOrOperands(f) && ignorableToOperands.get(false).contains(f),
+				.collect(Collectors.partitioningBy(f -> this.hasOrOperands(f) && nonIgnorable.contains(f),
 						ImmutableSet.toImmutableSet()));
-
-		Set<? extends ISliceFilter> orOperands = orNotOr.get(true);
+		// `Collectors.partitioningBy` always populates both keys; narrow @Nullable Map.get into non-null locals.
+		Set<? extends ISliceFilter> orOperands = Objects.requireNonNull(orNotOr.get(true));
+		Set<? extends ISliceFilter> nonOrOperands = Objects.requireNonNull(orNotOr.get(false));
 		if (orOperands.isEmpty()) {
 			// There is no OR : this is a plain AND.
 			return andOperands;
@@ -101,7 +104,7 @@ public class KernelFactorizer {
 		}
 
 		// Holds all AND operands which are not splittable as ORs.
-		ISliceFilter where = filterOptimizer.optimizeOperand(FilterBuilder.and(orNotOr.get(false)).combine(), false);
+		ISliceFilter where = filterOptimizer.optimizeOperand(FilterBuilder.and(nonOrOperands).combine(), false);
 
 		if (where.isMatchNone()) {
 			// For some reason, this was not detected earlier

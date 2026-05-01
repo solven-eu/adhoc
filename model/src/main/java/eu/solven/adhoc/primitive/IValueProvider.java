@@ -25,6 +25,8 @@ package eu.solven.adhoc.primitive;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.jspecify.annotations.Nullable;
+
 /**
  * While {@link IValueReceiver} can be interpreted as a way to transmit data, {@link IValueProvider} is a way to
  * transmit data in the opposite direction.
@@ -55,8 +57,8 @@ public interface IValueProvider {
 	 * @param valueProvider
 	 * @return
 	 */
-	static Object getValue(IValueProvider valueProvider) {
-		AtomicReference<Object> refV = new AtomicReference<>();
+	static @Nullable Object getValue(IValueProvider valueProvider) {
+		AtomicReference<@Nullable Object> refV = new AtomicReference<>();
 
 		valueProvider.acceptReceiver(refV::set);
 
@@ -77,7 +79,7 @@ public interface IValueProvider {
 	 * @param o
 	 * @return
 	 */
-	static IValueProvider setValue(Object o) {
+	static IValueProvider setValue(@Nullable Object o) {
 		return vr -> vr.onObject(o);
 	}
 
@@ -96,7 +98,7 @@ public interface IValueProvider {
 			}
 
 			@Override
-			public void onObject(Object v) {
+			public void onObject(@Nullable Object v) {
 				if (v == null) {
 					isNullRef.set(true);
 				}

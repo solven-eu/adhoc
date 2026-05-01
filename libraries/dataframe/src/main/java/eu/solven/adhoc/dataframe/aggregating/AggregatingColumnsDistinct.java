@@ -25,10 +25,13 @@ package eu.solven.adhoc.dataframe.aggregating;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.IntStream;
+
+import org.jspecify.annotations.Nullable;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.base.MoreObjects.ToStringHelper;
@@ -115,7 +118,7 @@ public class AggregatingColumnsDistinct<T extends Comparable<T>> extends AAggreg
 	}
 
 	@Override
-	protected IMultitypeIntColumnFastGet getColumn(String aggregator) {
+	protected @Nullable IMultitypeIntColumnFastGet getColumn(String aggregator) {
 		return aggregatorToAggregates.get(aggregator);
 	}
 
@@ -212,8 +215,8 @@ public class AggregatingColumnsDistinct<T extends Comparable<T>> extends AAggreg
 					.stream()
 					// `String.valueOf` will cover null values
 					.collect(PepperStreamHelper.toLinkedMap(Function.identity(),
-							a -> String.valueOf(
-									IValueProvider.getValue(aggregatorToAggregates.get(a).onValue(sliceIndex)))));
+							a -> String.valueOf(IValueProvider.getValue(
+									Objects.requireNonNull(aggregatorToAggregates.get(a)).onValue(sliceIndex)))));
 
 			sh.add(String.valueOf(indexToSlice.get(sliceIndex)), aggregates);
 		});

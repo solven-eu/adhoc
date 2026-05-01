@@ -149,23 +149,46 @@ export default {
 		// singleton path where `setup()` runs once and column changes are prop updates).
 		watch(() => props.column, resetForCurrentColumn, { immediate: true });
 
-		watch(filterType, () => {
-			if (!isResetting) pendingChanges.value = true;
+		// `flush: 'sync'` is load-bearing here: `resetForCurrentColumn()` mutates filterType / equalsValue /
+		// likePattern / rawFilterAsJson inside `try { isResetting = true } finally { isResetting = false }`.
+		// With Vue's default async flush, the queued watcher callbacks fire on the next microtask — after the
+		// finally has cleared `isResetting` — so the guard is bypassed and `pendingChanges` flips to true even
+		// on a fresh reopen of the modal. Running them synchronously means the guard is seen at the moment of
+		// mutation. (User-reported: re-checking a column after equals-filter triggered a spurious
+		// "Unsaved changes" hint on reopen.)
+		watch(
+			filterType,
+			() => {
+				if (!isResetting) pendingChanges.value = true;
 
-			// The User selected `equals` filter: ensure we have a subset of coordinate to help him making his filter
-			if ((filterType.value === "equals" || filterType.value === "not_equals") && columnMeta.value.error === "not_loaded") {
-				store.loadColumnCoordinatesIfMissing(props.cubeId, props.endpointId, props.column);
-			}
-		});
-		watch(equalsValue, () => {
-			if (!isResetting) pendingChanges.value = true;
-		});
-		watch(likePattern, () => {
-			if (!isResetting) pendingChanges.value = true;
-		});
-		watch(rawFilterAsJson, () => {
-			if (!isResetting) pendingChanges.value = true;
-		});
+				// The User selected `equals` filter: ensure we have a subset of coordinate to help him making his filter
+				if ((filterType.value === "equals" || filterType.value === "not_equals") && columnMeta.value.error === "not_loaded") {
+					store.loadColumnCoordinatesIfMissing(props.cubeId, props.endpointId, props.column);
+				}
+			},
+			{ flush: "sync" },
+		);
+		watch(
+			equalsValue,
+			() => {
+				if (!isResetting) pendingChanges.value = true;
+			},
+			{ flush: "sync" },
+		);
+		watch(
+			likePattern,
+			() => {
+				if (!isResetting) pendingChanges.value = true;
+			},
+			{ flush: "sync" },
+		);
+		watch(
+			rawFilterAsJson,
+			() => {
+				if (!isResetting) pendingChanges.value = true;
+			},
+			{ flush: "sync" },
+		);
 
 		// Combobox handlers — the dropdown is a custom overlay rather than `<datalist>`
 		// because datalist doesn't filter-as-you-type and its styling is owned by the
@@ -250,6 +273,14 @@ export default {
 				const columnFilter = { type: "column", column: props.column, valueMatcher: equalsValue.value };
 				props.queryModel.filter.filters.push(columnFilter);
 				rawFilterAsJson.value = JSON.stringify(columnFilter);
+				// UX shortcut: equality on a column collapses it to a constant — keeping it in the groupBy
+				// produces a single-coordinate header that adds no analytical value, so we drop it from the
+				// model in the same atomic edit that adds the filter (single trigger, single round-trip).
+				// InMatcher with a single element would be semantically equivalent but is rare enough that the
+				// shortcut is intentionally NOT applied there.
+				if (props.queryModel.selectedColumns && props.queryModel.selectedColumns[props.column]) {
+					props.queryModel.selectedColumns[props.column] = false;
+				}
 			} else if (filterType.value == "not_equals") {
 				console.log("filter", props.column, "not_equals", equalsValue.value);
 				const columnFilter = {

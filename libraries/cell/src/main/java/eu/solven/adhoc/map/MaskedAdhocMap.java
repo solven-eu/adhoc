@@ -33,6 +33,8 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
+import org.jspecify.annotations.Nullable;
+
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterators;
 
@@ -120,7 +122,7 @@ public class MaskedAdhocMap extends AbstractMap<String, Object> implements IAdho
 	}
 
 	@Override
-	public Object get(Object key) {
+	public @Nullable Object get(Object key) {
 		Object fromDecorated = decorated.get(key);
 		if (fromDecorated != null) {
 			return fromDecorated;
@@ -239,12 +241,15 @@ public class MaskedAdhocMap extends AbstractMap<String, Object> implements IAdho
 	@Override
 	public IAdhocMap retainAll(Set<String> retainedColumns) {
 		Map<Boolean, ImmutableSet<String>> partitionedColumns = partitionColumns(retainedColumns);
+		// `Collectors.partitioningBy` always populates both keys; narrow @Nullable Map.get into non-null locals.
+		ImmutableSet<String> inMask = Objects.requireNonNull(partitionedColumns.get(true));
+		ImmutableSet<String> inDecorated = Objects.requireNonNull(partitionedColumns.get(false));
 
 		Map<String, ?> retainedMask;
-		if (partitionedColumns.get(true).isEmpty()) {
+		if (inMask.isEmpty()) {
 			// no impact on mask
 			retainedMask = Map.of();
-		} else if (partitionedColumns.get(true).size() == mask.size()) {
+		} else if (inMask.size() == mask.size()) {
 			// no impact on mask
 			retainedMask = mask;
 		} else {
@@ -253,14 +258,14 @@ public class MaskedAdhocMap extends AbstractMap<String, Object> implements IAdho
 		}
 
 		IAdhocMap retainedDecorated;
-		if (partitionedColumns.get(false).isEmpty()) {
+		if (inDecorated.isEmpty()) {
 			// no impact on decorated
 			retainedDecorated = AdhocMapHelpers.fromMap(decorated.getFactory(), Map.of());
-		} else if (retainedColumns.size() == partitionedColumns.get(false).size()) {
+		} else if (retainedColumns.size() == inDecorated.size()) {
 			// Re-use the original Collection, which is typically a Guava ImmutableCollection
 			retainedDecorated = decorated.retainAll(retainedColumns);
 		} else {
-			retainedDecorated = decorated.retainAll(ImmutableSet.copyOf(partitionedColumns.get(false)));
+			retainedDecorated = decorated.retainAll(ImmutableSet.copyOf(inDecorated));
 		}
 
 		if (retainedMask.size() == mask.size()) {

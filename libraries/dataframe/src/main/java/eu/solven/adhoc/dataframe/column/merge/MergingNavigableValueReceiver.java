@@ -24,6 +24,8 @@ package eu.solven.adhoc.dataframe.column.merge;
 
 import java.util.function.Consumer;
 
+import org.jspecify.annotations.Nullable;
+
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.aggregation.IDoubleAggregation;
 import eu.solven.adhoc.measure.aggregation.ILongAggregation;
@@ -60,7 +62,7 @@ public class MergingNavigableValueReceiver implements IValueReceiver {
 			}
 
 			@Override
-			public void onObject(Object existingAggregate) {
+			public void onObject(@Nullable Object existingAggregate) {
 				Object newAggregate = aggregation.aggregate(existingAggregate, input);
 				receiver.onObject(newAggregate);
 			}
@@ -83,7 +85,7 @@ public class MergingNavigableValueReceiver implements IValueReceiver {
 			}
 
 			@Override
-			public void onObject(Object existingAggregate) {
+			public void onObject(@Nullable Object existingAggregate) {
 				Object newAggregate = aggregation.aggregate(existingAggregate, input);
 				receiver.onObject(newAggregate);
 			}
@@ -91,7 +93,7 @@ public class MergingNavigableValueReceiver implements IValueReceiver {
 	}
 
 	@Override
-	public void onObject(Object input) {
+	public void onObject(@Nullable Object input) {
 		consumer.accept(new IValueReceiver() {
 
 			@Override
@@ -101,7 +103,7 @@ public class MergingNavigableValueReceiver implements IValueReceiver {
 			}
 
 			@Override
-			public void onObject(Object existingAggregate) {
+			public void onObject(@Nullable Object existingAggregate) {
 				Object newAggregate = aggregation.aggregate(existingAggregate, input);
 				receiver.onObject(newAggregate);
 			}

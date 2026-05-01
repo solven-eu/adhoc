@@ -127,7 +127,7 @@ public final class UnsafeMeasureForest implements IMeasureForest {
 	@Override
 	public IMeasureForest acceptVisitor(IMeasureForestVisitor visitor) {
 		String editedName = visitor.editName(getName());
-		if (Objects.equals(editedName, getName())) {
+		if (!Objects.equals(editedName, getName())) {
 			log.warn("Can not edit the name of {}", this);
 		}
 
@@ -152,9 +152,11 @@ public final class UnsafeMeasureForest implements IMeasureForest {
 
 	/**
 	 * Lombok @Builder
-	 * 
+	 *
 	 * @author Benoit Lacelle
 	 */
+	// Builder fields populated via chained setters before .build(); NullAway can't see the cross-method init.
+	@SuppressWarnings("NullAway.Init")
 	public static class UnsafeMeasureForestBuilder {
 		public UnsafeMeasureForestBuilder measure(IMeasure measure) {
 			this.namedMeasure(measure.getName(), measure);

@@ -28,15 +28,17 @@ import java.util.function.Function;
 import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.filter.editor.IFilterEditor;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
-import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.util.map.AdhocMapPathGet;
 
 /**
- * Enable an {@link ICombination} to be defined through a lambda. Beware this is typically not serializable.
+ * Enable an {@link IFilterEditor} to be defined through a lambda. Beware this is typically not serializable.
  * 
  * @author Benoit Lacelle
  */
 public class LambdaEditor implements IFilterEditor {
+	/**
+	 * To be associated to a {@link ILambdaFilterEditor} value.
+	 */
 	public static final String K_LAMBDA = "lambda";
 
 	final ILambdaFilterEditor lambda;

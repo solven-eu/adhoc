@@ -29,6 +29,8 @@ import org.springframework.context.ConfigurableApplicationContext;
 
 import eu.solven.adhoc.app.IPivotableSpringProfiles;
 import eu.solven.adhoc.pivotable.webnone.security.PivotableSecurityWebnoneSpringConfig;
+import eu.solven.pepper.unittest.ILogDisabler;
+import eu.solven.pepper.unittest.PepperTestHelper;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -52,7 +54,7 @@ public class TestPivotableSecurityWebnoneSpringConfig {
 	public void testContext_loadsWithUnsafeProfile() {
 		try (ConfigurableApplicationContext ctx = SpringApplication.run(PivotableServerSecurityWebnoneApplication.class,
 				"--spring.profiles.active=" + IPivotableSpringProfiles.P_UNSAFE,
-				"--spring.config.import=classpath:pivotable-config.yml")) {
+				"--" + IPivotableSpringProfiles.P_CONFIG_IMPORT)) {
 			Assertions.assertThat(ctx.isActive()).isTrue();
 		}
 	}
@@ -63,24 +65,27 @@ public class TestPivotableSecurityWebnoneSpringConfig {
 	 */
 	@Test
 	public void testContext_rejectsIncompatibleProfiles_inmemoryAndRedis() {
-		Assertions
-				.assertThatThrownBy(() -> SpringApplication.run(PivotableServerSecurityWebnoneApplication.class,
-						"--spring.profiles.active=" + IPivotableSpringProfiles.P_UNSAFE
-								+ ","
-								+ IPivotableSpringProfiles.P_INMEMORY
-								+ ","
-								+ IPivotableSpringProfiles.P_REDIS,
-						"--spring.config.import=classpath:pivotable-config.yml"))
-				.isInstanceOf(Exception.class)
-				.satisfies(e -> {
-					// The real cause is wrapped in BeanCreationException chains
-					Throwable root = e;
-					while (root.getCause() != null && !(root instanceof IllegalStateException)) {
-						root = root.getCause();
-					}
-					Assertions.assertThat(root)
-							.isInstanceOf(IllegalStateException.class)
-							.hasMessageContaining(IPivotableSpringProfiles.P_INMEMORY);
-				});
+		// TODO This seems not enough to disable the log
+		try (ILogDisabler _ = PepperTestHelper.disableLog(SpringApplication.class)) {
+			Assertions
+					.assertThatThrownBy(() -> SpringApplication.run(PivotableServerSecurityWebnoneApplication.class,
+							"--spring.profiles.active=" + IPivotableSpringProfiles.P_UNSAFE
+									+ ","
+									+ IPivotableSpringProfiles.P_INMEMORY
+									+ ","
+									+ IPivotableSpringProfiles.P_REDIS,
+							"--" + IPivotableSpringProfiles.P_CONFIG_IMPORT))
+					.isInstanceOf(Exception.class)
+					.satisfies(e -> {
+						// The real cause is wrapped in BeanCreationException chains
+						Throwable root = e;
+						while (root.getCause() != null && !(root instanceof IllegalStateException)) {
+							root = root.getCause();
+						}
+						Assertions.assertThat(root)
+								.isInstanceOf(IllegalStateException.class)
+								.hasMessageContaining(IPivotableSpringProfiles.P_INMEMORY);
+					});
+		}
 	}
 }

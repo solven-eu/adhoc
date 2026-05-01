@@ -105,6 +105,22 @@ export default {
 			return markMatchingWizard(props.searchOptions, text);
 		};
 
+		// Bucket the loaded cardinality into a Bootstrap badge colour so the user can read "is this
+		// safe to groupBy?" at a glance instead of having to interpret the raw number. Thresholds:
+		//   - ≤ 100: green (small dimension — always safe).
+		//   - ≤ 10K: yellow (medium — usually fine, but the result grid can be tall).
+		//   - > 10K: red (high — likely too large to render as a flat groupBy).
+		// Returned as a Bootstrap `text-bg-*` utility so it slots into the existing badge markup.
+		// TODO Roadmap: expose a backend endpoint that returns every column's cardinality in one
+		// round-trip — the DB can compute the whole set efficiently, and the SPA could then auto-
+		// populate the badges on schema load instead of paying one HTTP call per click.
+		const cardinalityBadgeClass = function (n) {
+			if (typeof n !== "number") return "bg-secondary";
+			if (n <= 100) return "text-bg-success";
+			if (n <= 10000) return "text-bg-warning";
+			return "text-bg-danger";
+		};
+
 		// Map the backend-provided type string to a Bootstrap Icon class. Lowercase substring
 		// matching so both SQL-flavoured (`varchar`, `bigint`, `timestamp`) and Java-flavoured
 		// (`String`, `Long`, `Instant`) type names resolve. The actual type string is kept as a
@@ -129,15 +145,17 @@ export default {
 			isFiltered,
 			mark,
 			typeIcon,
+			cardinalityBadgeClass,
 		};
 	},
 	template: /* HTML */ `
 		<!--
-			Two-row compact layout (down from four).
-			Row 1: toggle + name — full row, so long column names wrap cleanly instead of being
-			squeezed to one character per line in the narrow col-3 sidebar.
-			Row 2: secondary controls (type, grandTotal asterisk toggle, cardinality badge,
-			filter button) all on one tight horizontal line.
+			Layout collapse: when the column is NOT selected, only [toggle] [name] [pause] (and the
+			Filter button when an active filter exists on the column) are shown — the secondary
+			controls (grandTotal, cardinality, type) are pre-emptively hidden because they are
+			only meaningful once the column participates in the query. The Filter button stays
+			visible whenever a filter is set on this column, so the user can clear it without
+			needing to first re-select the column.
 		-->
 		<div
 			class="form-check form-switch mb-1 d-flex align-items-start gap-2"
@@ -170,12 +188,22 @@ export default {
 			</button>
 		</div>
 
-		<div class="d-flex align-items-center gap-2 flex-wrap">
-			<!-- Type as a Bootstrap Icon; the full type string remains as a tooltip. -->
-			<small class="text-muted" :title="'type: ' + type"><i :class="typeIcon(type)"></i></small>
-
-			<!-- grandTotal: icon-only toggle (bi-asterisk). Title provides the label. -->
-			<div class="form-check form-switch mb-0" :title="'Include grandTotal (*) row for ' + column">
+		<!--
+			Secondary controls row. Always rendered so the Estimate button is reachable BEFORE the
+			user picks the column — checking cardinality is precisely how a user decides whether
+			groupBy on this column is safe.
+			Per-control visibility:
+			- Estimate / cardinality badge: ALWAYS shown.
+			- Filter button: ALWAYS shown (small, link-style; right-aligned).
+			- grandTotal toggle and type icon: only when the column is selected — they are
+				meaningless before the column participates in the query.
+		-->
+		<div class="d-flex align-items-center gap-2 flex-wrap mb-1">
+			<!--
+				grandTotal: icon-only toggle (bi-asterisk). Title provides the label. Only useful when
+				the column participates in the query — hidden when not selected.
+			-->
+			<div v-if="queryModel.selectedColumns[column]" class="form-check form-switch mb-0" :title="'Include grandTotal (*) row for ' + column">
 				<input
 					class="form-check-input"
 					type="checkbox"
@@ -187,25 +215,53 @@ export default {
 				<label class="form-check-label" :for="'columnWithStar_' + column"><i class="bi bi-asterisk small"></i></label>
 			</div>
 
+			<!--
+				Right-side trailing controls: cardinality estimate, type icon, filter. All sit on the right
+				edge (ms-auto on the leftmost group element). The cardinality affordance has two states:
+				- Not yet loaded: icon-only Estimate button (bi-bar-chart-fill), same link-style sizing as
+					the filter / pause buttons so the row stays visually balanced.
+				- Loaded: a colour-coded compact badge (green/yellow/red) so the user sees "safe-to-groupBy?"
+					at a glance. Click either to refresh.
+			-->
 			<button
+				v-if="!(typeof columnMeta.estimatedCardinality === 'number')"
 				type="button"
 				@click="loadColumnCoordinates()"
-				class="badge bg-secondary rounded-pill"
-				:title="'Click to load column cardinality for ' + column"
+				class="btn btn-sm btn-link p-0 text-decoration-none ms-auto"
+				:title="'Estimate cardinality for ' + column + ' (a high cardinality may produce a very tall grid when grouping)'"
 			>
-				<span v-if="!(typeof columnMeta.estimatedCardinality === 'number')"> ? </span>
-				<!-- https://stackoverflow.com/questions/10599933/convert-long-number-into-abbreviated-string-in-javascript-with-a-special-shortn -->
-				<span v-else> {{ Intl.NumberFormat('en-US', { notation: "compact", maximumFractionDigits: 1 }).format(columnMeta.estimatedCardinality)}} </span>
 				<span v-if="loadingCoordinates">
-					<span class="spinner-grow spinner-grow-sm" role="status">
+					<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+				</span>
+				<span v-else><i class="bi bi-bar-chart-fill text-secondary"></i></span>
+			</button>
+			<button
+				v-else
+				type="button"
+				@click="loadColumnCoordinates()"
+				class="badge rounded-pill border-0 ms-auto"
+				:class="cardinalityBadgeClass(columnMeta.estimatedCardinality)"
+				:title="'Estimated cardinality: ' + columnMeta.estimatedCardinality + '. Click to refresh.'"
+			>
+				<!-- https://stackoverflow.com/questions/10599933/convert-long-number-into-abbreviated-string-in-javascript-with-a-special-shortn -->
+				{{ Intl.NumberFormat('en-US', { notation: "compact", maximumFractionDigits: 1 }).format(columnMeta.estimatedCardinality)}}
+				<span v-if="loadingCoordinates">
+					<span class="spinner-grow spinner-grow-sm ms-1" role="status">
 						<span class="visually-hidden">Loading...</span>
 					</span>
 				</span>
 			</button>
 
+			<!-- Type icon: shown regardless of selection — knowing the column's type is part of deciding whether to add it. -->
+			<small class="text-muted" :title="'type: ' + type"><i :class="typeIcon(type)"></i></small>
 			<AdhocQueryWizardColumnFilterModal :queryModel="queryModel" :column="column" :type="type" :endpointId="endpointId" :cubeId="cubeId" />
-			<button type="button" @click="openFilterModal()" class="btn btn-outline-primary btn-sm position-relative" :title="'Edit filter on ' + column">
-				<i class="bi bi-filter"></i>
+			<button
+				type="button"
+				@click="openFilterModal()"
+				class="btn btn-sm btn-link p-0 text-decoration-none position-relative"
+				:title="'Edit filter on ' + column"
+			>
+				<i class="bi bi-filter" :class="isFiltered() ? 'text-primary' : 'text-secondary'"></i>
 				<span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle" v-if="isFiltered()">
 					<span class="visually-hidden">is filtered</span>
 				</span>

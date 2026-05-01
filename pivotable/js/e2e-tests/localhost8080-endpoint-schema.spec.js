@@ -26,7 +26,7 @@ test("endpoint schema page renders three accordion sections with filters", async
 	await queryPivotable.login(page);
 	await page.getByRole("link", { name: "Browse through endpoints" }).click();
 
-	// Click the `Show schema` link rendered by `AdhocEndpointSchemaRef`. There may be
+	// Click the `Show schema` link rendered by `AdhocEndpointSchemaChip`. There may be
 	// more than one endpoint shown if `/?cdn` registered extras; pick the first.
 	await page
 		.getByRole("link", { name: /Show schema/i })

@@ -25,6 +25,8 @@ package eu.solven.adhoc.table.transcoder;
 import java.util.Set;
 import java.util.stream.Stream;
 
+import org.jspecify.annotations.Nullable;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
@@ -67,7 +69,7 @@ public class CompositeTableAliaser implements ITableAliaser, IHasAliasedColumns 
 	ChainMode chainMode = ChainMode.FirstNotNull;
 
 	@Override
-	public String underlying(String queried) {
+	public @Nullable String underlying(String queried) {
 		boolean oneMatched = false;
 		String currenQueried = queried;
 

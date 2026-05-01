@@ -36,8 +36,8 @@ import com.mongodb.client.MongoDatabase;
 
 import eu.solven.adhoc.column.ColumnMetadata;
 import eu.solven.adhoc.dataframe.row.ITabularRecordStream;
-import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.query.table.TableQueryV4;
+import eu.solven.adhoc.table.IQueryPod;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.util.NotYetImplementedException;
 import lombok.Builder;
@@ -79,7 +79,7 @@ public class MongoTableWrapper implements ITableWrapper {
 	}
 
 	@Override
-	public ITabularRecordStream streamSlices(QueryPod queryPod, TableQueryV4 tableQuery) {
+	public ITabularRecordStream streamSlices(IQueryPod queryPod, TableQueryV4 tableQuery) {
 		throw new NotYetImplementedException("TODO MongoDB");
 	}
 

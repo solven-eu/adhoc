@@ -24,6 +24,8 @@ package eu.solven.adhoc.measure.aggregation.collection;
 
 import java.util.Map;
 
+import org.jspecify.annotations.Nullable;
+
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 
 /**
@@ -39,7 +41,7 @@ public class UnionAggregation implements IAggregation {
 	private final UnionSetAggregation setAggregator = new UnionSetAggregation();
 
 	@Override
-	public Object aggregate(Object l, Object r) {
+	public @Nullable Object aggregate(@Nullable Object l, @Nullable Object r) {
 		if (l == null) {
 			return wrapOne(r);
 		} else if (r == null) {
@@ -51,7 +53,7 @@ public class UnionAggregation implements IAggregation {
 		}
 	}
 
-	protected Object wrapOne(Object input) {
+	protected @Nullable Object wrapOne(@Nullable Object input) {
 		if (input == null) {
 			return null;
 		} else if (input instanceof Map<?, ?> map) {

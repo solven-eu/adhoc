@@ -24,6 +24,8 @@ package eu.solven.adhoc.primitive;
 
 import java.util.function.Function;
 
+import org.jspecify.annotations.Nullable;
+
 /**
  * Able to consume a value which may be a different types, with the ability to handle primitive types without boxing.
  * 
@@ -53,10 +55,10 @@ public interface IValueReceiver {
 		onObject(v);
 	}
 
-	void onObject(Object v);
+	void onObject(@Nullable Object v);
 
 	@Deprecated(since = "Good API?")
-	default IValueReceiver interceptOnObject(Function<Object, ?> onObject) {
+	default IValueReceiver interceptOnObject(Function<@Nullable Object, ?> onObject) {
 		IValueReceiver thisThis = this;
 
 		return new IValueReceiver() {
@@ -72,7 +74,7 @@ public interface IValueReceiver {
 			}
 
 			@Override
-			public void onObject(Object v) {
+			public void onObject(@Nullable Object v) {
 				thisThis.onObject(onObject.apply(v));
 			}
 		};

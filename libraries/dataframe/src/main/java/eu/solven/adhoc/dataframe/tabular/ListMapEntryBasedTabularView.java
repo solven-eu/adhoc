@@ -27,6 +27,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Stream;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -56,7 +57,7 @@ import lombok.extern.jackson.Jacksonized;
 @SuperBuilder
 @Jacksonized
 @EqualsAndHashCode(callSuper = false)
-public class ListMapEntryBasedTabularView extends AListBasedTabularView implements ITabularView, IWritableTabularView {
+public class ListMapEntryBasedTabularView extends AListBasedTabularView implements ITabularView {
 
 	// Split into a List of Map.Entry is not easy to serialize
 	@Default
@@ -100,7 +101,7 @@ public class ListMapEntryBasedTabularView extends AListBasedTabularView implemen
 			Map<String, ?> coordinatesAsMap = coordinates.asAdhocMap();
 
 			return o -> {
-				Map<String, ?> oAsMap = (Map<String, ?>) o;
+				Map<String, ?> oAsMap = (Map<String, ?>) Objects.requireNonNull(o);
 
 				to.entries.add(TabularEntry.builder().coordinates(coordinatesAsMap).values(oAsMap).build());
 			};

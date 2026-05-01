@@ -29,6 +29,9 @@ const IMPORTMAP_ALIASES = {
 	slickgrid: "/webjars/slickgrid/5.18.2/dist/esm/index.mjs",
 	sortablejs: "/webjars/sortablejs/1.15.7/modular/sortable.esm.js",
 	lodashEs: "/webjars/lodash-es/4.17.21/lodash.js",
+	// Prefix-mapping entry mirroring the importmap's `"lodashEs/": "..."` rule: per-function imports
+	// (e.g. `lodashEs/sortBy.js`) resolve under this directory so we don't pull the whole bundle.
+	"lodashEs/": "/webjars/lodash-es/4.17.21/",
 	mermaid: "/webjars/mermaid/11.6.0/dist/mermaid.esm.min.mjs",
 };
 
@@ -43,9 +46,17 @@ function importmapExternalsPlugin() {
 		name: "importmap-externals",
 		enforce: "pre",
 		resolveId(source) {
+			// Exact-match alias (e.g. `lodashEs`, `vue`).
 			const target = IMPORTMAP_ALIASES[source];
 			if (target) {
 				return { id: target, external: true };
+			}
+			// Trailing-slash prefix alias (e.g. `lodashEs/sortBy.js`): mirror the importmap spec, so
+			// Vite dev mode resolves the same way the browser does in production.
+			for (const [key, value] of Object.entries(IMPORTMAP_ALIASES)) {
+				if (key.endsWith("/") && source.startsWith(key)) {
+					return { id: value + source.slice(key.length), external: true };
+				}
 			}
 			return null;
 		},

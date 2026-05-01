@@ -28,6 +28,8 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+import org.jspecify.annotations.Nullable;
+
 import com.google.common.base.MoreObjects;
 import com.google.common.base.MoreObjects.ToStringHelper;
 import com.google.common.collect.ImmutableSet;
@@ -72,6 +74,7 @@ public abstract class ACubeQueryStep implements ICubeQueryStep {
 
 	private final ISliceFilter filter;
 	private final IGroupBy groupBy;
+	@Nullable
 	private final Object customMarker;
 	private final ImmutableSet<IQueryOption> options;
 	private final ConcurrentMap<Object, Object> cache;
@@ -79,7 +82,7 @@ public abstract class ACubeQueryStep implements ICubeQueryStep {
 	@SuppressWarnings("checkstyle:AvoidInlineConditionals")
 	protected ACubeQueryStep(ISliceFilter filter,
 			IGroupBy groupBy,
-			Object customMarker,
+			@Nullable Object customMarker,
 			ImmutableSet<IQueryOption> options,
 			ConcurrentMap<Object, Object> cache) {
 		this.filter = filter != null ? filter : ISliceFilter.MATCH_ALL;

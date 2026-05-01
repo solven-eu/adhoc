@@ -49,14 +49,23 @@ public class AdhocFreezingUnsafe {
 		checkPostCompression = DEFAULT_CHECK_POST_COMPRESSION;
 	}
 
+	// Freezers applied AFTER DistinctFreezer in the main chain — also passed to DistinctFreezer so that the
+	// (small) dictionary of distinct values is itself processed by these strategies. This way, e.g. a low-cardinality
+	// Utf8ByteSlice column that gets dictionarised still has its dictionary entries normalised to String by
+	// Utf8ToStringFreezer (or compressed via FSST), instead of leaking raw Utf8ByteSlice instances downstream.
+	private static final List<IFreezingWithContext> POST_DISTINCT_FREEZERS =
+			ImmutableList.<IFreezingWithContext>builder()
+					.add(new LongFreezer())
+					.add(new IntegerFreezer())
+					.add(new FsstFreezingWithContext())
+					// Fallback: normalise any remaining AdhocUtf8 values to String when FSST did not fire
+					// (e.g. mixed-type columns where FSST only handles pure-text columns)
+					.add(new Utf8ToStringFreezer())
+					.build();
+
 	private static final List<IFreezingWithContext> DEFAULT_FREEZERS = ImmutableList.<IFreezingWithContext>builder()
-			.add(new DistinctFreezer())
-			.add(new LongFreezer())
-			.add(new IntegerFreezer())
-			.add(new FsstFreezingWithContext())
-			// Fallback: normalise any remaining AdhocUtf8 values to String when FSST did not fire
-			// (e.g. mixed-type columns where FSST only handles pure-text columns)
-			.add(new Utf8ToStringFreezer())
+			.add(new DistinctFreezer(POST_DISTINCT_FREEZERS))
+			.addAll(POST_DISTINCT_FREEZERS)
 			.build();
 
 	@Getter

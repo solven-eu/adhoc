@@ -35,7 +35,7 @@ import com.google.common.collect.MultimapBuilder;
 import com.google.common.collect.SetMultimap;
 import com.google.common.primitives.Ints;
 
-import eu.solven.adhoc.column.ICalculatedColumn;
+import eu.solven.adhoc.column.calculated.ICalculatedColumn;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;

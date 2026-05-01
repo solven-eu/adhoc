@@ -48,7 +48,7 @@ import eu.solven.adhoc.query.cube.IGroupBy;
  * 
  * @author Benoit Lacelle
  */
-public interface ISlice extends Comparable<ISlice>, ITabularGroupBySlice, IHasAdhocMap, IHasSlice {
+public interface ISlice extends Comparable<ISlice>, ITabularGroupBySlice, IHasAdhocMap {
 
 	@Override
 	default ISlice asSlice() {

@@ -29,6 +29,8 @@ import java.util.function.IntFunction;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
+import org.jspecify.annotations.Nullable;
+
 import com.google.common.base.MoreObjects;
 import com.google.common.base.MoreObjects.ToStringHelper;
 import com.google.common.primitives.Ints;
@@ -79,7 +81,7 @@ public class MultitypeNavigableIntColumn
 		implements IMultitypeIntColumnFastGet, IMultitypeIntColumnFastGetSorted, ICompactable, IHasSortedLeg {
 	private static final IValueReceiver INSERTION_REJECTED = new IValueReceiver() {
 		@Override
-		public void onObject(Object v) {
+		public void onObject(@Nullable Object v) {
 			throw new UnsupportedOperationException("This is a placeholder");
 		}
 	};

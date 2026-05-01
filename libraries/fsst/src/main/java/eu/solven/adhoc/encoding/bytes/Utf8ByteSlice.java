@@ -78,6 +78,39 @@ public class Utf8ByteSlice implements IByteSlice {
 		return asString(StandardCharsets.UTF_8);
 	}
 
+	/**
+	 * Equality is content-based, delegating to the wrapped {@link IByteSlice} (compares the underlying UTF-8 bytes).
+	 *
+	 * <p>
+	 * Two {@link Utf8ByteSlice} are equal iff their wrapped {@link IByteSlice} report the same byte sequence — which is
+	 * also the contract of {@link IByteSlice#equals(Object)}. They are NOT equal to a {@link String} carrying the same
+	 * characters: a {@link Utf8ByteSlice} is a byte-level value, not a UTF-16 char value.
+	 */
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj) {
+			return true;
+		}
+		if (!(obj instanceof Utf8ByteSlice other)) {
+			return false;
+		}
+		return byteSlice.equals(other.byteSlice);
+	}
+
+	/**
+	 * Hash is delegated to the wrapped {@link IByteSlice} (computed from the underlying byte sequence using the
+	 * {@code 31 * h + b} loop seeded at {@code 1}).
+	 *
+	 * <p>
+	 * This is intentionally distinct from {@link String#hashCode()} (which iterates over UTF-16 code units, seeded at
+	 * {@code 0}). A {@link Utf8ByteSlice} MUST NOT be used as a key against a {@link String}-keyed map. Any incidental
+	 * collision with {@link String#hashCode()} would be opportunistic and is NOT part of the contract.
+	 */
+	@Override
+	public int hashCode() {
+		return byteSlice.hashCode();
+	}
+
 	public static Utf8ByteSlice fromString(String string) {
 		return Utf8ByteSlice.builder().byteSlice(IByteSlice.wrap(string.getBytes(StandardCharsets.UTF_8))).build();
 	}

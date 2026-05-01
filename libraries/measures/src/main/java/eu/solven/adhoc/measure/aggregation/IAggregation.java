@@ -24,6 +24,8 @@ package eu.solven.adhoc.measure.aggregation;
 
 import java.util.List;
 
+import org.jspecify.annotations.Nullable;
+
 import eu.solven.adhoc.measure.aggregation.carrier.IAggregationCarrier;
 import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.primitive.IValueProvider;
@@ -37,7 +39,8 @@ import eu.solven.adhoc.primitive.IValueReceiver;
  */
 @FunctionalInterface
 public interface IAggregation {
-	Object aggregate(Object left, Object right);
+	@Nullable
+	Object aggregate(@Nullable Object left, @Nullable Object right);
 
 	// BEWARE It is important not to take a IValueConsumer as argument, it may typically lead to a synchronous
 	// `.clearKey` while preparing the write, which may lead to a valueProvider not to get access to some data.
@@ -79,7 +82,7 @@ public interface IAggregation {
 						}
 
 						@Override
-						public void onObject(Object vR) {
+						public void onObject(@Nullable Object vR) {
 							valueReceiver.onObject(aggregate(vL, vR));
 						}
 					});
@@ -104,18 +107,18 @@ public interface IAggregation {
 						}
 
 						@Override
-						public void onObject(Object vR) {
+						public void onObject(@Nullable Object vR) {
 							valueReceiver.onObject(aggregate(vL, vR));
 						}
 					});
 				}
 
 				@Override
-				public void onObject(Object vL) {
+				public void onObject(@Nullable Object vL) {
 					r.acceptReceiver(new IValueReceiver() {
 
 						@Override
-						public void onObject(Object vR) {
+						public void onObject(@Nullable Object vR) {
 							valueReceiver.onObject(aggregate(vL, vR));
 						}
 					});

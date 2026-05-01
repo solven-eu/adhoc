@@ -25,6 +25,8 @@ package eu.solven.adhoc.measure.sum;
 import java.math.BigDecimal;
 import java.util.Map;
 
+import org.jspecify.annotations.Nullable;
+
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.aggregation.IDoubleAggregation;
 import eu.solven.adhoc.measure.aggregation.ILongAggregation;
@@ -56,7 +58,7 @@ public class ProductAggregation implements IAggregation, IDoubleAggregation, ILo
 	}
 
 	@Override
-	public Object aggregate(Object l, Object r) {
+	public @Nullable Object aggregate(@Nullable Object l, @Nullable Object r) {
 		if (l == null) {
 			return r;
 		} else if (r == null) {

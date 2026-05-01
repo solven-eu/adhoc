@@ -30,7 +30,6 @@ import java.util.function.Predicate;
 
 import eu.solven.adhoc.cuboid.tabular.ITabularGroupBySlice;
 import eu.solven.adhoc.dataframe.filter.FilterMatcher.FilterMatcherBuilder;
-import eu.solven.adhoc.dataframe.row.ITabularRecord;
 import eu.solven.adhoc.filter.ColumnFilter;
 import eu.solven.adhoc.filter.FilterBuilder;
 import eu.solven.adhoc.filter.FilterHelpers;
@@ -167,7 +166,7 @@ public class MoreFilterHelpers {
 		return prepareMatcher().transcoder(transcoder).filter(filter).build().match(input);
 	}
 
-	public static boolean match(ISliceFilter filter, ITabularRecord input) {
+	public static boolean match(ISliceFilter filter, ITabularGroupBySlice input) {
 		return prepareMatcher().filter(filter).build().match(input);
 	}
 

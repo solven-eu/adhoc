@@ -35,6 +35,7 @@ import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.DirectedAcyclicGraph;
 import org.jgrapht.graph.EdgeReversedGraph;
 import org.jgrapht.traverse.TopologicalOrderIterator;
+import org.jspecify.annotations.Nullable;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
@@ -129,7 +130,7 @@ public class TopologicalOrderSpliterator implements Spliterator<CubeQueryStep> {
 	// `trySplit` is called even before the first `tryAdvance`. We should split if we detect the number of
 	// spliterators is lower than the available tasks (at current state)
 	@Override
-	public Spliterator<CubeQueryStep> trySplit() {
+	public @Nullable Spliterator<CubeQueryStep> trySplit() {
 		// Count how many split would be useful at current state
 		int nbAvailableTasks = 0;
 

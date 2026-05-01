@@ -125,6 +125,13 @@ New executor jobs are proposed monthly by the Discovery Agent (see `.claude/disc
 
 ## After every change
 
+- **TDD when a bug is identified.** As soon as a failure is *clearly* understood (not "I'm exploring why something is off" — actually identified, with a known root cause and reproduction shape), write a reproducing test FIRST and confirm it fails for the expected reason, THEN apply the fix. The reproducer pins the regression even after the surrounding code is refactored. Concretely:
+  1. Write the test (or extend an existing one) describing the buggy scenario as concretely as possible — same inputs, same call shape, same expected output.
+  2. Run it — confirm it fails with the symptom you predicted (exception, wrong value, missing row, etc.). If it fails differently or passes, you have not yet identified the bug; investigate further before writing the fix.
+  3. Apply the fix in production code.
+  4. Re-run the test — confirm it now passes.
+  5. Run the affected module's full test suite to catch regressions.
+  This applies even when the fix is a one-liner. Skipping the reproducer is acceptable only for *exploratory* spikes (e.g. "let me try this and see what breaks") — and even then the spike should end with a real reproducer once the issue is understood.
 - **Tests**: Every new class or significant behaviour change must be accompanied by a unit test. Cover at least the nominal path plus the most likely edge cases (null values, empty input, mixed types, etc.). Target ≥ 80 % instruction coverage for new files; classes below 20 % are critically under-tested — check with `perl scripts/check-coverage-sonar.pl` (offline) or `perl scripts/check-coverage-low.pl` (local JaCoCo). Test files live in the same module under `src/test/java/`.
 - **CHANGES.MD**: Add a one-liner under the current `[0.0.x]` section (under `### Added`, `### Changed`, or `### Fixed` as appropriate) for every user-visible addition or change. Do **not** record coverage-only test additions — they carry no functional value for API users.
 - **Final pass**: Before declaring work done, run through this checklist — do not skip any item even if the task felt simple:
@@ -153,6 +160,7 @@ New executor jobs are proposed monthly by the Discovery Agent (see `.claude/disc
   A message alone is better than nothing (see `login.js` loading state) but a spinner + message is the standard. When adding a new async action, add the loading UI in the same change — a follow-up is not acceptable.
 - **Disable the triggering control while it is in-flight.** Clicking a button that is already running should not re-fire the operation. Either set `disabled` until the promise resolves, or debounce the handler.
 - **Homogenize the loading idiom.** When introducing a new loading indicator, look for a sibling component already using one and reuse its pattern (class names, markup shape, text phrasing) rather than inventing a new one. The grid's progress bar (`adhoc-query-grid.js`) is the canonical example for long-running operations; `spinner-border-sm` next to a label is the canonical example for short ones.
+- **Cover every high-level UI feature with a Playwright e2e scenario.** New cross-component features (DrillThrough, MeasureDag modal, query restore, …) MUST land with at least one nominal scenario under `pivotable/js/e2e-tests/localhost8080-<feature>.spec.js`. Vitest unit tests are not a substitute: a feature whose contract spans the wizard, the network round-trip and the grid is precisely what the e2e layer protects against silent regressions when components are later refactored. Run with `cd pivotable/js && npx playwright test --project=chromium`; the backend is auto-started via `npm run backend`. Asserting against `page.waitForResponse(...)` JSON gives a stable contract; asserting on internal Vue state would couple the test to today's component shape.
 
 ---
 
@@ -182,6 +190,15 @@ These rules exist because slow sessions have been observed and root-caused here.
 - **Don't re-read files already in context.** If a file was written or fully read earlier in the same session, edit it directly without a preceding `Read` call.
 - **Combine Maven goals** to avoid redundant JVM startups: e.g. `mvn spotless:apply pmd:check --file pom.xml --batch-mode` instead of two separate invocations.
 - **Scope Maven to the affected module** with `-pl <module>` when only one module was changed (e.g. `-pl adhoc`), rather than running the full reactor.
+- **Stop and ask when the problem turns out subtler than the discussion assumed.** Symptoms: the user requested a change "X" that triggers more failures than expected, or a debug session is dragging on (multiple log-and-rerun loops, conflicting test expectations, semantic ambiguity in the design). Don't keep editing — pause, write a short status describing (a) the situation as I now understand it, (b) what I'd do next and why, (c) the trade-offs, and ask for a decision. Examples that warrant a stop:
+  - A "small fix" causes a non-trivial number of test regressions that look semantic, not mechanical, especially when the user just told me they "fixed the unit-tests".
+  - I've run the same failing test multiple times with added logs and still don't have a working fix.
+  - I'm about to touch a file the user explicitly said is theirs / they just edited.
+  Iterating silently when the situation is actually ambiguous wastes context and time. Stating it clearly invites a 1-line redirect and saves a long detour.
+- **When the user *suggests* a design change, give feedback before implementing — unless they were unambiguously decisive.** Treat phrasings like "I feel awkward about X", "Shouldn't we Y?", "Maybe Z?", "I wonder if…" as **invitations to discuss**, not orders to refactor. Pause, share an opinion (agree / disagree / mixed, with the trade-offs you see), then let them confirm. A 2–3 sentence opinion costs almost nothing; a 30-minute refactor in the wrong direction costs a lot. Only skip the feedback step when the user is fully decisive ("do X", "rename Y to Z", "drop the FOO branch") AND you fully agree. If you do skip it, say in one sentence why you agreed and went straight to implementation, so the user can still redirect early. Phrasing patterns to watch for:
+  - **Discuss first** (non-decisive): "Shouldn't we…", "I'd expect…", "I feel awkward about…", "Wouldn't it be simpler to…", "Maybe…", "I wonder if…", "What do you think about…".
+  - **Implement directly** (decisive): "Do X", "Apply Y", "Rename Z to W", "Drop the FOO branch", "Yes, go ahead", "Implement option (a)".
+  When in doubt, default to the discuss-first path. Even if I "totally agree", a one-liner like "Agree — V3 is more honest, going for it now" is enough for the user to interrupt before I burn context.
 
 ---
 

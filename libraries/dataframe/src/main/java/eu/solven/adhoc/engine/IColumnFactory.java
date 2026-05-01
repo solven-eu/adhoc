@@ -22,8 +22,11 @@
  */
 package eu.solven.adhoc.engine;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.function.Consumer;
+
+import com.google.common.primitives.Ints;
 
 import eu.solven.adhoc.cuboid.ICuboid;
 import eu.solven.adhoc.dataframe.column.Cuboid;
@@ -107,5 +110,9 @@ public interface IColumnFactory {
 		public boolean isInt() {
 			return clazz != null && Integer.class.isAssignableFrom(clazz);
 		}
+	}
+
+	static int sumSizes(Collection<? extends ICuboid> underlyings) {
+		return Ints.saturatedCast(underlyings.stream().mapToLong(ICuboid::size).sum());
 	}
 }

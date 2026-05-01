@@ -22,6 +22,8 @@
  */
 package eu.solven.adhoc.map.factory;
 
+import org.jspecify.annotations.Nullable;
+
 /**
  * Interface for Map builder instances created by {@link ISliceFactory}.
  * 
@@ -29,9 +31,9 @@ package eu.solven.adhoc.map.factory;
  */
 public interface IMapBuilderPreKeys extends IBuildableIntoMap {
 
-	IMapBuilderPreKeys append(Object value);
+	IMapBuilderPreKeys append(@Nullable Object value);
 
-	default IMapBuilderPreKeys append(Iterable<?> value) {
+	default IMapBuilderPreKeys append(@Nullable Iterable<?> value) {
 		if (value == null) {
 			return append((Object) null);
 		}
@@ -45,7 +47,7 @@ public interface IMapBuilderPreKeys extends IBuildableIntoMap {
 		return preKeys;
 	}
 
-	default IMapBuilderPreKeys append(Object first, Object... more) {
+	default IMapBuilderPreKeys append(@Nullable Object first, @Nullable Object @Nullable... more) {
 		IMapBuilderPreKeys preKeys = append(first);
 
 		if (more == null) {

@@ -24,6 +24,8 @@ package eu.solven.adhoc.table.transcoder.value;
 
 import java.util.Map;
 
+import org.jspecify.annotations.Nullable;
+
 import eu.solven.adhoc.filter.value.IValueMatcher;
 import eu.solven.adhoc.util.NotYetImplementedException;
 import eu.solven.pepper.core.PepperLogHelper;
@@ -41,12 +43,12 @@ public class StandardCustomTypeManager implements ICustomTypeManager {
 	}
 
 	@Override
-	public Object toTable(String column, Object coordinate) {
+	public @Nullable Object toTable(String column, @Nullable Object coordinate) {
 		return coordinate;
 	}
 
 	@Override
-	public Object fromTable(String column, Object coordinate) {
+	public @Nullable Object fromTable(String column, @Nullable Object coordinate) {
 		return coordinate;
 	}
 

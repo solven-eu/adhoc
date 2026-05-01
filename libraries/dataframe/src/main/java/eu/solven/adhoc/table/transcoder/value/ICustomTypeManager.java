@@ -22,6 +22,8 @@
  */
 package eu.solven.adhoc.table.transcoder.value;
 
+import org.jspecify.annotations.Nullable;
+
 import eu.solven.adhoc.column.IHasColumnTypes;
 
 /**
@@ -40,6 +42,7 @@ public interface ICustomTypeManager extends ICustomTypeManagerSimple, IHasColumn
 	 *            some coordinate, typically provided by a table.
 	 * @return the equivalent object compatible with the cube/measures/user
 	 */
-	Object fromTable(String column, Object coordinate);
+	@Nullable
+	Object fromTable(String column, @Nullable Object coordinate);
 
 }

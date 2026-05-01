@@ -26,6 +26,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Supplier;
 
+import org.jspecify.annotations.Nullable;
+
 /**
  * A two-layer cache specialized for a single-part key. A thread-local last-entry fast path checked by <strong>reference
  * equality</strong> ({@code ==}), backed by a {@link ConcurrentHashMap} slow path keyed by the key directly (no
@@ -84,7 +86,7 @@ public class LastLookupCache1<V> {
 	 */
 	// Reference equality is intentional (the whole point of the fast-path cache).
 	@SuppressWarnings("PMD.CompareObjectsWithEquals")
-	public V getByRef(Object refKey) {
+	public @Nullable V getByRef(Object refKey) {
 		CacheEntry<Object, V> entry = lastEntry.get();
 
 		if (entry.key == refKey) {

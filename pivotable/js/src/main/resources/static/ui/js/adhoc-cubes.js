@@ -1,13 +1,13 @@
 import { mapState } from "pinia";
 import { useAdhocStore } from "./store-adhoc.js";
 
-import LoginRef from "./login-ref.js";
+import LoginChip from "./login-chip.js";
 import AdhocCube from "./adhoc-cube.js";
 
 export default {
 	// https://vuejs.org/guide/components/registration#local-registration
 	components: {
-		LoginRef,
+		LoginChip,
 		AdhocCube,
 	},
 	// https://vuejs.org/guide/components/props.html
@@ -59,7 +59,7 @@ export default {
 	},
 
 	template: /* HTML */ `
-		<div v-if="!isLoggedIn"><LoginRef /></div>
+		<div v-if="!isLoggedIn"><LoginChip /></div>
 		<div v-else-if="Object.values(contests).length == 0 && nbCubeFetching > 0">Loading cubes</div>
 		<div v-else class="container">
 			<div class="row border" v-for="contest in contests">

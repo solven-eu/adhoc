@@ -25,6 +25,8 @@ package eu.solven.adhoc.encoding.column.freezer;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
+import org.jspecify.annotations.Nullable;
+
 import eu.solven.adhoc.encoding.bytes.IByteSlice;
 import eu.solven.adhoc.encoding.column.IReadableColumn;
 import eu.solven.adhoc.encoding.fsst.IFsstDecoder;
@@ -45,7 +47,7 @@ public class FsstReadableColumn implements IReadableColumn {
 	protected List<IByteSlice> encoded;
 
 	@Override
-	public Object readValue(int rowIndex) {
+	public @Nullable Object readValue(int rowIndex) {
 		IByteSlice encodedBytes = encoded.get(rowIndex);
 
 		if (encodedBytes == null) {

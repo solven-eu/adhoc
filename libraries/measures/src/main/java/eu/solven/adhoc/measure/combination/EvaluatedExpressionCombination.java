@@ -27,6 +27,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.jspecify.annotations.Nullable;
+
 import com.ezylang.evalex.EvaluationException;
 import com.ezylang.evalex.Expression;
 import com.ezylang.evalex.data.EvaluationValue;
@@ -67,7 +69,7 @@ public class EvaluatedExpressionCombination implements ICombination, IHasSanityC
 	}
 
 	@Override
-	public Object combine(ISliceWithStep slice, List<?> underlyingValues) {
+	public @Nullable Object combine(ISliceWithStep slice, List<?> underlyingValues) {
 		Expression exp = makeExpression();
 
 		EvaluationValue result;

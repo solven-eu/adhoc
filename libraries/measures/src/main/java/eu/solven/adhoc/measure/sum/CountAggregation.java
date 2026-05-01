@@ -22,6 +22,8 @@
  */
 package eu.solven.adhoc.measure.sum;
 
+import org.jspecify.annotations.Nullable;
+
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.aggregation.carrier.IAggregationCarrier;
 import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
@@ -67,7 +69,7 @@ public class CountAggregation implements IAggregation, IAggregationCarrier.IHasC
 	}
 
 	@Override
-	public Object aggregate(Object l, Object r) {
+	public @Nullable Object aggregate(@Nullable Object l, @Nullable Object r) {
 		if (l == null) {
 			return aggregateOne(r);
 		} else if (r == null) {
@@ -90,7 +92,7 @@ public class CountAggregation implements IAggregation, IAggregationCarrier.IHasC
 		}
 	}
 
-	protected Object aggregateOne(Object one) {
+	protected @Nullable Object aggregateOne(@Nullable Object one) {
 		if (one == null) {
 			return null;
 		} else if (one instanceof CountAggregationCarrier carrier) {
@@ -105,7 +107,7 @@ public class CountAggregation implements IAggregation, IAggregationCarrier.IHasC
 	}
 
 	@Override
-	public IAggregationCarrier wrap(Object rawCount) {
+	public @Nullable IAggregationCarrier wrap(Object rawCount) {
 		if (AdhocPrimitiveHelpers.isLongLike(rawCount)) {
 			long asLong = AdhocPrimitiveHelpers.asLong(rawCount);
 			if (asLong == 0L) {

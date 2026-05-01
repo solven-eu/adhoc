@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -57,7 +58,7 @@ import lombok.experimental.SuperBuilder;
  */
 @SuperBuilder
 @EqualsAndHashCode(callSuper = false)
-public class ColumnarTabularView extends AListBasedTabularView implements IReadableTabularView {
+public class ColumnarTabularView extends AListBasedTabularView {
 
 	@Default
 	@Getter
@@ -155,7 +156,7 @@ public class ColumnarTabularView extends AListBasedTabularView implements IReada
 	protected ISlice rowSlice(List<String> coordKeys, int rowIndex) {
 		Map<String, Object> row = new LinkedHashMap<>(coordKeys.size());
 		for (String key : coordKeys) {
-			row.put(key, coordinateColumns.get(key).get(rowIndex));
+			row.put(key, Objects.requireNonNull(coordinateColumns.get(key)).get(rowIndex));
 		}
 		return AdhocMapHelpers.fromMap(sliceFactory, row).asSlice();
 	}
@@ -163,7 +164,7 @@ public class ColumnarTabularView extends AListBasedTabularView implements IReada
 	protected Map<String, Object> rowAggregates(List<String> aggKeys, int rowIndex) {
 		Map<String, Object> row = new LinkedHashMap<>(aggKeys.size());
 		for (String key : aggKeys) {
-			row.put(key, aggregateColumns.get(key).get(rowIndex));
+			row.put(key, Objects.requireNonNull(aggregateColumns.get(key)).get(rowIndex));
 		}
 		return row;
 	}

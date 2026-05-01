@@ -22,6 +22,8 @@
  */
 package eu.solven.adhoc.util.cache;
 
+import org.jspecify.annotations.Nullable;
+
 import eu.solven.adhoc.util.immutable.IImmutable;
 
 /**
@@ -47,10 +49,10 @@ import eu.solven.adhoc.util.immutable.IImmutable;
  */
 public final class CacheEntry<K, V> implements IImmutable {
 
-	final K key;
-	final V value;
+	final @Nullable K key;
+	final @Nullable V value;
 
-	public CacheEntry(K key, V value) {
+	public CacheEntry(@Nullable K key, @Nullable V value) {
 		this.key = key;
 		this.value = value;
 	}

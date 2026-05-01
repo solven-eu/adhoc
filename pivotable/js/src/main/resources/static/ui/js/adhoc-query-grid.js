@@ -11,6 +11,8 @@ import { SlickGrid, SlickDataView } from "slickgrid";
 import gridHelper from "./adhoc-query-grid-helper.js";
 import { isLoading as isLoadingHelper, loadingPercent as loadingPercentHelper, loadingMessage as loadingMessageHelper } from "./adhoc-query-grid-loading.js";
 
+import { usePreferencesStore } from "./store-preferences.js";
+
 export default {
 	// https://vuejs.org/guide/components/registration#local-registration
 	components: {
@@ -179,15 +181,32 @@ export default {
 			// Delete the example
 			delete metadata[0];
 
+			// DRILLTHROUGH: the response carries one entry per source row, with per-aggregator (aliased) keys
+			// that do not necessarily appear in `query.measures`. The schema (groupBy + measures) is therefore
+			// discovered from the rows themselves rather than from the submitted query.
+			const isDrillthrough = (props.tabularView.query.options || []).includes("DRILLTHROUGH");
+
 			// May be String or Object (decorating a column with calculated coordinates)
 			const rawColumnNames = props.tabularView.query.groupBy.columns;
-			const columnNames = rawColumnNames.map((rawC) => {
+			let columnNames = rawColumnNames.map((rawC) => {
 				if (typeof rawC === "object") {
 					return rawC.column;
 				} else {
 					return rawC;
 				}
 			});
+			if (isDrillthrough) {
+				// Union of all coordinate keys across rows, preserving insertion order.
+				const seen = new Set(columnNames);
+				for (const row of view.coordinates) {
+					for (const k of Object.keys(row)) {
+						if (!seen.has(k)) {
+							seen.add(k);
+							columnNames.push(k);
+						}
+					}
+				}
+			}
 
 			if (view.coordinates.length === 0) {
 				// TODO Why do we show an empty column? Maybe to force having something to render
@@ -208,13 +227,33 @@ export default {
 				gridColumns.push(...gridHelper.groupByToGridColumns(columnNames, props.queryModel, renderCallback));
 
 				// measureNames may be filled on first row if we requested no measure and received the default measure
-				const measureNames = props.tabularView.query.measures;
+				let measureNames = props.tabularView.query.measures;
+				if (isDrillthrough) {
+					// In DRILLTHROUGH the response uses per-aggregator aliases (e.g. `k1`, `k1_1`) which may
+					// differ from the user-submitted `measures`. Discover the value schema as the union of
+					// all keys appearing in `view.values`, preserving first-seen order.
+					const seenMeasures = new Set();
+					measureNames = [];
+					for (const row of view.values) {
+						for (const k of Object.keys(row)) {
+							if (!seenMeasures.has(k)) {
+								seenMeasures.add(k);
+								measureNames.push(k);
+							}
+						}
+					}
+				}
 				console.log(`Rendering measureNames=${measureNames}`);
 
 				// Compute per-measure min/max/sum stats BEFORE building the column definitions
 				// so the cell formatter can paint a heatmap background on each numeric cell, and
 				// so the footer row can surface min/sum/max without re-scanning the values.
 				measureStats = gridHelper.computeMeasureStats(measureNames, view.values);
+				// Secondary-heatmap stats: per-measure min/max bucketed by the parent slice (the row's
+				// groupBy values minus the LAST view column). Drives the per-cell vertical bar so each
+				// cell can be compared to its sibling rows under the same parent member.
+				const parentColumnNames = columnNames.slice(0, -1);
+				const parentSliceStats = gridHelper.computeParentSliceStats(measureNames, parentColumnNames, view.coordinates, view.values);
 				// Stash the freshly-computed stats on the shared singleton so the per-measure
 				// Statistics modal can be opened from the grid header without re-scanning the
 				// view. Resetting the visible measure name on each resync prevents stale
@@ -224,7 +263,9 @@ export default {
 				}
 
 				// TODO Refresh the columns on `formatOptions` changes, else we need to query to see the format changes
-				gridColumns.push(...gridHelper.measuresToGridColumns(measureNames, props.queryModel, renderCallback, formatOptions, measureStats));
+				gridColumns.push(
+					...gridHelper.measuresToGridColumns(measureNames, props.queryModel, renderCallback, formatOptions, measureStats, parentSliceStats, parentColumnNames),
+				);
 
 				{
 					props.tabularView.loading.sorting = true;
@@ -243,7 +284,9 @@ export default {
 				const rowSpanningStart = new Date();
 				props.tabularView.timing.rowSpanning_startedAt = rowSpanningStart;
 				try {
-					if (view.coordinates.length >= 1) {
+					if (view.coordinates.length >= 1 && !isDrillthrough) {
+						// DRILLTHROUGH responses are intentionally heterogeneous (each source row may carry a
+						// different subset of columns), so the first-row sanity check would fire spuriously.
 						const rowIndex = 0;
 						const coordinatesRow = view.coordinates[rowIndex];
 						const measuresRow = view.values[rowIndex];
@@ -347,6 +390,22 @@ export default {
 			// that would re-fire this very watcher, causing the grid to render twice per
 			// edit (and logging `Rendering measureNames=` twice). Shallow reference watching
 			// fires exactly once per server response — which is what the UX needs.
+			// When the wizard is hidden/shown, the grid column transitions between col-9 and col-12. SlickGrid's
+			// viewport size is cached on construction and on explicit resize events; without an explicit
+			// notification it keeps drawing against the old width and the layout looks broken until the user
+			// triggers Submit or hits F5. Watch `wizardHidden` and call `resizeCanvas()` so SlickGrid recomputes
+			// its viewport against the new column width. `nextTick`-style timing is achieved by running on the
+			// reactive change AFTER Vue has applied the col-* class binding.
+			const preferencesStoreForResize = usePreferencesStore();
+			watch(
+				() => preferencesStoreForResize.wizardHidden,
+				() => {
+					if (grid) {
+						grid.resizeCanvas();
+					}
+				},
+			);
+
 			watch(
 				() => props.tabularView.view,
 				(newView, oldView) => {

@@ -22,6 +22,8 @@
  */
 package eu.solven.adhoc.encoding.page;
 
+import org.jspecify.annotations.Nullable;
+
 /**
  * Represents a row in a table.
  *
@@ -39,10 +41,11 @@ public interface ITableRowRead extends IInt2ObjectReader {
 		return size() == 0;
 	}
 
+	@Nullable
 	Object readValue(int columnIndex);
 
 	@Override
-	default Object read(int index) {
+	default @Nullable Object read(int index) {
 		return readValue(index);
 	}
 

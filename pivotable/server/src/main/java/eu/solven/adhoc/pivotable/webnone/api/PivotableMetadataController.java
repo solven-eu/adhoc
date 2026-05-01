@@ -87,6 +87,13 @@ public class PivotableMetadataController {
 							"Force disabling any caching (if any are configured). Toggle-off does not add any cache by itself.")
 					.build());
 
+			queryOptions.add(ImmutableMap.<String, Object>builder()
+					.put(K_NAME, StandardQueryOptions.DRILLTHROUGH.toString())
+					.put(K_DESC,
+							"Return the rows produced by the table without any cube-level measure transformation. "
+									+ "Each table row becomes one entry of the result.")
+					.build());
+
 			for (StandardQueryOptions option : StandardQueryOptions.values()) {
 				if (queryOptions.stream()
 						.noneMatch(m -> MapPathGet.getRequiredString(m, K_NAME).equalsIgnoreCase(option.toString()))) {

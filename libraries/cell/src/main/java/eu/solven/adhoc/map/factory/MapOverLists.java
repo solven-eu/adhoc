@@ -27,6 +27,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.jspecify.annotations.Nullable;
+
 import com.google.common.collect.ImmutableList;
 
 import eu.solven.adhoc.cuboid.slice.SliceHelpers;
@@ -89,7 +91,7 @@ public class MapOverLists extends AbstractAdhocMap {
 			}
 
 			@Override
-			public Object get(int index) {
+			public @Nullable Object get(int index) {
 				int originalIndex = retainedIndexes[index];
 				if (originalIndex == -1) {
 					// retained a not present column

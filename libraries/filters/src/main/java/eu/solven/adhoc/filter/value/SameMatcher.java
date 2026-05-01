@@ -22,6 +22,8 @@
  */
 package eu.solven.adhoc.filter.value;
 
+import org.jspecify.annotations.Nullable;
+
 import eu.solven.adhoc.filter.ColumnFilter;
 import lombok.Builder;
 import lombok.NonNull;
@@ -43,7 +45,7 @@ public class SameMatcher implements IValueMatcher, IColumnToString {
 
 	@Override
 	@SuppressWarnings("PMD.CompareObjectsWithEquals")
-	public boolean match(Object value) {
+	public boolean match(@Nullable Object value) {
 		return operand == value;
 	}
 

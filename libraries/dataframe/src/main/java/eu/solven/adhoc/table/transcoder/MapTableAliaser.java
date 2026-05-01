@@ -25,6 +25,8 @@ package eu.solven.adhoc.table.transcoder;
 import java.util.Map;
 import java.util.Set;
 
+import org.jspecify.annotations.Nullable;
+
 import com.google.common.collect.ImmutableMap;
 
 import lombok.Builder;
@@ -51,7 +53,7 @@ public class MapTableAliaser implements ITableAliaser, IHasAliasedColumns {
 	}
 
 	@Override
-	public String underlying(String queried) {
+	public @Nullable String underlying(String queried) {
 		return aliasToOriginals.get(queried);
 	}
 

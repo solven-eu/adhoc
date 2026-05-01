@@ -24,6 +24,8 @@ package eu.solven.adhoc.measure.combination;
 
 import java.util.List;
 
+import org.jspecify.annotations.Nullable;
+
 import eu.solven.adhoc.data.cell.ProxyValueReceiver;
 import eu.solven.adhoc.data.row.ISlicedRecord;
 import eu.solven.adhoc.data.row.SlicedRecordFromArray;
@@ -54,7 +56,7 @@ public interface ICombination {
 	 * @return the combined result at given slice.
 	 */
 	// BEWARE This default implementation is useful for edge-cases like unit-tests
-	default Object combine(ISliceWithStep slice, List<?> underlyingValues) {
+	default @Nullable Object combine(ISliceWithStep slice, List<?> underlyingValues) {
 		SlicedRecordFromArray slicedRecord = SlicedRecordFromArray.builder().measures(underlyingValues).build();
 
 		ProxyValueReceiver vr = ProxyValueReceiver.builder().build();

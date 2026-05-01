@@ -6,18 +6,18 @@ import { useAdhocStore } from "./store-adhoc.js";
 // https://stackoverflow.com/questions/69053972/adding-bootstrap-5-tooltip-to-vue-3
 import { Tooltip } from "bootstrap";
 
-import AdhocEndpointSchemaRef from "./adhoc-endpoint-schema-ref.js";
+import AdhocEndpointSchemaChip from "./adhoc-endpoint-schema-chip.js";
 
 import AdhocCube from "./adhoc-cube.js";
-import AdhocCubeRef from "./adhoc-cube-ref.js";
+import AdhocCubeChip from "./adhoc-cube-chip.js";
 
 import AdhocLoading from "./adhoc-loading.js";
 
 export default {
 	components: {
-		AdhocEndpointSchemaRef,
+		AdhocEndpointSchemaChip,
 		AdhocCube,
-		AdhocCubeRef,
+		AdhocCubeChip,
 		AdhocLoading,
 	},
 	props: {
@@ -262,7 +262,7 @@ export default {
 							<ul v-else class="list-group">
 								<template v-for="(cube, cubeName) in schema.cubes" :key="cubeName">
 									<li v-if="lowerIncludes(cubeName, cubeFilter)" class="list-group-item d-flex flex-wrap align-items-center gap-2">
-										<AdhocCubeRef :endpointId="endpointId" :cubeId="cubeName" />
+										<AdhocCubeChip :endpointId="endpointId" :cubeId="cubeName" />
 										<span class="badge text-bg-light" v-if="cube.columns &amp;&amp; cube.columns.columnToTypes">
 											{{Object.keys(cube.columns.columnToTypes).length}} cols
 										</span>
@@ -286,9 +286,9 @@ export default {
 
 				<div>
 					Cubes
-					<span v-for="(cube, cubeName) in schema.cubes"> <AdhocCubeRef :endpointId="endpointId" :cubeId="cubeName" />&nbsp; </span>
+					<span v-for="(cube, cubeName) in schema.cubes"> <AdhocCubeChip :endpointId="endpointId" :cubeId="cubeName" />&nbsp; </span>
 				</div>
-				<AdhocEndpointSchemaRef :endpointId="endpointId" />
+				<AdhocEndpointSchemaChip :endpointId="endpointId" />
 			</span>
 		</div>
 	`,

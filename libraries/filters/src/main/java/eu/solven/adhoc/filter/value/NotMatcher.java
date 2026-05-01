@@ -24,6 +24,8 @@ package eu.solven.adhoc.filter.value;
 
 import java.util.Set;
 
+import org.jspecify.annotations.Nullable;
+
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.Value;
@@ -43,7 +45,7 @@ public class NotMatcher implements IValueMatcher, IColumnToString {
 	final IValueMatcher negated;
 
 	@Override
-	public boolean match(Object value) {
+	public boolean match(@Nullable Object value) {
 		return !negated.match(value);
 	}
 

@@ -25,6 +25,7 @@ package eu.solven.adhoc.dataframe.tabular;
 import java.util.Set;
 
 import eu.solven.adhoc.cuboid.slice.ISlice;
+import eu.solven.adhoc.engine.step.ICubeQuery;
 import eu.solven.adhoc.measure.model.IMeasure;
 
 /**

@@ -22,14 +22,17 @@
  */
 package eu.solven.adhoc.encoding.column;
 
+import org.jspecify.annotations.Nullable;
+
 /**
  * Represents a readable column, with random read access.
- * 
+ *
  * @author Benoit Lacelle
  */
 @FunctionalInterface
 public interface IReadableColumn {
 
+	@Nullable
 	Object readValue(int rowIndex);
 
 }

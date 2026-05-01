@@ -78,6 +78,17 @@ export default {
             <span v-if="preferencesStore.hasUnsavedChanges(queryModel)"> * </span>
         </button>
 
+        <!--
+            Teleport the modal to body. This component is rendered inside the floating Submit
+            block (adhoc-query-executor.js), which uses transform: translate(...) for centering.
+            That transform creates a new containing block for fixed-position descendants — the
+            Bootstrap modal would otherwise be sized/positioned relative to the transformed
+            ancestor, producing the symptom "the modal is only partially visible, the screen is
+            greyed out and not operatable". Teleporting to body escapes the containing block so
+            the modal lays out against the viewport as Bootstrap expects. Same fix as
+            adhoc-query-raw-modal.js.
+        -->
+        <Teleport to="body">
         <!-- Modal -->
         <div class="modal fade" id="queryFavorite" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered modal-xl">
@@ -141,5 +152,6 @@ export default {
                 </div>
             </div>
         </div>
+        </Teleport>
     `,
 };

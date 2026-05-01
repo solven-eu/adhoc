@@ -27,6 +27,8 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import org.jspecify.annotations.Nullable;
+
 import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.map.ICoordinateNormalizer;
@@ -72,7 +74,7 @@ public abstract class ASliceFactory implements ISliceFactory, ICoordinateNormali
 	}
 
 	@Override
-	public Object normalizeCoordinate(Object raw) {
+	public @Nullable Object normalizeCoordinate(@Nullable Object raw) {
 		return valueNormalizer.normalizeCoordinate(raw);
 	}
 

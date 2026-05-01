@@ -35,6 +35,8 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.BiConsumer;
 
+import org.jspecify.annotations.Nullable;
+
 import com.google.common.collect.AbstractIterator;
 
 /**
@@ -107,7 +109,7 @@ public class MutablePerfectHashMap<K, V> implements Map<K, V> {
 	}
 
 	@Override
-	public V get(Object key) {
+	public @Nullable V get(Object key) {
 		int idx = hash.indexOf((K) key);
 		if (idx < 0) {
 			return null;
@@ -125,7 +127,7 @@ public class MutablePerfectHashMap<K, V> implements Map<K, V> {
 	}
 
 	@Override
-	public V put(K key, V value) {
+	public @Nullable V put(K key, V value) {
 		Objects.requireNonNull(value, () -> "value is null for key=" + key);
 		int idx = hash.indexOf(key);
 		if (idx >= 0) {
@@ -143,7 +145,7 @@ public class MutablePerfectHashMap<K, V> implements Map<K, V> {
 	}
 
 	@Override
-	public V remove(Object key) {
+	public @Nullable V remove(Object key) {
 		int idx = hash.indexOf((K) key);
 		if (idx < 0) {
 			return null;
@@ -287,7 +289,7 @@ public class MutablePerfectHashMap<K, V> implements Map<K, V> {
 				int index;
 
 				@Override
-				protected V computeNext() {
+				protected @Nullable V computeNext() {
 					if (index < keyList.size()) {
 						V v = (V) valuesArr[index];
 						index++;
@@ -311,7 +313,7 @@ public class MutablePerfectHashMap<K, V> implements Map<K, V> {
 				int index;
 
 				@Override
-				protected Map.Entry<K, V> computeNext() {
+				protected Map.@Nullable Entry<K, V> computeNext() {
 					if (index < keyList.size()) {
 						Map.Entry<K, V> entry = Map.entry(keyList.get(index), (V) valuesArr[index]);
 						index++;

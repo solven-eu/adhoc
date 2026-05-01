@@ -3,13 +3,13 @@ import { mapState } from "pinia";
 import { useAdhocStore } from "./store-adhoc.js";
 import { usePreferencesStore } from "./store-preferences.js";
 
-import LoginRef from "./login-ref.js";
+import LoginChip from "./login-chip.js";
 
 import AdhocEndpoint from "./adhoc-endpoint.js";
 
 export default {
 	components: {
-		LoginRef,
+		LoginChip,
 		AdhocEndpoint,
 	},
 	computed: {
@@ -67,7 +67,7 @@ export default {
 		<div v-else-if="!isLoggedIn">
 			Needs to be logged-in to fetch endpoints.
 			<br />
-			<LoginRef />
+			<LoginChip />
 		</div>
 		<div v-else class="container">
 			<div v-if="endpoints.length === 0">

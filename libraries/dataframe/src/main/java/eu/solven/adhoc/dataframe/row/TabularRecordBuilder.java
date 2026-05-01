@@ -45,12 +45,12 @@ public class TabularRecordBuilder {
 	final PerfectHashMap.Builder<Object> aggregates;
 	final IMapBuilderPreKeys sliceBuilder;
 
-	protected Object cleanAggregateValue(Object value) {
+	protected @Nullable Object cleanAggregateValue(@Nullable Object value) {
 		// https://stackoverflow.com/questions/79692856/jooq-dynamic-aggregated-types
 		return AdhocPrimitiveHelpers.normalizeValue(value);
 	}
 
-	public void appendAggregate(Object value) {
+	public void appendAggregate(@Nullable Object value) {
 		aggregates.append(cleanAggregateValue(value));
 	}
 

@@ -23,6 +23,9 @@
 package eu.solven.adhoc.filter.value;
 
 import java.util.Comparator;
+import java.util.Objects;
+
+import org.jspecify.annotations.Nullable;
 
 import eu.solven.adhoc.collection.ComparableElseClassComparator;
 import eu.solven.adhoc.filter.ColumnFilter;
@@ -58,7 +61,9 @@ public final class ComparingMatcher implements IValueMatcher, IColumnToString {
 	@Jacksonized
 	@Deprecated(since = "public only to workaround https://github.com/FasterXML/jackson-databind/issues/5704")
 	public ComparingMatcher(Object operand, boolean greaterThan, boolean matchIfEqual, boolean matchIfNull) {
-		this.operand = AdhocPrimitiveHelpers.normalizeValue(operand);
+		// Normalisation may return null only for null inputs; require non-null to honour the @NonNull operand contract.
+		this.operand =
+				Objects.requireNonNull(AdhocPrimitiveHelpers.normalizeValue(operand), "operand must not be null");
 		this.greaterThan = greaterThan;
 		this.matchIfEqual = matchIfEqual;
 		this.matchIfNull = matchIfNull;
@@ -76,14 +81,15 @@ public final class ComparingMatcher implements IValueMatcher, IColumnToString {
 	}
 
 	@Override
-	public boolean match(Object value) {
+	public boolean match(@Nullable Object value) {
 		if (value == null) {
 			return matchIfNull;
 		} else if (matchIfEqual && value.equals(operand)) {
 			return true;
 		}
 
-		Object normalizedValue = AdhocPrimitiveHelpers.normalizeValue(value);
+		// `value` is non-null past the early return; normalize never returns null for a non-null input.
+		Object normalizedValue = Objects.requireNonNull(AdhocPrimitiveHelpers.normalizeValue(value));
 
 		if (normalizedValue.getClass() != operand.getClass()) {
 			return false;
@@ -127,9 +133,11 @@ public final class ComparingMatcher implements IValueMatcher, IColumnToString {
 
 	/**
 	 * Lombok @Builder
-	 * 
+	 *
 	 * @author Benoit Lacelle
 	 */
+	// Lombok @Builder fields are populated via chained setters; NullAway can't see the cross-method init.
+	@SuppressWarnings("NullAway.Init")
 	public static class ComparingMatcherBuilder {
 		@SuppressWarnings("PMD.AvoidFieldNameMatchingMethodName")
 		boolean greaterThan;

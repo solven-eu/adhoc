@@ -73,8 +73,8 @@ public final class SequencedSetLikeList extends ForwardingSet<String>
 
 	final int[] reversedOrdering;
 
-	// views
-	transient List<String> list;
+	// views — lazily computed cache populated on first access.
+	transient @Nullable List<String> list;
 
 	@Builder
 	private SequencedSetLikeList(NavigableSetLikeList set, int... reordering) {
@@ -127,7 +127,7 @@ public final class SequencedSetLikeList extends ForwardingSet<String>
 	}
 
 	@Override
-	public boolean contains(Object object) {
+	public boolean contains(@Nullable Object object) {
 		return set.keysAsHashSet.get().contains(object);
 	}
 

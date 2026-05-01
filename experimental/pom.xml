@@ -4,7 +4,7 @@
 	<parent>
 		<groupId>eu.solven.adhoc</groupId>
 		<artifactId>aggregator-adhoc</artifactId>
-		<version>0.0.19-SNAPSHOT</version>
+		<version>0.1.0-SNAPSHOT</version>
 	</parent>
 
 	<artifactId>adhoc-experimental</artifactId>
@@ -200,6 +200,14 @@
 			<classifier>tests</classifier>
 			<scope>test</scope>
 		</dependency>
+		<dependency>
+			<!-- StandaloneTableQueryPod -->
+			<groupId>eu.solven.adhoc</groupId>
+			<artifactId>adhoc-table</artifactId>
+			<version>${project.version}</version>
+			<classifier>tests</classifier>
+			<scope>test</scope>
+		</dependency>
 
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -273,13 +281,6 @@
 			<scope>test</scope>
 		</dependency>
 
-		<dependency>
-			<groupId>eu.solven.adhoc</groupId>
-			<artifactId>adhoc</artifactId>
-			<version>${project.version}</version>
-			<classifier>tests</classifier>
-			<scope>test</scope>
-		</dependency>
 		<dependency>
 			<groupId>eu.solven.adhoc</groupId>
 			<artifactId>adhoc-measures</artifactId>

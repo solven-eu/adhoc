@@ -38,8 +38,8 @@ import com.google.common.util.concurrent.MoreExecutors;
 import eu.solven.adhoc.beta.schema.IAdhocSchema;
 import eu.solven.adhoc.beta.schema.TargetedCubeQuery;
 import eu.solven.adhoc.dataframe.tabular.ITabularView;
+import eu.solven.adhoc.engine.query.CubeQuery;
 import eu.solven.adhoc.pivotable.query.PivotableAsynchronousQueriesManager.StateAndView;
-import eu.solven.adhoc.query.cube.CubeQuery;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j

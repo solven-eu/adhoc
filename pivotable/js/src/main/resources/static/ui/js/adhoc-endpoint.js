@@ -10,11 +10,11 @@ import AdhocEndpointHeader from "./adhoc-endpoint-header.js";
 
 import AdhocCubes from "./adhoc-cubes.js";
 
-import AdhocEndpointSchemaRef from "./adhoc-endpoint-schema-ref.js";
+import AdhocEndpointSchemaChip from "./adhoc-endpoint-schema-chip.js";
 import AdhocEndpointSchema from "./adhoc-endpoint-schema.js";
 
 import AdhocCube from "./adhoc-cube.js";
-import AdhocCubeRef from "./adhoc-cube-ref.js";
+import AdhocCubeChip from "./adhoc-cube-chip.js";
 
 import AdhocLoading from "./adhoc-loading.js";
 
@@ -23,9 +23,9 @@ export default {
 		AdhocEndpointHeader,
 		AdhocCubes,
 		AdhocEndpointSchema,
-		AdhocEndpointSchemaRef,
+		AdhocEndpointSchemaChip,
 		AdhocCube,
-		AdhocCubeRef,
+		AdhocCubeChip,
 		AdhocLoading,
 	},
 	props: {

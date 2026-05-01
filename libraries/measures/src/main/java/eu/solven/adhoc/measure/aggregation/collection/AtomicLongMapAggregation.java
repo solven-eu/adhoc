@@ -22,6 +22,8 @@
  */
 package eu.solven.adhoc.measure.aggregation.collection;
 
+import org.jspecify.annotations.Nullable;
+
 import com.google.common.util.concurrent.AtomicLongMap;
 
 import eu.solven.adhoc.measure.aggregation.IAggregation;
@@ -36,7 +38,7 @@ public class AtomicLongMapAggregation implements IAggregation {
 	public static final String KEY = "ATOMIC_LONG_MAP";
 
 	@Override
-	public AtomicLongMap<?> aggregate(Object l, Object r) {
+	public @Nullable AtomicLongMap<?> aggregate(@Nullable Object l, @Nullable Object r) {
 		AtomicLongMap<?> lAsMap = asMap(l);
 		AtomicLongMap<?> rAsMap = asMap(r);
 
@@ -50,11 +52,12 @@ public class AtomicLongMapAggregation implements IAggregation {
 		return merged;
 	}
 
-	protected AtomicLongMap<?> asMap(Object o) {
+	protected @Nullable AtomicLongMap<?> asMap(@Nullable Object o) {
 		return (AtomicLongMap<?>) o;
 	}
 
-	public static AtomicLongMap<?> aggregateMaps(AtomicLongMap<?> lAsMap, AtomicLongMap<?> rAsMap) {
+	public static @Nullable AtomicLongMap<?> aggregateMaps(@Nullable AtomicLongMap<?> lAsMap,
+			@Nullable AtomicLongMap<?> rAsMap) {
 		if (lAsMap == null) {
 			return rAsMap;
 		} else if (rAsMap == null) {

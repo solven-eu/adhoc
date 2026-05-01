@@ -22,6 +22,8 @@
  */
 package eu.solven.adhoc.dataframe.column.merge;
 
+import org.jspecify.annotations.Nullable;
+
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.aggregation.IDoubleAggregation;
 import eu.solven.adhoc.measure.aggregation.ILongAggregation;
@@ -92,7 +94,7 @@ public final class MergingColumnValueReceiver<T> implements IValueReceiver {
 			}
 
 			@Override
-			public void onObject(Object existingAggregate) {
+			public void onObject(@Nullable Object existingAggregate) {
 				if (existingAggregate == null) {
 					onNull();
 				} else {
@@ -130,7 +132,7 @@ public final class MergingColumnValueReceiver<T> implements IValueReceiver {
 			}
 
 			@Override
-			public void onObject(Object existingAggregate) {
+			public void onObject(@Nullable Object existingAggregate) {
 				Object newAggregate = aggregation.aggregate(existingAggregate, v);
 
 				boolean clearKey = existingAggregate != null;
@@ -140,7 +142,7 @@ public final class MergingColumnValueReceiver<T> implements IValueReceiver {
 	}
 
 	@Override
-	public void onObject(Object v) {
+	public void onObject(@Nullable Object v) {
 		aggregation.aggregate(existingAggregate, vc -> vc.onObject(v)).acceptReceiver(putter.unsafePut(key, true));
 	}
 }

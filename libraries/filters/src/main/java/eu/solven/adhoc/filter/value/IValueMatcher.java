@@ -26,6 +26,8 @@ import java.util.Collection;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
+import org.jspecify.annotations.Nullable;
+
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
@@ -64,16 +66,16 @@ public interface IValueMatcher {
 	 *            may be null
 	 * @return true if the value is matched
 	 */
-	boolean match(Object value);
+	boolean match(@Nullable Object value);
 
 	/**
-	 * 
+	 *
 	 * @param matching
 	 *            may be null, a {@link Collection}, a {@link IValueMatcher}, or any other value for a
 	 *            {@link EqualsMatcher}.
 	 * @return
 	 */
-	static IValueMatcher matching(Object matching) {
+	static IValueMatcher matching(@Nullable Object matching) {
 		if (matching == null || NullMatcher.NULL_HOLDER.equals(matching)) {
 			return NullMatcher.matchNull();
 		} else if (matching instanceof IValueMatcher vm) {
