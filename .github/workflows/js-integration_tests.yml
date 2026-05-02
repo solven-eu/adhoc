@@ -45,7 +45,7 @@ jobs:
     - name: Install Adhoc Server [${{ matrix.server-variant }}]
       # `install` so that each module is available in local repository, as later mvn command will not be executed on the root
       run: mvn install -Pfast -pl ${{ matrix.maven-module }} -am
-    - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+    - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
       with:
         node-version: lts/*
     - name: Install NPM dependencies
