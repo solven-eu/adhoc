@@ -59,4 +59,6 @@ settings.local.json
 
 # Claude Code agent worktrees (temporary isolated repo copies, not source)
 .claude/worktrees/
-.playwright-mcp
+
+# Playwright MCP local artifacts (console logs + page snapshots)
+.playwright-mcp/
