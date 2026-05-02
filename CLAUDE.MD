@@ -152,6 +152,26 @@ New executor jobs are proposed monthly by the Discovery Agent (see `.claude/disc
 
 ---
 
+## Updating a JS dependency (Pivotable SPA)
+
+JavaScript libraries served to the SPA are wired through **three distinct layers** that MUST all be updated together. Renovate (or any manual bump) typically only touches the WebJar version in `pivotable/js/pom.xml`; the other layers do **not** auto-update and a partial update silently breaks one of the four loading modes (webjars / cdn × min / dev). Before declaring a JS-dep bump done, walk through every layer:
+
+1. **WebJar version (`pivotable/js/pom.xml`)** — the `<version>` of the `org.webjars[.npm]:<artifact>` dependency. This is what Spring Boot serves under `/webjars/<artifact>/<version>/...`.
+2. **All four importmaps under `pivotable/js/src/main/resources/static/ui/`** — `importmap-webjars.json`, `importmap-webjars-min.json`, `importmap-cdn.json`, `importmap-cdn-min.json`. The version segment of every URL referencing the bumped library MUST match the pom.xml version. The unit test `unit-tests/index-html-default-mode.spec.js` (`cdn importmap mirrors the webjars importmap — same keys, same versions` and `min importmaps carry the same keys and versions as their full-build counterparts`) enforces alignment between the four files but does **not** check alignment with `pom.xml`.
+3. **Direct `<script>` / `<link>` tags in `pivotable/js/src/main/resources/static/index.html`** — some libraries (bootstrap CSS, bootstrap-icons, slickgrid CSS) are loaded as stylesheets *outside* the importmap via the `STYLESHEETS` table near the top of `index.html`. Each entry has hardcoded `cdn`, `cdnMin`, `webjars`, `webjarsMin` URLs that embed the version. These MUST be bumped in the same change.
+
+**Sanity-check after a bump:**
+
+```bash
+cd pivotable/js && npx vitest run unit-tests/index-html-default-mode.spec.js
+```
+
+This verifies the four importmaps stay aligned and every webjars URL embeds a version segment.
+
+**If the library is unused** (declared in `pom.xml` but referenced by no importmap, no script tag, no JS import): a Renovate bump has no SPA-side counterpart to update — the bump is harmless but pointless. Flag it to the user; the right follow-up is usually to drop the dead `pom.xml` dependency rather than to invent an importmap entry.
+
+---
+
 ## UX rules (Pivotable front-end)
 
 - **Always surface asynchronous activity.** Whenever the Vue front-end performs an operation that the user is waiting on (HTTP request, query execution, login provider discovery, token refresh, export, etc.) the UI MUST make the in-flight state visible. The user should never have to guess whether something is happening. At minimum:
