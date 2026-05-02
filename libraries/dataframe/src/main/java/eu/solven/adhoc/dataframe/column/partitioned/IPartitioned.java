@@ -62,12 +62,12 @@ public interface IPartitioned<P> {
 		return getPartition(PartitioningHelpers.getPartitionIndex(o, getNbPartitions()));
 	}
 
-	default <O> List<O> map(Function<P, O> function) {
-		return IntStream.range(0, getNbPartitions()).mapToObj(this::getPartition).map(function).toList();
-	}
+	// default <O> List<O> mapPartitions(Function<? super P, O> function) {
+	// return IntStream.range(0, getNbPartitions()).mapToObj(this::getPartition).map(function).toList();
+	// }
 
 	// Always parallel: assume parallelization given we are partitioned
-	default <O> List<O> map(ExecutorService es, Function<P, O> function) {
+	default <O> List<O> map(ExecutorService es, Function<? super P, O> function) {
 		Future<List<O>> future = es.<List<O>>submit(() -> {
 			return IntStream.range(0, getNbPartitions()).parallel().mapToObj(this::getPartition).map(function).toList();
 		});

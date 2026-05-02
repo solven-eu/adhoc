@@ -1,17 +1,126 @@
 This document is intended for Adhoc developers and users.
 
+It covers the core query engine and shared libraries. Pivotable-specific entries (the
+SPA, the Pivotable backend, the dev stack, login flow, asset loading) live in
+[pivotable/CHANGES.MD](pivotable/CHANGES.MD).
+
 We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 
+
+## [0.1.0]
+
+Bump to 0.1.0 to mark the move to JDK 25 (still 0.x — Adhoc is not yet API-stable).
+
+### Changed
+- Aggregator restructuring: the `adhoc` and `adhoc-table` Maven modules are now nested under a new `engine/` aggregator pom (`adhoc-engine`). The `adhoc-table` folder has been renamed `engine/table/`. Artifact coordinates (`eu.solven.adhoc:adhoc`, `eu.solven.adhoc:adhoc-table`) are unchanged; only the source-tree layout and the project version are affected.
+- `adhoc-model`: every package now declares `@NullMarked` (JSpecify) via `package-info.java` — parameters, return types and fields are non-null by default; explicit `@Nullable` opt-outs are required for legitimately-nullable references.
+- NullAway flow-sensitive nullness analysis is now wired into the `errorprone` profile (opt-in via `-Perrorprone`). It runs as an Error Prone plugin in `JSpecifyMode=true` with `OnlyNullMarked=true`, so only packages annotated with `@NullMarked` are checked — the rest of the codebase stays silent until each package opts in. Severity is `ERROR`; CI's `static-analysis` workflow (which already passes `-Perrorprone`) will start failing on any unsafe deref / unsafe pass / wrong return inside a marked package. NullAway 0.13.4 (compatible with Error Prone 2.49+).
+- `adhoc-table` (engine/table): every package now declares `@NullMarked` (JSpecify) and the module passes NullAway clean. Notable contract changes:
+  - `IIsCancellable#getCancellationDate()` returns `@Nullable OffsetDateTime` — matches the existing `return null` paths in `StandaloneTableQueryPod` and `QueryPod` ("no scheduled cancellation").
+  - `ICustomMarkerCacheStrategy#restrictToCacheImpact(Object)` accepts and returns `@Nullable Object`. The `customMarker` field on `TableQuery`, `TableQueryV2`, `TableQueryV3`, `TableQueryV4` is `@Nullable` (matches `@Default Object customMarker = null`); cascaded through `CachingTableWrapper.makeCacheKey` / `mergeAggregates` and `TableStepsGrouper.contextOnly`.
+  - `JooqTableQueryFactory.toSqlAggregatedColumn`, `SliceToJooqCondition.onCustomCondition`, `DuckDBHelper.getCoordinates(table, column, …)` return `@Nullable` (matches existing `return null` for the empty-aggregation, no-translation, and missing-column cases).
+  - `PrunedJoinsJooqTableSupplier.columnToAlias` / `fullTableCache` typed `@Nullable` to match the lazy-init / invalidate-to-null patterns.
+  - Lombok `@Builder` cases (`ColumnWithCalculatedCoordinates`, `TableQueryFactory`, `TableQueryV4`, `JooqTableQueryFactory` (SuperBuilder), `JooqTableWrapperParameters`, `StandardDSLSupplier`, `JooqJoinBuilder`) carry `@SuppressWarnings("NullAway.Init")` on the inner builder class (or class-level for SuperBuilder/manual variants).
+  - `engine/table/pom.xml` jacoco thresholds were lowered from 0.70/0.78 to 0.50/0.55 to reflect the v19 module split (most tests still live in `engine/adhoc`).
+- `adhoc-dataframe`: every package now declares `@NullMarked` (JSpecify) and the module passes NullAway clean. Notable contract changes:
+  - `ITableAliaser#underlying(String)` was already `@Nullable` — every implementation (`IdentityImplicitAliaser`, `MapTableAliaser`, `MapTableStrictAliaser`, `RecursiveAliaser`, `CompositeTableAliaser`) now matches.
+  - `ITabularRecord#getAggregate(String)` returns `@Nullable Object`; cascaded through `TabularRecordOverMaps`, `HideAggregatorsTabularRecord`, `TabularGroupByRecordOverMap`.
+  - `AAggregatingColumns#getColumn(String)` and the `IAliasedAggregator` overload now return `@Nullable IMultitypeColumn<K>` — matches the existing `aggregatorToAggregates.get(...)` lookup pattern in `AggregatingColumns` / `AggregatingColumnsDistinct`.
+  - `AdhocPrimitiveHelpers.asLong/asDouble`/`normalizeValueAsProvider` accept `@Nullable Object` (with explicit `requireNonNull` for the as-primitive variants — preserves the prior NPE-on-null contract while letting callers flow nullable values through).
+  - `PerfectHashMap.Builder#append(Object)` accepts `@Nullable Object` (the implementation already mapped null to the ABSENT sentinel).
+  - `ChunkedList`/`ChunkedDoubleList`/`ChunkedLongList`: `head`/`tail` arrays are typed `@Nullable` to match the lazy-init pattern; `readAt`/`writeAt`/`compact` narrow with `Objects.requireNonNull` against the "callers pass index < size" invariant.
+  - `IValueReceiver#onObject` overrides aligned in 12 dataframe-side files (`MultitypeArray`, `MultitypeColumnHelpers`, `Multitype{Hash,Navigable,NavigableElseHash}{,Int}Column`, `CleaningValueReceiver`, `Merging{Column,IntColumn,Navigable}ValueReceiver`, `AMultitypeNavigableElseHashColumn`).
+  - Lombok `@Builder` cases (`MapTableAliaser`, `TabularRecordOverMaps`) carry `@SuppressWarnings("NullAway.Init")` on the inner builder class.
+- `adhoc-measures`: every package now declares `@NullMarked` (JSpecify) and the module passes NullAway clean. Notable contract changes:
+  - `IAggregation#aggregate(Object, Object)` accepts and returns `@Nullable Object` — every implementation aligns (`SumAggregation`, `AvgAggregation`, `CountAggregation`, `MaxAggregation`, `RankAggregation`, `ProductAggregation`, `CoalesceAggregation`, `EmptyAggregation`, `ExpressionAggregation`, `LambdaAggregation`, `MapAggregation`, `UnionAggregation`, `UnionListAggregation`, `UnionSetAggregation`, `AtomicLongMapAggregation`); matches the existing contract that any input or aggregate may legitimately be `null`.
+  - `ICombination#combine(ISliceWithStep, List<?>)` returns `@Nullable Object` (matches existing `return null` paths in `CoalesceCombination`, `DivideCombination`, `EvaluatedExpressionCombination`, `ReversePolishCombination`, `SubstractionCombination`).
+  - `IAggregationCarrier.IHasCarriers#wrap(Object)` returns `@Nullable IAggregationCarrier` (matches `CountAggregation.wrap` returning null on a 0-count, and `RankAggregation.wrap` returning null on null input).
+  - `AdhocMapHelpers.aggregateMaps(Map<?,?>, Map<?,?>)` accepts and returns `@Nullable` (cell module — moved from non-null to match real call-site behaviour).
+  - `IAppendableColumn#append(Object)` and `ITableRowWrite#add(String, Object)` accept `@Nullable Object` value (encoding module — matches actual call sites which already pass null). Cascaded through every column implementation.
+  - `IInt2ObjectReader` overrides in `MapOverIntFunction` (cell) declare `@Nullable Object read(int)` to match the interface; the wrapping `getSequencedValueRaw` is enforced non-null with `Objects.requireNonNull` (callers rely on the NULL_HOLDER sentinel rather than real null references).
+  - `AbstractAdhocMap.getSequencedValue` / `getSortedValue` / `entrySet()`-iterator value: `@Nullable Object` returns to match the `unwrapNull(NULL_HOLDER) → null` contract.
+  - Lombok `@Builder` cases (`UnsafeMeasureForest`, `Aggregator`, `Combinator`, `Shiftor`, `Unfiltrator`) carry `@SuppressWarnings("NullAway.Init")` on the inner manual builder class.
+- `adhoc-encoding` and `adhoc-filters`: every package now declares `@NullMarked` (JSpecify) and both modules pass NullAway clean. Notable contract changes:
+  - `IInt2ObjectReader#read(int)`, `ITableRowRead#readValue(int)` and `IReadableColumn#readValue(int)` (and every override) declare `@Nullable Object` returns to match the documented "returns null on miss / on absent value" semantics. Affected impls: `TableRowHelpers.EMPTY_ROW_READ`, `AppendableTablePage.TablePageRowRead`, `ObjectArray*Column`, `IntegerArrayColumn`, `LongArrayColumn`, `Dictionarized*Column`, `FsstReadableColumn`, `DynamicReadableColumn`.
+  - `IAppendableTablePage#pollNextRow()` was already `@Nullable`; the override on `AppendableTablePage` now matches.
+  - `PerfectHashMap` and `MutablePerfectHashMap`: `get`, `put`, `remove` declare `@Nullable V` returns to match `Map<K, V>#get/put/remove` semantics; the inner-iterator `computeNext()` overrides also `@Nullable` to match Guava's `AbstractIterator` `endOfData()`.
+  - `AppendableTablePage.columnsWrite` is now `AtomicReference<@Nullable List<IAppendableColumn>>` (the field is intentionally nulled at freeze time); call sites narrow with `Objects.requireNonNull` (write phase) or already null-check (read phase).
+  - `IValueMatcher#match(Object)` and every implementation (`AndMatcher`, `OrMatcher`, `NotMatcher`, `EqualsMatcher` family, `InMatcher`, `LikeMatcher`, `RegexMatcher`, `SameMatcher`, `String*Matcher`, `NullMatcher`, `ComparingMatcher`) now accept `@Nullable Object` — matches the existing Javadoc ("value may be null") and the way callers (notably `ColumnFilter.toString`) actually use it.
+  - `EqualsMatcher.matchEq(Object)` and `EqualsMatcher.createWrapped(Object)` declare `@Nullable Object` parameter.
+  - `NullMatcher.unwrapNull(Object)` declares `@Nullable Object` on both parameter and return — matches the unwrap-the-NULL_HOLDER-back-to-null contract.
+  - `AdhocPrimitiveHelpers.isLongLike(Object)` / `isDoubleLike(Object)` accept `@Nullable Object` (their `instanceof` checks already return `false` on null).
+  - Lombok `@Builder` cases (`ColumnFilter`, `ComparingMatcher`, `CollectionWithCustomIndexOf`) declare `@SuppressWarnings("NullAway.Init")` on the inner builder class.
+  - `MaskedAdhocMap.retainAll`, `ColumnPacker.packColumnFilters`, `FilterOptimizer.removeLaxerOrStricter`, `KernelFactorizer` factor out two-keys-always-populated `partitioningBy` results into `Objects.requireNonNull` locals — turns the implicit "Collectors.partitioningBy populates both true and false" invariant into something NullAway can verify.
+- `adhoc-cell`: every package now declares `@NullMarked` (JSpecify) and the module passes NullAway clean. Notable contract changes:
+  - `ICoordinateNormalizer#normalizeCoordinate(Object)` accepts and returns `@Nullable` (the standard implementation already maps `null` to `NULL_HOLDER`, so the runtime behaviour is unchanged). `ASliceFactory#normalizeCoordinate` and `StandardCoordinateNormalizer#normalizeCoordinate` align.
+  - `IMapBuilderPreKeys#append(Object)` now accepts `@Nullable` (its callers — `Slice`, the `optional Iterable<?>` overload, …  — already passed null on purpose). Implementations in `ColumnSliceFactory.MapBuilderPreKeys` and `RowSliceFactory.MapBuilderPreKeys` align.
+  - `Slice#getGroupBy(String)` and `MaskedAdhocMap#get(Object)` / `AbstractAdhocMap#get(Object)` declare `@Nullable Object` returns to match `Map#get` and `ITabularGroupBySlice#getGroupBy` semantics.
+  - `MaskedAdhocMap#retainAll`: replaced two pairs of `partitionedColumns.get(true)` / `.get(false)` with locals narrowed via `Objects.requireNonNull` (the partitioning collector always populates both keys; the get-then-deref pattern was hiding that invariant from the type system).
+  - Lazy caches `AbstractAdhocMap.entrySet`, `SequencedSetLikeList.list` are now declared `@Nullable` to match their lazy-init semantics.
+  - Lombok `@Builder` cases (`CubeQueryStep`, `AdhocLogEvent`, `ColumnSliceFactory.MapBuilderPreKeys`) carry `@SuppressWarnings("NullAway.Init")` on the (manual or implicit) inner builder class so NullAway tolerates the chained-setter init pattern it can't analyze.
+- `adhoc-model` now passes NullAway clean. Notable contract changes surfaced by the analysis:
+  - `IGroupBy#getColumn(String)` now throws `NoSuchElementException` when no column with that name is part of the groupBy (previously returned `null` silently, which was misleading and incompatible with `@NullMarked`).
+  - `IValueReceiver#onObject(Object)`, `IThrowingValueReceiver#onObjectMayThrow(Object)`, `IValueProvider#getValue(IValueProvider)`, `IValueProvider#setValue(Object)`, `AdhocPrimitiveHelpers#normalizeValue(Object)`, `AdhocDebug#toString(Object)` and `IValueProviderTestHelpers#getObject(IValueProvider)` are now declared `@Nullable` on the parameter (and/or return) — matches what the docstrings already promised and what call-sites already relied upon.
+  - `CacheEntry<K,V>` (`util.cache`) now exposes its `key`/`value` fields and constructor parameters as `@Nullable` — the sentinel "first call always misses" entries pre-existed in the constructors of `LastLookupCache`, `LastLookupCache1`, `LastLookupCache1Volatile` and `LastLookupCache1Scoped`, and the `getByRef(...)` returns are now `@Nullable V` to match the documented "returns null on miss" contract.
+- `adhoc` (engine/adhoc): every package now declares `@NullMarked` (JSpecify) and the module passes NullAway clean. Notable contract changes:
+  - `CubeQuery#customMarker`, `MeasurelessQuery#customMarker`, `IFilterEditor.FilterEditorContext#customMarker` and `IHasCustomMarker#getCustomMarker()` (model) are now `@Nullable Object` — matches the existing `@Default Object customMarker = null` and the existing `return null` paths.
+  - `AdhocSubQuery#getCustomMarker()` and `ICustomMarkerTranscoder#transcodeCustomMarker(ICubeWrapper, Object)` accept and return `@Nullable Object`. `CubeWrapperTypeTranscoder#toTable(String, Object)` returns `@Nullable Object` (transcoder is allowed to map a known coordinate to `null`).
+  - `IIsCancellable#getCancellationDate()` (cell) returns `@Nullable OffsetDateTime` (the `AtomicReference` stays `null` until cancellation). `IQueryStepCache#pushValue(...)` accepts a `@Nullable SizeAndDuration` (per-step duration is optional).
+  - `IColumnValueTranscoder#transcodeValue(String, Object)`, `ICustomTypeManagerSimple#toTable(String, Object)` and `ICustomTypeManager#fromTable(String, Object)` (dataframe) accept and return `@Nullable Object` — every implementation aligns (`StandardCustomTypeManager`, `ColumnsManager`'s inner transcoder, `EventAggregation`).
+  - `ACustomMarkerCombination#combine(...)` and `ACustomMarkerCombination#getDefault()` return `@Nullable Object`. `ShiftorQueryStep#shift(ISliceFilter, Object)` accepts a `@Nullable` customMarker.
+  - `DuplicatingDecomposition#getDefaultCoordinates(String)` and the `JoinDecomposition#toStringList(Object, ...)`/`ManyToMany{1D,ND}Decomposition` group-callbacks align with `IValueMatcher#match`'s `@Nullable` parameter — call sites narrow with `Objects.requireNonNull` against the "null already filtered out" invariant.
+  - `QueryStepsDagBuilder.pollLeftover()` returns `@Nullable CubeQueryStep`; `MeasureForests#getForest(String)` returns `@Nullable IMeasureForest` — call sites narrow with `Objects.requireNonNull` against the explicit `hasLeftovers()` / known-name preconditions.
+  - Multiple `Map.get`-with-known-key sites in `AdhocSchema` (nameToCube/nameToTable lookups), `CubeWrapperTypeTranscoder` (columnToTypes), `CompositeCubesTableWrapper` (nameToCube — 3 sites) and `DuplicatingDecomposition.getCoordinatesAlongColumn` (columnToCoordinates) are narrowed with `Objects.requireNonNull` so NullAway can verify the contract.
+  - `FiltratorQueryStep` and `QueryStepsDagBuilder` resolve the optional `IFilterOptimizer` via `Objects.requireNonNullElse(TransverseCacheHelper.getFilterOptimizer(...), AdhocFilterUnsafe.filterOptimizer)` instead of relying on `FilterBuilder.optimize(null)`. `AdhocJackson` and `WorldCupPlayersSchema` narrow reflection / `ClassPathResource#getFilename()` results with `Objects.requireNonNull` (descriptive messages).
+  - Lombok `@Builder` cases (`CubeQuery`, `CubeWrapper`, `QueryPod`, `MeasurelessQuery`, `IFilterEditor.FilterEditorContext`) carry `@SuppressWarnings("NullAway.Init")` on the inner builder class. `CubeQueryBuilder.customMarker(@Nullable Object)` carries `@SuppressWarnings("NullAway")` because Lombok's generated `customMarker$value` builder field doesn't inherit the `@Nullable` annotation from the source field.
 
 ## [0.0.19]
 
 ### Added
-- `StandardQueryOptions.PARTITIONED`: new query option that splits the output column into N hash partitions (one per available core) during aggregation. Each partition is an independent `PartitionedMergeableColumn`, reducing per-partition map size and enabling future parallel reduction across cores.
-
-### Fixed
-- `FilterHelpers.filterComparator()`: now correctly returns 0 for semantically equivalent filters with different operand order (e.g., `AND(a,b)` vs `AND(b,a)`). Type ranking: AND > OR > NOT > COLUMN.
+- `StandardQueryOptions.DRILLTHROUGH`: now production-ready (un-deprecated). All `TableQueryV4`s of the query DAG are merged into a single covering query (new `eu.solven.adhoc.engine.tabular.optimizer.TableQueryV4Merger`: OR-combined WHERE filter, non-ambiguous union groupBy, deduplicated and re-aliased aggregator union — same-name aggregators with distinct per-aggregator `FILTER`s become `k1`, `k1_1`, …). The merged query is executed by a dedicated `TableQueryEngine#executeDrillthrough` path that streams every table row directly into a `ListMapEntryBasedTabularViewDrillThrough` — one entry per source row, with the merged groupBy as `coordinates` and the per-aggregator (aliased) values as `values`, bypassing per-slice aggregation and any cube-level measure transformation. A `SKIPPED_CELL = "$adhoc.drillthrough.skipped_cell"` constant is reserved for future heterogeneous schemas (currently the merged query produces a uniform schema). Pivotable: the option is surfaced in the wizard's options panel and the per-cell modal gains a "DrillThrough this cell" button that pins the row's coordinates as filters, enables the option and asks the user to Submit.
 
 ### Changed
+- `ForestAsMermaidDag` (new `eu.solven.adhoc.measure.mermaid` package in the `experimental` module): Mermaid-flowchart counterpart of `ForestAsGraphvizDag`. Renders an `IMeasureForest` (or a `MeasureForests`, using one `subgraph` block per forest) as `flowchart LR` text, using the same per-class shape/color conventions as the Graphviz sibling and as the interactive Pivotable measure-graph modal (`adhoc-measures-dag.js`). Supports a `highlightedMeasures` builder option (thick red border). Intended for docs and for previewing programmatically built forests — the output can be pasted at https://mermaid.live or rendered inline by any Mermaid-capable Markdown viewer.
+- `eu.solven.adhoc.measure.ThrowingCombination`: promoted from `libraries/measures` test scope to main scope so downstream projects (notably Pivotable's `simple` cube) can register it to exercise error-management paths. Behaviour unchanged — still throws `ThrowingCombinationException("Throwing on slice=…")` on every `combine` call. Existing in-module tests (`TestTransformator_Combinator_Exception`, `TestTransformator_Partitionor_ExceptionAsMeasure`, `TestCubeQueryEngine`) keep working unmodified.
+
+### Fixed
+- `TableQueryEngine#suppressGeneratedColumns`: when a query groups by a column that is both (a) produced by an `IColumnGenerator` (e.g. the `scenarioIndex` column of `ExampleVaRDecomposition`) AND (b) carries a `withStar`/`ColumnWithCalculatedCoordinates` grandTotal, the engine used to suppress BOTH the plain `ReferencedColumn` branch AND the synthetic `FunctionCalculatedColumn` branch — collapsing them to the same `grandTotal` table query and then restoring the same `COORDINATE_GENERATED="generated"` coordinate for both. The two branches then emitted the same slice key with the same measure value, crashing `MapBasedTabularView.appendSlice` with `IllegalArgumentException: Multiple entries with same key`. Fix: suppression now skips any groupBy column whose `IAdhocColumn` is an `ICalculatedColumn` — calculated columns carry their own value-computation logic and must not be overwritten by the generator fallback. Reproducer (and new regression test): `TestTableQuery_DuckDb_VaR#testGroupByScenarioIndex_withStar_countAsterisk` (plus `…_withStar_mArray` for the companion case where the measure does decompose).
+- `ForestAsGraphvizDag.highlightedMeasures`: new builder option receiving a `Set<String>` of measure names. Matching nodes receive a thick red double-perimeter border (`color="red"`, `penwidth="3"`, `peripheries="2"`) on top of their regular shape/fill styling, so a human can quickly locate them in a large DAG.
+- `IHasExecutorAndSliceFactory` + `PodExecutors` + `IScopeBinder`: new marker interface implemented by `IAdhocFactories` and `QueryPod` exposes both the executor service and the slice factory, and a new `PodExecutors` utility (`runScoped`, `callScoped`, `submitScoped`, `scopedExecutor`) centralises scope-binding around dispatched tasks. `ISliceFactory`'s `callWithScope` / `runWithScope` / `getWithScope` methods are deprecated in favour of having `ColumnSliceFactory` implement `IScopeBinder#bindScope` directly; `CubeQueryEngine#execute`, `PartitionorQueryStep#produceOutputPerInputPartition`, and `TabularRecordStreamReducer` now dispatch through `PodExecutors`.
+- `PerfectHashMap` / `PerfectHashKeyset`: immutable `Map<String, V>` backed by a reusable `PerfectHashKeyset` (an ordered `SequencedSet<String>` of key fields wrapping a `SimplePerfectHash`) and an `ImmutableList<V>` of values. The keyset (and especially the perfect-hash table) is computed once and shared across many maps; each map only pays for an `ImmutableList` sized to `keyFields.size()`. A public `ABSENT` sentinel encodes `not in this map` so that the values list can stay in `ImmutableList` (which forbids nulls). `PerfectHashMap.keySet()` returns the shared `PerfectHashKeyset` by reference when the map is fully populated. Intended for callers like `TabularRecordBuilder#aggregates` that build many maps with the same key set.
+- `ScopedValueAppendableTable`: JDK-25 `ScopedValue`-backed analogue of `ThreadLocalAppendableTable`. Each caller thread establishes its own page-map via `runInScope(Runnable)` / `callInScope(Callable)`; `nextRow` outside a scope throws `NoSuchElementException`. Intended for faster per-request access on Virtual Threads versus `ThreadLocal.get()`.
+- `ScopedValueAppendableTableFactory`: opt-in alternative to `ThreadLocalAppendableTableFactory` that returns a `ScopedValueAppendableTable`. Wired end-to-end via new `ISliceFactory.callWithScope` / `runWithScope` / `getWithScope` (no-op default; `ColumnSliceFactory` delegates to `ScopedValueAppendableTable.callInScope` when backed by one). Dispatch sites now establish a scope per virtual-thread task: `CubeQueryEngine.execute` wraps the DAG execution (covers sequential path + composite post-processing + sub-cube re-entry), `PartitionorQueryStep.produceOutputPerInputPartition` wraps each submitted `Callable`, and `TabularRecordStreamReducer` wraps the per-partition consumer via a scoped `Executor` delegate. ThreadLocal remains the default; loud `NoSuchElementException` propagation on missed dispatch sites (no silent fallback). `parallelStream().map(...)` sites in `TableQueryEngine.toCuboids` are intentionally not wrapped (acknowledged leftovers pending virtual-thread migration).
+- `StandardQueryOptions.PARTITIONED`: new query option that splits the output column into N hash partitions (one per available core) during aggregation. Each partition is an independent `PartitionedMergeableColumn`, reducing per-partition map size and enabling future parallel reduction across cores.
+- `IConsumingStream.forEachPartitioned`: partition-aware terminal operation that routes elements to dedicated per-partition consumer threads, eliminating write contention. Used by `TabularRecordStreamReducer` when the `PARTITIONED` option is active.
+- `LastLookupCache1`: new length-1 specialization of `LastLookupCache` for hot-path callers that only need a single reference key. Avoids the `Object[]` varargs allocation and list wrapping on the slow path.
+- `LastLookupCache1Volatile`: alternative length-1 cache using a single `volatile` shared slot instead of a `ThreadLocal`. Eliminates the `ThreadLocal.get()` map lookup at the cost of cross-thread contention on the slot. A JMH benchmark in `jmh/.../BenchmarkLastLookupCache` compares both variants against a plain `ConcurrentHashMap` baseline.
+- `LastLookupCache1Scoped`: JDK-25 `ScopedValue`-backed length-1 cache. Binds a single-field mutable `Holder` per scope (via `runInScope(Runnable)` / `callInScope(Callable)`); `ScopedValue.get()` replaces `ThreadLocal.get()` on the fast path. Silent-miss outside a scope (`getByRef` returns `null`, `slowComputeIfAbsent` skips publishing) so the cache remains safely callable from static contexts. A fourth variant added to `jmh/.../BenchmarkLastLookupCache` with scope setup amortized over 64 lookups per invocation (`@OperationsPerInvocation`).
+- `SequencedSetUnsafe.internKeyset(Collection)`: new static utility that interns a column keyset into a `SequencedSetLikeList`, backed by a shared two-layer cache.
+- `MultitypeNavigableIntColumn`: int-specialized companion to `MultitypeNavigableColumn` (and complement to `MultitypeHashIntColumn`). Stores ascending int keys in a primitive `IntArrayList`, exposing `append(int)` / `onValue(int)` / `appendIfOptimal(int)` without `Integer` boxing. Designed as the output column of dictionarizing aggregation layers (e.g. `AggregatingColumnsDistinct`) where indices are emitted in monotonically-ascending order, so the `onAppendLast` fast path is the common case.
+- `IJooqTableSupplier` + `JooqTableWrapperParameters.tableSupplier`: opt-in hook to substitute a per-query `TableLike` in place of the constant `JooqTableWrapperParameters.table`. The `JooqTableQueryFactory` consults the supplier from its `prepareQuery(TableQueryV4)` entry point via a new `resolveTable(tableQuery)` method; `getResultForFields` and `getColumns` keep using the constant `table` for schema introspection. When `tableSupplier` is absent the behaviour is identical to today.
+- `PrunedJoinsJooqTableSupplierBuilder` (renamed from `PrunedJoinsJooqSnowflakeSchemaBuilder`): subclass of `JooqTableSupplierBuilder` (renamed from `JooqSnowflakeSchemaBuilder`) that records each `leftJoin(...)` as a `JoinNode {alias, parentAlias, joinedTable, onConditions, prunable, columnsOverride}` instead of eagerly composing `snowflakeTable`. Exposes `build()` — an `IJooqTableSupplier` that, per `TableQueryV4`, (1) collects referenced columns from groupBys + aggregator column-names + filter columns (including per-aggregator `FILTER(...)` clauses), (2) resolves each column to its owning join via a `Map<columnName, joinAlias>` built from explicit `providedColumns` overrides or derived from `joinedTable.fields()`, (3) closes over parent links so every ancestor needed to reach a required child is pulled in (snowflake transitivity), (4) forces in every non-prunable node (i.e. any join registered via the low-level `leftJoinConditions`, which lacks a column contract), (5) folds the resulting alias set onto the base table in declaration order to produce the per-query `Table<Record>`. Unknown columns default to the base table — matching the existing `aliasToOriginal.putIfAbsent` convention. A bounded LRU (128 entries) caches the `referencedColumns → Set<joinAlias>` decision; the `Table<Record>` rebuild itself is not cached. `purgeColumnCache()` forces re-probing of joined-table fields on the next query. Motivation: DuckDB and similar engines pay a per-join cost in the `FROM` clause even when the join contributes no `SELECT` column.
+- `JooqTableSupplierBuilder.build()` / `IJooqTableSupplier.getSchemaTable()` / `JooqTableWrapperParametersBuilder.tableSupplier(IJooqTableSupplier)`: replaces the legacy two-step `.table(schema.getSnowflakeTable()).tableSupplier(supplier)` with a single `.tableSupplier(schema.build())` call. The supplier now exposes both the per-query `tableFor(TableQueryV4)` and the all-joins `getSchemaTable()` used for schema introspection (`getColumns` / `getResultForFields`). The builder's `tableSupplier(...)` setter wires both `table` and `tableSupplier` from the supplier.
+
+### Fixed
+- `CompositeCubesTableWrapper`: a filter or groupBy on a column that is declared as `generated` / `calculated` by at least one sub-cube (e.g. a scenario hierarchy exposed by an `IDecomposition` inside a Dispatchor) is now auto-suppressed for sub-cubes that do NOT declare the column, instead of being translated to `matchNone` (filter) or a cube-name fallback coordinate (groupBy). A new helper `computeCrossCubeCalculatedColumns()` returns the set of cross-cube calculated columns; `filterForColumns` short-circuits to `MATCH_ALL` and the missing-column mask in `openStream` collapses to `IColumnGenerator.COORDINATE_GENERATED` for them. Fixes composite-cube counts when a `count(*)`-style aggregator is queried alongside a scenario hierarchy known only to some sub-cubes.
+- `FilterHelpers.filterComparator()`: now correctly returns 0 for semantically equivalent filters with different operand order (e.g., `AND(a,b)` vs `AND(b,a)`). Type ranking: AND > OR > NOT > COLUMN.
+- `IConsumingStream.iterator(ExecutorService)`: now calls `endOfData()` when the poison marker is read. Previously, the iterator returned `null` without transitioning Guava's `AbstractIterator` to `DONE`, causing any subsequent `hasNext()` call to block indefinitely on `queue.take()`.
+
+### Changed
+- `ColumnFilter` JSON/YAML: the `nullIfAbsent` property is now omitted from serialization when the underlying `IValueMatcher` cannot match `null` (e.g. `EqualsMatcher`, `InMatcher`, `LikeMatcher`, …), since the flag has no observable effect in that case. It is still serialized for matchers that may match `null` (e.g. `NullMatcher`, and `NotMatcher` wrapping a non-null matcher). Deserialization is unchanged: the `@Jacksonized` builder defaults `nullIfAbsent = true` when the property is absent.
+- Build profiles `-Pfast` and `-Pnostyle`: now set `cyclonedx.skip=true` so the CycloneDX SBOM generation is skipped during fast recompiles and style-skipping test runs.
+- `MeasureForestConcealer`: operand values inside every `ColumnFilter.valueMatcher` (`EqualsMatcher`, `InMatcher`, `NotMatcher`, `AndMatcher`, `OrMatcher`, `ComparingMatcher`, `LikeMatcher`, `StringMatcher`) are now concealed to `v_<hash>` tokens — previously only column names were hashed. Operator keys (`aggregationKey`, `combinationKey`, `editorKey`, `decompositionKey`) are concealed to `k_<hash>` unless they belong to a **per-kind** whitelist (`standardAggregationKeys`, `standardCombinationKeys`, `standardDecompositionKeys`, `standardEditorKeys`). Defaults mirror exactly what `StandardOperatorFactory.makeAggregation` / `makeCombination` / `makeDecomposition` / `makeEditor` resolves through a switch case (not the `Class.forName` fallback) — a pact validated by `TestMeasureForestConcealer#testDefaultStandardXxxKey_instantiable` which loops each whitelist through `StandardOperatorFactory`. Override via `MeasureForestConcealer.builder().standardAggregationKeys(...)` etc. to align with a custom `IOperatorFactory`. **API change**: `ConcealingDefinition.valueMapping` is now `Map<Object, String>` (was `Map<String, String>`) and gains a sibling `keyMapping: Map<String, String>`; the `ConcealingVisitor` constructor takes five extra arguments (`keyMapping` + four per-kind whitelists).
+- `TabularRecordBuilder.aggregates`: switched from `ImmutableMap.Builder<String, Object>` to `PerfectHashKeyset.Builder<Object>`. `AggregatedRecordFields` now memoizes its `PerfectHashKeyset` via `Suppliers.memoize` (mirroring the existing `allColumns` pattern), so the perfect-hash table is built once per `AggregatedRecordFields` and reused by every record `TabularRecordFactory` produces. `TabularRecordOverMaps.aggregates` field type widened from `ImmutableMap<String, ?>` to `Map<String, ?>` to admit the new `PerfectHashMap`. **Behavior change**: duplicate aggregate column names are now rejected at first record build (`PerfectHashKeyset.of` throws `IllegalArgumentException("Inputs must be distinct")`) instead of per-record at `ImmutableMap.Builder.buildOrThrow` time. The exception type is unchanged; the message and timing are not.
+- `GroupByColumns.retainAll`: the `RETAIN_CACHE` used to be a static `LastLookupCache<IGroupBy>(2)` keyed on `(this, retainedColumns)`. `this` is redundant when the cache is scoped to a single instance, so the cache is now a per-instance `LastLookupCache1<IGroupBy>` keyed on `retainedColumns` alone — this drops the length-2 `Object[]` allocation on the slow path and the per-element loop on the fast path. Trade-off: each `GroupByColumns` instance pays for its own small `ConcurrentHashMap` + `ThreadLocal`, but both are short-lived (query-scoped) and GC-friendly.
+- `CubeWrapper.getColumns()`: aliases whose underlying column cannot be resolved on this cube are now discarded with a `WARN` log, rather than silently registered as dangling `Object.class` columns tagged `alias`. This prevents a `ColumnsManager` shared across several cubes (where some aliases are only relevant to a subset of cubes) from polluting the schema reported by each cube. The `log.debug` line also had a broken `String.format`-style `%s` placeholder, now corrected to the SLF4J `{}` form.
+- `AMultitypeNavigableColumn` (new abstract parent): factored the shared write/append/scan/stream/lookup/lock/compact logic out of `MultitypeNavigableColumn` and `MultitypeNavigableIntColumn` into a common base parameterised on `T extends Comparable<T>`. Subclasses now own only the key-storage hooks (`keysSize`, `keysGet`, `keysAppendLast`, `keysInsertAt`, `keysRemoveAt`, `keysBinarySearch`, `keysEnsureCapacity`, `keysCompact`) and the optional Bloom presence pre-screen. The protected helper formerly named `merge(int)` is now `mergeAtIndex(int)` to avoid colliding with the public `IMultitypeMergeableColumn.merge(T)` signature on the int specialization. Net effect: the two navigable subclasses drop ~720 LOC of duplicated logic, the int specialization keeps its primitive `IntArrayList` storage, and the only new boxing happens at the abstract-method boundary on the slow paths (binary search / random insertion / scan).
+- `AMultitypeHashColumn` (new abstract parent): identical extraction for the hash family. The new base owns the type-dispatch logic for `containsKey`, `append`, `unsafePut`, `merge`, `onValue`, `scan`, `stream`, `keyStream`, `unsafePurge` and `compact`, while subclasses provide ~24 thin abstract hooks per type-lane (size / containsKey / get / put / remove / forEach / ensureCapacity / compact). `MultitypeHashColumn` and `MultitypeHashIntColumn` shrink to just the fastutil `Object2X` / `Int2X` map declarations and one-liner forwarders. Storage stays primitive in the int variant; the per-call boxing is short-lived garbage that doesn't change the steady-state heap.
+- `MultitypeNavigableIntMergeableColumn`: new int-specialized companion to `MultitypeNavigableMergeableColumn`, available for callers that want an unboxed `merge(int)` fast path. **Not** yet wired into `AggregatingColumns.makePreColumn()` because the slice-sortedness tracking that the existing `MultitypeNavigableElseHashMergeableColumn` provides for free (via its in-order/out-of-order leg dispatch) is lost without a hash-side fallback; moving that tracking into `AAggregatingColumns` is a separate task.
+- `UndictionarizedColumn.column`: tightened field type from `IMultitypeColumnFastGet<Integer>` to `IMultitypeIntColumnFastGet`, so hot-path `onValue(int)` / `onValue(int, StreamStrategy)` lookups never pay `Integer.valueOf` allocation. `UndictionarizedColumn` now also implements `ICompactable`, forwarding to the inner column.
+- `UndictionarizedColumn.stream(SORTED_SUB)` / `stream(SORTED_SUB_COMPLEMENT)`: switched from positional prefix/suffix (`column.limit(sortedLength)` / `column.skip(sortedLength)`) to `sortedLeg`-predicate filtering. Positional splits were only correct when the inner column's natural iteration order aligned with the slice-sorted prefix; after the refactor below, the inner column always iterates by index which may not coincide, so the filter is the authoritative path.
+- `AggregatingColumnsDistinct.makePreColumn()`: now instantiates `MultitypeNavigableIntColumn` directly instead of going through `IColumnFactory.makeColumn(...)`. Indices arrive in monotonically-ascending order, so the append-last fast path is hit on every write and no boxing-through-`Integer` happens anywhere in the aggregation or close-column hot paths. `aggregatorToAggregates` is now typed `Map<String, IMultitypeIntColumnFastGet>`; the previously-unused `factories` field has been removed from the builder.
+- `AggregatingColumns.undictionarizeColumn`: copies the generic `IMultitypeColumnFastGet<Integer>` produced by the non-distinct aggregation path into a fresh `MultitypeNavigableIntColumn` via `asNavigableInt(...)` before wrapping in `UndictionarizedColumn`. Columns that are already int-specialized (the `AggregatingColumnsDistinct` path) short-circuit to identity.
+- `IMultitypeIntColumnFastGet.purgeAggregationCarriers()`: covariant narrowing — the interface now declares the return type as `IMultitypeIntColumnFastGet` so callers (e.g. `UndictionarizedColumn.purgeAggregationCarriers`) get the int-specialized type back without an `instanceof` re-check. `MultitypeNavigableIntColumn.purgeAggregationCarriers()` now returns the concrete class directly.
 - `AdhocUnsafe.adhocCommonPool`: replaced `ForkJoinPool`-based work-stealing pool with `Executors.newVirtualThreadPerTaskExecutor()`. Virtual Threads are blocking-friendly, eliminating the need for a separate I/O thread pool.
 - `QueryPod`: removed `dbExecutorService` field — a single `executorService` (Virtual Thread executor for concurrent queries) now covers both DAG walking and table I/O.
 - `StandardQueryPreparator`: removed `concurrentDBExecutorService`, `nonConcurrentDBExecutorService`, `getDBExecutorService`, and the `isDuckDB` check; all queries use the same `executorService`.
@@ -21,6 +130,9 @@ We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 - `JooqTableWrapperParameters`: new optional `querySemaphore` field. `JooqTableWrapper` implements `querySemaphore()` from this parameter and applies it lazily in `streamSlices()`.
 - `DuckDBHelper.parametersBuilder(IDSLSupplier)`: new factory method returning a `JooqTableWrapperParameters` builder pre-wired with `AdhocDuckDBUnsafe.duckDBSemaphore`.
 - `TableQueryEngineBootstrapped` → `TableQueryEngine`; `TableQueryEngine` → `TableQueryEngineFactory` (rename).
+- `ICombination`: signature changed from returning an `IValueProvider` to accepting an `IValueReceiver` as input, enabling push-based value delivery and avoiding intermediate allocations.
+- `LastLookupCache`: single generic parameter `<V>` (dropped the custom map-key type parameter); a required `keyLength` is now passed to the constructor; `slowComputeIfAbsent` takes only a `Supplier<V>` and uses `Arrays.asList(refKeys)` as the delegate map key.
+- `ISliceFactory.internKeyset(Collection)`: removed from the interface — replaced by `SequencedSetUnsafe.internKeyset(Collection)` (static). Callers that previously called `sliceFactory.internKeyset(keys)` should now call `SequencedSetUnsafe.internKeyset(keys)`.
 
 ## [0.0.18]
 
@@ -62,8 +174,6 @@ We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 - Arrow IPC streaming endpoint: `POST /api/v1/cubes/query` with `Accept: application/vnd.apache.arrow.stream` returns query results as a streaming Arrow IPC response. Backed by `TabularViewArrowSerializer` (in `adhoc-experimental`) discovered via `ServiceLoader`. Supports `Long`, `Integer`, `Double`, `Boolean`, `LocalDate`, and `String` column types.
 - `MavenDependencyAsMermaid`: utility that scans `pom.xml` files across a multi-module Maven project and renders a Mermaid `flowchart TD` of inter-module dependencies; compile edges use solid arrows, test-scope edges use dashed arrows, and modules are grouped into `subgraph` blocks by their aggregator parent.
 - `ColumnarTabularView`: columnar alternative to `ListBasedTabularView` — stores one `List<?>` per coordinate column and one per aggregate, enabling zero-transposition Arrow serialization.
-- `pivotable-mcp` module: exposes Pivotable as an MCP server (list endpoints, browse schemas, execute queries) via `PivotableMcpTools`.
-- `PivotableChatHandler`: optional AI query assistant in the SPA, streaming tool calls to update the query model in real time (requires `adhoc.pivotable.chat.anthropic-api-key`).
 - `DuckDBMemoryLogger`: daemon that periodically samples `duckdb_memory()` and logs results; self-terminates when the monitored connection closes.
 - `TableQueryV3` enables `GROUPING SET` queries.
 - `ITableQueryStepsSplitter` enables to inject a splitting policy into an `ITableQueryOptimizer`.
@@ -117,7 +227,6 @@ We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 - `DagCompletableExecutor` enable task sharing when evaluating a DAG of tasks.
 - `IAppendableColumn.freeze()` turned to `IAppendableColumn.freeze(IFreezingStrategy)`
 - `MultitypeNavigableColumn` propagates the capacity to values.
-- Pivotable spring profiles has been reworked. There is more a default `application.yml`, but one should import `pivotable-config.yml`.
 
 ### Removed
 - `ISliceFactory.newMapBuilder()` is removed. You need to have a clear view of the keyset.
@@ -142,7 +251,6 @@ We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 - Experimental support of [MongoDB](https://www.mongodb.com/docs/languages/java/)
 - Introduce multiple `.executeAsync(...)` methods, as alternative to usual `.execute(...)` returning a `ListenableFuture`.
 - Introduce `QueryPod.addCancellationListener(Runnable)`, enabling registration and cancellation of inner parts when cancelling the outer query.
-- Pivotable will automatically cancel currently running queries if another query is triggered.
 - `IAdhocMap.retainAll(Set<String>)` enables faster creation of `IAdhocMap` over a subset of columns (e.g. inducing).
 
 ### Changed
@@ -156,7 +264,6 @@ We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 - `FilterOptimizer` may skip `or vs and` simplification (e.g. `FilterBuilder.or("a==a1&(b==b1|c==c1)").optimize()`).
 - `FilterOptimizer` may skip `or vs and` simplification (e.g. `FilterBuilder.or("a=in=(a1,a2)&b==b1|a=in=(a1,a2)&!(b!=b2&!(c==c1&d==d1&b==b3))").optimize()`).
 - `FilterStripper` was not properly stripping `OR` in case one stripped operand was `matchAll`.
-- VueJS router is properly waited for (with `.isReady()`) to load the queryModel from `#hash` on relogging.
 
 ### Improved
 - `TableQueryOptimizerSinglePerAggregator` now build a tree of intermediate CubeQuerySteps, to enable computing each filters a single time.
@@ -180,7 +287,6 @@ We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 
 ### Fixed
 - Fix bug in SQL condition with NOT given NULL. (Typically `NOT(c = 'v')` is turned into `NOT(c IS NOT NULL AND c = 'v')`).
-- Actuator configuration in Pivotable has been reviewed. `/actuator/info` and `/actuator/health` are public.
 - Memory-leak in `CachingOperatorsFactory` due to `DispatchorQueryStep` adding values as option, for `CumulatingDecomposition`.
 - Improve compaction in `IMultitypeMergeableGrid.closeColumn`
 
@@ -227,7 +333,6 @@ We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 - Introduced `ICoordinateNormalizer` to centralize how coordinates should be normalized (e.g. `int` into `long`).
 - Introduced `NullMatcher.NULL_HOLDER` to represent `null` where a null-reference is forbidden.
 - Introduced `ICalculatedCoordinate` to enable adding coordinate into columns. Typical usecase is having an `*` coordinate aggregating all other coordinates, as a grandTotal of current column.
-- Playwright is activated to integration-tests Pivotable.
 
 ### Changed
 - Update `DuckDB` to `1.3.2.0` (from `1.3.1.0`)
@@ -244,9 +349,6 @@ We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 
 ### Added
 - Columns can be tagged through `AdhocSchema`.
-- In Pivotable, tag filtering is now cross-columns, in addition to cross-measures.
-- Additional `WorldCup` example cube, with more complex measures.
-- In Pivotable, clicking a column header will sort rows based on given column.
 - Introduces `ICompactable`. It is called on each queryStep of the DAG.
 - Introduces `ShiftedValueMatcher`, enabling `SimplerFilterEditor.shiftIfPresent` to shift dynamically existing values.
 - Introduces `CumulatingDecomposition`, which is another case of `Dispatchor`. Can be used for cumulative `SUM` through time.
@@ -320,26 +422,20 @@ We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 
 ### Changed
 - `DuckDB` is upgraded to 1.2.2.0
-- In `Pivotbale`, `customMarkers` are written on a per-value basis, with the `path` as key.
 - `QueryTableV2` introduced querySharing for `TableQuery` with same groupBy, by relying on SQL `FILTER` keyword.
 - Drops `CharSequence` as a privileged type (e.g. in aggregations, in `IMultiTypeXXX`)
 
 ### Added
 - Enable `cubeSlicer` in `CompositeCubesTableWrapper`: it enables filtering by underlying cube
-- Enable Export to CSV in `Pivotable`
-- Enable Export to Clipboard in `Pivotable`
 
 ## [0.0.5]
 ### Changed
-- `Pivotable` opens a filter-helper when double-cliking a cell of the grid.
-- `Pivotable` search now highlights/marks matching elements.
 - `StandardQueryOptions.CONCURRENT` has now much better behavior, especially around composite cubes, multiple tableQueries, and DAG with independent steps.
 - Prepare querySharing for aggregators with same groupBy but different filters, with `FILTER` sql keyword. See `QueryTableV2`
 - `ExpressionCombination` can refer to underlyings by their index with the syntax `underlyings[index]`
 
 ### Added
 - Enable `customMarkerMetadata` in `AdhocSchema`
-- Enable `tags` measure filtering in `Pivotable`
 - Introduces `AdhocAutoConfiguration` for easy Spring auto-configuration.
 - `AdhocQuery`s executed through `AdhocSchema` now see their `AdhocFilter` being transcoded (e.g. to manage a filter over a `date`, expressed as a JSON String).
 
@@ -364,8 +460,7 @@ We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 ### Added
 - `ForestAsGraphvizDag`: can turn an `IMeasureForest` into a Graphviz DOT file.
 - `ICubeWrapper.getCoordinates` can query multiple columns in one call, which is leveraged by `DuckDb` tables.
-- `Pivotable` can now drop column/measure from grid headers.
-- Fix serialization of `IQueryOptions`, and update `Pivotable` for proper options.
+- Fix serialization of `IQueryOptions`.
 
 ## [0.0.2]
 ### Added

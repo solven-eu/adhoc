@@ -28,6 +28,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -42,6 +43,15 @@ import eu.solven.adhoc.filter.IOrFilter;
 import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.filter.NotFilter;
 import eu.solven.adhoc.filter.OrFilter;
+import eu.solven.adhoc.filter.value.AndMatcher;
+import eu.solven.adhoc.filter.value.ComparingMatcher;
+import eu.solven.adhoc.filter.value.EqualsMatcher;
+import eu.solven.adhoc.filter.value.IValueMatcher;
+import eu.solven.adhoc.filter.value.InMatcher;
+import eu.solven.adhoc.filter.value.LikeMatcher;
+import eu.solven.adhoc.filter.value.NotMatcher;
+import eu.solven.adhoc.filter.value.OrMatcher;
+import eu.solven.adhoc.filter.value.StringMatcher;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.Columnator;
 import eu.solven.adhoc.measure.model.Combinator;
@@ -66,15 +76,25 @@ import lombok.extern.slf4j.Slf4j;
  * <li><b>Measure names</b> — replaced by {@code m_<hash>} (hex, length controlled by {@link #hashLength}). All
  * cross-references (underlyings) are rewritten consistently.</li>
  * <li><b>Aggregator.columnName</b> — replaced by {@code c_<hash>}.</li>
- * <li><b>Filtrator.filter</b> — column names inside the filter tree are replaced by {@code c_<hash>}.</li>
+ * <li><b>Filtrator.filter</b> — column names inside the filter tree are replaced by {@code c_<hash>}; operand values
+ * reachable from every {@link ColumnFilter#getValueMatcher() valueMatcher} ({@code EqualsMatcher}, {@code InMatcher},
+ * {@code NotMatcher}, {@code AndMatcher}, {@code OrMatcher}, {@code ComparingMatcher}, {@code LikeMatcher},
+ * {@code StringMatcher}) are replaced by {@code v_<hash>} tokens.</li>
  * <li><b>Tags</b> — replaced by {@code t_<hash>}.</li>
+ * <li><b>Operator keys</b> ({@code aggregationKey}, {@code combinationKey}, {@code editorKey},
+ * {@code decompositionKey}) — replaced by {@code k_<hash>} if the key is <em>not</em> in the matching per-kind
+ * whitelist ({@link #standardAggregationKeys}, {@link #standardCombinationKeys}, {@link #standardDecompositionKeys},
+ * {@link #standardEditorKeys}). Defaults mirror the keys natively recognised by
+ * {@code StandardOperatorFactory.makeAggregation}/{@code makeCombination}/etc. Custom keys (typically fully-qualified
+ * class names) are concealed.</li>
  * <li><b>Options</b> (e.g. {@code Combinator.combinationOptions}, {@code Shiftor.editorOptions}) — cleared by default,
  * since they typically contain arbitrary domain-specific data that cannot be safely anonymised; subclasses of
  * {@link ConcealingVisitor} may override {@link AMappingVisitor#mapOptions(Map)} to selectively preserve or transform
  * specific keys.</li>
  * </ul>
- * Within each prefix namespace ({@code m_}, {@code c_}, {@code t_}, {@code v_}), hash collisions are resolved by
- * appending {@code _2}, {@code _3}, … to the duplicate, with the first occurrence keeping the un-suffixed slot.
+ * Within each prefix namespace ({@code m_}, {@code c_}, {@code v_}, {@code k_}, {@code t_}), hash collisions are
+ * resolved by appending {@code _2}, {@code _3}, … to the duplicate, with the first occurrence keeping the un-suffixed
+ * slot.
  *
  * <p>
  * Instantiate and call {@link #concealWithDefinition(IMeasureForest)} to obtain both the concealed forest and the
@@ -86,9 +106,47 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Builder
 @Slf4j
+@SuppressWarnings("PMD.GodClass")
 public class MeasureForestConcealer {
 
 	private static final int BITS_PER_HEXDIGIT = 4;
+
+	/**
+	 * Aggregation keys natively recognised by {@code StandardOperatorFactory.makeAggregation} — each one hits an
+	 * explicit switch case there (not the {@code default} → {@code Class.forName} branch). They carry no secret and are
+	 * kept verbatim during concealment.
+	 */
+	public static final ImmutableSet<String> DEFAULT_STANDARD_AGGREGATION_KEYS = ImmutableSet.of("SUM",
+			"SUM_NOT_NAN",
+			"MAX",
+			"MIN",
+			"COUNT",
+			"expression",
+			"EMPTY",
+			"RANK",
+			"AVG",
+			"PRODUCT",
+			"COALESCE");
+
+	/**
+	 * Combination keys natively recognised by {@code StandardOperatorFactory.makeCombination} — either through one of
+	 * the {@code isSum} / {@code isProduct} / {@code isDivide} / {@code isSubstraction} helpers or through an explicit
+	 * switch case. {@code EXPRESSION} (EvaluatedExpressionCombination) is intentionally absent because its
+	 * instantiation requires the optional {@code com.ezylang.evalex} dependency.
+	 */
+	public static final ImmutableSet<String> DEFAULT_STANDARD_COMBINATION_KEYS =
+			ImmutableSet.of("SUM", "+", "PRODUCT", "*", "DIVIDE", "/", "SUBSTRACTION", "-", "MAX", "MIN", "COALESCE");
+
+	/**
+	 * Decomposition keys natively recognised by {@code StandardOperatorFactory.makeDecomposition}.
+	 */
+	public static final ImmutableSet<String> DEFAULT_STANDARD_DECOMPOSITION_KEYS =
+			ImmutableSet.of("identity", "linear");
+
+	/**
+	 * Filter-editor keys natively recognised by {@code StandardOperatorFactory.makeEditor}.
+	 */
+	public static final ImmutableSet<String> DEFAULT_STANDARD_EDITOR_KEYS = ImmutableSet.of("identity", "simple");
 
 	/**
 	 * Number of hex digits in each concealed token. Defaults to {@code 8} (32-bit hash, e.g. {@code m_a3f1c09e}).
@@ -97,6 +155,31 @@ public class MeasureForestConcealer {
 	 */
 	@Builder.Default
 	protected final int hashLength = 8;
+
+	/**
+	 * Aggregation keys kept verbatim during concealment. Defaults to {@link #DEFAULT_STANDARD_AGGREGATION_KEYS};
+	 * override via the builder to align with a custom {@code IOperatorFactory}.
+	 */
+	@Builder.Default
+	protected final Set<String> standardAggregationKeys = DEFAULT_STANDARD_AGGREGATION_KEYS;
+
+	/**
+	 * Combination keys kept verbatim during concealment. Defaults to {@link #DEFAULT_STANDARD_COMBINATION_KEYS}.
+	 */
+	@Builder.Default
+	protected final Set<String> standardCombinationKeys = DEFAULT_STANDARD_COMBINATION_KEYS;
+
+	/**
+	 * Decomposition keys kept verbatim during concealment. Defaults to {@link #DEFAULT_STANDARD_DECOMPOSITION_KEYS}.
+	 */
+	@Builder.Default
+	protected final Set<String> standardDecompositionKeys = DEFAULT_STANDARD_DECOMPOSITION_KEYS;
+
+	/**
+	 * Filter-editor keys kept verbatim during concealment. Defaults to {@link #DEFAULT_STANDARD_EDITOR_KEYS}.
+	 */
+	@Builder.Default
+	protected final Set<String> standardEditorKeys = DEFAULT_STANDARD_EDITOR_KEYS;
 
 	/**
 	 * Holds all mapping tables produced during a concealment pass. A safe party can use this together with
@@ -108,8 +191,10 @@ public class MeasureForestConcealer {
 		Map<String, String> nameMapping;
 		/** original column name → concealed name */
 		Map<String, String> columnMapping;
-		/** original string value → concealed value */
-		Map<String, String> valueMapping;
+		/** original operand value (any type) → concealed {@code v_<hash>} token */
+		Map<Object, String> valueMapping;
+		/** original operator key → concealed {@code k_<hash>} token (only for non-standard keys) */
+		Map<String, String> keyMapping;
 		/** original tag → concealed tag */
 		Map<String, String> tagMapping;
 	}
@@ -149,13 +234,17 @@ public class MeasureForestConcealer {
 
 		Set<String> columnNames = new LinkedHashSet<>();
 		Set<String> tagNames = new LinkedHashSet<>();
+		Set<Object> operandValues = new LinkedHashSet<>();
+		Set<String> concealableKeys = new LinkedHashSet<>();
 		for (IMeasure m : measures) {
 			tagNames.addAll(m.getTags());
+			collectConcealableKeys(m, concealableKeys);
 			if (m instanceof Aggregator agg) {
 				columnNames.add(agg.getColumnName());
 			}
 			if (m instanceof Filtrator fil) {
 				collectFilterColumns(fil.getFilter(), columnNames);
+				collectFilterOperands(fil.getFilter(), operandValues);
 			}
 			if (m instanceof Columnator col) {
 				columnNames.addAll(col.getColumns());
@@ -165,13 +254,21 @@ public class MeasureForestConcealer {
 			}
 		}
 		Map<String, String> columnMapping = buildColumnMapping(columnNames);
-		Map<String, String> valueMapping = buildValueMapping(Collections.emptySet());
+		Map<Object, String> valueMapping = buildValueMapping(operandValues);
+		Map<String, String> keyMapping = buildKeyMapping(concealableKeys);
 		Map<String, String> tagMapping = buildTagMapping(tagNames);
 
 		ConcealingDefinition definition =
-				new ConcealingDefinition(nameMapping, columnMapping, valueMapping, tagMapping);
-		IMeasureForest concealedForest =
-				forest.acceptVisitor(new ConcealingVisitor(nameMapping, columnMapping, valueMapping, tagMapping));
+				new ConcealingDefinition(nameMapping, columnMapping, valueMapping, keyMapping, tagMapping);
+		IMeasureForest concealedForest = forest.acceptVisitor(new ConcealingVisitor(nameMapping,
+				columnMapping,
+				valueMapping,
+				keyMapping,
+				tagMapping,
+				standardAggregationKeys,
+				standardCombinationKeys,
+				standardDecompositionKeys,
+				standardEditorKeys));
 		return new ConcealingResult(concealedForest, definition);
 	}
 
@@ -192,7 +289,13 @@ public class MeasureForestConcealer {
 	public IMeasureForest restore(IMeasureForest concealedForest, ConcealingDefinition definition) {
 		return concealedForest.acceptVisitor(new AMappingVisitor(invert(definition.getNameMapping()),
 				invert(definition.getColumnMapping()),
-				invert(definition.getTagMapping())));
+				invertValueMapping(definition.getValueMapping()),
+				invert(definition.getKeyMapping()),
+				invert(definition.getTagMapping()),
+				standardAggregationKeys,
+				standardCombinationKeys,
+				standardDecompositionKeys,
+				standardEditorKeys));
 	}
 
 	// ── mapping builders ──────────────────────────────────────────────────────
@@ -216,12 +319,25 @@ public class MeasureForestConcealer {
 	}
 
 	/**
-	 * Builds a deterministic {@code oldValue → newValue} mapping using the {@code v_} prefix.
+	 * Builds a deterministic {@code oldValue → concealed token} mapping using the {@code v_} prefix. Keys may be any
+	 * {@link Object} — the hash is computed from {@link Objects#hashCode(Object)} so built-in boxed types (String,
+	 * Integer, Long, Double, Boolean, …) produce stable tokens across JVMs.
 	 *
 	 * @see #buildMapping(String, Set)
 	 */
-	protected Map<String, String> buildValueMapping(Set<String> values) {
-		return buildMapping("v_", values);
+	protected Map<Object, String> buildValueMapping(Set<Object> values) {
+		return buildObjectMapping("v_", values);
+	}
+
+	/**
+	 * Builds a deterministic {@code oldKey → newKey} mapping using the {@code k_} prefix over already-filtered
+	 * {@code concealableKeys} (standard keys have already been removed by
+	 * {@link #collectConcealableKeys(IMeasure, Set)}).
+	 *
+	 * @see #buildMapping(String, Set)
+	 */
+	protected Map<String, String> buildKeyMapping(Set<String> concealableKeys) {
+		return buildMapping("k_", concealableKeys);
 	}
 
 	/**
@@ -244,7 +360,7 @@ public class MeasureForestConcealer {
 	 *
 	 * @param prefix
 	 *            the token prepended to the hex hash: {@code "m_"} for measure names, {@code "c_"} for column names,
-	 *            {@code "v_"} for string values, {@code "t_"} for tags
+	 *            {@code "v_"} for values, {@code "k_"} for operator keys, {@code "t_"} for tags
 	 * @param names
 	 *            the original names in a stable iteration order
 	 * @return an unmodifiable map from every original name to its concealed replacement
@@ -265,6 +381,31 @@ public class MeasureForestConcealer {
 				mapped = base + "_" + count;
 			}
 			oldToNew.put(name, mapped);
+		}
+		return Collections.unmodifiableMap(oldToNew);
+	}
+
+	/**
+	 * Variant of {@link #buildMapping(String, Set)} that accepts arbitrary {@link Object} operands — used for filter
+	 * value operands which may be boxed numbers, booleans, strings, dates, etc. Hashing goes through
+	 * {@link Objects#hashCode(Object)}.
+	 */
+	protected Map<Object, String> buildObjectMapping(String prefix, Set<Object> values) {
+		Map<Object, String> oldToNew = new LinkedHashMap<>();
+		Map<String, Integer> baseCount = new LinkedHashMap<>();
+		long mask = (1L << (hashLength * BITS_PER_HEXDIGIT)) - 1;
+		String fmt = "%0" + hashLength + "x";
+
+		for (Object value : values) {
+			String base = prefix + String.format(fmt, Objects.hashCode(value) & mask);
+			int count = baseCount.merge(base, 1, Integer::sum);
+			String mapped;
+			if (count == 1) {
+				mapped = base;
+			} else {
+				mapped = base + "_" + count;
+			}
+			oldToNew.put(value, mapped);
 		}
 		return Collections.unmodifiableMap(oldToNew);
 	}
@@ -290,8 +431,85 @@ public class MeasureForestConcealer {
 		}
 	}
 
+	/**
+	 * Recursively collects every operand value reachable through {@link ColumnFilter#getValueMatcher()} into
+	 * {@code values}. Structural matchers (null, MATCH_ALL, MATCH_NONE) and the regex matcher contribute nothing.
+	 */
+	static void collectFilterOperands(ISliceFilter filter, Set<Object> values) {
+		if (filter instanceof ColumnFilter cf) {
+			collectMatcherOperands(cf.getValueMatcher(), values);
+		} else if (filter instanceof IAndFilter af) {
+			af.getOperands().forEach(f -> collectFilterOperands(f, values));
+		} else if (filter instanceof IOrFilter of) {
+			of.getOperands().forEach(f -> collectFilterOperands(f, values));
+		} else if (filter instanceof INotFilter nf) {
+			collectFilterOperands(nf.getNegated(), values);
+		}
+	}
+
+	/**
+	 * Walks a {@link IValueMatcher} tree and adds every concealable operand value to {@code values}.
+	 */
+	static void collectMatcherOperands(IValueMatcher matcher, Set<Object> values) {
+		if (matcher instanceof EqualsMatcher em) {
+			values.add(em.getOperand());
+		} else if (matcher instanceof InMatcher im) {
+			values.addAll(im.getOperands());
+		} else if (matcher instanceof NotMatcher nm) {
+			collectMatcherOperands(nm.getNegated(), values);
+		} else if (matcher instanceof AndMatcher am) {
+			am.getOperands().forEach(m -> collectMatcherOperands(m, values));
+		} else if (matcher instanceof OrMatcher om) {
+			om.getOperands().forEach(m -> collectMatcherOperands(m, values));
+		} else if (matcher instanceof ComparingMatcher cm) {
+			values.add(cm.getOperand());
+		} else if (matcher instanceof LikeMatcher lm) {
+			values.add(lm.getPattern());
+		} else if (matcher instanceof StringMatcher sm) {
+			values.add(sm.getString());
+		}
+		// NullMatcher, SameMatcher, RegexMatcher → no concealable operand (structural / pre-compiled Pattern).
+	}
+
+	/**
+	 * Collects every operator key declared by the given measure that is <em>not</em> in the matching per-kind whitelist
+	 * ({@link #standardAggregationKeys}, {@link #standardCombinationKeys}, etc.). Each key is checked against the kind
+	 * of the field it lives on — so {@code "SUM"} on an {@code aggregationKey} is recognised via
+	 * {@link #standardAggregationKeys} while {@code "SUM"} on a {@code combinationKey} is recognised via
+	 * {@link #standardCombinationKeys}.
+	 */
+	protected void collectConcealableKeys(IMeasure measure, Set<String> concealableKeys) {
+		if (measure instanceof Aggregator agg) {
+			addIfCustom(agg.getAggregationKey(), standardAggregationKeys, concealableKeys);
+		} else if (measure instanceof Combinator comb) {
+			addIfCustom(comb.getCombinationKey(), standardCombinationKeys, concealableKeys);
+		} else if (measure instanceof Columnator col) {
+			addIfCustom(col.getCombinationKey(), standardCombinationKeys, concealableKeys);
+		} else if (measure instanceof Partitionor par) {
+			addIfCustom(par.getAggregationKey(), standardAggregationKeys, concealableKeys);
+			addIfCustom(par.getCombinationKey(), standardCombinationKeys, concealableKeys);
+		} else if (measure instanceof Dispatchor dis) {
+			addIfCustom(dis.getAggregationKey(), standardAggregationKeys, concealableKeys);
+			addIfCustom(dis.getDecompositionKey(), standardDecompositionKeys, concealableKeys);
+		} else if (measure instanceof Shiftor shiftor) {
+			addIfCustom(shiftor.getEditorKey(), standardEditorKeys, concealableKeys);
+		}
+	}
+
+	private static void addIfCustom(String key, Set<String> whitelist, Set<String> out) {
+		if (!whitelist.contains(key)) {
+			out.add(key);
+		}
+	}
+
 	private static Map<String, String> invert(Map<String, String> mapping) {
 		Map<String, String> inverted = new LinkedHashMap<>();
+		mapping.forEach((k, v) -> inverted.put(v, k));
+		return Collections.unmodifiableMap(inverted);
+	}
+
+	private static Map<Object, Object> invertValueMapping(Map<Object, String> mapping) {
+		Map<Object, Object> inverted = new LinkedHashMap<>();
 		mapping.forEach((k, v) -> inverted.put(v, k));
 		return Collections.unmodifiableMap(inverted);
 	}
@@ -299,12 +517,15 @@ public class MeasureForestConcealer {
 	// ── AMappingVisitor ───────────────────────────────────────────────────────
 
 	/**
-	 * A {@link IMeasureForestVisitor} that rewrites every identifier in a forest by looking it up in three
-	 * {@link String}-to-{@link String} maps: one for names (measures + forest), one for column names, one for tags.
+	 * A {@link IMeasureForestVisitor} that rewrites every identifier in a forest by looking it up in five {@link Map}s:
+	 * one for names (measures + forest), one for column names, one for operand values, one for operator keys, one for
+	 * tags.
 	 *
 	 * <p>
 	 * Both concealment and restoration share this implementation — they differ only in which maps are passed in
-	 * (forward hashes for concealment, inverted maps for restoration).
+	 * (forward hashes for concealment, inverted maps for restoration). For the value map, entries are typed
+	 * {@code Map<Object, Object>} so the same field holds both {@code original → concealed-String} (forward) and
+	 * {@code concealed-String → original} (inverse).
 	 *
 	 * <p>
 	 * Subclasses may override {@link #mapOptions(Map)} to customise how option maps (e.g.
@@ -314,14 +535,32 @@ public class MeasureForestConcealer {
 
 		protected final Map<String, String> nameMapping;
 		protected final Map<String, String> columnMapping;
+		protected final Map<Object, Object> valueMapping;
+		protected final Map<String, String> keyMapping;
 		protected final Map<String, String> tagMapping;
+		protected final Set<String> standardAggregationKeys;
+		protected final Set<String> standardCombinationKeys;
+		protected final Set<String> standardDecompositionKeys;
+		protected final Set<String> standardEditorKeys;
 
 		protected AMappingVisitor(Map<String, String> nameMapping,
 				Map<String, String> columnMapping,
-				Map<String, String> tagMapping) {
+				Map<Object, Object> valueMapping,
+				Map<String, String> keyMapping,
+				Map<String, String> tagMapping,
+				Set<String> standardAggregationKeys,
+				Set<String> standardCombinationKeys,
+				Set<String> standardDecompositionKeys,
+				Set<String> standardEditorKeys) {
 			this.nameMapping = nameMapping;
 			this.columnMapping = columnMapping;
+			this.valueMapping = valueMapping;
+			this.keyMapping = keyMapping;
 			this.tagMapping = tagMapping;
+			this.standardAggregationKeys = standardAggregationKeys;
+			this.standardCombinationKeys = standardCombinationKeys;
+			this.standardDecompositionKeys = standardDecompositionKeys;
+			this.standardEditorKeys = standardEditorKeys;
 		}
 
 		@Override
@@ -341,6 +580,7 @@ public class MeasureForestConcealer {
 				return agg.toBuilder()
 						.name(newName)
 						.columnName(columnMapping.getOrDefault(agg.getColumnName(), agg.getColumnName()))
+						.aggregationKey(mapAggregationKey(agg.getAggregationKey()))
 						.clearAggregationOptions()
 						.aggregationOptions(mapOptions(agg.getAggregationOptions()))
 						.build();
@@ -349,6 +589,7 @@ public class MeasureForestConcealer {
 						.name(newName)
 						.clearUnderlyings()
 						.underlyings(mapNames(comb.getUnderlyings()))
+						.combinationKey(mapCombinationKey(comb.getCombinationKey()))
 						.clearCombinationOptions()
 						.combinationOptions(mapOptions(comb.getCombinationOptions()))
 						.build();
@@ -362,6 +603,7 @@ public class MeasureForestConcealer {
 								.collect(ImmutableSet.toImmutableSet()))
 						.clearUnderlyings()
 						.underlyings(mapNames(col.getUnderlyings()))
+						.combinationKey(mapCombinationKey(col.getCombinationKey()))
 						.clearCombinationOptions()
 						.combinationOptions(mapOptions(col.getCombinationOptions()))
 						.build();
@@ -375,6 +617,7 @@ public class MeasureForestConcealer {
 				return shiftor.toBuilder()
 						.name(newName)
 						.underlying(mapName(shiftor.getUnderlying()))
+						.editorKey(mapEditorKey(shiftor.getEditorKey()))
 						.clearEditorOptions()
 						.editorOptions(mapOptions(shiftor.getEditorOptions()))
 						.build();
@@ -382,6 +625,8 @@ public class MeasureForestConcealer {
 				return dis.toBuilder()
 						.name(newName)
 						.underlying(mapName(dis.getUnderlying()))
+						.aggregationKey(mapAggregationKey(dis.getAggregationKey()))
+						.decompositionKey(mapDecompositionKey(dis.getDecompositionKey()))
 						.clearAggregationOptions()
 						.aggregationOptions(mapOptions(dis.getAggregationOptions()))
 						.clearDecompositionOptions()
@@ -393,6 +638,8 @@ public class MeasureForestConcealer {
 						.clearUnderlyings()
 						.underlyings(mapNames(par.getUnderlyings()))
 						.groupBy(mapGroupBy(par.getGroupBy()))
+						.aggregationKey(mapAggregationKey(par.getAggregationKey()))
+						.combinationKey(mapCombinationKey(par.getCombinationKey()))
 						.clearAggregationOptions()
 						.aggregationOptions(mapOptions(par.getAggregationOptions()))
 						.clearCombinationOptions()
@@ -408,12 +655,15 @@ public class MeasureForestConcealer {
 		}
 
 		/**
-		 * Recursively rewrites every {@link ColumnFilter#getColumn()} inside {@code filter} using
-		 * {@link #columnMapping}.
+		 * Recursively rewrites every {@link ColumnFilter#getColumn() column} and {@link ColumnFilter#getValueMatcher()
+		 * value-matcher operand} inside {@code filter}.
 		 */
 		protected ISliceFilter mapFilter(ISliceFilter filter) {
 			if (filter instanceof ColumnFilter cf) {
-				return cf.toBuilder().column(columnMapping.getOrDefault(cf.getColumn(), cf.getColumn())).build();
+				return cf.toBuilder()
+						.column(columnMapping.getOrDefault(cf.getColumn(), cf.getColumn()))
+						.valueMatcher(mapValueMatcher(cf.getValueMatcher()))
+						.build();
 			}
 			if (filter instanceof IAndFilter af) {
 				List<ISliceFilter> mapped = af.getOperands().stream().map(this::mapFilter).collect(Collectors.toList());
@@ -428,6 +678,51 @@ public class MeasureForestConcealer {
 			}
 			// Structural filters (MATCH_ALL, MATCH_NONE) carry no column → return as-is.
 			return filter;
+		}
+
+		/**
+		 * Rewrites every operand reachable inside {@code matcher} using {@link #valueMapping}, preserving logical
+		 * structure (AND / OR / NOT). Structural matchers (null, MATCH_ALL, MATCH_NONE, RegexMatcher) are returned
+		 * as-is.
+		 */
+		protected IValueMatcher mapValueMatcher(IValueMatcher matcher) {
+			if (matcher == IValueMatcher.MATCH_ALL || matcher == IValueMatcher.MATCH_NONE) {
+				return matcher;
+			}
+			if (matcher instanceof EqualsMatcher em) {
+				Object original = em.getOperand();
+				Object mapped = valueMapping.getOrDefault(original, original);
+				return EqualsMatcher.matchEq(mapped);
+			}
+			if (matcher instanceof InMatcher im) {
+				ImmutableSet<Object> mapped = im.getOperands()
+						.stream()
+						.map(o -> valueMapping.getOrDefault(o, o))
+						.collect(ImmutableSet.toImmutableSet());
+				return InMatcher.builder().operands(mapped).build();
+			}
+			if (matcher instanceof NotMatcher nm) {
+				return NotMatcher.builder().negated(mapValueMatcher(nm.getNegated())).build();
+			}
+			if (matcher instanceof AndMatcher am) {
+				return AndMatcher.copyOf(am.getOperands().stream().map(this::mapValueMatcher).toList());
+			}
+			if (matcher instanceof OrMatcher om) {
+				return OrMatcher.copyOf(om.getOperands().stream().map(this::mapValueMatcher).toList());
+			}
+			if (matcher instanceof ComparingMatcher cm) {
+				Object mapped = valueMapping.getOrDefault(cm.getOperand(), cm.getOperand());
+				return cm.toBuilder().operand(mapped).build();
+			}
+			if (matcher instanceof LikeMatcher lm) {
+				Object mapped = valueMapping.getOrDefault(lm.getPattern(), lm.getPattern());
+				return LikeMatcher.builder().pattern(String.valueOf(mapped)).build();
+			}
+			if (matcher instanceof StringMatcher sm) {
+				Object mapped = valueMapping.getOrDefault(sm.getString(), sm.getString());
+				return StringMatcher.builder().string(String.valueOf(mapped)).build();
+			}
+			return matcher;
 		}
 
 		/**
@@ -458,6 +753,33 @@ public class MeasureForestConcealer {
 			return nameMapping.getOrDefault(name, name);
 		}
 
+		/**
+		 * Per-kind operator-key mapping. If {@code key} is in the matching whitelist it passes through verbatim;
+		 * otherwise the {@link #keyMapping} concealment/restoration lookup applies.
+		 */
+		protected String mapAggregationKey(String key) {
+			return mapKey(key, standardAggregationKeys);
+		}
+
+		protected String mapCombinationKey(String key) {
+			return mapKey(key, standardCombinationKeys);
+		}
+
+		protected String mapDecompositionKey(String key) {
+			return mapKey(key, standardDecompositionKeys);
+		}
+
+		protected String mapEditorKey(String key) {
+			return mapKey(key, standardEditorKeys);
+		}
+
+		private String mapKey(String key, Set<String> whitelist) {
+			if (whitelist.contains(key)) {
+				return key;
+			}
+			return keyMapping.getOrDefault(key, key);
+		}
+
 		private List<String> mapNames(List<String> names) {
 			return names.stream().map(this::mapName).collect(ImmutableList.toImmutableList());
 		}
@@ -470,24 +792,35 @@ public class MeasureForestConcealer {
 	// ── ConcealingVisitor ──────────────────────────────────────────────────────
 
 	/**
-	 * Specialisation of {@link AMappingVisitor} for concealment. Exposes {@code valueMapping} as a protected field so
-	 * that subclasses overriding {@link #mapOptions(Map)} can use it to hash known option keys or values.
+	 * Specialisation of {@link AMappingVisitor} for concealment. Widens the forward {@code Map<Object, String>}
+	 * value-mapping to the visitor's {@code Map<Object, Object>} contract.
 	 */
 	protected static class ConcealingVisitor extends AMappingVisitor {
 
-		/**
-		 * Available to subclasses that override {@link #mapOptions(Map)} to hash option values. Populated from
-		 * {@link MeasureForestConcealer#buildValueMapping(Set)} and stored in the accompanying
-		 * {@link ConcealingDefinition}.
-		 */
-		protected final Map<String, String> valueMapping;
-
 		ConcealingVisitor(Map<String, String> nameMapping,
 				Map<String, String> columnMapping,
-				Map<String, String> valueMapping,
-				Map<String, String> tagMapping) {
-			super(nameMapping, columnMapping, tagMapping);
-			this.valueMapping = valueMapping;
+				Map<Object, String> valueMapping,
+				Map<String, String> keyMapping,
+				Map<String, String> tagMapping,
+				Set<String> standardAggregationKeys,
+				Set<String> standardCombinationKeys,
+				Set<String> standardDecompositionKeys,
+				Set<String> standardEditorKeys) {
+			super(nameMapping,
+					columnMapping,
+					widen(valueMapping),
+					keyMapping,
+					tagMapping,
+					standardAggregationKeys,
+					standardCombinationKeys,
+					standardDecompositionKeys,
+					standardEditorKeys);
+		}
+
+		private static Map<Object, Object> widen(Map<Object, String> forward) {
+			Map<Object, Object> widened = new LinkedHashMap<>();
+			forward.forEach(widened::put);
+			return Collections.unmodifiableMap(widened);
 		}
 	}
 }

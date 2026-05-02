@@ -26,6 +26,11 @@ import java.util.Collection;
 import java.util.List;
 import java.util.regex.Pattern;
 
+import org.jspecify.annotations.Nullable;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.Lists;
 
 import eu.solven.adhoc.collection.AdhocCollectionHelpers;
@@ -70,6 +75,31 @@ public class ColumnFilter implements IColumnFilter {
 		this.nullIfAbsent = nullIfAbsent;
 	}
 
+	// Shadow the Lombok-generated getter so it can be marked @JsonIgnore: serialization is driven by
+	// jsonNullIfAbsent() below, which omits the property when the flag has no observable effect.
+	@Override
+	@JsonIgnore
+	public boolean isNullIfAbsent() {
+		return nullIfAbsent;
+	}
+
+	/**
+	 * Expose {@link #nullIfAbsent} to Jackson only when it actually affects the filter outcome. The flag is only
+	 * meaningful for matchers which may match a {@code null} value (e.g. {@link NullMatcher}); for all other matchers
+	 * an absent column and an explicit {@code null} both yield {@code false}, so the flag is redundant and omitted.
+	 *
+	 * @return {@link Boolean#TRUE}/{@link Boolean#FALSE} when the flag is observable, or {@code null} to skip the
+	 *         property during serialization.
+	 */
+	@JsonProperty("nullIfAbsent")
+	@JsonInclude(JsonInclude.Include.NON_NULL)
+	protected @Nullable Boolean jsonNullIfAbsent() {
+		if (valueMatcher.match(null)) {
+			return nullIfAbsent;
+		}
+		return null;
+	}
+
 	@Override
 	public boolean isNot() {
 		return false;
@@ -107,9 +137,11 @@ public class ColumnFilter implements IColumnFilter {
 
 	/**
 	 * Lombok Builder.
-	 * 
+	 *
 	 * @author Benoit Lacelle
 	 */
+	// Lombok @Builder fields (`column`, `valueMatcher`) are populated via chained setters; NullAway can't see init.
+	@SuppressWarnings("NullAway.Init")
 	public static class ColumnFilterBuilder {
 		// By default, we treat the absence of a column as a null (e.g. like in most Map implementations)
 		boolean nullIfAbsent = true;

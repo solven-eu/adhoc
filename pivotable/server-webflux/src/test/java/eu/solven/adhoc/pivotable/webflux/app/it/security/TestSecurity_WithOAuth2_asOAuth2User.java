@@ -244,7 +244,9 @@ public class TestSecurity_WithOAuth2_asOAuth2User {
 
 				.expectBody(Map.class)
 				.value(body -> {
-					Assertions.assertThat(body).containsEntry("login", 200).hasSize(1);
+					Assertions.assertThat(body).containsEntry("login", 200).hasSize(2);
+					Assertions.assertThat((Map<String, Object>) body.get("session"))
+							.containsKeys("maxIdleSeconds", "creationEpochMs", "lastAccessEpochMs");
 				});
 	}
 

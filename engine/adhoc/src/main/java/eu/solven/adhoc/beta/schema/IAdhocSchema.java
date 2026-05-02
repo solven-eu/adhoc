@@ -1,0 +1,92 @@
+/**
+ * The MIT License
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
+package eu.solven.adhoc.beta.schema;
+
+import java.util.Collection;
+import java.util.Optional;
+
+import com.google.common.util.concurrent.ListenableFuture;
+
+import eu.solven.adhoc.cube.ICubeWrapper;
+import eu.solven.adhoc.dataframe.tabular.ITabularView;
+import eu.solven.adhoc.engine.step.ICubeQuery;
+import eu.solven.adhoc.filter.value.IValueMatcher;
+import eu.solven.adhoc.measure.forest.IMeasureForest;
+import eu.solven.adhoc.table.ITableWrapper;
+import lombok.Builder;
+import lombok.NonNull;
+import lombok.Value;
+
+/**
+ * Wraps together the core structures of Adhoc.
+ * 
+ * A schema is a bunch of {@link ITableWrapper}, {@link IMeasureForest} and {@link ICubeWrapper}.
+ * 
+ * @author Benoit Lacelle
+ */
+public interface IAdhocSchema {
+
+	/**
+	 * Used to return a subset of {@link EndpointSchemaMetadata}
+	 */
+	@Value
+	@Builder
+	class AdhocSchemaQuery {
+		@NonNull
+		@Builder.Default
+		Optional<String> cube = Optional.empty();
+		@NonNull
+		@Builder.Default
+		Optional<String> table = Optional.empty();
+		@NonNull
+		@Builder.Default
+		Optional<String> forest = Optional.empty();
+	}
+
+	IAdhocSchemaRegistrer getRegistrer();
+
+	/**
+	 * 
+	 * @param query
+	 *            possibly filtering the relevant cube and table.
+	 * @param allIfEmpty
+	 *            if true, return all cubes if no cub is filtered. Same for tables.
+	 * @return the metadata of this instance.
+	 */
+	EndpointSchemaMetadata getMetadata(AdhocSchemaQuery query, boolean allIfEmpty);
+
+	ListenableFuture<ITabularView> executeAsync(String cube, ICubeQuery query);
+
+	/**
+	 * 
+	 * @param cube
+	 * @param query
+	 * @return an {@link ITabularView} as computed for given query.
+	 */
+	ITabularView execute(String cube, ICubeQuery query);
+
+	CoordinatesSample getCoordinates(ColumnIdentifier columnId, IValueMatcher orElse, int limitCoordinates);
+
+	Collection<ICubeWrapper> getCubes();
+
+}

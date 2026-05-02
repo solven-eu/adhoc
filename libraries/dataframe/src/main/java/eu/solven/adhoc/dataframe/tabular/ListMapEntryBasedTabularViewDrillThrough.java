@@ -34,14 +34,25 @@ import lombok.extern.jackson.Jacksonized;
 
 /**
  * Extends {@link ListMapEntryBasedTabularView}, but will not align input values along slices.
- * 
+ *
  * It is especially useful for {@link StandardQueryOptions#DRILLTHROUGH}.
- * 
+ *
  * @author Benoit Lacelle
  */
 @SuperBuilder
 @Jacksonized
 public class ListMapEntryBasedTabularViewDrillThrough extends ListMapEntryBasedTabularView {
+
+	/**
+	 * Sentinel string emitted in the {@code values} or {@code coordinates} {@link Map} of a {@link TabularEntry} when a
+	 * column from the union schema is not applicable to a given row (e.g. heterogeneous {@link TabularEntry}s sourced
+	 * from sub-queries that did not all carry the same set of columns).
+	 *
+	 * <p>
+	 * Distinct from a real {@code null} returned by the database: a real {@code null} means "the table has no value for
+	 * this row/column"; {@code SKIPPED_CELL} means "this column was not part of the query that produced this row".
+	 */
+	public static final String SKIPPED_CELL = "$adhoc.drillthrough.skipped_cell";
 
 	public static ListMapEntryBasedTabularViewDrillThrough withCapacity(long expectedOutputCardinality) {
 		List<TabularEntry> rawArray = new ArrayList<>(Ints.checkedCast(expectedOutputCardinality));
@@ -53,6 +64,19 @@ public class ListMapEntryBasedTabularViewDrillThrough extends ListMapEntryBasedT
 		ListMapEntryBasedTabularViewDrillThrough newView = withCapacity(capacity);
 
 		return load(from, newView);
+	}
+
+	/**
+	 * Append a single raw row, as produced by a DRILLTHROUGH execution. Each call produces one new
+	 * {@link TabularEntry}; no slice deduplication is performed.
+	 *
+	 * @param coordinates
+	 *            the groupBy column values for this row.
+	 * @param values
+	 *            the per-aggregator column values for this row.
+	 */
+	public void appendRow(Map<String, ?> coordinates, Map<String, ?> values) {
+		entries.add(TabularEntry.builder().coordinates(coordinates).values(values).build());
 	}
 
 	/**

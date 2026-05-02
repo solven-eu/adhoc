@@ -127,6 +127,7 @@ public class ArrowPojoStreamer<T> {
 			}
 			VectorSchemaRoot slice = root.slice(startIndex, actualPartitionSize);
 
+			// TODO Need to bound this for backpressure
 			tasks.add(vthreads.submit(() -> {
 				try (VectorSchemaRoot oneSlice = slice) {
 					batchMapper.accept(oneSlice);

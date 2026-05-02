@@ -25,6 +25,9 @@ package eu.solven.adhoc.dataframe.column.navigable_else_hash;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import eu.solven.adhoc.cuboid.StreamStrategy;
+import eu.solven.adhoc.primitive.IValueProvider;
+
 public class TestMultitypeNavigableElseHashColumn {
 	@Test
 	public void testPutUnordered() {
@@ -46,5 +49,37 @@ public class TestMultitypeNavigableElseHashColumn {
 
 		Assertions.assertThat(column.navigable.keyStream().toList()).containsExactly("a", "c", "e");
 		Assertions.assertThat(column.hash.keyStream().toList()).contains("b", "d").hasSize(2);
+	}
+
+	// ---- onValue(T, StreamStrategy) — replaces the deprecated ICanReadSortedSubComplement contract ----
+	// The navigable side IS the sorted leg; the hash side IS the unordered complement.
+
+	@Test
+	public void testOnValueStrategy_routesToNavigableOrHash() {
+		MultitypeNavigableElseHashColumn<String> column = MultitypeNavigableElseHashColumn.<String>builder().build();
+
+		// Sorted insertion → goes to navigable side.
+		column.append("a").onLong(1L);
+		column.append("c").onLong(3L);
+
+		// Unordered insertion → goes to hash side.
+		column.append("b").onLong(2L);
+
+		// SORTED_SUB hits the navigable side only.
+		Assertions.assertThat(IValueProvider.getValue(column.onValue("a", StreamStrategy.SORTED_SUB))).isEqualTo(1L);
+		Assertions.assertThat(IValueProvider.getValue(column.onValue("c", StreamStrategy.SORTED_SUB))).isEqualTo(3L);
+		Assertions.assertThat(IValueProvider.getValue(column.onValue("b", StreamStrategy.SORTED_SUB))).isNull();
+
+		// SORTED_SUB_COMPLEMENT hits the hash side only.
+		Assertions.assertThat(IValueProvider.getValue(column.onValue("a", StreamStrategy.SORTED_SUB_COMPLEMENT)))
+				.isNull();
+		Assertions.assertThat(IValueProvider.getValue(column.onValue("c", StreamStrategy.SORTED_SUB_COMPLEMENT)))
+				.isNull();
+		Assertions.assertThat(IValueProvider.getValue(column.onValue("b", StreamStrategy.SORTED_SUB_COMPLEMENT)))
+				.isEqualTo(2L);
+
+		// ALL hits whichever side has the slice.
+		Assertions.assertThat(IValueProvider.getValue(column.onValue("a", StreamStrategy.ALL))).isEqualTo(1L);
+		Assertions.assertThat(IValueProvider.getValue(column.onValue("b", StreamStrategy.ALL))).isEqualTo(2L);
 	}
 }

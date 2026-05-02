@@ -32,10 +32,12 @@ import java.util.function.Function;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.slf4j.bridge.SLF4JBridgeHandler;
 
 import com.activeviam.builders.StartBuilding;
 import com.activeviam.copper.CopperRegistrations;
+import com.activeviam.copper.LevelIdentifier;
 import com.activeviam.copper.pivot.pp.DrillupPostProcessor;
 import com.activeviam.copper.pivot.pp.LeafIdentityPostProcessor;
 import com.activeviam.copper.pivot.pp.LevelFilteringPostProcessor;
@@ -137,6 +139,28 @@ public class TestAtotiMeasureToAdhoc {
 		String asString = new ObjectMapper().writeValueAsString(options);
 		Assertions.assertThat(asString).isEqualTo("""
 				{"stringK":"stringV","booleanK":true,"lambdaK":{},"intK":123}""");
+	}
+
+	// A LevelIdentifier carried by a Properties entry has no useful meaning on the Adhoc side; the translator must
+	// replace it with the Adhoc column name the level maps to (via `levelToColumn(LevelIdentifier)`), so downstream
+	// Combinator / Partitionor / Dispatchor options receive a plain String column name.
+	@Test
+	public void testPropertiesToOptions_levelIdentifierReplacedByColumn() {
+		LevelIdentifier levelIdentifier = Mockito.mock(LevelIdentifier.class);
+		Mockito.when(levelIdentifier.toDescription()).thenReturn("Geography@Country");
+
+		Properties properties = new Properties();
+		properties.put("someLevelKey", levelIdentifier);
+		// A non-LevelIdentifier value must pass through unchanged.
+		properties.put("intK", 42);
+
+		Map<String, Object> options = apMeasuresToAdhoc.propertiesToOptions(properties);
+
+		// Use the converter's own `levelToColumn` as the expected value so the assertion stays
+		// robust if the ITableAliaser defaults ever change.
+		Assertions.assertThat(options)
+				.containsEntry("someLevelKey", apMeasuresToAdhoc.levelToColumn("Geography@Country"))
+				.containsEntry("intK", 42);
 	}
 
 	@Test

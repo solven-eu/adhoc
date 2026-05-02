@@ -25,6 +25,8 @@ package eu.solven.adhoc.encoding.column;
 import java.util.Collections;
 import java.util.List;
 
+import org.jspecify.annotations.Nullable;
+
 import com.google.common.collect.ImmutableList;
 
 import eu.solven.adhoc.encoding.column.freezer.IFreezingStrategy;
@@ -46,7 +48,7 @@ public class ObjectArrayImmutableColumn implements IAppendableColumn {
 	final List<?> asArray = ImmutableList.of();
 
 	@Override
-	public void append(Object normalizedValue) {
+	public void append(@Nullable Object normalizedValue) {
 		throw new UnsupportedAsImmutableException();
 	}
 

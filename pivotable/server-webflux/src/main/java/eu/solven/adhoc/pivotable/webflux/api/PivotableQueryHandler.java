@@ -39,11 +39,12 @@ import org.springframework.web.reactive.function.server.ServerResponse;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.AtomicLongMap;
 
-import eu.solven.adhoc.beta.schema.AdhocSchema;
+import eu.solven.adhoc.beta.schema.IAdhocSchema;
 import eu.solven.adhoc.beta.schema.TargetedCubeQuery;
 import eu.solven.adhoc.dataframe.tabular.IReadableTabularView;
 import eu.solven.adhoc.dataframe.tabular.ITabularViewArrowSerializer;
 import eu.solven.adhoc.dataframe.tabular.ListBasedTabularView;
+import eu.solven.adhoc.engine.query.CubeQuery;
 import eu.solven.adhoc.filter.AndFilter;
 import eu.solven.adhoc.filter.ColumnFilter;
 import eu.solven.adhoc.filter.value.EqualsMatcher;
@@ -52,13 +53,12 @@ import eu.solven.adhoc.filter.value.OrMatcher;
 import eu.solven.adhoc.pivotable.cube.AdhocCubesRegistry;
 import eu.solven.adhoc.pivotable.cube.PivotableCubeId;
 import eu.solven.adhoc.pivotable.cube.PivotableCubeMetadata;
-import eu.solven.adhoc.pivotable.endpoint.PivotableAdhocSchemaRegistry;
+import eu.solven.adhoc.pivotable.endpoint.PivotableSchemaRegistry;
 import eu.solven.adhoc.pivotable.query.AsynchronousStatus;
 import eu.solven.adhoc.pivotable.query.CancellationStatus;
 import eu.solven.adhoc.pivotable.query.PivotableAsynchronousQueriesManager;
 import eu.solven.adhoc.pivotable.query.PivotableAsynchronousQueriesManager.StateAndView;
 import eu.solven.adhoc.pivotable.query.QueryResultHolder;
-import eu.solven.adhoc.query.cube.CubeQuery;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Flux;
@@ -73,7 +73,7 @@ import reactor.core.scheduler.Schedulers;
 @RequiredArgsConstructor
 @Slf4j
 public class PivotableQueryHandler {
-	final PivotableAdhocSchemaRegistry schemaRegistry;
+	final PivotableSchemaRegistry schemaRegistry;
 	final AdhocCubesRegistry cubesRegistry;
 
 	final PivotableAsynchronousQueriesManager asynchronousQueriesManager = new PivotableAsynchronousQueriesManager();
@@ -94,7 +94,7 @@ public class PivotableQueryHandler {
 
 	protected Mono<ServerResponse> executeQuery(Mono<TargetedCubeQuery> queryOnSchemaMono) {
 		return queryOnSchemaMono.map(queryOnSchema -> {
-			AdhocSchema schema = schemaRegistry.getSchema(queryOnSchema.getEndpointId());
+			IAdhocSchema schema = schemaRegistry.getSchema(queryOnSchema.getEndpointId());
 
 			return schema.execute(queryOnSchema.getCube(), queryOnSchema.getQuery());
 		})
@@ -107,7 +107,7 @@ public class PivotableQueryHandler {
 
 	protected Mono<ServerResponse> executeAsynchronousQuery(Mono<TargetedCubeQuery> queryOnSchemaMono) {
 		return queryOnSchemaMono.map(queryOnSchema -> {
-			AdhocSchema schema = schemaRegistry.getSchema(queryOnSchema.getEndpointId());
+			IAdhocSchema schema = schemaRegistry.getSchema(queryOnSchema.getEndpointId());
 
 			return asynchronousQueriesManager.executeAsync(schema, queryOnSchema);
 
@@ -150,7 +150,7 @@ public class PivotableQueryHandler {
 	protected Mono<ServerResponse> executeQueryAsArrow(Mono<TargetedCubeQuery> queryOnSchemaMono,
 			DataBufferFactory bufferFactory) {
 		return queryOnSchemaMono.map(queryOnSchema -> {
-			AdhocSchema schema = schemaRegistry.getSchema(queryOnSchema.getEndpointId());
+			IAdhocSchema schema = schemaRegistry.getSchema(queryOnSchema.getEndpointId());
 			return schema.execute(queryOnSchema.getCube(), queryOnSchema.getQuery());
 		})
 				.flatMap(view -> ServerResponse.ok()

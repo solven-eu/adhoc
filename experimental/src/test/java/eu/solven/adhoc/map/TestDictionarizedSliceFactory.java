@@ -22,7 +22,6 @@
  */
 package eu.solven.adhoc.map;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -33,7 +32,6 @@ import org.junit.jupiter.api.Test;
 import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.encoding.dictionary.DictionarizedSliceFactory;
-import eu.solven.adhoc.map.factory.ASliceFactory.IHasEntries;
 
 public class TestDictionarizedSliceFactory {
 	DictionarizedSliceFactory sliceFactory = DictionarizedSliceFactory.builder().build();
@@ -77,24 +75,6 @@ public class TestDictionarizedSliceFactory {
 	public void testPre_OneEntry() {
 		IAdhocMap map = sliceFactory.newMapBuilder(ImmutableSet.of("c")).append("v").build();
 		Assertions.assertThat((Map) map).isEqualTo(Map.of("c", "v"));
-	}
-
-	@Test
-	public void testBuildRawMaps() {
-		IAdhocMap map = sliceFactory.buildMap(new IHasEntries() {
-
-			@Override
-			public Collection<? extends String> getKeys() {
-				return List.of("a", "b");
-			}
-
-			@Override
-			public Collection<?> getValues() {
-				return List.of("vA", "vB");
-			}
-
-		});
-		Assertions.assertThat((Map) map).isEqualTo(Map.of("a", "vA", "b", "vB"));
 	}
 
 	@Test

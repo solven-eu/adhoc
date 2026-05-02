@@ -64,6 +64,13 @@ public interface IMultitypeArray {
 
 	IValueProvider read(int rowIndex);
 
+	/**
+	 * 
+	 * @param rowIndex
+	 * @return true if explicitly or implicitly (e.g. out of bounds) null.
+	 */
+	boolean isNull(int rowIndex);
+
 	<U> U apply(int rowIndex, IValueFunction<U> valueFunction);
 
 	// BEWARE Should rely on IValueConsumer

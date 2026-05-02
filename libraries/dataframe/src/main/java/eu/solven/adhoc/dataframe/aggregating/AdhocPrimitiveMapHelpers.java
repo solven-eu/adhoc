@@ -45,8 +45,8 @@ public class AdhocPrimitiveMapHelpers {
 	}
 
 	@SuppressWarnings("PMD.LooseCoupling")
-	public static <T> Object2IntMap<T> newHashMapDefaultMinus1(int size) {
-		Object2IntOpenHashMap<T> map = new Object2IntOpenHashMap<>(size);
+	public static <T> Object2IntMap<T> newHashMapDefaultMinus1(int capacity) {
+		Object2IntOpenHashMap<T> map = new Object2IntOpenHashMap<>(capacity);
 
 		// If we request an unknown slice, we must not map to an existing index
 		map.defaultReturnValue(-1);

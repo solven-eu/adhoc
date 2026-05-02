@@ -4,7 +4,7 @@
 	<parent>
 		<groupId>eu.solven.adhoc</groupId>
 		<artifactId>aggregator-adhoc</artifactId>
-		<version>0.0.19-SNAPSHOT</version>
+		<version>0.1.0-SNAPSHOT</version>
 	</parent>
 
 	<artifactId>adhoc-model</artifactId>
@@ -13,12 +13,20 @@
 
 	<properties>
 		<testJarPhase>package</testJarPhase>
+
 		<jacoco.branch.ratio>0.88</jacoco.branch.ratio>
 		<jacoco.instruction.ratio>0.83</jacoco.instruction.ratio>
+
 		<automatic.module.name>eu.solven.adhoc.model</automatic.module.name>
 	</properties>
 
 	<dependencies>
+		<dependency>
+			<!-- @NullMarked / @Nullable / @NonNull (annotation-only, retained at compile time) -->
+			<groupId>org.jspecify</groupId>
+			<artifactId>jspecify</artifactId>
+		</dependency>
+
 		<dependency>
 			<groupId>tools.jackson.core</groupId>
 			<artifactId>jackson-databind</artifactId>

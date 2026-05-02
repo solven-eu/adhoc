@@ -28,7 +28,7 @@ import eu.solven.adhoc.encoding.column.freezer.AdhocFreezingUnsafe;
 import eu.solven.adhoc.encoding.column.freezer.AsynchronousFreezingStrategy;
 import eu.solven.adhoc.encoding.column.freezer.IFreezingStrategy;
 import eu.solven.adhoc.encoding.column.freezer.SynchronousFreezingStrategy;
-import eu.solven.adhoc.options.IHasQueryOptions;
+import eu.solven.adhoc.options.IHasOptionsAndExecutorService;
 import eu.solven.adhoc.options.StandardQueryOptions;
 
 /**
@@ -38,13 +38,16 @@ import eu.solven.adhoc.options.StandardQueryOptions;
  */
 public class ThreadLocalAppendableTableFactory implements IAppendableTableFactory {
 	@Override
-	public IAppendableTable makeTable(IHasQueryOptions options) {
+	public IAppendableTable makeTable(IHasOptionsAndExecutorService options) {
 		IFreezingStrategy synchronousFreezer =
 				SynchronousFreezingStrategy.builder().freezersWithContext(AdhocFreezingUnsafe.getFreezers()).build();
 
 		IFreezingStrategy freezer;
 		if (StandardQueryOptions.CONCURRENT.isActive(options.getOptions())) {
-			freezer = AsynchronousFreezingStrategy.builder().synchronousStrategy(synchronousFreezer).build();
+			freezer = AsynchronousFreezingStrategy.builder()
+					.synchronousStrategy(synchronousFreezer)
+					.executor(options.getExecutorService())
+					.build();
 		} else {
 			freezer = synchronousFreezer;
 		}

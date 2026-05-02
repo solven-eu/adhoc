@@ -2,7 +2,7 @@
  * Column-oriented encoding layer: packed integers, dictionary encoding, FSST string compression, and appendable table
  * pages.
  */
-module eu.solven.adhoc.query.filters {
+module eu.solven.adhoc.filters {
 
 	// ── Exported packages ────────────────────────────────────────────────────
 	exports eu.solven.adhoc.filter;
@@ -13,7 +13,7 @@ module eu.solven.adhoc.query.filters {
 
 	// ── Sibling modules ──────────────────────────────────────────────────────
 	// adhoc-public: AdhocUnsafe, ILikeList, options.*
-	requires eu.solven.adhoc.meta;
+	requires eu.solven.adhoc.model;
 
 	// ── Named third-party modules ────────────────────────────────────────────
 	requires com.google.common;

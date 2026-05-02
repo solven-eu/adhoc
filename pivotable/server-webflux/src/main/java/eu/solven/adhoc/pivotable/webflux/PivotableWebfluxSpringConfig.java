@@ -59,7 +59,10 @@ import lombok.extern.slf4j.Slf4j;
 		PivotableLoginRouter.class,
 		AccessTokenHandler.class,
 
-		PivotableWebExceptionHandler.class, })
+		PivotableWebExceptionHandler.class,
+
+		// Static resources: long-cache policy for `/webjars/**`.
+		PivotableWebjarsCachingWebFluxConfigurer.class, })
 @Slf4j
 @Configuration
 public class PivotableWebfluxSpringConfig {

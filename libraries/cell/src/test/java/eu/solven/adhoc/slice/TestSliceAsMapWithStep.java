@@ -37,7 +37,9 @@ import eu.solven.adhoc.filter.ColumnFilter;
 import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class TestSliceAsMapWithStep {
 	@Test
 	public void testAsFilter() {
@@ -51,5 +53,32 @@ public class TestSliceAsMapWithStep {
 		SliceAsMapWithStep slice = SliceAsMapWithStep.builder().queryStep(step).slice(parentSlice).build();
 
 		Assertions.assertThat(slice.asFilter()).isEqualTo(AndFilter.and("c1", "v1", "c2", "v2"));
+	}
+
+	@Test
+	public void testToString() {
+		IMeasure k1Sum = Mockito.mock(IMeasure.class);
+
+		ISliceFilter stepFilter = ColumnFilter.matchEq("c1", "v1");
+		CubeQueryStep step =
+				CubeQueryStep.builder().measure(k1Sum).filter(stepFilter).groupBy(GroupByColumns.named("c2")).build();
+		ISlice parentSlice = SliceHelpers.asSlice(Map.of("c2", "v2"));
+
+		SliceAsMapWithStep slice = SliceAsMapWithStep.builder().queryStep(step).slice(parentSlice).build();
+
+		String asString = slice.toString();
+		log.debug("SliceAsMapWithStep.toString() = {}", asString);
+
+		// The wrapper's toString must include the slice and query-step content that actually identifies it.
+		Assertions.assertThat(asString)
+				.startsWith("SliceAsMapWithStep(")
+				.contains("slice=slice:{c2=v2}")
+				.contains("filter=c1==v1")
+				.contains("groupBy=(c2)");
+
+		// The memoized `filterSupplier` field must NOT leak its Guava wrapper / lambda reference into toString:
+		// those strings are meaningless noise for a human reader and the filter content is already derivable
+		// from `slice` + `queryStep`.
+		Assertions.assertThat(asString).doesNotContain("Suppliers.memoize").doesNotContain("$$Lambda");
 	}
 }

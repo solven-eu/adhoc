@@ -43,7 +43,7 @@ public class TestQueryResultHolder {
 
 		String asString = objectMapper.writeValueAsString(holder);
 
-		Assertions.assertThat(asString).isEqualTo("""
+		Assertions.assertThat(asString).isEqualToNormalizingNewlines("""
 				{
 				  "state" : "RUNNING",
 				  "retryIn" : "PT5S",
@@ -63,7 +63,7 @@ public class TestQueryResultHolder {
 
 		String asString = objectMapper.writeValueAsString(holder);
 
-		Assertions.assertThat(asString).isEqualTo("""
+		Assertions.assertThat(asString).isEqualToNormalizingNewlines("""
 				{
 				  "state" : "SERVED",
 				  "view" : {

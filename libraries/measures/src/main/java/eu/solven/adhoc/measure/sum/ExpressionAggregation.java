@@ -22,6 +22,8 @@
  */
 package eu.solven.adhoc.measure.sum;
 
+import org.jspecify.annotations.Nullable;
+
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.model.Aggregator;
 
@@ -36,7 +38,7 @@ public class ExpressionAggregation implements IAggregation {
 	public static final String KEY = "expression";
 
 	@Override
-	public Object aggregate(Object left, Object right) {
+	public @Nullable Object aggregate(@Nullable Object left, @Nullable Object right) {
 		if (left == null) {
 			return right;
 		} else if (right == null) {

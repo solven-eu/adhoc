@@ -9,6 +9,6 @@ export default {
 		return {};
 	},
 	template: /* HTML */ `
-        <img v-if="country != 'unknown'" :src="'https://flagcdn.com/' + country.toLowerCase() + '.svg'" :alt="country" width="36" height="24" />
-    `,
+		<img v-if="country != 'unknown'" :src="'https://flagcdn.com/' + country.toLowerCase() + '.svg'" :alt="country" width="36" height="24" />
+	`,
 };

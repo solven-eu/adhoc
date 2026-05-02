@@ -35,6 +35,8 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
+import org.jspecify.annotations.Nullable;
+
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -208,7 +210,7 @@ public class FilterHelpers {
 	 * @throws eu.solven.adhoc.util.NotYetImplementedException
 	 *             for matchers that cannot be represented as a single value
 	 */
-	protected static Object extractValue(IValueMatcher matcher) {
+	protected static @Nullable Object extractValue(IValueMatcher matcher) {
 		if (matcher instanceof EqualsMatcher eq) {
 			return eq.getWrapped();
 		} else if (matcher instanceof NullMatcher) {
@@ -252,7 +254,7 @@ public class FilterHelpers {
 	public static IValueMatcher wrapWithToString(IValueMatcher valueMatcher, Supplier<String> toString) {
 		return new IValueMatcher() {
 			@Override
-			public boolean match(Object value) {
+			public boolean match(@Nullable Object value) {
 				return valueMatcher.match(value);
 			}
 

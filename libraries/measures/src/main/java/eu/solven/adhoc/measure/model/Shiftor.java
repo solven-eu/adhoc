@@ -85,6 +85,8 @@ public class Shiftor implements IMeasure, IHasUnderlyingMeasures {
 	/**
 	 * Lombok @Builder
 	 */
+	// Builder fields populated via chained setters before .build(); NullAway can't see the cross-method init.
+	@SuppressWarnings("NullAway.Init")
 	public static class ShiftorBuilder {
 		public ShiftorBuilder lambda(ILambdaFilterEditor lambda) {
 			return editorKey(LambdaEditor.class.getName()).editorOption(LambdaCombination.K_LAMBDA, lambda);

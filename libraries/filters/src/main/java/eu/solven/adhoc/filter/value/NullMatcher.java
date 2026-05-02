@@ -22,6 +22,8 @@
  */
 package eu.solven.adhoc.filter.value;
 
+import org.jspecify.annotations.Nullable;
+
 import eu.solven.adhoc.filter.ColumnFilter;
 import lombok.Builder;
 import lombok.NonNull;
@@ -52,7 +54,7 @@ public class NullMatcher implements IValueMatcher, IColumnToString {
 	}
 
 	@Override
-	public boolean match(Object value) {
+	public boolean match(@Nullable Object value) {
 		return value == null;
 	}
 
@@ -70,7 +72,7 @@ public class NullMatcher implements IValueMatcher, IColumnToString {
 		return "===null";
 	}
 
-	public static Object unwrapNull(Object v) {
+	public static @Nullable Object unwrapNull(@Nullable Object v) {
 		if (v == NULL_HOLDER) {
 			return null;
 		} else {

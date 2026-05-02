@@ -34,8 +34,8 @@ export default {
 	// `.prevent` is important so that clicking a click does not select the measure/column toggle, or close the tags dropdown
 	// https://stackoverflow.com/questions/45700632/prevent-on-click-on-parent-when-clicking-button-inside-div
 	template: /* HTML */ `
-        <span type="button" :class="'badge text-bg-' + (searchOptions.tags.includes(tag) ? 'primary' : 'secondary')" @click.prevent="toggleTag(tag)">
-            {{tag}}
-        </span>
-    `,
+		<span type="button" :class="'badge text-bg-' + (searchOptions.tags.includes(tag) ? 'primary' : 'secondary')" @click.prevent="toggleTag(tag)">
+			{{tag}}
+		</span>
+	`,
 };

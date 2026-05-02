@@ -49,6 +49,15 @@ public class TestMultitypeHashMergeableColumn {
 			MultitypeHashMergeableColumn.<String>builder().aggregation(sum).build();
 
 	@Test
+	public void testInt() {
+		column.merge("k1", 123);
+
+		column.onValue("k1", o -> {
+			Assertions.assertThat(o).isEqualTo(123L);
+		});
+	}
+
+	@Test
 	public void testIntAndInt() {
 		column.merge("k1", 123);
 		column.merge("k1", 234);

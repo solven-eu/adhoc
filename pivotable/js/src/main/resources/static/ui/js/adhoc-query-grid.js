@@ -1,20 +1,25 @@
-import { ref, watch, onMounted, reactive, provide, inject } from "vue";
+import { ref, computed, watch, onMounted, reactive, provide, inject } from "vue";
 
 import AdhocCellModal from "./adhoc-query-grid-cell-modal.js";
-import AdhocGridFormatModal from "./adhoc-query-grid-format-modal.js";
-import AdhocGridExportCsv from "./adhoc-query-grid-export-csv.js";
+import AdhocGridTimingsBar from "./adhoc-query-grid-timings-bar.js";
+import AdhocGridControls from "./adhoc-query-grid-controls.js";
+import AdhocMeasureStatsModal from "./adhoc-query-grid-stats-modal.js";
 
 // Formatters
 import { SlickGrid, SlickDataView } from "slickgrid";
 
 import gridHelper from "./adhoc-query-grid-helper.js";
+import { isLoading as isLoadingHelper, loadingPercent as loadingPercentHelper, loadingMessage as loadingMessageHelper } from "./adhoc-query-grid-loading.js";
+
+import { usePreferencesStore } from "./store-preferences.js";
 
 export default {
 	// https://vuejs.org/guide/components/registration#local-registration
 	components: {
 		AdhocCellModal,
-		AdhocGridFormatModal,
-		AdhocGridExportCsv,
+		AdhocGridTimingsBar,
+		AdhocGridControls,
+		AdhocMeasureStatsModal,
 	},
 	// https://vuejs.org/guide/components/props.html
 	props: {
@@ -45,8 +50,34 @@ export default {
 		// https://stackoverflow.com/questions/2402953/javascript-data-grid-for-millions-of-rows
 		let dataView;
 
+		// Singleton model for the per-measure Statistics modal — provided by `adhoc-query.js`
+		// so the grid header buttons (registered in `adhoc-query-grid-helper.js`) can toggle
+		// it without prop-drilling. Read here so the local AdhocMeasureStatsModal gets the
+		// same reactive object the header buttons mutate.
+		const measureStatsModel = inject("measureStatsModel");
+
 		let grid;
 		const gridMetadata = reactive({});
+		// Two distinct "empty" states with different UX:
+		//
+		//   - `isEmptyModel` — the queryModel itself has no selected measures and no
+		//     selected columns (the user hasn't built a query yet). This is the case
+		//     that warrants the wizard-pointer hint ("Use the wizard…"). Derived as a
+		//     `computed` so it tracks the queryModel reactively without being mutated
+		//     from resyncData.
+		//
+		//   - `isEmptyView` — the user HAS built a query, but the backend returned zero
+		//     rows. The grid still shows its column headers; we don't want the wizard
+		//     hint here (it would lie about the state) but we may want a different
+		//     "no rows match" message in the future.
+		const isEmptyModel = computed(() => {
+			const qm = props.queryModel;
+			if (!qm) return true;
+			const hasSelectedMeasure = Object.values(qm.selectedMeasures || {}).some((v) => v === true);
+			const hasSelectedColumn = Object.values(qm.selectedColumns || {}).some((v) => v === true);
+			return !hasSelectedMeasure && !hasSelectedColumn;
+		});
+		const isEmptyView = computed(() => !isEmptyModel.value && !gridMetadata.nb_rows);
 
 		const formatOptions = reactive({
 			// https://stackoverflow.com/questions/673905/how-can-i-determine-a-users-locale-within-the-browser
@@ -72,9 +103,9 @@ export default {
 		function renderingDone() {
 			rendering.value = false;
 			props.tabularView.loading.rendering = false;
-			if (props.tabularView.timing.rendering_start) {
-				props.tabularView.timing.rendering = new Date() - props.tabularView.timing.rendering_start;
-				delete props.tabularView.timing.rendering_start;
+			if (props.tabularView.timing.rendering_startedAt) {
+				props.tabularView.timing.rendering = new Date() - props.tabularView.timing.rendering_startedAt;
+				delete props.tabularView.timing.rendering_startedAt;
 			} else {
 				// another cell already registered renderering as done
 			}
@@ -94,6 +125,36 @@ export default {
 			const view = props.tabularView.view;
 
 			gridColumns = [];
+			// Per-measure stats (min / max / sum / count) computed from `view.values`. Set in
+			// the non-empty branch below and threaded into both `measuresToGridColumns` (for
+			// the heatmap cell formatter) and `updateFooters` (for the min/sum/max summary).
+			// Left undefined when the grid is empty so formatters degrade to plain numbers.
+			let measureStats;
+
+			// Null view = cleared state (e.g. right after Reset, when queryModel is empty so no
+			// query was fired). Render a blank grid with a single placeholder column and zero
+			// data rows — SlickGrid misbehaves with `setColumns([])`, so keep at least one column.
+			// Bail out before the code below, which dereferences `view.coordinates` and
+			// `tabularView.query.groupBy.columns` (both undefined in this state).
+			//
+			// SlickGrid's frozen-column + rowSpan combo does NOT redraw on `dataView.refresh()`
+			// alone — the previous viewport's rendered rows survive. We must explicitly
+			// invalidate the row cache and re-render, mirroring the trailing call in the
+			// non-empty branch below.
+			if (!view) {
+				console.log("Rendering empty view (no query)");
+				gridColumns.push({ id: "empty", name: "", field: "empty", sortable: false });
+				data.array = [];
+				gridMetadata.nb_rows = 0;
+				grid.setColumns(gridColumns);
+				dataView.beginUpdate();
+				dataView.setItems(data.array, "id");
+				dataView.endUpdate();
+				grid.remapAllColumnsRowSpan();
+				grid.invalidate();
+				grid.render();
+				return;
+			}
 
 			// Do not allow sorting until it is compatible with rowSpans
 			const sortable = gridHelper.isSortable();
@@ -120,15 +181,32 @@ export default {
 			// Delete the example
 			delete metadata[0];
 
+			// DRILLTHROUGH: the response carries one entry per source row, with per-aggregator (aliased) keys
+			// that do not necessarily appear in `query.measures`. The schema (groupBy + measures) is therefore
+			// discovered from the rows themselves rather than from the submitted query.
+			const isDrillthrough = (props.tabularView.query.options || []).includes("DRILLTHROUGH");
+
 			// May be String or Object (decorating a column with calculated coordinates)
 			const rawColumnNames = props.tabularView.query.groupBy.columns;
-			const columnNames = rawColumnNames.map((rawC) => {
+			let columnNames = rawColumnNames.map((rawC) => {
 				if (typeof rawC === "object") {
 					return rawC.column;
 				} else {
 					return rawC;
 				}
 			});
+			if (isDrillthrough) {
+				// Union of all coordinate keys across rows, preserving insertion order.
+				const seen = new Set(columnNames);
+				for (const row of view.coordinates) {
+					for (const k of Object.keys(row)) {
+						if (!seen.has(k)) {
+							seen.add(k);
+							columnNames.push(k);
+						}
+					}
+				}
+			}
 
 			if (view.coordinates.length === 0) {
 				// TODO Why do we show an empty column? Maybe to force having something to render
@@ -142,33 +220,73 @@ export default {
 			} else {
 				rendering.value = true;
 				props.tabularView.loading.rendering = true;
-				props.tabularView.timing.rendering_start = new Date();
+				props.tabularView.timing.rendering_startedAt = new Date();
 
 				// https://stackoverflow.com/questions/1232040/how-do-i-empty-an-array-in-javascript
 				console.log(`Rendering columnNames=${columnNames}`);
 				gridColumns.push(...gridHelper.groupByToGridColumns(columnNames, props.queryModel, renderCallback));
 
 				// measureNames may be filled on first row if we requested no measure and received the default measure
-				const measureNames = props.tabularView.query.measures;
+				let measureNames = props.tabularView.query.measures;
+				if (isDrillthrough) {
+					// In DRILLTHROUGH the response uses per-aggregator aliases (e.g. `k1`, `k1_1`) which may
+					// differ from the user-submitted `measures`. Discover the value schema as the union of
+					// all keys appearing in `view.values`, preserving first-seen order.
+					const seenMeasures = new Set();
+					measureNames = [];
+					for (const row of view.values) {
+						for (const k of Object.keys(row)) {
+							if (!seenMeasures.has(k)) {
+								seenMeasures.add(k);
+								measureNames.push(k);
+							}
+						}
+					}
+				}
 				console.log(`Rendering measureNames=${measureNames}`);
+
+				// Compute per-measure min/max/sum stats BEFORE building the column definitions
+				// so the cell formatter can paint a heatmap background on each numeric cell, and
+				// so the footer row can surface min/sum/max without re-scanning the values.
+				measureStats = gridHelper.computeMeasureStats(measureNames, view.values);
+				// Secondary-heatmap stats: per-measure min/max bucketed by the parent slice (the row's
+				// groupBy values minus the LAST view column). Drives the per-cell vertical bar so each
+				// cell can be compared to its sibling rows under the same parent member.
+				const parentColumnNames = columnNames.slice(0, -1);
+				const parentSliceStats = gridHelper.computeParentSliceStats(measureNames, parentColumnNames, view.coordinates, view.values);
+				// Stash the freshly-computed stats on the shared singleton so the per-measure
+				// Statistics modal can be opened from the grid header without re-scanning the
+				// view. Resetting the visible measure name on each resync prevents stale
+				// numbers from being shown if the user re-opens the modal after a fresh query.
+				if (measureStatsModel) {
+					measureStatsModel.allStats = measureStats;
+				}
+
 				// TODO Refresh the columns on `formatOptions` changes, else we need to query to see the format changes
-				gridColumns.push(...gridHelper.measuresToGridColumns(measureNames, props.queryModel, renderCallback, formatOptions));
+				gridColumns.push(
+					...gridHelper.measuresToGridColumns(measureNames, props.queryModel, renderCallback, formatOptions, measureStats, parentSliceStats, parentColumnNames),
+				);
 
 				{
 					props.tabularView.loading.sorting = true;
 					const sortingStart = new Date();
+					props.tabularView.timing.sorting_startedAt = sortingStart;
 					try {
 						gridHelper.sortRows(columnNames, view.coordinates, view.values);
 					} finally {
 						props.tabularView.loading.sorting = false;
 						props.tabularView.timing.sorting = new Date() - sortingStart;
+						delete props.tabularView.timing.sorting_startedAt;
 					}
 				}
 
 				props.tabularView.loading.rowSpanning = true;
 				const rowSpanningStart = new Date();
+				props.tabularView.timing.rowSpanning_startedAt = rowSpanningStart;
 				try {
-					if (view.coordinates.length >= 1) {
+					if (view.coordinates.length >= 1 && !isDrillthrough) {
+						// DRILLTHROUGH responses are intentionally heterogeneous (each source row may carry a
+						// different subset of columns), so the first-row sanity check would fire spuriously.
 						const rowIndex = 0;
 						const coordinatesRow = view.coordinates[rowIndex];
 						const measuresRow = view.values[rowIndex];
@@ -184,6 +302,7 @@ export default {
 				} finally {
 					props.tabularView.loading.rowSpanning = false;
 					props.tabularView.timing.rowSpanning = new Date() - rowSpanningStart;
+					delete props.tabularView.timing.rowSpanning_startedAt;
 				}
 			}
 
@@ -191,7 +310,7 @@ export default {
 
 			grid.setColumns(gridColumns);
 
-			gridHelper.updateFooters(grid, columnNames, view.coordinates, view.values);
+			gridHelper.updateFooters(grid, columnNames, view.coordinates, view.values, measureStats, formatOptions);
 
 			dataView.getItemMetadata = (row) => {
 				return metadata[row] && metadata[row].attributes ? metadata[row] : (metadata[row] = { attributes: { "data-row": row }, ...metadata[row] });
@@ -262,7 +381,31 @@ export default {
 
 			gridHelper.registerEventSubscribers(grid, dataView, currentSortCol, clickedCell);
 
-			// Register the watch once the grid is mounted and initialized
+			// Register the watch once the grid is mounted and initialized.
+			//
+			// NOT `{ deep: true }` on purpose. `view` is only ever swapped by reference from
+			// `onView` (a fresh server response) or nulled by the empty-query short-circuit;
+			// we never patch it in place. Conversely, `resyncData` itself calls `sortRows`
+			// which mutates `view.coordinates` / `view.values` IN-PLACE — with deep tracking,
+			// that would re-fire this very watcher, causing the grid to render twice per
+			// edit (and logging `Rendering measureNames=` twice). Shallow reference watching
+			// fires exactly once per server response — which is what the UX needs.
+			// When the wizard is hidden/shown, the grid column transitions between col-9 and col-12. SlickGrid's
+			// viewport size is cached on construction and on explicit resize events; without an explicit
+			// notification it keeps drawing against the old width and the layout looks broken until the user
+			// triggers Submit or hits F5. Watch `wizardHidden` and call `resizeCanvas()` so SlickGrid recomputes
+			// its viewport against the new column width. `nextTick`-style timing is achieved by running on the
+			// reactive change AFTER Vue has applied the col-* class binding.
+			const preferencesStoreForResize = usePreferencesStore();
+			watch(
+				() => preferencesStoreForResize.wizardHidden,
+				() => {
+					if (grid) {
+						grid.resizeCanvas();
+					}
+				},
+			);
+
 			watch(
 				() => props.tabularView.view,
 				(newView, oldView) => {
@@ -275,83 +418,25 @@ export default {
 					}
 					props.tabularView.loading.preparingGrid = true;
 					const startPreparingGrid = new Date();
+					props.tabularView.timing.preparingGrid_startedAt = startPreparingGrid;
 					try {
 						resyncData();
 					} finally {
 						props.tabularView.loading.preparingGrid = false;
 						props.tabularView.timing.preparingGrid = new Date() - startPreparingGrid;
+						delete props.tabularView.timing.preparingGrid_startedAt;
 					}
 				},
-				{ deep: true },
 			);
 		});
 
-		function isLoading() {
-			if (!props.tabularView.loading) {
-				// Not a single flag initialized the loading property
-				return false;
-			}
-
-			// BEWARE some properties are date (like latestFetched)
-			return Object.values(props.tabularView.loading).some((loadingFlag) => typeof loadingFlag === "boolean" && !!loadingFlag);
-		}
-
-		function loadingPercent() {
-			if (!isLoading()) {
-				return 100;
-			}
-
-			if (props.tabularView.loading.sending) {
-				return 10;
-			}
-			if (props.tabularView.loading.executing) {
-				return 20;
-			}
-			if (props.tabularView.loading.downloading) {
-				return 75;
-			}
-			if (props.tabularView.loading.preparingGrid) {
-				return 85;
-			}
-			if (props.tabularView.loading.rendering) {
-				return 90;
-			}
-
-			console.log("Unclear loading state", props.tabularView.loading);
-			return 95;
-		}
-
-		function loadingMessage() {
-			if (!isLoading()) {
-				return "Loaded";
-			}
-
-			if (props.tabularView.loading.sending) {
-				return "Sending the query";
-			}
-			if (props.tabularView.loading.executing) {
-				// The execution phase may be a single synchronous call, or a polling until state of DONE
-				if (props.tabularView.loading.fetching) {
-					return "Executing the query (fetching)";
-				}
-				if (props.tabularView.loading.sleeping) {
-					return "Executing the query (sleeping)";
-				}
-				return "Executing the query (?)";
-			}
-			if (props.tabularView.loading.downloading) {
-				return "Downloading the result";
-			}
-			if (props.tabularView.loading.preparingGrid) {
-				return "Preparing the grid";
-			}
-			if (props.tabularView.loading.rendering) {
-				return "Rendering the grid";
-			}
-
-			console.log("Unclear loading state", props.tabularView.loading);
-			return "Unclear but not done yet";
-		}
+		// Loading-state helpers. All three read from `props.tabularView.loading` and return a
+		// display-layer primitive; they live in `adhoc-query-grid-loading.js` so they can be
+		// unit-tested without a DOM. Thin instance wrappers are kept here because Vue templates
+		// call methods with no args — the wrappers bind `props.tabularView` once.
+		const isLoading = () => isLoadingHelper(props.tabularView);
+		const loadingPercent = () => loadingPercentHelper(props.tabularView);
+		const loadingMessage = () => loadingMessageHelper(props.tabularView);
 
 		return {
 			rendering,
@@ -364,40 +449,61 @@ export default {
 			formatOptions,
 
 			data,
+			measureStatsModel,
+			isEmptyModel,
+			isEmptyView,
 		};
 	},
 	template: /* HTML */ `
-        <div>
-            <div class="spinner-grow" role="status" v-if="loading">
-                <span class="visually-hidden">Loading...</span>
-            </div>
+		<div>
+			<div class="spinner-grow" role="status" v-if="loading">
+				<span class="visually-hidden">Loading...</span>
+			</div>
 
-            <AdhocCellModal :queryModel="queryModel" :clickedCell="clickedCell" :cube="cube" />
+			<AdhocCellModal :queryModel="queryModel" :clickedCell="clickedCell" :cube="cube" />
+			<AdhocMeasureStatsModal :statsModel="measureStatsModel" :formatOptions="formatOptions" />
 
-            <span style="width:100%;" class="position-relative">
-                <div :id="domId" class="vh-75 slickgrid-grid"></div>
+			<span style="width:100%;" class="position-relative">
+				<div :id="domId" class="vh-75 slickgrid-grid"></div>
 
-                <div class="position-absolute top-50 start-50 translate-middle" style="width:100%;" v-if="isLoading()">
-                    <div
-                        class="progress"
-                        role="progressbar"
-                        aria-label="Animated striped example"
-                        :aria-valuenow="loadingPercent()"
-                        aria-valuemin="0"
-                        aria-valuemax="100"
-                        v-if="isLoading()"
-                    >
-                        <div class="progress-bar progress-bar-striped progress-bar-animated" :style="'width: ' + loadingPercent() + '%'">
-                            {{loadingMessage()}}
-                        </div>
-                    </div>
-                </div>
-            </span>
-            <div hidden>props.tabularView.loading={{tabularView.loading}}</div>
-            <div>props.tabularView.timing={{tabularView.timing}}</div>
-            <AdhocGridExportCsv :array="data.array" />
+				<!--
+					Empty-state hints. Two variants depending on which kind of "empty" we
+					are looking at:
+					  - 'isEmptyModel' (no measures + no columns picked yet): point the
+					    user to the wizard panel on the left.
+					  - 'isEmptyView'  (query was sent but matched zero rows): the typical
+					    cause is an over-constrained filter, so point UP to the filter
+					    block above the wizard.
+				-->
+				<div class="position-absolute top-50 start-50 translate-middle text-center text-muted" v-if="!isLoading() && isEmptyModel">
+					<i class="bi bi-arrow-left-circle fs-3"></i>
+					<div>Use the wizard to pick columns and measures, then Submit to build a query.</div>
+				</div>
+				<div class="position-absolute top-50 start-50 translate-middle text-center text-muted" v-else-if="!isLoading() && isEmptyView">
+					<i class="bi bi-arrow-up-circle fs-3"></i>
+					<div>No rows match the current filter.</div>
+					<div class="small">Loosen or clear the filter above the wizard to bring rows back.</div>
+				</div>
 
-            <AdhocGridFormatModal :formatOptions="formatOptions" />
-        </div>
-    `,
+				<div class="position-absolute top-50 start-50 translate-middle" style="width:100%;" v-if="isLoading()">
+					<div
+						class="progress"
+						role="progressbar"
+						aria-label="Animated striped example"
+						:aria-valuenow="loadingPercent()"
+						aria-valuemin="0"
+						aria-valuemax="100"
+						v-if="isLoading()"
+					>
+						<div class="progress-bar progress-bar-striped progress-bar-animated" :style="'width: ' + loadingPercent() + '%'">
+							{{loadingMessage()}}
+						</div>
+					</div>
+				</div>
+			</span>
+			<div hidden>props.tabularView.loading={{tabularView.loading}}</div>
+			<AdhocGridTimingsBar :tabularView="tabularView" />
+			<AdhocGridControls :dataArray="data.array" :formatOptions="formatOptions" />
+		</div>
+	`,
 };

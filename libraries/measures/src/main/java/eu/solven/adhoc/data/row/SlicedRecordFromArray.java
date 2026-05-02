@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import eu.solven.adhoc.primitive.IValueProvider;
+import eu.solven.adhoc.primitive.IValueReceiver;
 import eu.solven.adhoc.util.AdhocDebug;
 import lombok.Builder;
 import lombok.Singular;
@@ -56,6 +57,11 @@ public class SlicedRecordFromArray implements ISlicedRecord {
 	@Override
 	public IValueProvider read(int index) {
 		return vc -> vc.onObject(measures.get(index));
+	}
+
+	@Override
+	public void read(int index, IValueReceiver receiver) {
+		receiver.onObject(measures.get(index));
 	}
 
 	@Override

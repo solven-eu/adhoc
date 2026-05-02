@@ -26,17 +26,18 @@ import java.util.Comparator;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.jspecify.annotations.Nullable;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.primitives.Ints;
 
+import eu.solven.adhoc.dataframe.collection.ChunkedDoubleList;
+import eu.solven.adhoc.dataframe.collection.ChunkedList;
+import eu.solven.adhoc.dataframe.collection.ChunkedLongList;
 import eu.solven.adhoc.dataframe.column.MultitypeArray.MultitypeArrayBuilder;
 import eu.solven.adhoc.dataframe.column.navigable.MultitypeNavigableColumn;
 import eu.solven.adhoc.primitive.IMultitypeConstants;
 import eu.solven.adhoc.primitive.IValueReceiver;
-import it.unimi.dsi.fastutil.doubles.DoubleArrayList;
-import it.unimi.dsi.fastutil.doubles.DoubleImmutableList;
-import it.unimi.dsi.fastutil.longs.LongArrayList;
-import it.unimi.dsi.fastutil.longs.LongImmutableList;
 import it.unimi.dsi.fastutil.objects.AbstractObject2DoubleMap;
 import it.unimi.dsi.fastutil.objects.AbstractObject2LongMap;
 import it.unimi.dsi.fastutil.objects.AbstractObject2ObjectMap;
@@ -89,7 +90,7 @@ public class MultitypeColumnHelpers {
 				}
 
 				@Override
-				public void onObject(Object v) {
+				public void onObject(@Nullable Object v) {
 					keyToObject.add(new AbstractObject2ObjectMap.BasicEntry<>(sm.getSlice(), v));
 				}
 			});
@@ -104,34 +105,32 @@ public class MultitypeColumnHelpers {
 		keyToObject.sort((Comparator) Map.Entry.<T, Object>comparingByKey());
 
 		if (nbLong.get() == size) {
-			final LongArrayList values = new LongArrayList(size);
+			final ChunkedLongList values = new ChunkedLongList(size);
 
 			keyToObject.forEach(e -> {
 				keys.add(e.getKey());
 				values.add(((Object2LongMap.Entry<?>) e).getLongValue());
 			});
 
-			multitypeArrayBuilder.valuesL(LongImmutableList.of(values.elements()))
-					.valuesType(IMultitypeConstants.MASK_LONG);
+			multitypeArrayBuilder.valuesL(values).valuesType(IMultitypeConstants.MASK_LONG);
 		} else if (nbDouble.get() == size) {
-			final DoubleArrayList values = new DoubleArrayList(size);
+			final ChunkedDoubleList values = new ChunkedDoubleList(size);
 
 			keyToObject.forEach(e -> {
 				keys.add(e.getKey());
 				values.add(((Object2DoubleMap.Entry<?>) e).getDoubleValue());
 			});
 
-			multitypeArrayBuilder.valuesD(DoubleImmutableList.of(values.elements()))
-					.valuesType(IMultitypeConstants.MASK_DOUBLE);
+			multitypeArrayBuilder.valuesD(values).valuesType(IMultitypeConstants.MASK_DOUBLE);
 		} else {
-			final ImmutableList.Builder<Object> values = ImmutableList.builderWithExpectedSize(size);
+			final ChunkedList<Object> values = new ChunkedList<>(size);
 
 			keyToObject.forEach(e -> {
 				keys.add(e.getKey());
 				values.add(e.getValue());
 			});
 
-			multitypeArrayBuilder.valuesO(values.build()).valuesType(IMultitypeConstants.MASK_OBJECT);
+			multitypeArrayBuilder.valuesO(values).valuesType(IMultitypeConstants.MASK_OBJECT);
 		}
 
 		return MultitypeNavigableColumn.<T>builder()

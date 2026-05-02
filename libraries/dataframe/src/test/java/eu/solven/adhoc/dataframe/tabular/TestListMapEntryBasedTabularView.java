@@ -42,7 +42,7 @@ public class TestListMapEntryBasedTabularView {
 
 		String asString = PepperJackson3TestHelper.verifyJackson(ListMapEntryBasedTabularView.class, view);
 
-		Assertions.assertThat(asString).isEqualTo("""
+		Assertions.assertThat(asString).isEqualToNormalizingNewlines("""
 				{
 				  "entries" : [ {
 				    "coordinates" : {

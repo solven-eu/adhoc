@@ -27,20 +27,19 @@ import java.util.NavigableSet;
 import java.util.Objects;
 import java.util.Optional;
 
+import org.jspecify.annotations.Nullable;
+
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
 import eu.solven.adhoc.filter.FlatAndFilter;
 import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.filter.value.NullMatcher;
-import eu.solven.adhoc.map.AdhocMapHelpers;
 import eu.solven.adhoc.map.IAdhocMap;
 import eu.solven.adhoc.map.IHasAdhocMap;
 import eu.solven.adhoc.map.MapComparators;
 import eu.solven.adhoc.map.MaskedAdhocMap;
-import eu.solven.adhoc.map.factory.ISliceFactory;
 import lombok.AccessLevel;
-import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 /**
@@ -51,8 +50,6 @@ import lombok.RequiredArgsConstructor;
  */
 @RequiredArgsConstructor(access = AccessLevel.PROTECTED)
 public final class Slice implements ISlice {
-	@Getter
-	final ISliceFactory factory;
 
 	// This is guaranteed not to contain a null-ref, neither as key nor as value
 	// Value can only be simple values: neither a Collection, not a IValueMatcher
@@ -66,7 +63,7 @@ public final class Slice implements ISlice {
 	 * @return
 	 */
 	public static ISlice fromMapUnsafe(IAdhocMap adhocMap) {
-		return new Slice(adhocMap.getFactory(), adhocMap);
+		return new Slice(adhocMap);
 	}
 
 	@Override
@@ -80,7 +77,7 @@ public final class Slice implements ISlice {
 	}
 
 	@Override
-	public Object getGroupBy(String column) {
+	public @Nullable Object getGroupBy(String column) {
 		if (asAdhocMap().containsKey(column)) {
 			return explicitNull(asAdhocMap().get(column));
 		} else {
@@ -96,10 +93,16 @@ public final class Slice implements ISlice {
 
 	@Override
 	public Map<String, ?> getCoordinates() {
-		return Maps.transformValues(asMap, this::explicitNull);
+		// `Maps.transformValues` types its Function as @NonNull-returning; `explicitNull` may legitimately return
+		// null when a coordinate is the NULL_HOLDER sentinel. The transformed map exposes that null to callers,
+		// matching the prior behaviour.
+		@SuppressWarnings("NullAway")
+		Map<String, Object> transformed = Maps.transformValues(asMap, this::explicitNull);
+		return transformed;
 	}
 
-	Object explicitNull(Object v) {
+	@Nullable
+	Object explicitNull(@Nullable Object v) {
 		return NullMatcher.unwrapNull(v);
 	}
 
@@ -170,7 +173,7 @@ public final class Slice implements ISlice {
 
 	@Override
 	public ISlice retainAll(NavigableSet<String> columns) {
-		return AdhocMapHelpers.fromMap(factory, asMap.retainAll(columns)).asSlice();
+		return asMap.retainAll(columns).asSlice();
 	}
 
 }

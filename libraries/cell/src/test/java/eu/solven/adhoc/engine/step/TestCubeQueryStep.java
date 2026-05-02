@@ -23,13 +23,12 @@
 package eu.solven.adhoc.engine.step;
 
 import java.time.LocalDate;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
@@ -126,7 +125,7 @@ public class TestCubeQueryStep {
 
 		step.getCache().put("k", "v");
 
-		CubeQueryStep copy = CubeQueryStep.edit(step).build();
+		CubeQueryStep copy = step.toBuilder().build();
 
 		// Check .equals, even if some fields are not in the equals
 		Assertions.assertThat(copy).isEqualTo(step);
@@ -152,13 +151,13 @@ public class TestCubeQueryStep {
 				.option(StandardQueryOptions.EXPLAIN)
 				.build();
 
-		Map<Object, Object> transverseCache = new HashMap<>();
+		ConcurrentMap<Object, Object> transverseCache = new ConcurrentHashMap<>();
 		step.setCrossStepsCache(transverseCache);
 
 		step.getCache().put("k", "v");
 		transverseCache.put("k2", "v2");
 
-		CubeQueryStep copy = CubeQueryStep.edit(step).build();
+		CubeQueryStep copy = step.toBuilder().build();
 
 		// Check .equals, even if some fields are not in the equals
 		Assertions.assertThat(copy).isEqualTo(step);
@@ -197,7 +196,19 @@ public class TestCubeQueryStep {
 				.build();
 		Assertions.assertThat((Optional) stepHasCustom.optCustomMarker()).contains("someCustomMarker");
 
-		CubeQueryStep editKeepCustom = CubeQueryStep.edit(stepHasCustom).build();
+		CubeQueryStep editKeepCustom = stepHasCustom.toBuilder().build();
 		Assertions.assertThat((Optional) editKeepCustom.optCustomMarker()).contains("someCustomMarker");
+	}
+
+	@Disabled("TODO")
+	@Test
+	public void testToString() {
+		CubeQueryStep stepHasCustom = CubeQueryStep.builder()
+				.measure(Mockito.mock(IMeasure.class))
+				.filter(ISliceFilter.MATCH_ALL)
+				.groupBy(IGroupBy.GRAND_TOTAL)
+				.customMarker(Optional.of("someCustomMarker"))
+				.build();
+		Assertions.assertThat(stepHasCustom).hasToString("");
 	}
 }

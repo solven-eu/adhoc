@@ -5,12 +5,12 @@ import { useUserStore } from "./store-user.js";
 
 import { Modal } from "bootstrap";
 
-import LoginRef from "./login-ref.js";
+import LoginChip from "./login-chip.js";
 import LoginOptions from "./login-providers.js";
 
 export default {
 	components: {
-		LoginRef,
+		LoginChip,
 		LoginOptions,
 	},
 	props: {
@@ -62,20 +62,30 @@ export default {
 		return {};
 	},
 	template: /* HTML */ `
-        <div class="modal fade" id="loginModal" tabindex="-1" aria-labelledby="loginModalLabel" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="loginModalLabel">Login to Pivotable</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
-                    <div class="modal-body">
-                        <LoginRef :modal="true" data-bs-dismiss="modal" />
-                        <hr />
-                        <LoginOptions :modal="true" />
-                    </div>
-                </div>
-            </div>
-        </div>
-    `,
+		<div class="modal fade" id="loginModal" tabindex="-1" aria-labelledby="loginModalLabel" aria-hidden="true">
+			<div class="modal-dialog modal-dialog-centered">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h5 class="modal-title" id="loginModalLabel">Login to Pivotable</h5>
+						<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+					</div>
+					<div class="modal-body">
+						<!--
+							When already logged-in, show who the session belongs to. Otherwise just
+							render the provider chooser — the user reading the modal title already
+							knows they need to log in, so the previous redundant "You need to login"
+							line was removed.
+						-->
+						<div v-if="isLoggedIn" class="text-center">
+							<img v-if="user.details.picture" :src="user.details.picture" class="rounded-circle mb-2" alt="" width="48" height="48" />
+							<div class="fw-semibold">{{user.details.name || user.details.username}}</div>
+							<div class="text-muted small" v-if="user.details.username && user.details.name">{{user.details.username}}</div>
+							<div class="text-muted small mt-2">You are already signed in.</div>
+						</div>
+						<LoginOptions v-else :modal="true" />
+					</div>
+				</div>
+			</div>
+		</div>
+	`,
 };

@@ -23,6 +23,7 @@
 package eu.solven.adhoc.pivotable.app;
 
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -30,10 +31,12 @@ import org.springframework.core.env.Environment;
 
 import eu.solven.adhoc.app.IPivotableSpringProfiles;
 import eu.solven.adhoc.beta.schema.AdhocSchema;
+import eu.solven.adhoc.beta.schema.AdhocSchema.AdhocSchemaBuilder;
+import eu.solven.adhoc.beta.schema.IAdhocSchema;
 import eu.solven.adhoc.engine.ICubeQueryEngine;
 import eu.solven.adhoc.pivotable.endpoint.PivotableAdhocEndpointMetadata;
-import eu.solven.adhoc.pivotable.endpoint.PivotableAdhocSchemaRegistry;
 import eu.solven.adhoc.pivotable.endpoint.PivotableEndpointsRegistry;
+import eu.solven.adhoc.pivotable.endpoint.PivotableSchemaRegistry;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -60,10 +63,19 @@ public class InjectPivotableSelfEndpointConfig {
 	@Profile(IPivotableSpringProfiles.P_SELF_ENDPOINT)
 	@Qualifier(IPivotableSpringProfiles.P_SELF_ENDPOINT)
 	@Bean
-	public AdhocSchema registerSelfSchema(Environment env,
+	public IAdhocSchema registerSelfSchema(ApplicationContext appContext,
 			ICubeQueryEngine engine,
-			PivotableAdhocSchemaRegistry schemaRegistry) {
-		AdhocSchema selfSchema = AdhocSchema.builder().engine(engine).env(env).build();
+			PivotableSchemaRegistry schemaRegistry) {
+		Environment env = appContext.getEnvironment();
+
+		AdhocSchemaBuilder schemaBuilder = AdhocSchema.builder().engine(engine).env(env);
+
+		// Apply customizers
+		appContext.getBeansOfType(IAdhocSchemaCustomizer.class).values().forEach(customizer -> {
+			customizer.customize(schemaBuilder);
+		});
+
+		IAdhocSchema selfSchema = schemaBuilder.build();
 
 		PivotableAdhocEndpointMetadata self = PivotableAdhocEndpointMetadata.localhost();
 		schemaRegistry.registerEntrypoint(self.getId(), selfSchema);

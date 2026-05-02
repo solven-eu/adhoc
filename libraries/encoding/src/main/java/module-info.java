@@ -16,7 +16,7 @@ module eu.solven.adhoc.encoding {
 
 	// ── Sibling modules ──────────────────────────────────────────────────────
 	// adhoc-public: AdhocUnsafe, ILikeList, options.*
-	requires eu.solven.adhoc.meta;
+	requires eu.solven.adhoc.model;
 	// adhoc-fsst: IFsstDecoder, IFsstConstants, IByteSlice, Utf8ByteSlice
 	requires eu.solven.adhoc.fsst;
 

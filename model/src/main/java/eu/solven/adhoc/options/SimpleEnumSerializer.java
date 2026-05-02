@@ -22,6 +22,8 @@
  */
 package eu.solven.adhoc.options;
 
+import org.jspecify.annotations.Nullable;
+
 import tools.jackson.core.JsonGenerator;
 import tools.jackson.databind.SerializationContext;
 import tools.jackson.databind.jsontype.TypeSerializer;
@@ -38,7 +40,7 @@ public class SimpleEnumSerializer extends StdSerializer<IQueryOption> {
 		this(null);
 	}
 
-	public SimpleEnumSerializer(Class<IQueryOption> t) {
+	public SimpleEnumSerializer(@Nullable Class<IQueryOption> t) {
 		super(t);
 	}
 

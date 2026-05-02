@@ -23,6 +23,7 @@
 package eu.solven.adhoc.pivotable.webflux.endpoint;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -33,7 +34,6 @@ import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
 
-import eu.solven.adhoc.beta.schema.AdhocSchema;
 import eu.solven.adhoc.beta.schema.ColumnIdentifier;
 import eu.solven.adhoc.beta.schema.ColumnStatistics;
 import eu.solven.adhoc.beta.schema.ColumnarMetadata;
@@ -41,13 +41,14 @@ import eu.solven.adhoc.beta.schema.CoordinatesSample;
 import eu.solven.adhoc.beta.schema.CubeSchemaMetadata;
 import eu.solven.adhoc.beta.schema.EndpointSchemaMetadata;
 import eu.solven.adhoc.beta.schema.IAdhocSchema;
+import eu.solven.adhoc.cube.ICubeWrapper;
 import eu.solven.adhoc.filter.value.EqualsMatcher;
 import eu.solven.adhoc.filter.value.IValueMatcher;
 import eu.solven.adhoc.pivotable.endpoint.AdhocColumnSearch;
 import eu.solven.adhoc.pivotable.endpoint.AdhocEndpointSearch;
 import eu.solven.adhoc.pivotable.endpoint.PivotableAdhocEndpointMetadata;
-import eu.solven.adhoc.pivotable.endpoint.PivotableAdhocSchemaRegistry;
 import eu.solven.adhoc.pivotable.endpoint.PivotableEndpointsRegistry;
+import eu.solven.adhoc.pivotable.endpoint.PivotableSchemaRegistry;
 import eu.solven.adhoc.pivotable.endpoint.TargetedEndpointSchemaMetadata;
 import eu.solven.adhoc.pivotable.webflux.api.AdhocHandlerHelper;
 import eu.solven.adhoc.util.AdhocUnsafe;
@@ -69,7 +70,7 @@ public class PivotableEndpointsHandler {
 	private static final int DEFAULT_LIMIT_COORDINATES = 100;
 
 	final PivotableEndpointsRegistry endpointsRegistry;
-	final PivotableAdhocSchemaRegistry schemasRegistry;
+	final PivotableSchemaRegistry schemasRegistry;
 
 	private List<PivotableAdhocEndpointMetadata> matchingEndpoints(ServerRequest request) {
 		AdhocEndpointSearch.AdhocEndpointSearchBuilder parameters = AdhocEndpointSearch.builder();
@@ -209,37 +210,77 @@ public class PivotableEndpointsHandler {
 		if (holderColumns != null) {
 			UUID endpointId = schemaMetadata.getEndpoint().getId();
 
-			AdhocSchema schema = schemasRegistry.getSchema(endpointId);
+			IAdhocSchema schema = schemasRegistry.getSchema(endpointId);
 
 			Map<String, ? extends Map<String, ?>> columnToDetails = holderColumns.getColumns();
 
-			columnToDetails.entrySet()
+			List<Map.Entry<String, ? extends Map<String, ?>>> matchingEntries = columnToDetails.entrySet()
 					.stream()
 					.filter(e -> columnSearch.getName().isEmpty() || columnSearch.getName().get().match(e.getKey()))
-					.sorted(Map.Entry.comparingByKey())
-					.forEach(e -> {
-						String column = e.getKey();
-						Map<String, ?> columnDetails = e.getValue();
+					.sorted(Map.Entry
+							.comparingByKey()).<Map.Entry<String, ? extends Map<String, ?>>>map(e -> e)
+					.toList();
 
-						ColumnIdentifier columnId = columnTemplate.toBuilder().column(column).build();
+			if (matchingEntries.isEmpty()) {
+				return columns;
+			}
 
-						CoordinatesSample coordinates = schema.getCoordinates(columnId,
-								columnSearch.getCoordinate().orElse(IValueMatcher.MATCH_ALL),
-								columnSearch.getLimitCoordinates());
+			// Bulk-fetch every matching column's CoordinatesSample in one shot via
+			// `ICubeWrapper.getCoordinates(Map, int)` — see the webmvc handler for the rationale (engine
+			// can share scans across columns; replaces O(N) per-column round-trips).
+			IValueMatcher coordinateMatcher = columnSearch.getCoordinate().orElse(IValueMatcher.MATCH_ALL);
+			Map<String, IValueMatcher> columnToValueMatcher = LinkedHashMap.newLinkedHashMap(matchingEntries.size());
+			matchingEntries.forEach(e -> columnToValueMatcher.put(e.getKey(), coordinateMatcher));
 
-						columns.add(ColumnStatistics.builder()
-								.entrypointId(endpointId)
-								.holder(columnTemplate.getHolder())
-								.column(column)
-								.type(MapPathGet.getRequiredString(columnDetails, "type"))
-								.tags(MapPathGet.getRequiredAs(columnDetails, "tags"))
-								.coordinates(coordinates.getCoordinates())
-								.estimatedCardinality(coordinates.getEstimatedCardinality())
-								.build());
-					});
+			Map<String, CoordinatesSample> coordinatesByColumn = bulkGetCoordinates(schema,
+					columnTemplate,
+					columnToValueMatcher,
+					columnSearch.getLimitCoordinates());
+
+			matchingEntries.forEach(e -> {
+				String column = e.getKey();
+				Map<String, ?> columnDetails = e.getValue();
+
+				CoordinatesSample coordinates = coordinatesByColumn.getOrDefault(column, CoordinatesSample.empty());
+
+				columns.add(ColumnStatistics.builder()
+						.entrypointId(endpointId)
+						.holder(columnTemplate.getHolder())
+						.column(column)
+						.type(MapPathGet.getRequiredString(columnDetails, "type"))
+						.tags(MapPathGet.getRequiredAs(columnDetails, "tags"))
+						.coordinates(coordinates.getCoordinates())
+						.estimatedCardinality(coordinates.getEstimatedCardinality())
+						.build());
+			});
 		}
 
 		return columns;
+	}
+
+	/**
+	 * Cube-side bulk delegate to {@link ICubeWrapper#getCoordinates(Map, int)}. Tables fall back to the per-column path
+	 * (no bulk accessor on {@link IAdhocSchema} today). Mirrors the webmvc handler.
+	 */
+	protected Map<String, CoordinatesSample> bulkGetCoordinates(IAdhocSchema schema,
+			ColumnIdentifier columnTemplate,
+			Map<String, IValueMatcher> columnToValueMatcher,
+			int limit) {
+		String holder = columnTemplate.getHolder();
+		if (columnTemplate.isCubeElseTable()) {
+			ICubeWrapper cube =
+					schema.getCubes().stream().filter(c -> holder.equals(c.getName())).findFirst().orElse(null);
+			if (cube != null) {
+				return cube.getCoordinates(columnToValueMatcher, limit);
+			}
+			return Map.of();
+		}
+		Map<String, CoordinatesSample> result = LinkedHashMap.newLinkedHashMap(columnToValueMatcher.size());
+		columnToValueMatcher.forEach((column, matcher) -> {
+			ColumnIdentifier columnId = columnTemplate.toBuilder().column(column).build();
+			result.put(column, schema.getCoordinates(columnId, matcher, limit));
+		});
+		return result;
 	}
 
 }

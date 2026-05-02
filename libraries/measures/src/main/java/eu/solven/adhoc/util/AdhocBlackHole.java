@@ -24,6 +24,8 @@ package eu.solven.adhoc.util;
 
 import java.util.function.Supplier;
 
+import org.jspecify.annotations.Nullable;
+
 import com.google.common.base.Suppliers;
 
 import eu.solven.adhoc.eventbus.IAdhocEventBus;
@@ -52,7 +54,7 @@ public class AdhocBlackHole implements IValueReceiver, IAdhocEventBus {
 	}
 
 	@Override
-	public void onObject(Object v) {
+	public void onObject(@Nullable Object v) {
 		// do nothing with the value
 	}
 

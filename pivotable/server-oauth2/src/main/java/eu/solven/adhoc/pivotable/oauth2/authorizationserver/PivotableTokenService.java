@@ -136,8 +136,14 @@ public class PivotableTokenService {
 	 * @throws IllegalStateException
 	 */
 	public AccessTokenWrapper wrapInJwtAccessToken(UUID accountId) {
-		// access_token are short-lived
-		Duration accessTokenValidity = Duration.parse("PT1H");
+		// access_token are short-lived. Overridable via config so test profiles
+		// (e.g. pivotable-e2e-shorttoken) can force near-instant expiry.
+		// Read as String + Duration.parse so we don't depend on Spring Boot's
+		// ApplicationConversionService being registered on the Environment
+		// (e.g. MockEnvironment in unit tests does not have it).
+		Duration accessTokenValidity =
+				Duration.parse(env.getProperty(IPivotableOAuth2Constants.KEY_ACCESS_TOKEN_VALIDITY,
+						IPivotableOAuth2Constants.DEFAULT_ACCESS_TOKEN_VALIDITY));
 
 		String accessToken = generateAccessToken(accountId, accessTokenValidity, false);
 
@@ -153,8 +159,13 @@ public class PivotableTokenService {
 	// https://stackoverflow.com/questions/38986005/what-is-the-purpose-of-a-refresh-token
 	// https://stackoverflow.com/questions/40555855/does-the-refresh-token-expire-and-if-so-when
 	public RefreshTokenWrapper wrapInJwtRefreshToken(UUID accountId) {
-		// refresh_token are long-lived
-		Duration refreshTokenValidity = Duration.parse("P365D");
+		// refresh_token are long-lived. Overridable via config so test profiles
+		// can force a short-lived refresh_token and exercise the "must re-login" path.
+		// Read as String + Duration.parse so we don't depend on Spring Boot's
+		// ApplicationConversionService being registered on the Environment.
+		Duration refreshTokenValidity =
+				Duration.parse(env.getProperty(IPivotableOAuth2Constants.KEY_REFRESH_TOKEN_VALIDITY,
+						IPivotableOAuth2Constants.DEFAULT_REFRESH_TOKEN_VALIDITY));
 
 		String accessToken = generateAccessToken(accountId, refreshTokenValidity, true);
 

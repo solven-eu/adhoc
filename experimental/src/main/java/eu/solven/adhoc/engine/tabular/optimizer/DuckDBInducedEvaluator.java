@@ -46,6 +46,7 @@ import org.jooq.SelectJoinStep;
 import org.jooq.True;
 import org.jooq.impl.DSL;
 import org.jooq.impl.SQLDataType;
+import org.jspecify.annotations.Nullable;
 
 import eu.solven.adhoc.cuboid.ICuboid;
 import eu.solven.adhoc.cuboid.SliceAndMeasure;
@@ -192,7 +193,7 @@ public class DuckDBInducedEvaluator implements IInducedEvaluator {
 		NavigableSet<String> inducedGroupByCols = induced.getGroupBy().getSortedColumns();
 
 		// Probe the first entry to determine schema types
-		Optional<SliceAndMeasure<ISlice>> optFirst = inducerValues.stream().findFirst();
+		Optional<SliceAndMeasure<ISlice>> optFirst = inducerValues.stream().findAny();
 		if (optFirst.isEmpty()) {
 			return Optional.empty();
 		}
@@ -259,7 +260,7 @@ public class DuckDBInducedEvaluator implements IInducedEvaluator {
 			}
 
 			@Override
-			public void onObject(Object v) {
+			public void onObject(@Nullable Object v) {
 				// Both flags remain false → we will use VARCHAR
 			}
 		});
@@ -341,8 +342,8 @@ public class DuckDBInducedEvaluator implements IInducedEvaluator {
 			NavigableSet<String> inducedGroupByCols,
 			IAggregation aggregation,
 			ISliceFactory sliceFactory) {
-		IMultitypeMergeableColumn<ISlice> result =
-				factories.getColumnFactory().makeColumnRandomInsertions(aggregation, records.size());
+		IMultitypeMergeableColumn<ISlice> result = factories.getColumnFactory()
+				.makeMergeableColumn(p -> p.agg(aggregation).initialCapacity(records.size()));
 
 		int inducedColCount = inducedGroupByCols.size();
 		for (Record record : records) {
@@ -362,7 +363,11 @@ public class DuckDBInducedEvaluator implements IInducedEvaluator {
 			IValueReceiver receiver = result.merge(slice);
 
 			if (aggregation instanceof IAggregationCarrier.IHasCarriers hasCarriers) {
+				// `wrap` may return null (e.g. CountAggregation.wrap on a 0 count) — skip merging in that case.
 				aggValue = hasCarriers.wrap(aggValue);
+				if (aggValue == null) {
+					continue;
+				}
 			}
 
 			mergeValue(receiver, aggValue);
@@ -371,7 +376,7 @@ public class DuckDBInducedEvaluator implements IInducedEvaluator {
 		return result;
 	}
 
-	protected DataType<?> javaToSqlDataType(Object sample) {
+	protected DataType<?> javaToSqlDataType(@Nullable Object sample) {
 		if (sample == null) {
 			return SQLDataType.VARCHAR;
 		} else if (sample instanceof Long || sample instanceof Integer
@@ -385,7 +390,7 @@ public class DuckDBInducedEvaluator implements IInducedEvaluator {
 		}
 	}
 
-	protected void appendToAppender(DuckDBAppender appender, Object val) throws SQLException {
+	protected void appendToAppender(DuckDBAppender appender, @Nullable Object val) throws SQLException {
 		if (val == null) {
 			appender.appendNull();
 		} else if (val instanceof Long l) {
@@ -417,7 +422,7 @@ public class DuckDBInducedEvaluator implements IInducedEvaluator {
 			}
 
 			@Override
-			public void onObjectMayThrow(Object value) throws SQLException {
+			public void onObjectMayThrow(@Nullable Object value) throws SQLException {
 				if (value == null) {
 					appender.appendNull();
 				} else {

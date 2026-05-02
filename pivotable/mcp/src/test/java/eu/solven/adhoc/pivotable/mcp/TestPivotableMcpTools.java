@@ -37,14 +37,14 @@ import eu.solven.adhoc.beta.schema.AdhocSchema;
 import eu.solven.adhoc.beta.schema.EndpointSchemaMetadata;
 import eu.solven.adhoc.dataframe.tabular.ITabularView;
 import eu.solven.adhoc.pivotable.endpoint.PivotableAdhocEndpointMetadata;
-import eu.solven.adhoc.pivotable.endpoint.PivotableAdhocSchemaRegistry;
 import eu.solven.adhoc.pivotable.endpoint.PivotableEndpointsRegistry;
+import eu.solven.adhoc.pivotable.endpoint.PivotableSchemaRegistry;
 import tools.jackson.databind.ObjectMapper;
 
 public class TestPivotableMcpTools {
 
 	PivotableEndpointsRegistry endpointsRegistry = new PivotableEndpointsRegistry();
-	PivotableAdhocSchemaRegistry schemasRegistry = new PivotableAdhocSchemaRegistry();
+	PivotableSchemaRegistry schemasRegistry = new PivotableSchemaRegistry();
 	ObjectMapper objectMapper = new ObjectMapper();
 
 	PivotableMcpTools tools = new PivotableMcpTools(endpointsRegistry, schemasRegistry, objectMapper);

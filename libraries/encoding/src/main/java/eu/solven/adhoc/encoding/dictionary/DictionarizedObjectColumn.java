@@ -23,38 +23,62 @@
 package eu.solven.adhoc.encoding.dictionary;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.IntUnaryOperator;
+
+import org.jspecify.annotations.Nullable;
 
 import eu.solven.adhoc.encoding.IIntArray;
 import eu.solven.adhoc.encoding.column.IReadableColumn;
+import eu.solven.adhoc.encoding.column.ObjectArrayColumn;
 import eu.solven.adhoc.encoding.column.freezer.AdhocFreezingUnsafe;
+import eu.solven.adhoc.encoding.column.freezer.IFreezingWithContext;
 import eu.solven.adhoc.encoding.packing.PackedIntegers;
 import lombok.Builder;
 import lombok.NonNull;
 
 /**
  * An {@link IReadableColumn} based on a dictionary.
- * 
+ *
  * @author Benoit Lacelle
  */
 @Builder
 public class DictionarizedObjectColumn implements IReadableColumn {
 
 	@NonNull
-	List<Object> distinctValues;
+	IReadableColumn distinctValues;
 
 	@NonNull
 	IntUnaryOperator rowToDic;
 
 	@Override
-	public Object readValue(int rowIndex) {
+	public @Nullable Object readValue(int rowIndex) {
 		int dictionarizedIndex = rowToDic.applyAsInt(rowIndex);
-		return distinctValues.get(dictionarizedIndex);
+		return distinctValues.readValue(dictionarizedIndex);
 	}
 
 	public static IReadableColumn fromArray(List<?> asList) {
+		return fromArray(asList, List.of());
+	}
+
+	/**
+	 * Build a {@link DictionarizedObjectColumn} and apply the given freezer chain to the (small) dictionary of distinct
+	 * values, so that downstream freezing strategies (e.g. {@code Utf8ToStringFreezer},
+	 * {@code FsstFreezingWithContext}) get a chance to normalise/compress the dictionary entries even when
+	 * {@link DistinctFreezer} fired first on the surrounding column.
+	 *
+	 * @param asList
+	 *            the original (non-distinct) values
+	 * @param dictionaryFreezers
+	 *            freezer chain to apply to the dictionary of distinct values; pass an empty list to keep the dictionary
+	 *            untouched (raw {@link ObjectArrayColumn})
+	 * @return a {@link DictionarizedObjectColumn} backed by the (possibly further-frozen) dictionary
+	 */
+	public static IReadableColumn fromArray(List<?> asList, List<IFreezingWithContext> dictionaryFreezers) {
 		List<Object> intToObject = new ArrayList<>();
 		MapDictionarizer dictionarizer = MapDictionarizer.builder().intToObject(intToObject).build();
 
@@ -72,10 +96,39 @@ public class DictionarizedObjectColumn implements IReadableColumn {
 			checkPostCompression(asList, dictionarizer, size, packedIntegers);
 		}
 
+		IReadableColumn distinctValuesColumn = freezeDictionary(intToObject, dictionaryFreezers);
+
 		return DictionarizedObjectColumn.builder()
-				.distinctValues(intToObject)
+				.distinctValues(distinctValuesColumn)
 				.rowToDic(packedIntegers::readInt)
 				.build();
+	}
+
+	/**
+	 * Wraps the (small) dictionary into an {@link ObjectArrayColumn} and runs it through the given freezer chain,
+	 * stopping at the first freezer that produces a non-empty {@link IReadableColumn}. If none fires (or the chain is
+	 * empty), the dictionary is exposed as a plain {@link ObjectArrayColumn}.
+	 *
+	 * @param intToObject
+	 *            the dictionary of distinct values, in dictionarisation order
+	 * @param dictionaryFreezers
+	 *            freezer chain to attempt
+	 * @return an {@link IReadableColumn} backing the dictionary
+	 */
+	private static IReadableColumn freezeDictionary(List<Object> intToObject,
+			List<IFreezingWithContext> dictionaryFreezers) {
+		ObjectArrayColumn dictionary = ObjectArrayColumn.builder().build();
+		for (Object distinct : intToObject) {
+			dictionary.append(distinct);
+		}
+		Map<String, Object> ctx = new LinkedHashMap<>();
+		for (IFreezingWithContext freezer : dictionaryFreezers) {
+			Optional<IReadableColumn> output = freezer.freeze(dictionary, ctx);
+			if (output.isPresent()) {
+				return output.get();
+			}
+		}
+		return dictionary;
 	}
 
 	static void checkPostCompression(List<?> asList,

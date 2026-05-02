@@ -27,6 +27,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Stream;
 
+import org.jspecify.annotations.Nullable;
+
 import com.google.common.collect.ImmutableList;
 
 import eu.solven.adhoc.measure.aggregation.IAggregation;
@@ -64,7 +66,7 @@ public class SumAggregation implements IAggregation, IDoubleAggregation, ILongAg
 	}
 
 	@Override
-	public Object aggregate(Object l, Object r) {
+	public @Nullable Object aggregate(@Nullable Object l, @Nullable Object r) {
 		if (l == null) {
 			return onlyOne(r);
 		} else if (r == null) {
@@ -78,7 +80,7 @@ public class SumAggregation implements IAggregation, IDoubleAggregation, ILongAg
 		}
 	}
 
-	protected Object onlyOne(Object r) {
+	protected @Nullable Object onlyOne(@Nullable Object r) {
 		if (r == null) {
 			return null;
 		} else if (isLongLike(r)) {

@@ -29,6 +29,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 
+import eu.solven.adhoc.encoding.perfect_hashing.PerfectHashKeyset;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
@@ -38,13 +39,16 @@ import lombok.Value;
 
 /**
  * Help transforming a {@link org.jooq.Record} into {@link eu.solven.adhoc.dataframe.row.ITabularRecord}
- * 
+ *
  * @author Benoit Lacelle
  */
 @Value
 @Builder
-@ToString(exclude = "allColumns")
-@EqualsAndHashCode(exclude = "allColumns")
+@ToString(exclude = { "allColumns", "aggregatesKeyset" })
+@EqualsAndHashCode(exclude = { "allColumns", "aggregatesKeyset" })
+// LooseCoupling: PerfectHashKeyset is intentionally typed as the concrete class on the memoized supplier and getter,
+// since callers chain its perfect-hash-aware #indexOf and PerfectHashMap.newBuilder needs the concrete type.
+@SuppressWarnings("PMD.LooseCoupling")
 public class AggregatedRecordFields {
 	@NonNull
 	@Singular
@@ -67,7 +71,16 @@ public class AggregatedRecordFields {
 	private final Supplier<ImmutableSet<String>> allColumns =
 			Suppliers.memoize(() -> ImmutableSet.copyOf(Iterables.concat(getColumns(), getLeftovers())));
 
+	// Memoized so the perfect-hash table over `aggregates` is computed once per AggregatedRecordFields instance and
+	// reused by every TabularRecordBuilder produced by the owning TabularRecordFactory.
+	private final Supplier<PerfectHashKeyset> aggregatesKeyset =
+			Suppliers.memoize(() -> PerfectHashKeyset.of(getAggregates()));
+
 	public ImmutableSet<String> getAllColumns() {
 		return allColumns.get();
+	}
+
+	public PerfectHashKeyset getAggregatesKeyset() {
+		return aggregatesKeyset.get();
 	}
 }

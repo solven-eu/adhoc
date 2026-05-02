@@ -25,23 +25,42 @@ package eu.solven.adhoc.encoding.dictionary;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import org.apache.datasketches.hll.HllSketch;
 import org.apache.datasketches.hll.TgtHllType;
-import org.apache.datasketches.theta.UpdateSketch;
+import org.apache.datasketches.theta.UpdatableThetaSketch;
+
+import com.google.common.collect.ImmutableList;
 
 import eu.solven.adhoc.encoding.column.IAppendableColumn;
 import eu.solven.adhoc.encoding.column.IReadableColumn;
 import eu.solven.adhoc.encoding.column.ObjectArrayColumn;
+import eu.solven.adhoc.encoding.column.freezer.FreezerHelpers;
 import eu.solven.adhoc.encoding.column.freezer.IFreezingWithContext;
 
 /**
  * {@link IFreezingWithContext} which will enable dictionarization.
- * 
+ *
+ * <p>
+ * The freezers configured via {@link #DistinctFreezer(List)} are then applied to the (small) dictionary of distinct
+ * values, so that strategies such as {@code Utf8ToStringFreezer} or {@code FsstFreezingWithContext} can still normalise
+ * / compress the dictionary entries even when this freezer short-circuits the rest of the surrounding chain.
+ *
  * @author Benoit Lacelle
  */
 public final class DistinctFreezer implements IFreezingWithContext {
 	private static final int DISTINCT_FACTOR = 16;
+
+	private final List<IFreezingWithContext> dictionaryFreezers;
+
+	public DistinctFreezer() {
+		this(List.of());
+	}
+
+	public DistinctFreezer(List<IFreezingWithContext> dictionaryFreezers) {
+		this.dictionaryFreezers = ImmutableList.copyOf(dictionaryFreezers);
+	}
 
 	@Override
 	public Optional<IReadableColumn> freeze(IAppendableColumn column, Map<String, Object> freezingContext) {
@@ -52,7 +71,7 @@ public final class DistinctFreezer implements IFreezingWithContext {
 			long countDistinct = countDistinctWithLimit(freezingContext, array, limitForDictionary);
 
 			if (countDistinct <= limitForDictionary) {
-				return Optional.of(DictionarizedObjectColumn.fromArray(array));
+				return Optional.of(DictionarizedObjectColumn.fromArray(array, dictionaryFreezers));
 			} else {
 				return Optional.empty();
 			}
@@ -62,12 +81,16 @@ public final class DistinctFreezer implements IFreezingWithContext {
 	}
 
 	long countDistinctWithLimit(Map<String, Object> freezingContext, List<?> array, int limitForDictionary) {
-		return (long) freezingContext.computeIfAbsent("count_distinct_" + limitForDictionary, k -> {
-			if (array.stream().allMatch(o -> o == null || o instanceof String)) {
+		Set<?> classes = FreezerHelpers.classesWithContext(freezingContext, array);
+
+		return (long) freezingContext.computeIfAbsent("count_distinct_" + limitForDictionary, _ -> {
+			if (classes.stream().anyMatch(clazz -> clazz != null && clazz != String.class)) {
+				// At least one is neither null nor String
+				return cappedDistinctCount(array, limitForDictionary);
+			} else {
+				// Only String or null
 				List<String> arrayString = array.stream().map(String.class::cast).toList();
 				return estimateDistinctHLL(arrayString);
-			} else {
-				return cappedDistinctCount(array, limitForDictionary);
 			}
 		});
 	}
@@ -97,7 +120,7 @@ public final class DistinctFreezer implements IFreezingWithContext {
 	@SuppressWarnings("checkstyle:MagicNumber")
 	static long estimateDistinctKMV(List<String> items) {
 		// Create a Theta sketch with nominal entries = 1024
-		UpdateSketch sketch = UpdateSketch.builder().setNominalEntries(1024).build();
+		UpdatableThetaSketch sketch = UpdatableThetaSketch.builder().setNominalEntries(1024).build();
 
 		// Add items to the sketch
 		for (String s : items) {

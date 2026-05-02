@@ -91,9 +91,11 @@ class TestMaplibreVsAdhoc {
 	@Test
 	public void testCompareCompression_file() {
 		String filename = "credentials.txt";
-		String input = PepperResourceHelper.loadAsString("fsst/paper/dbtext/%s".formatted(filename));
-
-		byte[] inputBytes = input.getBytes(StandardCharsets.UTF_8);
+		byte[] rawBytes = PepperResourceHelper.loadAsBinary("fsst/paper/dbtext/%s".formatted(filename));
+		// Normalize CRLF→LF so the test is deterministic across OSes (git autocrlf may check out the file with CRLF on
+		// Windows, but the expected byte counts were measured against the LF version of the dataset).
+		byte[] inputBytes =
+				new String(rawBytes, StandardCharsets.UTF_8).replace("\r\n", "\n").getBytes(StandardCharsets.UTF_8);
 		SymbolTable encodedAdhoc = adhoc.encode(inputBytes);
 		SymbolTable encodedMaplibre = java.encode(inputBytes);
 

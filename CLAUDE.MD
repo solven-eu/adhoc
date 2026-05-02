@@ -11,8 +11,8 @@
 
 - **Language / runtime**: Java 21, multi-module Maven project
 - **Build**: `mvn package -Pfast --file pom.xml --batch-mode` (skips slow checks; **note**: `-Pfast` also skips tests via `maven.test.skip=true`)
-- **Running tests without static analysis**: `mvn test -Dcheckstyle.skip=true -Dpmd.skip=true -Dspotbugs.skip=true --file pom.xml --batch-mode` — use this instead of `-Pfast` when you need to run tests while skipping only static analysis
-- **Formatting**: Spotless (Java) + Prettier (JS/TS under `pivotable/js/`)
+- **Running tests without static analysis**: `mvn test -Pnostyle --file pom.xml --batch-mode` — the `-Pnostyle` profile skips Checkstyle / PMD / SpotBugs / Spotless / license / enforcer but keeps tests enabled. Prefer this over manually passing `-Dcheckstyle.skip -Dpmd.skip -Dspotbugs.skip …`.
+- **Formatting**: Spotless (Java + JS via Biome) + Prettier (JS/TS under `pivotable/js/`). For JS: **prettier runs first, Spotless/Biome second — Biome is the final authority on style**. Both are configured for tabs + 160 columns (`.prettierrc.yml` → `useTabs: true`, `.cleanthat/biome.json` → `"indentStyle": "tab"`, `"lineWidth": 160`). If you run prettier *after* spotless you may re-introduce wrap differences that spotless would otherwise rewrite — so always chain them as `npm run format && mvn spotless:apply`, never the other way.
 - **Static analysis**: Checkstyle, PMD, SpotBugs — check PMD alone with `mvn pmd:check --file pom.xml --batch-mode`, Checkstyle alone with `mvn checkstyle:check --file pom.xml --batch-mode`, full suite via `mvn verify`. When reading PMD output, use the `Grep` tool to filter for `org.apache.maven.plugins.pmd.PmdViolationCheckMojo` to quickly locate violations.
 - **Key libraries**: Guava, SLF4J/Logback, JUnit 5, AssertJ, Lombok
 
@@ -24,6 +24,31 @@
 | `public/` | Public-facing API / interfaces |
 | `pivotable/` | Spring Boot server + Vue.js front-end |
 | `jmh/` | JMH micro-benchmarks |
+
+### Local dev stack (Pivotable)
+
+The **dev stack** is the pair of processes needed to run Pivotable locally: a Spring Boot **backend** on `:8080` and a **Vite frontend** dev server on `:5173` that proxies `/api`, `/webjars`, `/login`, `/logout` to the backend. Canonical entry points, all from `pivotable/js/`:
+
+- `npm run backend` — backend only (Spring Boot via `mvn spring-boot:run`, profile `pivotable-unsafe` by default). Honours `$WEBMODE` (`webflux`/`webmvc`) and `$SPRING_ACTIVE_PROFILES`.
+- `npm run dev_frontend` — Vite dev server only (HMR, assumes a backend is already running on `:8080`).
+- `npm run dev_stack` — both together; Ctrl-C kills both. This is also what Playwright's `webServer` ultimately invokes via `npm run backend`, so `npx playwright test` auto-starts the backend if none is running.
+
+When a task needs a running backend+frontend pair, refer to it as "the dev stack" and start it with `npm run dev_stack`.
+
+### Logging in to a dev stack (no excuse for "I can't verify in a logged-out browser")
+
+The default `pivotable-unsafe_fakeuser` profile registers a BASIC user whose credentials are hardcoded and whose login form is **pre-filled** by the SPA — clicking through is a 3-step flow:
+
+1. From the home page click **You need to login**.
+2. Click the provider entry **pivotable-unsafe_fakeuser** (BASIC arm).
+3. Click **Login fakeUser** on the form (the username `11111111-1111-1111-1111-000000000000` and password `no_password` are already in the inputs).
+
+Credentials, for the rare automation that needs them out-of-form:
+
+- username: `11111111-1111-1111-1111-000000000000` (`FakeUser.ACCOUNT_ID`)
+- password: `no_password`
+
+After step 3 the navbar shows "Welcome Fake User" and the rest of the SPA is browsable. There is **no reason** to skip a UI verification on the grounds of being logged out — this works in the dev stack out of the box. See `pivotable/CONTRIBUTING.md` for more detail.
 
 ---
 
@@ -52,11 +77,13 @@ Each job below is **atomic** — run only one job per session. Cover the whole c
 mvn spotless:apply --file pom.xml --batch-mode
 ```
 
-If there are changes in HTML/JS resources in `pivotable/js`, also run:
+If there are changes in HTML/JS resources in `pivotable/js`, also run (order matters — prettier first, spotless last):
 
 ```bash
 cd pivotable/js && npm run format && mvn spotless:apply
 ```
+
+After this chain the tree is stable: a second `mvn spotless:apply` reports 0 changes. **Do not run `npm run format` *after* `mvn spotless:apply`** — prettier and biome use different line-wrap algorithms for expressions exceeding the 160-column limit, so running prettier last will reintroduce rewrites that spotless would normalise again on the next `mvn` run.
 
 ---
 
@@ -84,7 +111,7 @@ Improve test coverage for production classes that are critically under-tested (b
    ```
 2. Filter out pure interfaces and Lombok-generated-only classes (they require no tests).
 3. For each remaining class, read the source and write a `Test<ClassName>` in the same module under `src/test/java/`, in the same package. Cover at least: nominal path, null/empty inputs, and the most likely edge cases.
-4. After all edits run `mvn spotless:apply --file pom.xml --batch-mode` then verify with `mvn test -Dcheckstyle.skip=true -Dpmd.skip=true -Dspotbugs.skip=true --file pom.xml --batch-mode`.
+4. After all edits run `mvn spotless:apply --file pom.xml --batch-mode` then verify with `mvn test -Pnostyle --file pom.xml --batch-mode`.
 
 **Scope**: at most 10 classes per session to keep PRs reviewable.
 
@@ -98,6 +125,13 @@ New executor jobs are proposed monthly by the Discovery Agent (see `.claude/disc
 
 ## After every change
 
+- **TDD when a bug is identified.** As soon as a failure is *clearly* understood (not "I'm exploring why something is off" — actually identified, with a known root cause and reproduction shape), write a reproducing test FIRST and confirm it fails for the expected reason, THEN apply the fix. The reproducer pins the regression even after the surrounding code is refactored. Concretely:
+  1. Write the test (or extend an existing one) describing the buggy scenario as concretely as possible — same inputs, same call shape, same expected output.
+  2. Run it — confirm it fails with the symptom you predicted (exception, wrong value, missing row, etc.). If it fails differently or passes, you have not yet identified the bug; investigate further before writing the fix.
+  3. Apply the fix in production code.
+  4. Re-run the test — confirm it now passes.
+  5. Run the affected module's full test suite to catch regressions.
+  This applies even when the fix is a one-liner. Skipping the reproducer is acceptable only for *exploratory* spikes (e.g. "let me try this and see what breaks") — and even then the spike should end with a real reproducer once the issue is understood.
 - **Tests**: Every new class or significant behaviour change must be accompanied by a unit test. Cover at least the nominal path plus the most likely edge cases (null values, empty input, mixed types, etc.). Target ≥ 80 % instruction coverage for new files; classes below 20 % are critically under-tested — check with `perl scripts/check-coverage-sonar.pl` (offline) or `perl scripts/check-coverage-low.pl` (local JaCoCo). Test files live in the same module under `src/test/java/`.
 - **CHANGES.MD**: Add a one-liner under the current `[0.0.x]` section (under `### Added`, `### Changed`, or `### Fixed` as appropriate) for every user-visible addition or change. Do **not** record coverage-only test additions — they carry no functional value for API users.
 - **Final pass**: Before declaring work done, run through this checklist — do not skip any item even if the task felt simple:
@@ -118,12 +152,23 @@ New executor jobs are proposed monthly by the Discovery Agent (see `.claude/disc
 
 ---
 
+## UX rules (Pivotable front-end)
+
+- **Always surface asynchronous activity.** Whenever the Vue front-end performs an operation that the user is waiting on (HTTP request, query execution, login provider discovery, token refresh, export, etc.) the UI MUST make the in-flight state visible. The user should never have to guess whether something is happening. At minimum:
+  - a Bootstrap spinner (`.spinner-border`, `.spinner-grow`) OR a progress bar (`.progress-bar-animated`) next to the affected element, AND
+  - a short textual status (e.g. "Loading providers…", "Refreshing token…") co-located with the spinner.
+  A message alone is better than nothing (see `login.js` loading state) but a spinner + message is the standard. When adding a new async action, add the loading UI in the same change — a follow-up is not acceptable.
+- **Disable the triggering control while it is in-flight.** Clicking a button that is already running should not re-fire the operation. Either set `disabled` until the promise resolves, or debounce the handler.
+- **Homogenize the loading idiom.** When introducing a new loading indicator, look for a sibling component already using one and reuse its pattern (class names, markup shape, text phrasing) rather than inventing a new one. The grid's progress bar (`adhoc-query-grid.js`) is the canonical example for long-running operations; `spinner-border-sm` next to a label is the canonical example for short ones.
+- **Cover every high-level UI feature with a Playwright e2e scenario.** New cross-component features (DrillThrough, MeasureDag modal, query restore, …) MUST land with at least one nominal scenario under `pivotable/js/e2e-tests/localhost8080-<feature>.spec.js`. Vitest unit tests are not a substitute: a feature whose contract spans the wizard, the network round-trip and the grid is precisely what the e2e layer protects against silent regressions when components are later refactored. Run with `cd pivotable/js && npx playwright test --project=chromium`; the backend is auto-started via `npm run backend`. Asserting against `page.waitForResponse(...)` JSON gives a stable contract; asserting on internal Vue state would couple the test to today's component shape.
+
+---
+
 ## DO NOT — Prohibited actions
 
 - Do **NOT** modify test files (`src/test/java/**`) to change test assertions or business logic. You **may** fix resource leaks, compilation errors, or other clear bugs in existing test files.
 - Do **NOT** modify `pom.xml` files (no new dependencies, no version bumps).
 - Do **NOT** modify anything under `.cleanthat/` (build-tool configuration managed separately).
-- Do **NOT** modify anything under `pivotable/js/` (JS/TS handled by Prettier separately).
 - **Simple tasks** (Javadoc, comments, coverage tests, formatting): do **NOT** change method/constructor signatures, rename classes/methods/fields/variables, or alter business logic.
 - **Complex tasks** (new features, refactoring requested by the user): signature changes, renames, and logic changes are allowed when they are part of the requested work. Prefer adding new methods/fields over modifying existing signatures; when an existing signature must change, confirm with the user first.
 - Do **NOT** reorder imports (Spotless handles that).
@@ -132,6 +177,7 @@ New executor jobs are proposed monthly by the Discovery Agent (see `.claude/disc
 - Do **NOT** merge pull requests, or offer to merge them. PRs are always reviewed and merged by a human through the GitHub UI.
 - Do **NOT** duplicate what Checkstyle / PMD / SpotBugs / Spotless already enforce deterministically (whitespace, brace style, unused imports, etc.).
 - Do **NOT** pipe Bash commands through `head`, `tail`, `grep`, `sed`, `awk`, or `echo`. Run commands directly and let the full output be captured. Use the dedicated `Grep` tool for content searches.
+- Do **NOT** write a backtick character (`` ` ``) anywhere inside a Vue `template: /* HTML */ \`…\`` literal — **not even inside an `<!-- HTML comment -->`**. The template is a JavaScript template literal, and every backtick terminates the string mid-way, producing a `biome` parse error whose message (`LINE_UNDEFINED`, `Code formatting aborted due to parsing errors`) does not point at the real location. When the comment would naturally want to highlight a code fragment (a class name, a tag name, a CSS selector), use plain prose, single-quotes, or `&#96;` — never raw backticks. The same rule applies to interpolation-like fragments such as `${foo}`: they must not appear inside the template literal at all, even in comments. If you see `Code formatting aborted due to parsing errors` on a `*.js` file with a Vue template, this rule is the first thing to check.
 
 ---
 
@@ -144,3 +190,37 @@ These rules exist because slow sessions have been observed and root-caused here.
 - **Don't re-read files already in context.** If a file was written or fully read earlier in the same session, edit it directly without a preceding `Read` call.
 - **Combine Maven goals** to avoid redundant JVM startups: e.g. `mvn spotless:apply pmd:check --file pom.xml --batch-mode` instead of two separate invocations.
 - **Scope Maven to the affected module** with `-pl <module>` when only one module was changed (e.g. `-pl adhoc`), rather than running the full reactor.
+- **Stop and ask when the problem turns out subtler than the discussion assumed.** Symptoms: the user requested a change "X" that triggers more failures than expected, or a debug session is dragging on (multiple log-and-rerun loops, conflicting test expectations, semantic ambiguity in the design). Don't keep editing — pause, write a short status describing (a) the situation as I now understand it, (b) what I'd do next and why, (c) the trade-offs, and ask for a decision. Examples that warrant a stop:
+  - A "small fix" causes a non-trivial number of test regressions that look semantic, not mechanical, especially when the user just told me they "fixed the unit-tests".
+  - I've run the same failing test multiple times with added logs and still don't have a working fix.
+  - I'm about to touch a file the user explicitly said is theirs / they just edited.
+  Iterating silently when the situation is actually ambiguous wastes context and time. Stating it clearly invites a 1-line redirect and saves a long detour.
+- **When the user *suggests* a design change, give feedback before implementing — unless they were unambiguously decisive.** Treat phrasings like "I feel awkward about X", "Shouldn't we Y?", "Maybe Z?", "I wonder if…" as **invitations to discuss**, not orders to refactor. Pause, share an opinion (agree / disagree / mixed, with the trade-offs you see), then let them confirm. A 2–3 sentence opinion costs almost nothing; a 30-minute refactor in the wrong direction costs a lot. Only skip the feedback step when the user is fully decisive ("do X", "rename Y to Z", "drop the FOO branch") AND you fully agree. If you do skip it, say in one sentence why you agreed and went straight to implementation, so the user can still redirect early. Phrasing patterns to watch for:
+  - **Discuss first** (non-decisive): "Shouldn't we…", "I'd expect…", "I feel awkward about…", "Wouldn't it be simpler to…", "Maybe…", "I wonder if…", "What do you think about…".
+  - **Implement directly** (decisive): "Do X", "Apply Y", "Rename Z to W", "Drop the FOO branch", "Yes, go ahead", "Implement option (a)".
+  When in doubt, default to the discuss-first path. Even if I "totally agree", a one-liner like "Agree — V3 is more honest, going for it now" is enough for the user to interrupt before I burn context.
+
+---
+
+## Investigating query-engine bugs
+
+When a `CubeQuery`-based test fails with an unexpected aggregation result (missing slice, wrong sum, etc.), the
+fastest way to see what the engine is actually doing is to flip the query into debug mode and re-read the surefire
+log. Two complementary techniques:
+
+- **`CubeQuery.builder()...debug(true)...build()`** — enables `[DEBUG]` and `[EXPLAIN]` log lines that print the
+  table-side rows received, the per-slice aggregator contributions, the merged step DAG, and each combinator's
+  per-slice writes. The trace alone usually pinpoints which slice is being dropped/duplicated and at which step.
+  Even if the test does not currently set `debug(true)`, temporarily wrapping the query with `debug(true)` (or
+  the equivalent `StandardQueryOptions.DEBUG` in the options set) is the cheapest first step before reaching for
+  a debugger.
+- **`TabularRecordLogger`** prints `Accepted row #N: slice=... aggregates=...` for each row the table emits, and
+  `TabularRecordStreamReducer` prints `Table contributes <aggregator>=<value> -> <slice>` for each per-aggregator
+  contribution. Together they make it obvious whether a missing value comes from the table side, the aggregator
+  side, or further downstream (combinator / join / merger).
+
+Example: the Phase-3 sparse-keyspace bug in `UndictionarizedColumn.stream(StreamStrategy)` was diagnosed
+end-to-end from a single `debug(true)` run of `TestAggregations_GroupBys#testSumOfSum_groupBy1String_notAlwaysPresent`.
+The log showed the table emitting all 4 rows correctly and the per-aggregator contributions arriving as expected,
+but the combinator's `Processing slice=...` lines only emitted 2 of the 3 distinct slices — proving the loss was
+in the join layer, not in the table or the aggregator.

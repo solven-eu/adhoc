@@ -30,13 +30,13 @@ import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.model.Aggregator;
 
 public class TestPartitionedMultitypeMergeableGrid {
+	Aggregator sum = Aggregator.sum("k1");
+
 	AggregatingColumns<String> p1 = AggregatingColumns.<String>builder().build();
 	AggregatingColumns<String> p2 = AggregatingColumns.<String>builder().build();
 
 	PartitionedMultitypeMergeableGrid<String, Integer> partitioned =
 			PartitionedMultitypeMergeableGrid.<String, Integer>builder().partition(p1).partition(p2).build();
-
-	Aggregator sum = Aggregator.sum("k1");
 
 	@Test
 	public void testEmpty() {

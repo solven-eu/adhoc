@@ -8,6 +8,9 @@ module eu.solven.adhoc.cell {
 	exports eu.solven.adhoc.cuboid;
 	exports eu.solven.adhoc.cuboid.slice;
 	exports eu.solven.adhoc.cuboid.tabular;
+	exports eu.solven.adhoc.engine.cancel;
+	exports eu.solven.adhoc.engine.context;
+	exports eu.solven.adhoc.engine.observability;
 	exports eu.solven.adhoc.engine.step;
 	exports eu.solven.adhoc.eventbus;
 	exports eu.solven.adhoc.map;
@@ -17,11 +20,11 @@ module eu.solven.adhoc.cell {
 
 	// ── Sibling modules ──────────────────────────────────────────────────────
 	// adhoc-public: AdhocUnsafe, ILikeList, options.*, primitive.*
-	requires eu.solven.adhoc.meta;
+	requires eu.solven.adhoc.model;
 	// adhoc-encoding: IAppendableTable, IHasIndexOf, encoding.*
 	requires eu.solven.adhoc.encoding;
 	// adhoc-filters: ISliceFilter, FilterBuilder, filter.value.*
-	requires eu.solven.adhoc.query.filters;
+	requires eu.solven.adhoc.filters;
 
 	// ── Named third-party modules ────────────────────────────────────────────
 	requires com.google.common;

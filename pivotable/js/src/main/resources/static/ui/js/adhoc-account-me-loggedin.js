@@ -6,13 +6,13 @@ import { useUserStore } from "./store-user.js";
 // https://stackoverflow.com/questions/69053972/adding-bootstrap-5-tooltip-to-vue-3
 // import { Tooltip } from "bootstrap";
 
-import AdhocAccountRef from "./adhoc-account-ref.js";
+import AdhocAccountChip from "./adhoc-account-chip.js";
 
 import Flag from "./flag.js";
 
 export default {
 	components: {
-		AdhocAccountRef,
+		AdhocAccountChip,
 		Flag,
 	},
 	computed: {
@@ -107,36 +107,36 @@ export default {
 		return { countryCode, countries, updateCountry };
 	},
 	template: /* HTML */ `
-        <span>
-            <AdhocAccountRef :accountId="account.accountId" /><br />
-            <span v-if="account.details">
-                username={{account.details.username}}<br />
-                name={{account.details.name}}<br />
-                email={{account.details.email}}<br />
-            </span>
+		<span>
+			<AdhocAccountChip :accountId="account.accountId" /><br />
+			<span v-if="account.details">
+				username={{account.details.username}}<br />
+				name={{account.details.name}}<br />
+				email={{account.details.email}}<br />
+			</span>
 
-            <div>
-                <div class="col my-auto">
-                    <span class="btn-group ">
-                        <button type="button" class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
-                            Current country: {{countries[countryCode] || countryCode}}
-                            <Flag :country="countryCode" />
-                        </button>
-                        <ul class="dropdown-menu">
-                            <li>
-                                <a
-                                    class="dropdown-item"
-                                    @click="updateCountry(countryCode)"
-                                    :data-testid="'country_' + countryIndex"
-                                    v-for="(countryName, countryCode, countryIndex) in countries"
-                                >
-                                    <Flag :country="countryCode" />{{countryName}}
-                                </a>
-                            </li>
-                        </ul>
-                    </span>
-                </div>
-            </div>
-        </span>
-    `,
+			<div>
+				<div class="col my-auto">
+					<span class="btn-group ">
+						<button type="button" class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+							Current country: {{countries[countryCode] || countryCode}}
+							<Flag :country="countryCode" />
+						</button>
+						<ul class="dropdown-menu">
+							<li>
+								<a
+									class="dropdown-item"
+									@click="updateCountry(countryCode)"
+									:data-testid="'country_' + countryIndex"
+									v-for="(countryName, countryCode, countryIndex) in countries"
+								>
+									<Flag :country="countryCode" />{{countryName}}
+								</a>
+							</li>
+						</ul>
+					</span>
+				</div>
+			</div>
+		</span>
+	`,
 };

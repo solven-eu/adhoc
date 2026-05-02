@@ -57,7 +57,7 @@ import org.springframework.security.web.server.util.matcher.ServerWebExchangeMat
 import eu.solven.adhoc.app.IPivotableSpringProfiles;
 import eu.solven.adhoc.pivotable.account.fake_user.FakeUser;
 import eu.solven.adhoc.pivotable.webflux.security.oauth2.PivotableReactiveOAuth2UserService;
-import eu.solven.adhoc.pivotable.webnone.api.PivotableLoginWebnoneController;
+import eu.solven.adhoc.pivotable.webnone.api.IPivotableLoginConstants;
 import eu.solven.adhoc.pivotable.webnone.security.PivotableSocialWebnoneSecurity;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -126,6 +126,10 @@ public class PivotableSocialWebfluxSecurity {
 						// Holds static resources (e.g. `/ui/js/store.js`)
 						"/ui/js/**",
 						"/ui/img/**",
+						// Importmap JSONs loaded by the inline bootstrap in index.html, BEFORE the
+						// user is authenticated. Without permitAll on these, the bootstrap fetch
+						// 401s and module specifiers like `import "vue"` fail to resolve.
+						"/ui/importmap-*.json",
 						// The routes used by the spa
 						"/",
 						"/favicon.ico",
@@ -173,7 +177,12 @@ public class PivotableSocialWebfluxSecurity {
 						.permitAll()
 
 						// Webjars and static resources
-						.pathMatchers("/ui/js/**", "/ui/img/**", "/webjars/**", "/favicon.ico")
+						.pathMatchers("/ui/js/**",
+								"/ui/img/**",
+								// Importmap JSONs are loaded by the bootstrap before login (see comment above).
+								"/ui/importmap-*.json",
+								"/webjars/**",
+								"/favicon.ico")
 						.permitAll()
 
 						// PivotableLoginController
@@ -239,7 +248,7 @@ public class PivotableSocialWebfluxSecurity {
 					e.authenticationEntryPoint(authenticationEntryPoint);
 				});
 
-		if (env.getProperty(PivotableLoginWebnoneController.P_OAUTH2, Boolean.class, true)) {
+		if (env.getProperty(IPivotableLoginConstants.P_OAUTH2, Boolean.class, true)) {
 			commonConf = commonConf
 					// How to request prompt=consent for Github?
 					// https://docs.spring.io/spring-security/reference/servlet/oauth2/client/authorization-grants.html

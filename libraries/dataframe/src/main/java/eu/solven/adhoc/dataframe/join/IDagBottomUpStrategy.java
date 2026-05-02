@@ -30,9 +30,10 @@ import eu.solven.adhoc.cuboid.SliceAndMeasure;
 import eu.solven.adhoc.cuboid.slice.Slice;
 import eu.solven.adhoc.dataframe.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.dataframe.column.IMultitypeMergeableColumn;
+import eu.solven.adhoc.engine.IColumnFactory.ColumnParams;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
-import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.transformator.step.IMeasureQueryStep;
+import eu.solven.adhoc.stream.IConsumingStream;
 
 /**
  * Wraps the strategy to store results from {@link IMeasureQueryStep}, and to merge underlyings
@@ -48,36 +49,9 @@ import eu.solven.adhoc.measure.transformator.step.IMeasureQueryStep;
  */
 public interface IDagBottomUpStrategy {
 
-	/**
-	 * 
-	 * @param initialCapacity
-	 *            -1 if no estimation is available
-	 * @return the storage for a {@link IMeasureQueryStep} output.
-	 */
-	<T> IMultitypeColumnFastGet<T> makeColumn(int initialCapacity);
+	<T> IMultitypeColumnFastGet<T> makeColumn(ColumnParams<T> params);
 
-	<T> IMultitypeColumnFastGet<T> makeColumnRandomInserts(int initialCapacity);
-
-	/**
-	 * 
-	 * @param <T>
-	 * @param agg
-	 * @param initialCapacity
-	 *            -1 is no estimation is available
-	 * @return
-	 */
-	<T> IMultitypeMergeableColumn<T> makeColumn(IAggregation agg, int initialCapacity);
-
-	/**
-	 * When insertions does not follow any ordering.
-	 * 
-	 * @param <T>
-	 * @param agg
-	 * @param initialCapacity
-	 *            -1 is no estimation is available
-	 * @return
-	 */
-	<T> IMultitypeMergeableColumn<T> makeColumnRandomInserts(IAggregation agg, int initialCapacity);
+	<T> IMultitypeMergeableColumn<T> makeMergeableColumn(ColumnParams<T> params);
 
 	/**
 	 * 
@@ -86,5 +60,6 @@ public interface IDagBottomUpStrategy {
 	 * @return a {@link Stream} of {@link SliceAndMeasure}, which each {@link SliceAndMeasure} have a distinct
 	 *         {@link Slice}, and the relevant value from underlyings.
 	 */
-	Stream<SliceAndMeasures> joinCuboids(CubeQueryStep step, List<? extends ICuboid> underlyings);
+	IConsumingStream<SliceAndMeasures> joinCuboids(CubeQueryStep step, List<? extends ICuboid> underlyings);
+
 }

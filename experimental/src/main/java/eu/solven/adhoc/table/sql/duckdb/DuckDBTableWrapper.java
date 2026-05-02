@@ -27,6 +27,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Objects;
 
 import org.duckdb.DuckDBResultSet;
 import org.jooq.ConnectionProvider;
@@ -55,13 +56,16 @@ public class DuckDBTableWrapper extends AArrowJooqTableWrapper {
 	@Override
 	protected Object openArrowReader(String sql, List<AutoCloseable> resources) throws SQLException {
 		ConnectionProvider connectionProvider = makeDsl().configuration().connectionProvider();
-		Connection connection = connectionProvider.acquire();
+		// `acquire()` is @Nullable per JOOQ contract — narrow before any dereference (and before the cleanup
+		// lambda captures the variable, so `release(...)` always sees the same non-null reference).
+		Connection connection =
+				Objects.requireNonNull(connectionProvider.acquire(), "ConnectionProvider returned null");
 		resources.add(() -> connectionProvider.release(connection));
 
-		PreparedStatement stmt = connection.prepareStatement(sql);
+		PreparedStatement stmt = Objects.requireNonNull(connection.prepareStatement(sql));
 		resources.add(stmt);
 
-		ResultSet rs = stmt.executeQuery();
+		ResultSet rs = Objects.requireNonNull(stmt.executeQuery());
 		resources.add(rs);
 
 		DuckDBResultSet duckRs = rs.unwrap(DuckDBResultSet.class);

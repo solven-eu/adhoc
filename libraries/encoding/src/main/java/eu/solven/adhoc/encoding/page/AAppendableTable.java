@@ -46,11 +46,11 @@ public abstract class AAppendableTable implements IAppendableTable {
 
 	@Default
 	@NonNull
-	final IAppendableColumnFactory columnsFactory = ObjectArrayColumnsFactory.builder().build();
+	protected final IAppendableColumnFactory columnsFactory = ObjectArrayColumnsFactory.builder().build();
 
 	@Default
 	@NonNull
-	IFreezingStrategy freezer = SynchronousFreezingStrategy.builder().build();
+	protected IFreezingStrategy freezer = SynchronousFreezingStrategy.builder().build();
 
 	@Default
 	protected final int capacity = AdhocColumnUnsafe.getPageSize();

@@ -29,14 +29,15 @@ import com.google.common.base.MoreObjects;
 import com.google.common.base.MoreObjects.ToStringHelper;
 import com.google.common.collect.ImmutableList;
 
+import eu.solven.adhoc.collection.ICompactable;
 import eu.solven.adhoc.cuboid.IColumnScanner;
 import eu.solven.adhoc.cuboid.IColumnValueConverter;
-import eu.solven.adhoc.cuboid.ICompactable;
 import eu.solven.adhoc.cuboid.SliceAndMeasure;
 import eu.solven.adhoc.dataframe.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.dataframe.column.hash.MultitypeHashColumn;
 import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.primitive.IValueReceiver;
+import eu.solven.adhoc.stream.IConsumingStream;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import lombok.NonNull;
 import lombok.Singular;
@@ -104,13 +105,13 @@ public abstract class APartitionedColumn<T, D extends IMultitypeColumnFastGet<T>
 	}
 
 	@Override
-	public Stream<SliceAndMeasure<T>> stream() {
-		return partitions.stream().flatMap(IMultitypeColumnFastGet::stream);
+	public IConsumingStream<SliceAndMeasure<T>> stream() {
+		return IConsumingStream.concat(partitions.stream().map(IMultitypeColumnFastGet::stream).toList());
 	}
 
 	@Override
-	public Stream<T> keyStream() {
-		return partitions.stream().flatMap(IMultitypeColumnFastGet::keyStream);
+	public IConsumingStream<T> keyStream() {
+		return IConsumingStream.concat(partitions.stream().map(IMultitypeColumnFastGet::keyStream).toList());
 	}
 
 	@Override

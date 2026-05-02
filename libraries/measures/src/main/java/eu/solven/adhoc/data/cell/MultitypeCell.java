@@ -22,6 +22,8 @@
  */
 package eu.solven.adhoc.data.cell;
 
+import org.jspecify.annotations.Nullable;
+
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.aggregation.IDoubleAggregation;
 import eu.solven.adhoc.measure.aggregation.ILongAggregation;
@@ -53,6 +55,7 @@ public class MultitypeCell implements IMultitypeCell, IValueReceiver, IValueProv
 	@Default
 	double asDouble = 0D;
 	@Default
+	@Nullable
 	Object asObject = null;
 
 	@Override
@@ -76,7 +79,7 @@ public class MultitypeCell implements IMultitypeCell, IValueReceiver, IValueProv
 	}
 
 	@Override
-	public void onObject(Object object) {
+	public void onObject(@Nullable Object object) {
 		if (object != null) {
 			types |= IMultitypeConstants.MASK_OBJECT;
 			asObject = aggregation.aggregate(asObject, object);

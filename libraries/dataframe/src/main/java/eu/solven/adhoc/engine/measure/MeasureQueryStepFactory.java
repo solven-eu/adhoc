@@ -53,7 +53,6 @@ public class MeasureQueryStepFactory implements IMeasureQueryStepFactory {
 
 	@Override
 	public IMeasureQueryStep makeQueryStep(CubeQueryStep queryStep, IHasUnderlyingMeasures measure) {
-
 		if (measure instanceof IMeasureQueryStepOwnFactory ownFactory) {
 			return ownFactory.makeQueryStep(factories, queryStep);
 		}

@@ -6,7 +6,7 @@ import { useAdhocStore } from "./store-adhoc.js";
 import AdhocEndpointHeader from "./adhoc-endpoint-header.js";
 import AdhocCubeHeader from "./adhoc-cube-header.js";
 
-import AdhocQueryRef from "./adhoc-query-ref.js";
+import AdhocQueryChip from "./adhoc-query-chip.js";
 
 import AdhocLoading from "./adhoc-loading.js";
 
@@ -15,7 +15,7 @@ export default {
 	components: {
 		AdhocEndpointHeader,
 		AdhocCubeHeader,
-		AdhocQueryRef,
+		AdhocQueryChip,
 		AdhocLoading,
 	},
 	// https://vuejs.org/guide/components/props.html
@@ -59,16 +59,16 @@ export default {
 		return {};
 	},
 	template: /* HTML */ `
-        <div v-if="!endpoint || endpoint.error || !cube || cube.error">
-            <AdhocLoading :id="endpointId" type="endpoint" :loading="nbSchemaFetching > 0" :error="endpoint.error" />
-            <AdhocLoading :id="cubeId" type="cube" :loading="nbSchemaFetching > 0" :error="cube.error" />
-        </div>
-        <div v-else>
-            <AdhocCubeHeader :endpointId="endpointId" :cubeId="cubeId" />
+		<div v-if="!endpoint || endpoint.error || !cube || cube.error">
+			<AdhocLoading :id="endpointId" type="endpoint" :loading="nbSchemaFetching > 0" :error="endpoint.error" />
+			<AdhocLoading :id="cubeId" type="cube" :loading="nbSchemaFetching > 0" :error="cube.error" />
+		</div>
+		<div v-else>
+			<AdhocCubeHeader :endpointId="endpointId" :cubeId="cubeId" />
 
-            <ul>
-                <li><AdhocQueryRef :cubeId="cubeId" :endpointId="endpointId" :withDescription="false" v-if="showEndpoint" /></li>
-            </ul>
-        </div>
-    `,
+			<ul>
+				<li><AdhocQueryChip :cubeId="cubeId" :endpointId="endpointId" :withDescription="false" v-if="showEndpoint" /></li>
+			</ul>
+		</div>
+	`,
 };

@@ -93,11 +93,15 @@ public class ReferencedMeasure implements IMeasure, IReferencedMeasure, IHasWrap
 	 */
 	public static class ReferencedMeasureBuilder {
 
+		// Lombok @Builder fills `ref` via the chained setter `.ref(...)`; NullAway can't see the cross-method init.
+		@SuppressWarnings("NullAway.Init")
 		public ReferencedMeasureBuilder() {
 			// Lombok @Builder
 		}
 
 		// Enable Jackson deserialization given a plain String
+		// NullAway can't see that `.ref(...)` initializes the underlying `ref` field through the chained setter.
+		@SuppressWarnings("NullAway.Init")
 		public ReferencedMeasureBuilder(String measure) {
 			this.ref(measure);
 		}

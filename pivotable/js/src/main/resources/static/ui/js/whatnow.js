@@ -2,11 +2,11 @@ import { mapState } from "pinia";
 
 import { useUserStore } from "./store-user.js";
 
-import LoginRef from "./login-ref.js";
+import LoginChip from "./login-chip.js";
 
 export default {
 	components: {
-		LoginRef,
+		LoginChip,
 	},
 	computed: {
 		...mapState(useUserStore, ["isLoggedIn"]),
@@ -15,14 +15,14 @@ export default {
 		return {};
 	},
 	template: /* HTML */ `
-        <div v-if="!isLoggedIn"><LoginRef /></div>
-        <span v-else>
-            <ul>
-                <li>
-                    <RouterLink to="/html/endpoints">Browse through endpoints</RouterLink>
-                </li>
-                <li><RouterLink to="/html/me">About me</RouterLink></li>
-            </ul>
-        </span>
-    `,
+		<div v-if="!isLoggedIn"><LoginChip /></div>
+		<span v-else>
+			<ul>
+				<li>
+					<RouterLink to="/html/endpoints">Browse through endpoints</RouterLink>
+				</li>
+				<li><RouterLink to="/html/me">About me</RouterLink></li>
+			</ul>
+		</span>
+	`,
 };

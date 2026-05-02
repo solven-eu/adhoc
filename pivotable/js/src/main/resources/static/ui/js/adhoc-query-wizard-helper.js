@@ -1,5 +1,5 @@
-// Ordering of columns
-import _ from "lodashEs";
+// Ordering of columns. Per-function import to avoid fetching the lodash root bundle.
+import sortBy from "lodashEs/sortBy.js";
 
 export default {
 	removeTag: function (searchOptions, tag) {
@@ -15,6 +15,12 @@ export default {
 		searchOptions.text = "";
 		// https://stackoverflow.com/questions/1232040/how-do-i-empty-an-array-in-javascript
 		searchOptions.tags.length = 0;
+		// Also drop the "show only queried entries" toggle. The wizard surfaces a Clear
+		// button when the current filters yield zero matches; if that toggle was on, the
+		// clear+text reset alone could still leave the user staring at an empty list
+		// because `filtered()` would keep restricting to selected entries. Resetting it to
+		// false ensures the user really sees ALL options after a single click.
+		searchOptions.filterQueried = false;
 	},
 
 	queried: function (keyToBoolean) {
@@ -95,6 +101,6 @@ export default {
 
 		// Measures has to be sorted by name
 		// https://stackoverflow.com/questions/8996963/how-to-perform-case-insensitive-sorting-array-of-string-in-javascript
-		return _.sortBy(filtereditems, [(resultItem) => (resultItem.key || resultItem.name).toLowerCase()]);
+		return sortBy(filtereditems, [(resultItem) => (resultItem.key || resultItem.name).toLowerCase()]);
 	},
 };

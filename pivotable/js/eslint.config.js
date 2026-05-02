@@ -14,19 +14,19 @@ import eslintPluginPrettierRecommended from "eslint-plugin-prettier/recommended"
 // And by Prettier (https://github.com/prettier/prettier/issues/12957). It is also referred in https://fr.vuejs.org/guide/quick-start
 
 export default [
-    js.configs.recommended,
-    ...eslintPluginVue.configs["flat/recommended"],
-    {
-        files: ["*.html", "**/*.html", "*.js", "**/*.js", "*.vue", "**/*.vue"],
-        // ignores: ["*/target/*"],
-        languageOptions: {
-            parser: vueEslintParser,
-        },
-        rules: {
-            // 'vue/no-unused-vars': 'error'
-            //"vue/require-default-prop": "off",
-        },
-    },
-    // `eslintPluginPrettierRecommended` is last to override previous config, and it includes eslintConfigPrettier
-    eslintPluginPrettierRecommended,
+	js.configs.recommended,
+	...eslintPluginVue.configs["flat/recommended"],
+	{
+		files: ["*.html", "**/*.html", "*.js", "**/*.js", "*.vue", "**/*.vue"],
+		// ignores: ["*/target/*"],
+		languageOptions: {
+			parser: vueEslintParser,
+		},
+		rules: {
+			// 'vue/no-unused-vars': 'error'
+			//"vue/require-default-prop": "off",
+		},
+	},
+	// `eslintPluginPrettierRecommended` is last to override previous config, and it includes eslintConfigPrettier
+	eslintPluginPrettierRecommended,
 ];

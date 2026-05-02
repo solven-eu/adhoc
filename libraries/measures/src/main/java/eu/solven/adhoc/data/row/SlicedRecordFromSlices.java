@@ -32,6 +32,7 @@ import com.google.common.collect.Lists;
 
 import eu.solven.adhoc.cuboid.SliceAndMeasure;
 import eu.solven.adhoc.primitive.IValueProvider;
+import eu.solven.adhoc.primitive.IValueReceiver;
 import eu.solven.adhoc.util.AdhocDebug;
 import lombok.Builder;
 import lombok.Singular;
@@ -62,6 +63,11 @@ public class SlicedRecordFromSlices implements ISlicedRecord {
 	}
 
 	@Override
+	public void read(int index, IValueReceiver receiver) {
+		valueProviders.get(index).acceptReceiver(receiver);
+	}
+
+	@Override
 	public String toString() {
 		return IntStream.range(0, size()).mapToObj(index -> {
 			Object v = IValueProvider.getValue(read(index));
@@ -72,7 +78,11 @@ public class SlicedRecordFromSlices implements ISlicedRecord {
 
 	@Override
 	public List<?> asList() {
-		return Collections.unmodifiableList(Lists.transform(valueProviders, IValueProvider::getValue));
+		// Guava `Lists.transform` types its Function as @NonNull-returning; `IValueProvider::getValue` may legitimately
+		// return null when the underlying value is null. The transformed list exposes the null directly.
+		@SuppressWarnings("NullAway")
+		List<?> transformed = Lists.transform(valueProviders, IValueProvider::getValue);
+		return Collections.unmodifiableList(transformed);
 	}
 
 }

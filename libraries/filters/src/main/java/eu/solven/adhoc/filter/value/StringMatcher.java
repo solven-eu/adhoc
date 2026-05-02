@@ -22,6 +22,8 @@
  */
 package eu.solven.adhoc.filter.value;
 
+import org.jspecify.annotations.Nullable;
+
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.Value;
@@ -40,7 +42,7 @@ public class StringMatcher implements IValueMatcher {
 	String string;
 
 	@Override
-	public boolean match(Object value) {
+	public boolean match(@Nullable Object value) {
 		if (value == null) {
 			return false;
 		} else {

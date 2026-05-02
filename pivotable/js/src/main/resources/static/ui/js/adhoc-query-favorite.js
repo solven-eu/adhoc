@@ -1,8 +1,17 @@
-import { ref, watch } from "vue";
+import { ref } from "vue";
 
 import { usePreferencesStore } from "./store-preferences.js";
 
+// Reuse the same recursive filter renderer as the wizard sidebar, so the filter preview in
+// this modal stays visually consistent (pill-style AND/OR, strikethrough for disabled clauses,
+// per-node pause/remove icons). It also means any change made to the filter here flows live
+// into the queryModel exactly like it does in the sidebar.
+import AdhocQueryWizardFilter from "./adhoc-query-wizard-filter.js";
+
 export default {
+	components: {
+		AdhocQueryWizardFilter,
+	},
 	props: {
 		queryModel: {
 			type: Object,
@@ -35,29 +44,13 @@ export default {
 			preferencesStore.registerLatestQueryId(queryId);
 		};
 
-		{
-			if (preferencesStore.latestQueryIds >= 1) {
-				const latestQueryId = preferencesStore.latestQueryIds[preferencesStore.latestQueryIds.length - 1];
-				// TODO Restore latestQueryId
-			}
-
-			watch(
-				preferencesStore.latestQueryIds,
-				(latestQueryIds) => {
-					// persist the whole state to the local storage whenever it changes
-					localStorage.setItem("adhoc.preferences.latestQueryIds", JSON.stringify(latestQueryIds));
-				},
-				{ deep: true },
-			);
-			watch(
-				preferencesStore.queryModels,
-				(queryModels) => {
-					// persist the whole state to the local storage whenever it changes
-					localStorage.setItem("adhoc.preferences.queryModels", JSON.stringify(queryModels));
-				},
-				{ deep: true },
-			);
+		if (preferencesStore.latestQueryIds >= 1) {
+			const latestQueryId = preferencesStore.latestQueryIds[preferencesStore.latestQueryIds.length - 1];
+			// TODO Restore latestQueryId
 		}
+		// Persistence to localStorage is now wired centrally in `usePreferencesStore`
+		// (pinia $subscribe). The stale per-component watchers that used to live here were
+		// lossy — they only ran while this modal component was mounted.
 
 		const editNameFlag = ref(false);
 		const editPathFlag = ref(false);
@@ -85,6 +78,17 @@ export default {
             <span v-if="preferencesStore.hasUnsavedChanges(queryModel)"> * </span>
         </button>
 
+        <!--
+            Teleport the modal to body. This component is rendered inside the floating Submit
+            block (adhoc-query-executor.js), which uses transform: translate(...) for centering.
+            That transform creates a new containing block for fixed-position descendants — the
+            Bootstrap modal would otherwise be sized/positioned relative to the transformed
+            ancestor, producing the symptom "the modal is only partially visible, the screen is
+            greyed out and not operatable". Teleporting to body escapes the containing block so
+            the modal lays out against the viewport as Bootstrap expects. Same fix as
+            adhoc-query-raw-modal.js.
+        -->
+        <Teleport to="body">
         <!-- Modal -->
         <div class="modal fade" id="queryFavorite" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered modal-xl">
@@ -98,7 +102,11 @@ export default {
                         <div>
                             <div>columns: {{queryModel.selectedColumnsOrdered}}</div>
                             <div>measures: {{queryModel.measures()}}</div>
-                            <div>filter: {{queryModel.filter}}</div>
+                            <div class="d-flex align-items-start">
+                                <span class="me-2">filter:</span>
+                                <AdhocQueryWizardFilter v-if="queryModel.filter" :filter="queryModel.filter" />
+                                <span v-else class="text-muted">(none)</span>
+                            </div>
                             <div>options: {{queryModel.options()}}</div>
                             <div>customMarker: {{queryModel.customMarker()}}</div>
                         </div>
@@ -112,7 +120,7 @@ export default {
 										<input type="text" v-model="queryModels[preferencesStore.currentQueryId].name"></input>
 									 </span>
 								</div>
-								 <div>name = 
+								 <div>path =
 								 	<span v-if="!editPathFlag" @click="editPathFlag = true" > {{queryModels[preferencesStore.currentQueryId].path}}</span>
 								 	<span v-else>
 								 		<input type="text" v-model="queryModels[preferencesStore.currentQueryId].path"></input>
@@ -144,5 +152,6 @@ export default {
                 </div>
             </div>
         </div>
+        </Teleport>
     `,
 };

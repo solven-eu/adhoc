@@ -45,8 +45,7 @@ public class TestLikeFilter {
 				  "valueMatcher" : {
 				    "type" : "like",
 				    "pattern" : "a%"
-				  },
-				  "nullIfAbsent" : true
+				  }
 				}""");
 	}
 

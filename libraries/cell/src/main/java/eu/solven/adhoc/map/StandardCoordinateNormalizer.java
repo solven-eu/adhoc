@@ -22,6 +22,8 @@
  */
 package eu.solven.adhoc.map;
 
+import org.jspecify.annotations.Nullable;
+
 import eu.solven.adhoc.filter.value.NullMatcher;
 import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
 
@@ -33,7 +35,7 @@ import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
 public class StandardCoordinateNormalizer implements ICoordinateNormalizer {
 
 	@Override
-	public Object normalizeCoordinate(Object rawCoordinate) {
+	public @Nullable Object normalizeCoordinate(@Nullable Object rawCoordinate) {
 		if (rawCoordinate == null) {
 			return NullMatcher.NULL_HOLDER;
 		}

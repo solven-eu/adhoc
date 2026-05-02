@@ -22,6 +22,8 @@
  */
 package eu.solven.adhoc.query.groupby;
 
+import java.util.NoSuchElementException;
+
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -40,9 +42,7 @@ import nl.jqno.equalsverifier.EqualsVerifier;
 public class TestGroupByColumns {
 	@Test
 	public void testHashcodeEquals() {
-		EqualsVerifier.forClass(GroupByColumns.class)
-				.withIgnoredFields("cachedNameToColumn", "retainedToGroupBy")
-				.verify();
+		EqualsVerifier.forClass(GroupByColumns.class).withIgnoredFields("cachedNameToColumn", "retainCache").verify();
 	}
 
 	@Test
@@ -58,7 +58,7 @@ public class TestGroupByColumns {
 		IGroupBy groupByAsc = GroupByColumns.named("a", "b");
 
 		String asString = PepperJackson3TestHelper.verifyJackson(IGroupBy.class, groupByAsc);
-		Assertions.assertThat(asString).isEqualTo("""
+		Assertions.assertThat(asString).isEqualToNormalizingNewlines("""
 				{
 				  "columns" : [ "a", "b" ]
 				}""");
@@ -135,6 +135,23 @@ public class TestGroupByColumns {
 								GroupByColumns.of(CustomTestColumn.builder().name("someC").build()))))
 				.isInstanceOf(IllegalArgumentException.class)
 				.hasMessageContaining("Ambiguous", "someC", CustomTestColumn.class.getName());
+	}
+
+	@Test
+	public void getColumn_present() {
+		IGroupBy groupBy = GroupByColumns.named("a", "b");
+
+		Assertions.assertThat(groupBy.getColumn("a")).isEqualTo(ReferencedColumn.ref("a"));
+		Assertions.assertThat(groupBy.getColumn("b")).isEqualTo(ReferencedColumn.ref("b"));
+	}
+
+	@Test
+	public void getColumn_absent_throws() {
+		IGroupBy groupBy = GroupByColumns.named("a", "b");
+
+		Assertions.assertThatThrownBy(() -> groupBy.getColumn("missing"))
+				.isInstanceOf(NoSuchElementException.class)
+				.hasMessageContaining("missing");
 	}
 
 	@Test

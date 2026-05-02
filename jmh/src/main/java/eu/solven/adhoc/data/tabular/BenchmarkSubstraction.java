@@ -45,6 +45,8 @@ import eu.solven.adhoc.data.row.SlicedRecordFromSlices;
 import eu.solven.adhoc.measure.sum.SubstractionCombination;
 import eu.solven.adhoc.measure.transformator.ICombinationBinding;
 import eu.solven.adhoc.primitive.IValueProvider;
+import eu.solven.adhoc.primitive.IValueReceiver;
+import eu.solven.adhoc.util.AdhocBlackHole;
 
 /**
  * Benchmarks related with {@link SubstractionCombination}.
@@ -69,6 +71,8 @@ public class BenchmarkSubstraction {
 
 	List<?> arrayLong = Arrays.asList(234, 123);
 
+	IValueReceiver receiver = AdhocBlackHole.getInstance();
+
 	ICombinationBinding binding = substraction.bind(2);
 
 	public static void main(String[] args) throws RunnerException {
@@ -77,8 +81,8 @@ public class BenchmarkSubstraction {
 	}
 
 	@Benchmark
-	public IValueProvider combineSlicedRecord_Long() {
-		return substraction.combine(null, tabularRecordLong);
+	public void combineSlicedRecord_Long() {
+		substraction.combine(null, tabularRecordLong, receiver);
 	}
 
 	@Benchmark

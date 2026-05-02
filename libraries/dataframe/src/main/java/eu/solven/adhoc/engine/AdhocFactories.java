@@ -25,6 +25,7 @@ package eu.solven.adhoc.engine;
 import java.util.function.Supplier;
 
 import com.google.common.base.Suppliers;
+import com.google.common.util.concurrent.ListeningExecutorService;
 
 import eu.solven.adhoc.engine.measure.IMeasureQueryStepFactory;
 import eu.solven.adhoc.filter.AdhocFilterUnsafe;
@@ -35,7 +36,8 @@ import eu.solven.adhoc.map.factory.ISliceFactory;
 import eu.solven.adhoc.map.factory.ISliceFactoryFactory;
 import eu.solven.adhoc.measure.operator.IOperatorFactory;
 import eu.solven.adhoc.measure.operator.StandardOperatorFactory;
-import eu.solven.adhoc.options.IHasQueryOptions;
+import eu.solven.adhoc.options.IHasOptionsAndExecutorService;
+import eu.solven.adhoc.util.AdhocUnsafe;
 import eu.solven.adhoc.util.IStopwatchFactory;
 import lombok.Builder;
 import lombok.Builder.Default;
@@ -54,7 +56,7 @@ public class AdhocFactories implements IAdhocFactories {
 	// Memorize the noOption sliceFactory, to prevent making too many ColumnSliceFactory, as each would allocate a page
 	// for potentially a single row
 	protected Supplier<ISliceFactory> sliceFactorySupplier =
-			Suppliers.memoize(() -> getSliceFactoryFactory().makeFactory(IHasQueryOptions.noOption()));
+			Suppliers.memoize(() -> getSliceFactoryFactory().makeFactory(IHasOptionsAndExecutorService.noOption()));
 
 	@NonNull
 	@Default
@@ -79,6 +81,10 @@ public class AdhocFactories implements IAdhocFactories {
 	@NonNull
 	@Default
 	IStopwatchFactory stopwatchFactory = IStopwatchFactory.guavaStopwatchFactory();
+
+	@NonNull
+	@Default
+	ListeningExecutorService executorService = AdhocUnsafe.adhocMixedPool;
 
 	@Override
 	public IMeasureQueryStepFactory getMeasureQueryStepFactory() {

@@ -70,29 +70,29 @@ export default {
 		};
 	},
 	template: /* HTML */ `
-        <div>
-            <div class="dropdown">
-                <button class="btn btn-secondary dropdown-toggle btn-sm" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                    Tags
-                    <span v-if="searchOptions.tags.length == 0"> {{availableTags().length}} </span>
-                    <span v-else> {{searchOptions.tags.length}} / {{availableTags().length}} </span>
-                </button>
-                <ul class="dropdown-menu">
-                    <li class="dropdown-item">
-                        <div class="mb-3">
-                            <label for="tagsFilterInput" class="form-label">Filter tags in the Wizard</label>
-                            <input type="text" class="form-control" id="tagsFilterInput" placeholder="Filter tags" v-model="tagFilter" />
-                        </div>
-                    </li>
-                    <li><hr class="dropdown-divider" /></li>
-                    <li class="dropdown-item" v-for="tag in filteredTags()">
-                        <AdhocQueryWizardMeasureTag :tag="tag" :searchOptions="searchOptions" />
-                    </li>
-                    <li class="dropdown-item text-secondary">
-                        <small>{{availableTags().length - filteredTags().length }} tags are filtered out</small>
-                    </li>
-                </ul>
-            </div>
-        </div>
-    `,
+		<div>
+			<div class="dropdown">
+				<button class="btn btn-secondary dropdown-toggle btn-sm" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+					Tags
+					<span v-if="searchOptions.tags.length == 0"> {{availableTags().length}} </span>
+					<span v-else> {{searchOptions.tags.length}} / {{availableTags().length}} </span>
+				</button>
+				<ul class="dropdown-menu">
+					<li class="dropdown-item">
+						<div class="mb-3">
+							<label for="tagsFilterInput" class="form-label">Filter tags in the Wizard</label>
+							<input type="text" class="form-control" id="tagsFilterInput" placeholder="Filter tags" v-model="tagFilter" />
+						</div>
+					</li>
+					<li><hr class="dropdown-divider" /></li>
+					<li class="dropdown-item" v-for="tag in filteredTags()">
+						<AdhocQueryWizardMeasureTag :tag="tag" :searchOptions="searchOptions" />
+					</li>
+					<li class="dropdown-item text-secondary">
+						<small>{{availableTags().length - filteredTags().length }} tags are filtered out</small>
+					</li>
+				</ul>
+			</div>
+		</div>
+	`,
 };

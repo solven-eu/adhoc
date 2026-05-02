@@ -4,7 +4,7 @@
 	<parent>
 		<groupId>eu.solven.adhoc</groupId>
 		<artifactId>aggregator-adhoc</artifactId>
-		<version>0.0.19-SNAPSHOT</version>
+		<version>0.1.0-SNAPSHOT</version>
 	</parent>
 
 	<artifactId>adhoc-jmh</artifactId>
@@ -44,6 +44,20 @@
 			<version>${project.version}</version>
 		</dependency>
 		<dependency>
+			<!-- Used to share some code between unitTests and benchmarks -->
+			<groupId>eu.solven.adhoc</groupId>
+			<artifactId>adhoc</artifactId>
+			<version>${project.version}</version>
+			<classifier>tests</classifier>
+		</dependency>
+		<dependency>
+			<!-- Used to share some code between unitTests and benchmarks -->
+			<groupId>eu.solven.adhoc</groupId>
+			<artifactId>adhoc-table</artifactId>
+			<version>${project.version}</version>
+			<classifier>tests</classifier>
+		</dependency>
+		<dependency>
 			<groupId>eu.solven.adhoc</groupId>
 			<artifactId>adhoc-experimental</artifactId>
 			<version>${project.version}</version>
@@ -66,15 +80,8 @@
 		</dependency>
 
 		<dependency>
-			<!-- Enable shared code between benchmarks and profilable tests -->
-			<groupId>eu.solven.adhoc</groupId>
-			<artifactId>adhoc</artifactId>
-			<version>${project.version}</version>
-			<classifier>tests</classifier>
-		</dependency>
-
-		<dependency>
-			<!-- include MapLibre FSST implementation -->
+			<!-- include MapLibre FSST implementation — FsstAdhoc wrapper lives in adhoc-fsst's test-jar and is used
+			     from jmh's src/main benchmarks, so this dep must stay compile-scope. -->
 			<groupId>eu.solven.adhoc</groupId>
 			<artifactId>adhoc-fsst</artifactId>
 			<version>${project.version}</version>

@@ -1,4 +1,6 @@
-import { computed, ref, reactive, watch } from "vue";
+import { computed, ref, reactive, watch, inject, provide } from "vue";
+
+import { Collapse } from "bootstrap";
 
 import { mapState } from "pinia";
 import { useAdhocStore } from "./store-adhoc.js";
@@ -97,23 +99,73 @@ export default {
 		if (!props.queryModel.selectedOptions) {
 			props.queryModel.selectedOptions = {};
 		}
+		// Pause/resume parity with filters. Initialise the maps so the wizard pills can bind
+		// to `disabledColumns[name]` / `disabledMeasures[name]` directly without first having
+		// to materialise the parent object.
+		if (!props.queryModel.disabledColumns) {
+			props.queryModel.disabledColumns = {};
+		}
+		if (!props.queryModel.disabledMeasures) {
+			props.queryModel.disabledMeasures = {};
+		}
+
+		// Recursively drops sub-filters flagged `disabled: true` from a filter tree. The `disabled`
+		// flag is a Pivotable-side UI preference (pause/resume in the wizard) — the backend does
+		// not know about it and would reject or misinterpret it. Collapsing rules:
+		//   - a disabled node (leaf or AND/OR) is dropped
+		//   - an AND/OR with no remaining children collapses to null (caller substitutes `{}` = matchAll)
+		//   - an AND/OR with a single remaining child is flattened to that child
+		// Returns a fresh object tree — safe to deep-copy afterwards.
+		const stripDisabledFilters = function (f) {
+			if (!f || f.disabled) return null;
+			if (f.type === "and" || f.type === "or") {
+				const keptChildren = (f.filters || []).map(stripDisabledFilters).filter((c) => c !== null);
+				if (keptChildren.length === 0) return null;
+				if (keptChildren.length === 1) return keptChildren[0];
+				return { type: f.type, filters: keptChildren };
+			}
+			if (f.type === "not") {
+				// NOT without a surviving inner is meaningless — drop the wrapper entirely.
+				const inner = stripDisabledFilters(f.negated);
+				if (!inner) return null;
+				return { type: "not", negated: inner };
+			}
+			return f;
+		};
 
 		// This computed property snapshots of the query
 		const queryJson = computed(() => {
 			//const columns = Object.keys(props.queryModel.selectedColumns).filter((column) => props.queryModel.selectedColumns[column] === true);
-			const measures = Object.keys(props.queryModel.selectedMeasures).filter((measure) => props.queryModel.selectedMeasures[measure] === true);
+			// Drop measures the user has paused (`disabledMeasures[m] === true`). The pill stays
+			// in the wizard so a single click resumes it; the backend simply receives a query
+			// without that measure.
+			const disabledMeasures = props.queryModel.disabledMeasures || {};
+			const measures = Object.keys(props.queryModel.selectedMeasures).filter(
+				(measure) => props.queryModel.selectedMeasures[measure] === true && !disabledMeasures[measure],
+			);
 
+			// Strip disabled sub-filters BEFORE deep-copying so the wire-level filter tree reflects
+			// only the user-active filters — even though the pivotable-side model keeps everything.
+			const strippedFilter = stripDisabledFilters(props.queryModel.filter) || {};
 			// Deep-Copy as the filter tree may be deep, and we must ensure it can not be edited while being executed
-			const filter = JSON.parse(JSON.stringify(props.queryModel.filter || {}));
+			const filter = JSON.parse(JSON.stringify(strippedFilter));
 
 			// BEWARE This is a workaround to force `compute` to be reactive on all columns state
 			// It is unclear why the reactivity on `props.queryModel.selectedColumnsOrdered` is not working
-			const columns2 = Object.keys(props.queryModel.selectedColumns).filter((column) => props.queryModel.selectedColumns[column] === true);
+			// Same disable-aware filter as for measures: a paused column is kept in the wizard
+			// pill (with the pause icon) but stripped from the submitted query — the grid
+			// restructures around the remaining columns.
+			const disabledColumns = props.queryModel.disabledColumns || {};
+			const columns2 = Object.keys(props.queryModel.selectedColumns).filter(
+				(column) => props.queryModel.selectedColumns[column] === true && !disabledColumns[column],
+			);
 
 			// https://stackoverflow.com/questions/597588/how-do-you-clone-an-array-of-objects-in-javascript
 			// We do a copy as `queryJson` must not changed when playing with the wizard.
-			// `.slice` as we want an immutable snapshot
-			const orderedColumnsAsList = props.queryModel.selectedColumnsOrdered.slice(0);
+			// `.slice` as we want an immutable snapshot. Drop paused columns: the ordered list
+			// preserves the user's selected ordering (so re-enabling restores their layout)
+			// but the submitted query reflects only the active subset.
+			const orderedColumnsAsList = props.queryModel.selectedColumnsOrdered.slice(0).filter((c) => !disabledColumns[c]);
 
 			// Add a calculated member representing the grand totals
 			const orderedColumnsWithStar = orderedColumnsAsList.map((c) => {
@@ -155,6 +207,7 @@ export default {
 
 		const onView = function (queryForApi, responseTabularView, stringifiedQuery, startDownloading) {
 			props.tabularView.timing.downloading = new Date() - startDownloading;
+			delete props.tabularView.timing.downloading_startedAt;
 
 			// This will be cancelled in the finally block: the rendering status is managed autonomously by the grid
 
@@ -168,7 +221,8 @@ export default {
 			// We need to couple the columns with the result
 			// as the wizard may have been edited while receiving the result
 			// We need both query and view to be assigned atomically, else some `watch` would trigger on partially updated object
-			Object.assign(props.tabularView, { query: queryForApi.query, view: responseTabularView });
+			// Also clear any previous error so the "query broken" banner goes away on recovery.
+			Object.assign(props.tabularView, { query: queryForApi.query, view: responseTabularView, error: "" });
 			// props.tabularView.value = {query: queryForApi.query, view: responseTabularView};
 		};
 
@@ -234,6 +288,7 @@ export default {
 
 					const startSending = new Date();
 					props.tabularView.loading.sending = true;
+					props.tabularView.timing.sending_startedAt = startSending;
 
 					const synchronous = false;
 
@@ -248,6 +303,7 @@ export default {
 
 						props.tabularView.loading.sending = false;
 						props.tabularView.timing.sending = new Date() - startSending;
+						delete props.tabularView.timing.sending_startedAt;
 
 						if (!response.ok) {
 							throw new NetworkError("POST has failed (" + response.statusText + " - " + response.status + ")", url, response);
@@ -255,6 +311,7 @@ export default {
 
 						const startDownloading = new Date();
 						props.tabularView.loading.downloading = true;
+						props.tabularView.timing.downloading_startedAt = startDownloading;
 
 						const responseTabularView = await response.json();
 						if (latestSendQueryIdSnapshot !== latestSentQueryId.value) {
@@ -274,6 +331,7 @@ export default {
 
 						props.tabularView.loading.sending = false;
 						props.tabularView.timing.sending = new Date() - startSending;
+						delete props.tabularView.timing.sending_startedAt;
 
 						if (!response.ok) {
 							throw new NetworkError("POST has failed (" + response.statusText + " - " + response.status + ")", url, response);
@@ -291,6 +349,7 @@ export default {
 
 						const startExecuting = new Date();
 						props.tabularView.loading.executing = true;
+						props.tabularView.timing.executing_startedAt = startExecuting;
 						while (true) {
 							if (latestSendQueryIdSnapshot !== latestSentQueryId.value) {
 								console.warn(`About to poll for ${latestSendQueryIdSnapshot} but latest query is ${latestSentQueryId.value}`);
@@ -345,9 +404,11 @@ export default {
 						}
 						props.tabularView.loading.executing = false;
 						props.tabularView.timing.executing = new Date() - startExecuting;
+						delete props.tabularView.timing.executing_startedAt;
 
 						const startDownloading = new Date();
 						props.tabularView.loading.downloading = true;
+						props.tabularView.timing.downloading_startedAt = startDownloading;
 
 						const fetchViewOptions = {
 							method: "GET",
@@ -384,6 +445,10 @@ export default {
 				} catch (e) {
 					console.error("Issue on Network:", e);
 					sendQueryError.value = e.message;
+					// Surface the error on `tabularView` so the parent can render a prominent "query broken"
+					// banner over the grid. The grid intentionally keeps rendering the last successful view
+					// so the user retains context.
+					props.tabularView.error = e.message;
 				} finally {
 					loadingV2.nbLoading--;
 
@@ -400,58 +465,207 @@ export default {
 			return postFromUrl(`/cubes/query`);
 		}
 
+		// True when the queryModel has nothing to ask the backend about — used to avoid firing
+		// trivial round-trips (e.g. right after a Reset, while the user is still editing). An
+		// empty query with no measures and no columns is not a useful view, and some backends
+		// reject it outright, which would re-populate the "query broken" banner and defeat the
+		// Reset button.
+		const isEmptyQuery = function () {
+			const q = queryJson.value;
+			return (q.measures || []).length === 0 && ((q.groupBy && q.groupBy.columns) || []).length === 0;
+		};
+
 		// Watch for the query as a JSON: if it changes, we may trigger the query
 		watch(
 			() => queryJson.value,
 			() => {
-				if (autoQuery.value) {
-					sendQuery();
+				if (!autoQuery.value) {
+					return;
 				}
+				if (isEmptyQuery()) {
+					// Transition to the "nothing selected" state: drop the previous grid content so
+					// the user lands on a clean view, and clear any lingering error banner.
+					props.tabularView.view = null;
+					props.tabularView.error = "";
+					sendQueryError.value = "";
+					return;
+				}
+				sendQuery();
 			},
 		);
 
-		if (autoQuery.value) {
+		if (autoQuery.value && !isEmptyQuery()) {
 			console.log("Trigger queryExecution on component load");
 			sendQuery();
 		}
+
+		// Shared flag from the parent: true whenever any wizard accordion is expanded. When open,
+		// the Submit block switches to a `position: fixed` overlay so it stays visible without
+		// the user scrolling past a tall accordion body.
+		const accordionState = inject("accordionState", { isOpen: false });
+
+		// Collapse any currently-expanded wizard accordion, which brings the Submit block back to
+		// its normal position below the wizard. Called on Submit click so the user sees the grid
+		// update immediately after the query runs.
+		const closeOpenAccordions = () => {
+			const wizard = document.getElementById("accordionWizard");
+			if (!wizard) {
+				return;
+			}
+			wizard.querySelectorAll(".accordion-collapse.show").forEach((el) => {
+				const instance = Collapse.getInstance(el) || new Collapse(el, { toggle: false });
+				instance.hide();
+			});
+		};
+
+		const submitQuery = () => {
+			closeOpenAccordions();
+			sendQuery();
+		};
+
+		// True when the engine is currently running a query (any leg of the loading state). Used by Submit
+		// (in this component) AND by the grid-controls Refresh button (provided below) to disable the
+		// affordance while a round-trip is already in flight — re-clicking would just queue an identical
+		// request.
+		const isQueryInFlight = computed(() => loadingV2.nbLoading >= 1);
+
+		// Distinguishes "Refreshing" (re-running the SAME query the grid is currently showing) from
+		// "Querying" (running a DIFFERENT query — the grid will be replaced with a new view). Compares
+		// the JSON of the queryModel-derived `queryJson` against the last successful `tabularView.query`
+		// (set by `onView` once a response is received). When `tabularView.query` is absent (first run,
+		// or after a Reset) we are by definition NOT refreshing.
+		const isSameAsLastQuery = computed(() => {
+			const current = queryJson.value;
+			const last = props.tabularView && props.tabularView.query;
+			if (!last) return false;
+			try {
+				return JSON.stringify(current) === JSON.stringify(last);
+			} catch (e) {
+				return false;
+			}
+		});
+
+		// Provide the trigger + status to descendants (notably the AdhocGridControls strip) so they can
+		// surface a Refresh button that mirrors Submit's effect when the wizard is hidden. Keep these out
+		// of `props` — they are intra-AdhocQuery wiring, not a public component contract.
+		provide("submitQuery", submitQuery);
+		provide("autoQuery", autoQuery);
+		provide("isQueryInFlight", isQueryInFlight);
+		provide("isSameAsLastQuery", isSameAsLastQuery);
 
 		return {
 			queryJson,
 			autoQuery,
 
 			sendQuery,
+			submitQuery,
+			closeOpenAccordions,
 			sendQueryError,
+			accordionState,
+			isQueryInFlight,
+			isSameAsLastQuery,
 		};
 	},
 	template: /* HTML */ `
-        <div v-if="(!endpoint || !cube)">
-            <div v-if="(nbSchemaFetching > 0 || nbContestFetching > 0)">
-                <div class="spinner-border" role="status">
-                    <span class="visually-hidden">Loading cubeId={{cubeId}}</span>
-                </div>
-            </div>
-            <div v-else>
-                <span>Issue loading cubeId={{cubeId}}</span>
-            </div>
-        </div>
-        <div v-else-if="endpoint.error || cube.error">{{endpoint.error || cube.error}}</div>
-        <div v-else>
-            <span>
-                <div>
-                    <button type="button" @click="sendQuery()" class="btn btn-outline-primary">Submit</button>
-                    <span v-if="sendQueryError" class="alert alert-warning" role="alert">{{sendQueryError}}</span>
-                </div>
+		<div v-if="(!endpoint || !cube)">
+			<div v-if="(nbSchemaFetching > 0 || nbContestFetching > 0)">
+				<div class="spinner-border" role="status">
+					<span class="visually-hidden">Loading cubeId={{cubeId}}</span>
+				</div>
+			</div>
+			<div v-else>
+				<span>Issue loading cubeId={{cubeId}}</span>
+			</div>
+		</div>
+		<div v-else-if="endpoint.error || cube.error">{{endpoint.error || cube.error}}</div>
+		<div v-else>
+			<!--
+				Submit block. When any wizard accordion is expanded, it floats over the grid
+				area via position: fixed so the user doesn't have to scroll a tall accordion
+				body to reach it. Clicking Submit closes the accordion (see submitQuery), which
+				re-docks the block to its normal flow position below the wizard.
 
-                <div class="form-check form-switch">
-                    <input class="form-check-input" type="checkbox" role="switch" id="autoQuery" v-model="autoQuery" />
-                    <label class="form-check-label" for="autoQuery">autoQuery</label>
-                </div>
-            </span>
+				<Transition> wrap + :key="accordionState.isOpen" gives a subtle fade/scale
+				animation as a visual hint that the block moves between the two positions. The
+				actual position (static -> fixed) cannot be interpolated, so this is a UX hint
+				rather than a literal fly-over. Corresponding CSS classes
+				.submit-float-{enter,leave}-{from,active,to} live in index.html.
 
-            <AdhocQueryRawModal :queryJson="queryJson" :queryModel="queryModel" />
-            <AdhocQueryReset :queryModel="queryModel" />
-            <AdhocQueryFavorite :queryModel="queryModel" />
-            <AdhocQueryFavorites :queryModel="queryModel" />
-        </div>
-    `,
+				No mode attribute (default = simultaneous) so the docked block appears INSTANTLY
+				the moment the accordion closes, while the floating overlay fades out over the
+				old position on top of it. mode="out-in" was previously used here but it forced
+				the docked block to wait for the leave animation to complete (0.3s delay before
+				it reappeared under the wizard) — visibly bad.
+			-->
+			<Transition name="submit-float">
+				<span
+					:key="accordionState.isOpen"
+					:class="accordionState.isOpen ? 'position-fixed shadow bg-body rounded p-2 border' : ''"
+					:style="accordionState.isOpen ? 'top: 66%; left: 62.5%; transform: translate(-50%, -50%); z-index: 1040;' : ''"
+				>
+					<!--
+					Close button — only visible when the block is floating over the grid. Clicking
+					it dismisses the floating overlay by collapsing the accordion, which re-docks
+					the block to its normal position below the wizard. Does NOT fire the query
+					(unlike Submit), so the user can keep editing without triggering a round-trip.
+				-->
+					<button
+						v-if="accordionState.isOpen"
+						type="button"
+						class="btn-close float-end"
+						aria-label="Close"
+						title="Close (collapse the wizard accordion)"
+						@click="closeOpenAccordions"
+					></button>
+					<div>
+						<!--
+							Submit semantics:
+							- autoQuery OFF: Submit is the only way to trigger a query.
+							- autoQuery ON: the previous queryModel change has already auto-fired a request; pressing
+							  this button is functionally a Refresh of the same query, hence the relabel.
+							- While a query is in flight (isQueryInFlight), the button is disabled with a pulsing
+							  animation + inline spinner. The label adapts to the situation:
+								- "Refreshing…" — the in-flight query is identical to the one the grid is showing
+									(re-running the same query against the same data source).
+								- "Querying…" — the in-flight query differs from the displayed one (a new query is
+									replacing the previous view; visible especially on first run or after queryModel edits).
+						-->
+						<button
+							type="button"
+							@click="submitQuery"
+							class="btn btn-outline-primary"
+							:class="isQueryInFlight ? 'adhoc-busy' : ''"
+							:disabled="isQueryInFlight"
+							:title="isQueryInFlight ? 'A query is already running' : (autoQuery ? 'Re-run the current query' : 'Run the query')"
+						>
+							<span v-if="isQueryInFlight">
+								<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+								{{ isSameAsLastQuery ? "Refreshing…" : "Querying…" }}
+							</span>
+							<span v-else>{{ autoQuery ? "Refresh" : "Submit" }}</span>
+						</button>
+						<span v-if="sendQueryError" class="alert alert-warning" role="alert">{{sendQueryError}}</span>
+					</div>
+
+					<div class="form-check form-switch">
+						<input class="form-check-input" type="checkbox" role="switch" id="autoQuery" v-model="autoQuery" />
+						<label class="form-check-label" for="autoQuery">autoQuery</label>
+					</div>
+
+					<!--
+						Secondary action buttons (JSON inspector, Reset query, Favorite, Favorites).
+						They live INSIDE the Submit block so they float along when the wizard accordion
+						is open — otherwise they'd stay stranded below the wizard and force the user to
+						scroll past the tall accordion body to reach them.
+					-->
+					<div class="d-flex flex-wrap gap-2 mt-2">
+						<AdhocQueryRawModal :queryJson="queryJson" :queryModel="queryModel" :cubeId="cubeId" />
+						<AdhocQueryReset :queryModel="queryModel" />
+						<AdhocQueryFavorite :queryModel="queryModel" />
+						<AdhocQueryFavorites :queryModel="queryModel" />
+					</div>
+				</span>
+			</Transition>
+		</div>
+	`,
 };

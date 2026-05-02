@@ -22,6 +22,8 @@
  */
 package eu.solven.adhoc.encoding.column;
 
+import org.jspecify.annotations.Nullable;
+
 import eu.solven.adhoc.encoding.column.freezer.IFreezingStrategy;
 
 /**
@@ -31,7 +33,7 @@ import eu.solven.adhoc.encoding.column.freezer.IFreezingStrategy;
  */
 public interface IAppendableColumn extends IReadableColumn {
 
-	void append(Object normalizedValue);
+	void append(@Nullable Object normalizedValue);
 
 	IReadableColumn freeze(IFreezingStrategy freezer);
 

@@ -103,13 +103,31 @@ public class TestMavenDependencyAsMermaid {
 				.as("pivotable-server should depend on pivotable-server-core")
 				.isTrue();
 
-		// Render and write to disk
+		writeDependenciesDiagram(analyzer, graph, projectRoot);
+	}
+
+	/**
+	 * Filters the graph, renders it as a Mermaid diagram, and writes it to {@code docs/DEPENDENCIES.mmd}.
+	 *
+	 * <p>
+	 * {@code adhoc-jmh} is excluded because it has low functional value and would clutter the diagram.
+	 */
+	protected void writeDependenciesDiagram(MavenDependencyAsMermaid analyzer,
+			Graph<String, DependencyEdge> graph,
+			Path projectRoot) throws IOException {
+		// These modules have low functional value for readers of the dependency diagram
+		graph.removeVertex("adhoc-jmh");
+		graph.removeVertex("adhoc-aggregate");
+		graph.removeVertex("adhoc-training");
+
 		String diagram = analyzer.toMermaid(graph);
-		Assertions.assertThat(diagram).startsWith("flowchart TD");
+		Assertions.assertThat(diagram).startsWith("flowchart LR");
 
 		Path outputFile = projectRoot.resolve("docs/DEPENDENCIES.mmd");
 		Files.createDirectories(outputFile.getParent());
 		Files.writeString(outputFile, diagram);
+
+		log.info("Updated {}", outputFile.toAbsolutePath().normalize());
 		Assertions.assertThat(outputFile).isNotEmptyFile();
 	}
 
@@ -184,11 +202,46 @@ public class TestMavenDependencyAsMermaid {
 	}
 
 	/**
-	 * A test-scope intra-project dependency produces a dashed edge in the Mermaid output.
+	 * Test-scope intra-project dependencies are omitted from the graph by default. The production path is what a human
+	 * reader cares about; `<scope>test</scope>` couplings are noise.
 	 */
 	@Test
-	public void testTestScopeDependencyProducesDashedEdge() throws IOException {
+	public void testTestScopeDependencyIgnoredByDefault() throws IOException {
 		Path tmpDir = Files.createTempDirectory("maven-mermaid-test");
+		writeTwoModulesWithScope(tmpDir, "test");
+
+		MavenDependencyAsMermaid analyzer = MavenDependencyAsMermaid.builder().projectRoot(tmpDir).build();
+		Graph<String, DependencyEdge> graph = analyzer.buildGraph();
+
+		Assertions.assertThat(graph.vertexSet()).containsExactlyInAnyOrder("module-a", "module-b");
+		Assertions.assertThat(graph.edgeSet()).isEmpty();
+	}
+
+	/**
+	 * With {@code includeTestScope(true)}, test-scope intra-project dependencies do appear in the graph and render as
+	 * dashed edges in the Mermaid output.
+	 */
+	@Test
+	public void testTestScopeDependencyProducesDashedEdgeWhenOptedIn() throws IOException {
+		Path tmpDir = Files.createTempDirectory("maven-mermaid-test");
+		writeTwoModulesWithScope(tmpDir, "test");
+
+		MavenDependencyAsMermaid analyzer =
+				MavenDependencyAsMermaid.builder().projectRoot(tmpDir).includeTestScope(true).build();
+		Graph<String, DependencyEdge> graph = analyzer.buildGraph();
+
+		DependencyEdge edge = graph.edgeSet().iterator().next();
+		Assertions.assertThat(edge.isTestScope()).isTrue();
+
+		String diagram = analyzer.toMermaid(graph);
+		Assertions.assertThat(diagram).contains("module_b -.-> module_a");
+	}
+
+	/**
+	 * Writes two minimal modules under {@code tmpDir}: {@code module-a} with no deps, and {@code module-b} declaring a
+	 * dep on {@code module-a} at the given Maven {@code scope}.
+	 */
+	private static void writeTwoModulesWithScope(Path tmpDir, String scope) throws IOException {
 		Path modA = Files.createDirectories(tmpDir.resolve("module-a"));
 		Path modB = Files.createDirectories(tmpDir.resolve("module-b"));
 
@@ -209,20 +262,11 @@ public class TestMavenDependencyAsMermaid {
 				    <dependency>
 				      <groupId>com.example</groupId>
 				      <artifactId>module-a</artifactId>
-				      <scope>test</scope>
+				      <scope>%s</scope>
 				    </dependency>
 				  </dependencies>
 				</project>
-				""");
-
-		MavenDependencyAsMermaid analyzer = MavenDependencyAsMermaid.builder().projectRoot(tmpDir).build();
-		Graph<String, DependencyEdge> graph = analyzer.buildGraph();
-
-		DependencyEdge edge = graph.edgeSet().iterator().next();
-		Assertions.assertThat(edge.isTestScope()).isTrue();
-
-		String diagram = analyzer.toMermaid(graph);
-		Assertions.assertThat(diagram).contains("module_b -.-> module_a");
+				""".formatted(scope));
 	}
 
 	/**

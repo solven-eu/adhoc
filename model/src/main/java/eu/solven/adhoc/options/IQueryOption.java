@@ -25,7 +25,7 @@ package eu.solven.adhoc.options;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
 /**
- * A {@link Query} behavior can be customized through options.
+ * A {@code ICubeQuery} behavior can be customized through options.
  * 
  * Options are generally appended: if there is any reason to add an option, it is added (e.g. if there is any reason to
  * activate debug, we activate debug).

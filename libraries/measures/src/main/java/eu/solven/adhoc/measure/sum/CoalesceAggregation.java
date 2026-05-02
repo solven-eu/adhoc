@@ -25,6 +25,8 @@ package eu.solven.adhoc.measure.sum;
 import java.util.Map;
 import java.util.Objects;
 
+import org.jspecify.annotations.Nullable;
+
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.decomposition.IDecomposition;
 import eu.solven.pepper.core.PepperLogHelper;
@@ -60,7 +62,7 @@ public class CoalesceAggregation implements IAggregation {
 	}
 
 	@Override
-	public Object aggregate(Object l, Object r) {
+	public @Nullable Object aggregate(@Nullable Object l, @Nullable Object r) {
 		if (l == null) {
 			return r;
 		} else if (r == null) {

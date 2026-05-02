@@ -24,6 +24,8 @@ package eu.solven.adhoc.measure.sum;
 
 import java.util.List;
 
+import org.jspecify.annotations.Nullable;
+
 import eu.solven.adhoc.data.cell.MultitypeCell;
 import eu.solven.adhoc.data.row.ISlicedRecord;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
@@ -95,7 +97,7 @@ public class SubstractionCombination implements ICombination, IHasTwoOperands, I
 			}
 
 			@Override
-			public void onObject(Object v) {
+			public void onObject(@Nullable Object v) {
 				switch (receiver0.getType()) {
 				case IMultitypeConstants.MASK_EMPTY:
 				case IMultitypeConstants.MASK_LONG:
@@ -166,17 +168,19 @@ public class SubstractionCombination implements ICombination, IHasTwoOperands, I
 	}
 
 	@Override
-	public IValueProvider combine(ISliceWithStep slice, ISlicedRecord slicedRecord) {
+	public void combine(ISliceWithStep slice, ISlicedRecord slicedRecord, IValueReceiver valueReceiver) {
 		if (slicedRecord.isEmpty()) {
-			return IValueProvider.NULL;
+			valueReceiver.onObject(null);
 		} else if (slicedRecord.size() == 1) {
-			return slicedRecord.read(0);
+			// TODO API Should make it easy to transfer long-else-double-else-object
+			slicedRecord.read(0).acceptReceiver(valueReceiver);
+			return;
 		}
 
 		IValueProvider left = slicedRecord.read(0);
 		IValueProvider right = slicedRecord.read(1);
 
-		return valueReceiver -> left.acceptReceiver(new IValueReceiver() {
+		left.acceptReceiver(new IValueReceiver() {
 
 			@Override
 			public void onLong(long leftValue) {
@@ -193,7 +197,7 @@ public class SubstractionCombination implements ICombination, IHasTwoOperands, I
 					}
 
 					@Override
-					public void onObject(Object rightValue) {
+					public void onObject(@Nullable Object rightValue) {
 						if (rightValue == null) {
 							valueReceiver.onLong(leftValue);
 						} else {
@@ -218,7 +222,7 @@ public class SubstractionCombination implements ICombination, IHasTwoOperands, I
 					}
 
 					@Override
-					public void onObject(Object rightValue) {
+					public void onObject(@Nullable Object rightValue) {
 						if (rightValue == null) {
 							valueReceiver.onDouble(leftValue);
 						} else {
@@ -229,7 +233,7 @@ public class SubstractionCombination implements ICombination, IHasTwoOperands, I
 			}
 
 			@Override
-			public void onObject(Object leftValue) {
+			public void onObject(@Nullable Object leftValue) {
 				if (leftValue == null) {
 					right.acceptReceiver(rightValue -> {
 						if (rightValue == null) {
@@ -252,7 +256,7 @@ public class SubstractionCombination implements ICombination, IHasTwoOperands, I
 	}
 
 	@Override
-	public Object combine(ISliceWithStep slice, List<?> underlyingValues) {
+	public @Nullable Object combine(ISliceWithStep slice, List<?> underlyingValues) {
 		if (underlyingValues.isEmpty()) {
 			return null;
 		} else if (underlyingValues.size() == 1) {
@@ -271,7 +275,7 @@ public class SubstractionCombination implements ICombination, IHasTwoOperands, I
 		}
 	}
 
-	protected Object negate(Object o) {
+	protected @Nullable Object negate(@Nullable Object o) {
 		if (o == null) {
 			return null;
 		} else if (AdhocPrimitiveHelpers.isLongLike(o)) {

@@ -22,12 +22,15 @@
  */
 package eu.solven.adhoc.engine;
 
+import com.google.common.util.concurrent.ListeningExecutorService;
+import com.google.common.util.concurrent.MoreExecutors;
+
 import eu.solven.adhoc.engine.measure.IMeasureQueryStepFactory;
 import eu.solven.adhoc.filter.IFilterFactories;
 import eu.solven.adhoc.map.factory.ISliceFactory;
 import eu.solven.adhoc.map.factory.ISliceFactoryFactory;
 import eu.solven.adhoc.measure.operator.IOperatorFactory;
-import eu.solven.adhoc.options.IHasQueryOptions;
+import eu.solven.adhoc.options.IHasOptionsAndExecutorService;
 import eu.solven.adhoc.util.IStopwatchFactory;
 
 /**
@@ -35,7 +38,7 @@ import eu.solven.adhoc.util.IStopwatchFactory;
  *
  * @author Benoit Lacelle
  */
-public interface IAdhocFactories extends IFilterFactories {
+public interface IAdhocFactories extends IFilterFactories, IHasExecutorAndSliceFactory {
 
 	IOperatorFactory getOperatorFactory();
 
@@ -43,11 +46,22 @@ public interface IAdhocFactories extends IFilterFactories {
 
 	ISliceFactoryFactory getSliceFactoryFactory();
 
+	@Override
 	default ISliceFactory getSliceFactory() {
-		return getSliceFactoryFactory().makeFactory(IHasQueryOptions.noOption());
+		return getSliceFactoryFactory().makeFactory(IHasOptionsAndExecutorService.noOption());
 	}
 
 	IStopwatchFactory getStopwatchFactory();
+
+	/**
+	 * @return the executor service to use for parallel partition processing. Defaults to a direct (same-thread)
+	 *         executor; override in production contexts (e.g. {@code AdhocFactoriesUnsafe}) to use
+	 *         {@code AdhocUnsafe.adhocMixedPool}.
+	 */
+	@Override
+	default ListeningExecutorService getExecutorService() {
+		return MoreExecutors.newDirectExecutorService();
+	}
 
 	IMeasureQueryStepFactory getMeasureQueryStepFactory();
 

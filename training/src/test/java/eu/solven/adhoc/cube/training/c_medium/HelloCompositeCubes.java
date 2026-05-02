@@ -33,14 +33,14 @@ import eu.solven.adhoc.cube.CubeWrapper;
 import eu.solven.adhoc.cube.ICubeWrapper;
 import eu.solven.adhoc.dataframe.tabular.ITabularView;
 import eu.solven.adhoc.dataframe.tabular.MapBasedTabularView;
+import eu.solven.adhoc.engine.query.CubeQuery;
+import eu.solven.adhoc.engine.step.ICubeQuery;
 import eu.solven.adhoc.measure.forest.IMeasureForest;
 import eu.solven.adhoc.measure.forest.MeasureForest;
 import eu.solven.adhoc.measure.forest.UnsafeMeasureForest;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.model.IMeasure;
-import eu.solven.adhoc.query.cube.CubeQuery;
-import eu.solven.adhoc.query.cube.ICubeQuery;
 import eu.solven.adhoc.table.InMemoryTable;
 import eu.solven.adhoc.table.composite.CompositeCubesTableWrapper;
 
@@ -95,7 +95,8 @@ public class HelloCompositeCubes {
 				.anySatisfy(c -> Assertions.assertThat(c.getName()).isEqualTo("c"))
 				.anySatisfy(c -> Assertions.assertThat(c.getName()).isEqualTo("v3"))
 				// a special column enabling to differentiate the underlying cubes
-				.anySatisfy(c -> Assertions.assertThat(c.getName()).isEqualTo("~CompositeSlicer"));
+				.anySatisfy(
+						c -> Assertions.assertThat(c.getName()).isEqualTo(CompositeCubesTableWrapper.DEFAULT_SLICER));
 
 		UnsafeMeasureForest withoutUnderlyings = UnsafeMeasureForest.builder().name("composite").build();
 

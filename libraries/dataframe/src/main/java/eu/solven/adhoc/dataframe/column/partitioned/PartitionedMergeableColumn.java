@@ -22,10 +22,13 @@
  */
 package eu.solven.adhoc.dataframe.column.partitioned;
 
+import eu.solven.adhoc.cuboid.SliceAndMeasure;
 import eu.solven.adhoc.dataframe.column.IMultitypeMergeableColumn;
 import eu.solven.adhoc.dataframe.column.hash.MultitypeHashMergeableColumn;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.primitive.IValueReceiver;
+import eu.solven.adhoc.stream.IConsumingStream;
+import eu.solven.adhoc.util.NotYetImplementedException;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.SuperBuilder;
@@ -63,6 +66,16 @@ public class PartitionedMergeableColumn<T> extends APartitionedColumn<T, IMultit
 	@Override
 	public IValueReceiver merge(T key) {
 		return partition(key).merge(key);
+	}
+
+	@Override
+	public IConsumingStream<SliceAndMeasure<T>> limit(int limit) {
+		throw new NotYetImplementedException("Needed?");
+	}
+
+	@Override
+	public IConsumingStream<SliceAndMeasure<T>> skip(int skip) {
+		throw new NotYetImplementedException("Needed?");
 	}
 
 }

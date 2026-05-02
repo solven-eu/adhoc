@@ -22,15 +22,18 @@
  */
 package eu.solven.adhoc.measure.combination;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import org.jspecify.annotations.Nullable;
 
 import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.measure.operator.IOperatorFactory;
@@ -118,7 +121,7 @@ public class ReversePolishCombination implements ICombination, IHasSanityChecks 
 
 	// https://github.com/maximfersko/Reverse-Polish-Notation-Library/blob/main/src/main/java/com/fersko/reversePolishNotation/ReversePolishNotation.java
 	@Override
-	public Object combine(ISliceWithStep slice, List<?> underlyingValues) {
+	public @Nullable Object combine(ISliceWithStep slice, List<?> underlyingValues) {
 		// BEWARE If the formula is constant, this will remain false
 		AtomicBoolean oneUnderlyingIsNotNull = new AtomicBoolean();
 		String replacedFormula = notation;
@@ -163,12 +166,15 @@ public class ReversePolishCombination implements ICombination, IHasSanityChecks 
 	}
 
 	@SuppressWarnings("PMD.NullAssignment")
-	protected Object evaluateReversePolish(Map<String, ?> placeholders,
+	protected @Nullable Object evaluateReversePolish(Map<String, ?> placeholders,
 			String formula,
 			ISliceWithStep slice,
 			List<?> underlyingValues,
 			AtomicBoolean oneUnderlyingIsNotNull) {
-		List<Object> pendingOperands = new LinkedList<>();
+		// ArrayList's SequencedCollection methods (addLast/removeLast/getFirst since Java 21)
+		// cover every operation used below; stacks are typically short (a handful of operands)
+		// so amortised-O(1) access dominates LinkedList's per-node allocation cost.
+		List<@Nullable Object> pendingOperands = new ArrayList<>();
 		String[] elements = splitFormula(formula);
 
 		if (underlyingValues.size() < underlyingMeasuresToIndex.size()) {
@@ -179,6 +185,7 @@ public class ReversePolishCombination implements ICombination, IHasSanityChecks 
 		for (String rawElement : elements) {
 			String s = rawElement.strip();
 
+			@Nullable
 			Object operandToAppend;
 
 			// OperandAggregatedValue.PLUGIN_TYPE
@@ -186,7 +193,7 @@ public class ReversePolishCombination implements ICombination, IHasSanityChecks 
 				String underlyingMeasure =
 						s.substring(EvaluatedExpressionCombination.P_UNDERLYINGS.length() + "[".length(),
 								s.length() - "]".length());
-				int measureIndex = underlyingMeasuresToIndex.get(underlyingMeasure);
+				int measureIndex = Objects.requireNonNull(underlyingMeasuresToIndex.get(underlyingMeasure));
 				operandToAppend = underlyingValues.get(measureIndex);
 				if (operandToAppend != null) {
 					oneUnderlyingIsNotNull.set(true);
@@ -228,20 +235,20 @@ public class ReversePolishCombination implements ICombination, IHasSanityChecks 
 		return formula.split(tokens);
 	}
 
-	protected Object onOperator(ISliceWithStep slice, List<Object> pendingOperands, String s) {
+	protected @Nullable Object onOperator(ISliceWithStep slice, List<@Nullable Object> pendingOperands, String s) {
 		// TODO We may also accept any IAggregation, through AggregationCombination
 		ICombination combination = getCombination(s);
 
 		List<Object> operands;
 
 		if (twoOperandsPerOperator || combination instanceof IHasTwoOperands) {
-			operands = new LinkedList<>();
+			operands = new ArrayList<>();
 			// Add at the beginning to reverse the stack
 			operands.add(0, pendingOperands.removeLast());
 			operands.add(0, pendingOperands.removeLast());
 		} else {
 			// No need to reverse the stack for these operators
-			operands = new LinkedList<>(pendingOperands);
+			operands = new ArrayList<>(pendingOperands);
 			pendingOperands.clear();
 		}
 

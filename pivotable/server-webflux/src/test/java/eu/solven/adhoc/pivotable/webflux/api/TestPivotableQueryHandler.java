@@ -30,11 +30,11 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.pivotable.cube.AdhocCubesRegistry;
-import eu.solven.adhoc.pivotable.endpoint.PivotableAdhocSchemaRegistry;
+import eu.solven.adhoc.pivotable.endpoint.PivotableSchemaRegistry;
 import eu.solven.adhoc.pivotable.query.AsynchronousStatus;
 
 public class TestPivotableQueryHandler {
-	PivotableAdhocSchemaRegistry schemaRegistry = null;
+	PivotableSchemaRegistry schemaRegistry = null;
 	AdhocCubesRegistry cubesRegistry = null;
 	PivotableQueryHandler handler = new PivotableQueryHandler(schemaRegistry, cubesRegistry);
 

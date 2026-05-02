@@ -312,18 +312,24 @@ export const useUserStore = defineStore("user", {
 			var doForceLoadUserTokens;
 			if (!this.tokens.access_token) {
 				doForceLoadUserTokens = true;
-				console.info("Missing access_token", this.tokens.access_token);
+				// Two-tier logging: safe summary at info, raw token at debug.
+				// The raw token is an active bearer credential — keep it out of info.
+				console.info("Missing access_token");
+				console.debug("Missing access_token", this.tokens.access_token);
 			} else if (this.tokens.access_token_expired) {
 				// We did not detect an expiry (e.g. receiving a 401)
 				doForceLoadUserTokens = true;
-				console.info("Expired access_token", this.tokens.access_token);
+				console.info("Expired access_token");
+				console.debug("Expired access_token", this.tokens.access_token);
 			} else {
 				const expiresIn = this.tokens.expires_at - new Date();
 
-				if (expiresIn < 15) {
-					// The token should not expire within 15 seconds
+				if (expiresIn < 15 * 1000) {
+					// Preemptive refresh when the token is within 15s of expiry.
+					// `expiresIn` is ms (Date subtraction), so the threshold is ms too.
 					doForceLoadUserTokens = true;
-					console.info("About to expiry ", expiresIn, " access_token", this.tokens.access_token);
+					console.info("About to expiry in", expiresIn, "ms");
+					console.debug("About to expiry in", expiresIn, "ms access_token", this.tokens.access_token);
 				} else {
 					doForceLoadUserTokens = false;
 					console.debug("Authenticated and a valid access_tokenTokens is stored", this.tokens.access_token);

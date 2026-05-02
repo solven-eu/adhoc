@@ -28,8 +28,8 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
-import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.filter.ISliceFilter;
+import eu.solven.adhoc.filter.editor.IFilterEditor;
 import eu.solven.adhoc.measure.transformator.IHasUnderlyingMeasures;
 import lombok.Builder;
 import lombok.NonNull;
@@ -40,11 +40,24 @@ import lombok.extern.jackson.Jacksonized;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * A Filtrator is an {@link IMeasure} which is filtering another {@link IMeasure} given a {@link ISliceFilter}. The
- * input {@link ISliceFilter} will be `AND`-ed with {@link CubeQueryStep} own {@link ISliceFilter}.
- * 
- * @author Benoit Lacelle
+ * A {@link Filtrator} is a specialisation of {@link Shiftor} where the {@link IFilterEditor} always ANDs a fixed,
+ * hardcoded {@link ISliceFilter} onto the query filter. Because this pattern is extremely common (e.g. "always restrict
+ * to {@code country=FR}"), {@link Filtrator} provides a simpler builder that does not require implementing a full
+ * {@link IFilterEditor}.
  *
+ * <p>
+ * The effective filter passed to the underlying measure is:
+ *
+ * <pre>
+ * effective = queryStep.filter AND filtrator.filter
+ * </pre>
+ *
+ * <p>
+ * The result is always written back to the original (un-filtered) slice coordinates.
+ *
+ * @see Shiftor the generalisation that supports arbitrary filter transformations via {@link IFilterEditor}
+ * @see Unfiltrator the counterpart that widens (removes) filter constraints
+ * @author Benoit Lacelle
  */
 @Value
 @Builder(toBuilder = true)

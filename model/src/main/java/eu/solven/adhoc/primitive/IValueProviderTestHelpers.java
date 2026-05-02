@@ -25,6 +25,8 @@ package eu.solven.adhoc.primitive;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.jspecify.annotations.Nullable;
+
 import com.google.common.util.concurrent.AtomicDouble;
 
 import eu.solven.pepper.core.PepperLogHelper;
@@ -54,7 +56,7 @@ public interface IValueProviderTestHelpers {
 			}
 
 			@Override
-			public void onObject(Object v) {
+			public void onObject(@Nullable Object v) {
 				throw new IllegalArgumentException("getLong requires onLong and not onObject (v=%s)"
 						.formatted(PepperLogHelper.getObjectAndClass(v)));
 			}
@@ -79,7 +81,7 @@ public interface IValueProviderTestHelpers {
 			}
 
 			@Override
-			public void onObject(Object v) {
+			public void onObject(@Nullable Object v) {
 				throw new IllegalArgumentException("getDouble requires onDouble and not onObject (v=%s)"
 						.formatted(PepperLogHelper.getObjectAndClass(v)));
 			}
@@ -88,13 +90,13 @@ public interface IValueProviderTestHelpers {
 		return doubleRef.get();
 	}
 
-	static Object getObject(IValueProvider valueProvider) {
-		AtomicReference<Object> longRef = new AtomicReference<>();
+	static @Nullable Object getObject(IValueProvider valueProvider) {
+		AtomicReference<@Nullable Object> longRef = new AtomicReference<>();
 
 		valueProvider.acceptReceiver(new IValueReceiver() {
 
 			@Override
-			public void onObject(Object v) {
+			public void onObject(@Nullable Object v) {
 				longRef.set(v);
 			}
 		});

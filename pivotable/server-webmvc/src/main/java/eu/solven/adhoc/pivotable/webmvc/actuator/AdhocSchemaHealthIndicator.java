@@ -33,7 +33,7 @@ import org.springframework.boot.health.contributor.HealthContributors;
 import org.springframework.boot.health.contributor.HealthIndicator;
 import org.springframework.stereotype.Component;
 
-import eu.solven.adhoc.beta.schema.AdhocSchema;
+import eu.solven.adhoc.beta.schema.IAdhocSchema;
 import eu.solven.adhoc.cube.CubeWrapper;
 import eu.solven.adhoc.cube.ICubeWrapper;
 import lombok.RequiredArgsConstructor;
@@ -48,7 +48,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class AdhocSchemaHealthIndicator implements CompositeHealthContributor {
 
-	final AdhocSchema schema;
+	final IAdhocSchema schema;
 
 	@Override
 	public HealthIndicator getContributor(String name) {

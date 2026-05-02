@@ -34,9 +34,17 @@ import eu.solven.adhoc.primitive.IValueReceiver;
  *            typically {@link Slice}
  * @author Benoit Lacelle
  */
-public interface IMultitypeColumnFastGetSorted<T> extends IMultitypeColumnFastGet<T>, IIsSorted {
+public interface IMultitypeColumnFastGetSorted<T> extends IMultitypeColumnFastGet<T> {
 
-	Optional<IValueReceiver> appendIfOptimal(T key);
+	/**
+	 * 
+	 * @param key
+	 * @param distinct
+	 *            if true, we are guaranteed given key is new
+	 * @return an {@link IValueReceiver} if given key is higher than current max (hence new), or already present
+	 *         anywhere (which is a slow path).
+	 */
+	Optional<IValueReceiver> appendIfOptimal(T key, boolean distinct);
 
 	@Override
 	IMultitypeColumnFastGetSorted<T> purgeAggregationCarriers();

@@ -35,10 +35,10 @@ import com.google.common.collect.ImmutableList;
 import eu.solven.adhoc.cuboid.slice.ISlice;
 import eu.solven.adhoc.dataframe.row.ITabularRecord;
 import eu.solven.adhoc.dataframe.row.TabularRecordOverMaps;
-import eu.solven.adhoc.dataframe.stream.IConsumingStream;
-import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.map.factory.IMapBuilderPreKeys;
 import eu.solven.adhoc.query.cube.IGroupBy;
+import eu.solven.adhoc.stream.IConsumingStream;
+import eu.solven.adhoc.table.IQueryPod;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
 import eu.solven.adhoc.table.sql.QueryWithLeftover;
 import eu.solven.adhoc.util.NotYetImplementedException;
@@ -70,7 +70,7 @@ public class RedshiftTableWrapper extends JooqTableWrapper {
 	}
 
 	@Override
-	protected IConsumingStream toMapStream(QueryPod queryPod, IGroupBy mergedGroupBy, QueryWithLeftover sqlQuery) {
+	protected IConsumingStream toMapStream(IQueryPod queryPod, IGroupBy mergedGroupBy, QueryWithLeftover sqlQuery) {
 		// TODO Would it be relevant to pop `NAMED` SQL and rely on `SqlParameter`?
 		String sqlStatement = sqlQuery.getQuery().getSQL(ParamType.INLINED);
 
@@ -134,7 +134,7 @@ public class RedshiftTableWrapper extends JooqTableWrapper {
 		// }
 	}
 
-	protected TabularRecordOverMaps toTabularRecord(QueryPod queryPod,
+	protected TabularRecordOverMaps toTabularRecord(IQueryPod queryPod,
 			IGroupBy mergedGroupBy,
 			QueryWithLeftover sqlQuery,
 			List<Field> row) {

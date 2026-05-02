@@ -4,7 +4,7 @@
 	<parent>
 		<groupId>eu.solven.adhoc</groupId>
 		<artifactId>aggregator-adhoc</artifactId>
-		<version>0.0.19-SNAPSHOT</version>
+		<version>0.1.0-SNAPSHOT</version>
 	</parent>
 
 	<artifactId>pivotable</artifactId>
@@ -30,7 +30,7 @@
 	</modules>
 
 	<properties>
-		<springdoc-openapi.version>3.0.2</springdoc-openapi.version>
+		<springdoc-openapi.version>3.0.3</springdoc-openapi.version>
 	</properties>
 
 	<dependencyManagement>

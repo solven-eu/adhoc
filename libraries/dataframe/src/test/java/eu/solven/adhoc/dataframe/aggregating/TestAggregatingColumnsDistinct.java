@@ -22,16 +22,21 @@
  */
 package eu.solven.adhoc.dataframe.aggregating;
 
+import java.util.Arrays;
+
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.openjdk.jol.info.GraphLayout;
 
+import eu.solven.adhoc.collection.FrozenException;
 import eu.solven.adhoc.dataframe.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.primitive.IValueProvider;
+import eu.solven.pepper.memory.PepperFootprintHelper;
 
 public class TestAggregatingColumnsDistinct {
-	Aggregator a = Aggregator.sum("c");
+	Aggregator a = Aggregator.sum("a");
 	CubeQueryStep step = CubeQueryStep.builder().measure("m").build();
 
 	AggregatingColumnsDistinct<String> aggregatingColumns = AggregatingColumnsDistinct.<String>builder().build();
@@ -74,7 +79,41 @@ public class TestAggregatingColumnsDistinct {
 		aggregatingColumns.contribute("k1", a).onObject(null);
 
 		Assertions.assertThat(aggregatingColumns)
-				.hasToString("AggregatingColumnsDistinct{#slices=1, aggregators=1, k1={c=null}}");
+				.hasToString("AggregatingColumnsDistinct{#slices=1, aggregators=1, k1={a=null}}");
+	}
+
+	@Test
+	public void testFrozen_afterCloseColumn() {
+		aggregatingColumns.contribute("k1", a).onLong(123);
+
+		Assertions.assertThat(aggregatingColumns.isFrozen()).isFalse();
+
+		aggregatingColumns.closeColumn(step, a);
+
+		Assertions.assertThat(aggregatingColumns.isFrozen()).isTrue();
+		Assertions.assertThatThrownBy(() -> aggregatingColumns.openSlice("k2")).isInstanceOf(FrozenException.class);
+	}
+
+	@Test
+	public void testTwoColumnsShareReversed() {
+		Aggregator b = Aggregator.sum("b");
+
+		aggregatingColumns.contribute("k1", a).onLong(123L);
+		aggregatingColumns.contribute("k2", b).onLong(234L);
+
+		IMultitypeColumnFastGet<String> closedA =
+				aggregatingColumns.closeColumn(CubeQueryStep.builder().measure(a).build(), a);
+		IMultitypeColumnFastGet<String> closedB =
+				aggregatingColumns.closeColumn(CubeQueryStep.builder().measure(b).build(), b);
+
+		long sizeA = GraphLayout.parseInstance(closedA).totalSize();
+		long sizeB = GraphLayout.parseInstance(closedB).totalSize();
+		Assertions.assertThat(sizeA).isEqualTo(sizeB);
+
+		// Make sure closedA and closedB share the `indexToSlice` structure: combined deep size must be strictly
+		// less than the sum of individual sizes (sharing wins).
+		long combined = PepperFootprintHelper.deepSize(Arrays.asList(closedA, closedB));
+		Assertions.assertThat(combined).isLessThan(sizeA + sizeB);
 	}
 
 }

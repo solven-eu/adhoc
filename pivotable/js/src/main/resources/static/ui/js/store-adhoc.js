@@ -526,5 +526,47 @@ export const useAdhocStore = defineStore("adhoc", {
 				return this.loadColumnCoordinates(cubeId, endpointId, column);
 			}
 		},
+
+		// Bulk-fetch every column's CoordinatesSample for a cube in ONE round-trip. Calls
+		// `/endpoints/schemas/columns` without a `name` parameter — the server iterates every column of the
+		// cube AND, since the controller now uses ICubeWrapper.getCoordinates(Map, int), the engine answers
+		// every cardinality in a single batched query (e.g. SELECT COUNT(DISTINCT col1), COUNT(DISTINCT
+		// col2)... on the SQL side). Each returned ColumnStatistics is registered in `state.columns` keyed
+		// by its own column name — so the per-column Estimate badges populate in one sweep.
+		async loadAllCubeColumnsCoordinates(cubeId, endpointId) {
+			const store = this;
+			let url = "/endpoints/schemas/columns";
+			url += "?endpoint_id=" + encodeURIComponent(endpointId);
+			url += "&cube=" + encodeURIComponent(cubeId);
+
+			return this.loadEndpointIfMissing(endpointId).then(async () => {
+				store.nbColumnFetching++;
+				try {
+					const response = await store.authenticatedFetch(url);
+					const responseJson = await response.json();
+					console.debug("bulk-coordinates response", responseJson);
+					if (!Array.isArray(responseJson)) {
+						return [];
+					}
+					responseJson.forEach((columnJson) => {
+						const columnName = columnJson.column;
+						if (!columnName) {
+							console.warn("Skipping bulk-coordinates entry without column name", columnJson);
+							return;
+						}
+						const columnId = `${endpointId}-${cubeId}-${columnName}`;
+						store.$patch((state) => {
+							state.columns[columnId] = columnJson;
+						});
+					});
+					return responseJson;
+				} catch (e) {
+					store.onSwallowedError(e);
+					return [];
+				} finally {
+					store.nbColumnFetching--;
+				}
+			});
+		},
 	},
 });

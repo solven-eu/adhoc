@@ -2,7 +2,7 @@
  * Column-oriented encoding layer: packed integers, dictionary encoding, FSST string compression, and appendable table
  * pages.
  */
-module eu.solven.adhoc.meta {
+module eu.solven.adhoc.model {
 
 	// ── Exported packages ────────────────────────────────────────────────────
 	exports eu.solven.adhoc.collection;
@@ -15,6 +15,7 @@ module eu.solven.adhoc.meta {
 	exports eu.solven.adhoc.query.groupby;
 	exports eu.solven.adhoc.resource;
 	exports eu.solven.adhoc.util;
+	exports eu.solven.adhoc.util.cache;
 	exports eu.solven.adhoc.util.immutable;
 
 	// Jackson needs reflective access to Lombok-generated builders for deserialization

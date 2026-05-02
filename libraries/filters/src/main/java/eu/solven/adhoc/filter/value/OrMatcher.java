@@ -27,6 +27,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
+import org.jspecify.annotations.Nullable;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableSet;
@@ -80,7 +82,7 @@ public class OrMatcher implements IValueMatcher, IHasOperands<IValueMatcher> {
 	}
 
 	@Override
-	public boolean match(Object value) {
+	public boolean match(@Nullable Object value) {
 		return ors.stream().anyMatch(operand -> operand.match(value));
 	}
 

@@ -6,18 +6,18 @@ import { useUserStore } from "./store-user.js";
 
 import AdhocNavbar from "./adhoc-navbar.js";
 
-import LoginRef from "./login-ref.js";
+import LoginChip from "./login-chip.js";
 
-import AdhocAccountRef from "./adhoc-account-ref.js";
+import AdhocAccountChip from "./adhoc-account-chip.js";
 
 import LoginModal from "./login-modal.js";
 
 export default {
 	components: {
 		AdhocNavbar,
-		LoginRef,
+		LoginChip,
 		LoginModal,
-		AdhocAccountRef,
+		AdhocAccountChip,
 	},
 	computed: {
 		...mapState(useUserStore, ["account", "tokens", "nbLoginLoading"]),
@@ -49,25 +49,25 @@ export default {
 		return {};
 	},
 	template: /* HTML */ `
-        <div class="container-fluid">
-            <AdhocNavbar />
+		<div class="container-fluid">
+			<AdhocNavbar />
 
-            <main>
-                <RouterView />
-            </main>
+			<main>
+				<RouterView />
+			</main>
 
-            <LoginModal />
-            <span v-if="$route.fullPath !== '/html/login'">
-                <!--LoginRef /-->
-            </span>
+			<LoginModal />
+			<span v-if="$route.fullPath !== '/html/login'">
+				<!--LoginChip /-->
+			</span>
 
-            <div v-else>
-                <ul>
-                    <li v-if="account.accountId">
-                        <AdhocAccountRef :accountId="account.accountId" />
-                    </li>
-                </ul>
-            </div>
-        </div>
-    `,
+			<div v-else>
+				<ul>
+					<li v-if="account.accountId">
+						<AdhocAccountChip :accountId="account.accountId" />
+					</li>
+				</ul>
+			</div>
+		</div>
+	`,
 };

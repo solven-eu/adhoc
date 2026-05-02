@@ -30,4 +30,4 @@ dist-ssr
 vitest-report
 
 # Test coverage output (Jest/Vitest)
-coverage
+coverage/

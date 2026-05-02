@@ -169,13 +169,11 @@ public class TestOrFilter {
 				  "filters" : [ {
 				    "type" : "column",
 				    "column" : "a",
-				    "valueMatcher" : "a1",
-				    "nullIfAbsent" : true
+				    "valueMatcher" : "a1"
 				  }, {
 				    "type" : "column",
 				    "column" : "b",
-				    "valueMatcher" : "b2",
-				    "nullIfAbsent" : true
+				    "valueMatcher" : "b2"
 				  } ]
 				}""");
 	}

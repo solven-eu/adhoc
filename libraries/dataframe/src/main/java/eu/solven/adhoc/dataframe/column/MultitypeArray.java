@@ -22,27 +22,29 @@
  */
 package eu.solven.adhoc.dataframe.column;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Function;
 
-import com.google.common.collect.ImmutableList;
+import org.jspecify.annotations.Nullable;
 
+import eu.solven.adhoc.collection.ICompactable;
 import eu.solven.adhoc.dataframe.IAdhocCapacityConstants;
+import eu.solven.adhoc.dataframe.collection.ChunkedDoubleList;
+import eu.solven.adhoc.dataframe.collection.ChunkedList;
+import eu.solven.adhoc.dataframe.collection.ChunkedLongList;
+import eu.solven.adhoc.dataframe.column.hash.CleaningValueReceiver;
 import eu.solven.adhoc.encoding.column.AdhocColumnUnsafe;
 import eu.solven.adhoc.primitive.IMultitypeConstants;
 import eu.solven.adhoc.primitive.IValueFunction;
 import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.primitive.IValueReceiver;
-import it.unimi.dsi.fastutil.doubles.DoubleArrayList;
 import it.unimi.dsi.fastutil.doubles.DoubleList;
-import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.fastutil.longs.LongList;
-import it.unimi.dsi.fastutil.objects.ObjectArrayList;
-import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;
 import lombok.Setter;
+import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -54,8 +56,11 @@ import lombok.extern.slf4j.Slf4j;
  * @author Benoit Lacelle
  */
 @Slf4j
-@Builder
-public class MultitypeArray implements IMultitypeArray {
+@SuperBuilder
+// concrete field types (LongChunkedList, DoubleChunkedList, ChunkedList) are intentional: compact() is only on the
+// concrete class
+@SuppressWarnings("PMD.LooseCoupling")
+public class MultitypeArray implements IMultitypeArray, ICompactable {
 	// Indicate the single type of values stored in this column
 	// For now, since column can handle long or (exclusively) doubles. Switching to Object if the type is not only-long
 	// or only-double.
@@ -67,19 +72,23 @@ public class MultitypeArray implements IMultitypeArray {
 	// MergeableMultitypeStorage
 	@Default
 	@NonNull
-	final LongList valuesL = new LongArrayList(0);
+	final LongList valuesL = new ChunkedLongList();
 
 	@Default
 	@NonNull
-	final DoubleList valuesD = new DoubleArrayList(0);
+	final DoubleList valuesD = new ChunkedDoubleList();
 
 	@Default
 	@NonNull
-	final List<Object> valuesO = new ArrayList<>(0);
+	final List<Object> valuesO = new ChunkedList<>();
 
 	@Default
 	@Setter
 	int capacity = IAdhocCapacityConstants.ZERO_THEN_MAX;
+
+	// If true, this will automatically turn dirty input (like `Integer`) into a clean one (like `int`)
+	@Default
+	boolean cleanDirty = CleaningValueReceiver.DEFAULT;
 
 	/**
 	 * To be called before a guaranteed `add` operation.
@@ -94,21 +103,12 @@ public class MultitypeArray implements IMultitypeArray {
 		}
 	}
 
-	@SuppressWarnings({ "PMD.LooseCoupling", "PMD.CollapsibleIfStatements" })
+	/**
+	 * No-op: {@link ChunkedLongList}, {@link ChunkedDoubleList}, and {@link ChunkedList} allocate tail chunks lazily on
+	 * demand; there is no bulk pre-allocation step equivalent to {@code ensureCapacity}.
+	 */
 	protected void ensureCapacityForType(int type) {
-		if (type == IMultitypeConstants.MASK_LONG) {
-			if (valuesL instanceof LongArrayList array) {
-				array.ensureCapacity(IAdhocCapacityConstants.capacity(capacity));
-			}
-		} else if (type == IMultitypeConstants.MASK_DOUBLE) {
-			if (valuesD instanceof DoubleArrayList array) {
-				array.ensureCapacity(IAdhocCapacityConstants.capacity(capacity));
-			}
-		} else if (type == IMultitypeConstants.MASK_OBJECT) {
-			if (valuesO instanceof ObjectArrayList array) {
-				array.ensureCapacity(IAdhocCapacityConstants.capacity(capacity));
-			}
-		}
+		// intentionally empty
 	}
 
 	@Override
@@ -123,7 +123,9 @@ public class MultitypeArray implements IMultitypeArray {
 
 	@Override
 	public IValueReceiver add(int insertionIndex) {
-		return new IValueReceiver() {
+		// BEWARE Must not clean nulls, as we need to detect after hand a null to also clear the key
+		return CleaningValueReceiver.cleaning(cleanDirty, false, new IValueReceiver() {
+
 			@Override
 			public void onLong(long v) {
 				if (valuesType == IMultitypeConstants.MASK_EMPTY) {
@@ -152,19 +154,14 @@ public class MultitypeArray implements IMultitypeArray {
 			}
 
 			@Override
-			public void onObject(Object v) {
-				if (v == null) {
-					// BEWARE We may want to remove the key
-					// BEWARE We may want to have an optimized storage for `null||long` or `null||double`
-					log.trace("TODO Improve null management");
-				}
-
+			public void onObject(@Nullable Object v) {
 				ensureObject();
 
 				checkSizeBeforeAdd(IMultitypeConstants.MASK_OBJECT);
 				valuesO.add(insertionIndex, v);
 			}
-		};
+
+		});
 	}
 
 	protected void ensureObject() {
@@ -207,7 +204,19 @@ public class MultitypeArray implements IMultitypeArray {
 			}
 
 			@Override
-			public void onObject(Object v) {
+			public void onDouble(double v) {
+				if (valuesType == IMultitypeConstants.MASK_EMPTY) {
+					valuesType = IMultitypeConstants.MASK_DOUBLE;
+					valuesD.set(index, v);
+				} else if (valuesType == IMultitypeConstants.MASK_DOUBLE) {
+					valuesD.set(index, v);
+				} else {
+					onObject(v);
+				}
+			}
+
+			@Override
+			public void onObject(@Nullable Object v) {
 				ensureObject();
 				valuesO.set(index, v);
 			}
@@ -236,6 +245,16 @@ public class MultitypeArray implements IMultitypeArray {
 	}
 
 	@Override
+	public boolean isNull(int rowIndex) {
+		if (valuesType == IMultitypeConstants.MASK_OBJECT && rowIndex >= 0
+				&& rowIndex < valuesO.size()
+				&& valuesO.get(rowIndex) == null) {
+			return true;
+		}
+		return false;
+	}
+
+	@Override
 	public <U> U apply(int rowIndex, IValueFunction<U> valueFunction) {
 		if (valuesType == IMultitypeConstants.MASK_EMPTY) {
 			throw new IndexOutOfBoundsException(rowIndex);
@@ -250,9 +269,9 @@ public class MultitypeArray implements IMultitypeArray {
 
 	public static MultitypeArray empty() {
 		return MultitypeArray.builder()
-				.valuesD(DoubleList.of())
-				.valuesL(LongList.of())
-				.valuesO(ImmutableList.of())
+				.valuesL(new ChunkedLongList())
+				.valuesD(new ChunkedDoubleList())
+				.valuesO(new ChunkedList<>())
 				.build();
 	}
 
@@ -292,6 +311,19 @@ public class MultitypeArray implements IMultitypeArray {
 		}
 	}
 
+	@Override
+	public void compact() {
+		if (valuesL instanceof ICompactable compactable) {
+			compactable.compact();
+		}
+		if (valuesD instanceof ICompactable compactable) {
+			compactable.compact();
+		}
+		if (valuesO instanceof ICompactable compactable) {
+			compactable.compact();
+		}
+	}
+
 	public void clear() {
 		valuesType = IMultitypeConstants.MASK_EMPTY;
 
@@ -302,12 +334,14 @@ public class MultitypeArray implements IMultitypeArray {
 
 	@Override
 	public IMultitypeArray purgeAggregationCarriers() {
-		final List<Object> valuesOPurged = new ArrayList<>(valuesO);
+		final ChunkedList<Object> valuesOPurged = new ChunkedList<>(valuesO);
 
 		for (int i = 0; i < valuesO.size(); i++) {
 			Object value = valuesOPurged.get(i);
 			if (value instanceof IValueProvider valueProvider) {
-				valuesO.set(i, IValueProvider.getValue(valueProvider));
+				// `IValueProvider.getValue` may return null but ChunkedList rejects nulls; preserve the original
+				// (which never had null elements) by requiring non-null at the unwrap site.
+				valuesOPurged.set(i, Objects.requireNonNull(IValueProvider.getValue(valueProvider)));
 			}
 		}
 
@@ -318,5 +352,4 @@ public class MultitypeArray implements IMultitypeArray {
 				.valuesO(valuesOPurged)
 				.build();
 	}
-
 }

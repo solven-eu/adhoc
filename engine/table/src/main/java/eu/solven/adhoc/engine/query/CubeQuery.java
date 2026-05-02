@@ -1,0 +1,280 @@
+/**
+ * The MIT License
+ * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
+package eu.solven.adhoc.engine.query;
+
+import java.util.Collection;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Stream;
+
+import org.jspecify.annotations.Nullable;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
+
+import eu.solven.adhoc.collection.AdhocCollectionHelpers;
+import eu.solven.adhoc.column.IAdhocColumn;
+import eu.solven.adhoc.column.ReferencedColumn;
+import eu.solven.adhoc.engine.step.ICubeQuery;
+import eu.solven.adhoc.engine.step.IWhereGroupByQuery;
+import eu.solven.adhoc.filter.ColumnFilter;
+import eu.solven.adhoc.filter.FilterBuilder;
+import eu.solven.adhoc.filter.IColumnFilter;
+import eu.solven.adhoc.filter.ISliceFilter;
+import eu.solven.adhoc.measure.ReferencedMeasure;
+import eu.solven.adhoc.measure.forest.IMeasureForest;
+import eu.solven.adhoc.measure.model.IMeasure;
+import eu.solven.adhoc.options.IHasQueryOptions;
+import eu.solven.adhoc.options.IQueryOption;
+import eu.solven.adhoc.options.StandardQueryOptions;
+import eu.solven.adhoc.query.AdhocQueryId;
+import eu.solven.adhoc.query.AdhocSubQuery;
+import eu.solven.adhoc.query.cube.IGroupBy;
+import eu.solven.adhoc.query.cube.IHasCustomMarker;
+import eu.solven.adhoc.query.cube.IHasMeasures;
+import eu.solven.adhoc.query.groupby.GroupByColumns;
+import eu.solven.adhoc.util.NotYetImplementedException;
+import lombok.Builder;
+import lombok.Builder.Default;
+import lombok.NonNull;
+import lombok.Singular;
+import lombok.Value;
+import lombok.extern.jackson.Jacksonized;
+
+/**
+ * Simple {@link ICubeQuery}, where the filter is an AND condition.
+ *
+ * @author Benoit Lacelle
+ */
+@Value
+@Builder(toBuilder = true)
+@Jacksonized
+public class CubeQuery implements ICubeQuery {
+
+	@NonNull
+	@Default
+	ISliceFilter filter = ISliceFilter.MATCH_ALL;
+	@NonNull
+	@Default
+	IGroupBy groupBy = IGroupBy.GRAND_TOTAL;
+	// Not @Singular as we added manually the relevant @Builder methods
+	ImmutableSet<IMeasure> measures;
+
+	// This property is transported down to the DatabaseQuery
+	// Not an Optional as JDK consider Optional are good only as return value
+	@Default
+	@Nullable
+	Object customMarker = null;
+
+	@NonNull
+	@Singular
+	ImmutableSet<IQueryOption> options;
+
+	@Override
+	public Optional<?> optCustomMarker() {
+		return Optional.ofNullable(customMarker);
+	}
+
+	@Override
+	public Set<IMeasure> getMeasures() {
+		return measures;
+	}
+
+	/**
+	 * Lombok @Builder
+	 *
+	 * @author Benoit Lacelle
+	 */
+	// Builder fields populated via chained setters before .build(); NullAway can't see the cross-method init.
+	@SuppressWarnings("NullAway.Init")
+	public static class CubeQueryBuilder {
+		@SuppressWarnings("PMD.AvoidFieldNameMatchingMethodName")
+		ImmutableSet<IMeasure> measures = ImmutableSet.of();
+
+		// https://github.com/projectlombok/lombok/pull/3193
+		public CubeQueryBuilder measure(String firstName, String... moreNames) {
+			Lists.asList(firstName, moreNames).forEach(measureName -> {
+				this.measure(ReferencedMeasure.ref(measureName));
+			});
+
+			return this;
+		}
+
+		/**
+		 * 
+		 * Append measures to the query.
+		 * 
+		 * @param measureNames
+		 *            referencing measures in the {@link IMeasureForest}
+		 * @return
+		 */
+		public CubeQueryBuilder measureNames(Collection<String> measureNames) {
+			measureNames.stream().map(ReferencedMeasure::ref).forEach(this::measure);
+
+			return this;
+		}
+
+		/**
+		 * Append measures to the query.
+		 * 
+		 * BEWARE Even if we accept {@link IMeasure}, these measures are expected to be registered in the measure bag.
+		 * This may be lifted in a later version.
+		 *
+		 * @param first
+		 * @param more
+		 * @return
+		 */
+		public CubeQueryBuilder measure(IMeasure first, IMeasure... more) {
+			return measures(Lists.asList(first, more));
+		}
+
+		/**
+		 * Append measures to the query.
+		 * 
+		 * BEWARE Even if we accept {@link IMeasure}, these measures are expected to be registered in the measure bag.
+		 * This may be lifted in a later version.
+		 * 
+		 * @param measures
+		 * @return
+		 */
+		public CubeQueryBuilder measures(Collection<? extends IMeasure> measures) {
+			this.measures =
+					Stream.concat(this.measures.stream(), measures.stream()).collect(ImmutableSet.toImmutableSet());
+
+			return this;
+		}
+
+		/**
+		 * `AND` existing {@link ISliceFilter} with an {@link IColumnFilter}
+		 *
+		 * @param filter
+		 * @return the builder
+		 */
+		public CubeQueryBuilder andFilter(ISliceFilter filter) {
+			// BEWARE `.optimize` prevent unnecessary noise (like `.matchAll`), but one may prefer just a `.combine`
+			filter(FilterBuilder.and(build().getFilter(), filter).optimize());
+
+			return this;
+		}
+
+		/**
+		 * `AND` existing {@link ISliceFilter} with an {@link IColumnFilter}
+		 *
+		 * @param column
+		 * @param value
+		 * @return the builder
+		 */
+		public CubeQueryBuilder andFilter(String column, Object value) {
+			return andFilter(ColumnFilter.matchLax(column, value));
+		}
+
+		public CubeQueryBuilder groupByAlso(Collection<? extends IAdhocColumn> groupBys) {
+			// https://stackoverflow.com/questions/66260030/get-value-of-field-with-lombok-builder
+			ImmutableSet<IAdhocColumn> allGroupByColumns =
+					AdhocCollectionHelpers.copyOfSets(this.build().getGroupBy().getColumns(), groupBys);
+
+			groupBy(GroupByColumns.of(allGroupByColumns));
+
+			return this;
+		}
+
+		public CubeQueryBuilder groupByAlso(IAdhocColumn firstGroupBy, IAdhocColumn... moreGroupBys) {
+			return groupByAlso(Lists.asList(firstGroupBy, moreGroupBys));
+		}
+
+		public CubeQueryBuilder groupByAlso(String firstGroupBy, String... moreGroupBys) {
+			groupByAlso(Lists.asList(firstGroupBy, moreGroupBys).stream().map(ReferencedColumn::ref).toList());
+
+			return this;
+		}
+
+		// Leads to Jackson issues
+		@JsonIgnore
+		public CubeQueryBuilder groupByAlso(IGroupBy groupBy) {
+			groupByAlso(groupBy.getColumns());
+
+			return this;
+		}
+
+		// Lombok-generated `customMarker$value` field doesn't inherit the @Nullable from the source field.
+		@SuppressWarnings("NullAway")
+		public CubeQueryBuilder customMarker(@Nullable Object custom) {
+			if (custom instanceof Optional<?> optional) {
+				// Custom variable is either a not-Optional or a null
+				// `optCustomMarker` would wrap in an Optional
+				custom = optional.orElse(null);
+			}
+
+			this.customMarker$value = custom;
+			this.customMarker$set = true;
+
+			return this;
+		}
+
+		public CubeQueryBuilder debug(boolean isDebug) {
+			if (isDebug) {
+				return this.option(StandardQueryOptions.DEBUG);
+			} else {
+				// It should be rare to remove debug
+				throw new NotYetImplementedException("TODO");
+			}
+		}
+
+		public CubeQueryBuilder explain(boolean isExplain) {
+			if (isExplain) {
+				return this.option(StandardQueryOptions.EXPLAIN);
+			} else {
+				// It should be rare to remove explain
+				throw new NotYetImplementedException("TODO");
+			}
+		}
+	}
+
+	/**
+	 * BEWARE This may lose additional information not fitting into an {@link CubeQuery}, like the {@link AdhocQueryId}
+	 * of a {@link AdhocSubQuery}.
+	 * 
+	 * @param query
+	 * @return
+	 */
+	public static CubeQueryBuilder edit(IWhereGroupByQuery query) {
+		if (query instanceof CubeQuery cubeQuery) {
+			return cubeQuery.toBuilder();
+		}
+
+		CubeQueryBuilder builder = CubeQuery.builder().filter(query.getFilter()).groupBy(query.getGroupBy());
+
+		if (query instanceof IHasMeasures hasMeasures) {
+			builder.measures(hasMeasures.getMeasures());
+		}
+		if (query instanceof IHasCustomMarker hasCustomMarker) {
+			builder.customMarker(hasCustomMarker.getCustomMarker());
+		}
+		if (query instanceof IHasQueryOptions hasQueryOptions) {
+			builder.options(hasQueryOptions.getOptions());
+		}
+
+		return builder;
+	}
+}

@@ -23,8 +23,11 @@
 package eu.solven.adhoc.measure.sum;
 
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
+
+import org.jspecify.annotations.Nullable;
 
 import eu.solven.adhoc.data.cell.MultitypeCell;
 import eu.solven.adhoc.data.row.ISlicedRecord;
@@ -40,7 +43,7 @@ import lombok.RequiredArgsConstructor;
 
 /**
  * An {@link ICombination} define as the aggregation of underlying value with given {@link IAggregation}.
- * 
+ *
  * @author Benoit Lacelle
  */
 @RequiredArgsConstructor
@@ -79,16 +82,18 @@ public class AggregationCombination implements ICombination {
 
 	@Override
 	@SuppressWarnings("PMD.NullAssignment")
-	public IValueProvider combine(ISliceWithStep slice, ISlicedRecord slicedRecord) {
+	public void combine(ISliceWithStep slice, ISlicedRecord slicedRecord, IValueReceiver valueReceiver) {
 		MultitypeCell refMultitype = makeMultitypeCell();
 
 		IValueReceiver cellValueConsumer = refMultitype.merge();
 
 		IValueReceiver proxyValueReceiver;
+		@Nullable
 		AtomicBoolean hasNull;
 		if (customIfAnyNullOperand) {
 			hasNull = new AtomicBoolean();
 
+			AtomicBoolean hasNullLocal = hasNull;
 			proxyValueReceiver = new IValueReceiver() {
 
 				@Override
@@ -102,9 +107,9 @@ public class AggregationCombination implements ICombination {
 				}
 
 				@Override
-				public void onObject(Object v) {
+				public void onObject(@Nullable Object v) {
 					if (v == null) {
-						hasNull.set(true);
+						hasNullLocal.set(true);
 					} else {
 						cellValueConsumer.onObject(v);
 					}
@@ -117,14 +122,14 @@ public class AggregationCombination implements ICombination {
 
 		int size = slicedRecord.size();
 		for (int i = 0; i < size; i++) {
-			slicedRecord.read(i).acceptReceiver(proxyValueReceiver);
+			slicedRecord.read(i, proxyValueReceiver);
 		}
 
-		if (customIfAnyNullOperand && hasNull.get()) {
-			return oneUnderlyingIsNull();
+		if (customIfAnyNullOperand && Objects.requireNonNull(hasNull).get()) {
+			oneUnderlyingIsNull().acceptReceiver(valueReceiver);
+		} else {
+			refMultitype.reduce().acceptReceiver(valueReceiver);
 		}
-
-		return refMultitype.reduce();
 	}
 
 	protected IValueProvider oneUnderlyingIsNull() {

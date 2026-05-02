@@ -38,12 +38,11 @@ import org.springframework.web.reactive.function.server.ServerResponse;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
-import eu.solven.adhoc.beta.schema.AdhocSchema;
 import eu.solven.adhoc.beta.schema.CubeSchemaMetadata;
 import eu.solven.adhoc.beta.schema.EndpointSchemaMetadata;
 import eu.solven.adhoc.beta.schema.IAdhocSchema;
 import eu.solven.adhoc.pivotable.chat.ChatRequest;
-import eu.solven.adhoc.pivotable.endpoint.PivotableAdhocSchemaRegistry;
+import eu.solven.adhoc.pivotable.endpoint.PivotableSchemaRegistry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Flux;
@@ -71,14 +70,14 @@ import tools.jackson.databind.ObjectMapper;
 public class PivotableChatHandler {
 	private static final int MAX_TOKENS = 1024;
 
-	final PivotableAdhocSchemaRegistry schemasRegistry;
+	final PivotableSchemaRegistry schemasRegistry;
 	final ObjectMapper objectMapper;
 	final WebClient anthropicClient;
 	final String model;
 
 	public Mono<ServerResponse> chat(ServerRequest request) {
 		return request.bodyToMono(ChatRequest.class).flatMap(chatRequest -> {
-			AdhocSchema schema = schemasRegistry.getSchema(chatRequest.getEndpointId());
+			IAdhocSchema schema = schemasRegistry.getSchema(chatRequest.getEndpointId());
 
 			IAdhocSchema.AdhocSchemaQuery schemaQuery =
 					IAdhocSchema.AdhocSchemaQuery.builder().cube(Optional.of(chatRequest.getCube())).build();

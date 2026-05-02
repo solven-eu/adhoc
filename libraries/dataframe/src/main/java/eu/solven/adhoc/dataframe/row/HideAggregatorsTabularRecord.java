@@ -29,6 +29,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiConsumer;
 
+import org.jspecify.annotations.Nullable;
+
 import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.cuboid.slice.ISlice;
@@ -96,7 +98,7 @@ public class HideAggregatorsTabularRecord implements ITabularRecord {
 	}
 
 	@Override
-	public Object getGroupBy(String column) {
+	public @Nullable Object getGroupBy(String column) {
 		return decorated.getGroupBy(column);
 	}
 

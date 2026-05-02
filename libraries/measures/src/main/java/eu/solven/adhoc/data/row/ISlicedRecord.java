@@ -25,9 +25,12 @@ package eu.solven.adhoc.data.row;
 import java.util.List;
 import java.util.stream.IntStream;
 
+import org.jspecify.annotations.Nullable;
+
 import eu.solven.adhoc.cuboid.ICuboid;
 import eu.solven.adhoc.cuboid.slice.ISlice;
 import eu.solven.adhoc.primitive.IValueProvider;
+import eu.solven.adhoc.primitive.IValueReceiver;
 
 /**
  * Used to provide measure values/aggregates given a {@link List} of {@link ICuboid}. The scope is an {@link ISlice}.
@@ -51,7 +54,16 @@ public interface ISlicedRecord {
 	 * @param index
 	 *            the index of the underlying queryStep. From 0 to `.size()` excluded.
 	 */
+	@Deprecated(since = "Prefer `read(int index, IValueReceiver receiver)`")
 	IValueProvider read(int index);
+
+	default void read(int index, IValueReceiver receiver) {
+		read(index).acceptReceiver(receiver);
+	}
+
+	default boolean isNull(int index) {
+		return IValueProvider.isNull(read(index));
+	}
 
 	@Deprecated(since = "Prefer `void read(int index, IValueConsumer valueConsumer)`")
 	default List<?> asList() {
@@ -65,7 +77,7 @@ public interface ISlicedRecord {
 	 *            first indexes.
 	 */
 	@Deprecated(since = "Prefer `void read(int index, IValueConsumer valueConsumer)`")
-	default void intoArray(Object... array) {
+	default void intoArray(@Nullable Object... array) {
 		for (int i = 0; i < Math.min(array.length, size()); i++) {
 			int finalI = i;
 			array[i] = IValueProvider.getValue(read(finalI));

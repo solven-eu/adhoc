@@ -22,6 +22,8 @@
  */
 package eu.solven.adhoc.encoding.page;
 
+import org.jspecify.annotations.Nullable;
+
 import com.google.common.collect.ImmutableList;
 
 import eu.solven.adhoc.util.immutable.UnsupportedAsImmutableException;
@@ -42,7 +44,7 @@ public class TableRowHelpers {
 		}
 
 		@Override
-		public Object readValue(int columnIndex) {
+		public @Nullable Object readValue(int columnIndex) {
 			return null;
 		}
 
@@ -61,7 +63,7 @@ public class TableRowHelpers {
 			if (obj == null) {
 				return false;
 			} else if (obj instanceof ITableRowRead otherRow) {
-				return otherRow.size() == 0;
+				return otherRow.isEmpty();
 			} else {
 				return false;
 			}
@@ -81,7 +83,7 @@ public class TableRowHelpers {
 		}
 
 		@Override
-		public int add(String key, Object normalizedValue) {
+		public int add(String key, @Nullable Object normalizedValue) {
 			throw new UnsupportedAsImmutableException(key + "=" + normalizedValue);
 		}
 

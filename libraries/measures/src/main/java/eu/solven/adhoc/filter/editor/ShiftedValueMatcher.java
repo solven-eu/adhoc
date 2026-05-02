@@ -24,6 +24,8 @@ package eu.solven.adhoc.filter.editor;
 
 import java.util.function.Function;
 
+import org.jspecify.annotations.Nullable;
+
 import eu.solven.adhoc.filter.value.EqualsMatcher;
 import eu.solven.adhoc.filter.value.IValueMatcher;
 import eu.solven.adhoc.filter.value.InMatcher;
@@ -45,7 +47,7 @@ public class ShiftedValueMatcher implements IValueMatcher {
 	Function<Object, ?> shifter;
 
 	@Override
-	public boolean match(Object value) {
+	public boolean match(@Nullable Object value) {
 		// TODO The shifted matcher should be built once and for all
 		throw new NotYetImplementedException(
 				"matcher=%s".formatted(PepperLogHelper.getObjectAndClass(originalMatcher)));

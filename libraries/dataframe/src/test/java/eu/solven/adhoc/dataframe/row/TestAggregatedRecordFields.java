@@ -30,7 +30,9 @@ import nl.jqno.equalsverifier.EqualsVerifier;
 public class TestAggregatedRecordFields {
 	@Test
 	public void hashcodeEquals() {
-		EqualsVerifier.forClass(AggregatedRecordFields.class).withIgnoredFields("allColumns").verify();
+		EqualsVerifier.forClass(AggregatedRecordFields.class)
+				.withIgnoredFields("allColumns", "aggregatesKeyset")
+				.verify();
 	}
 
 	@Test

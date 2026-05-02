@@ -28,6 +28,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
 
+import org.jspecify.annotations.Nullable;
+
 import com.google.common.collect.ImmutableSet;
 
 import lombok.Builder;
@@ -53,7 +55,7 @@ public class RecursiveAliaser implements ITableAliaser, IHasAliasedColumns {
 	}
 
 	@Override
-	public String underlying(String queried) {
+	public @Nullable String underlying(String queried) {
 		Set<String> querieds = Collections.emptySet();
 
 		boolean first = true;

@@ -32,13 +32,38 @@ import org.junit.jupiter.api.Test;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
+import eu.solven.adhoc.encoding.column.freezer.AsynchronousFreezingStrategy;
+import eu.solven.adhoc.encoding.page.AAppendableTable;
+import eu.solven.adhoc.encoding.page.AppendableTableUnsafe;
 import eu.solven.adhoc.filter.value.NullMatcher;
 import eu.solven.adhoc.map.AdhocMapUnsafe;
 import eu.solven.adhoc.map.IAdhocMap;
+import eu.solven.adhoc.map.factory.ColumnSliceFactory.MapBuilderPreKeys;
+import eu.solven.adhoc.options.IHasOptionsAndExecutorService;
+import eu.solven.adhoc.options.StandardQueryOptions;
+import eu.solven.pepper.unittest.MapVerifier;
 
 public class TestColumnSliceFactory {
 
 	ColumnSliceFactory factory = ColumnSliceFactory.builder().build();
+
+	@Test
+	public void testMapContract_twoEntries() {
+		IAdhocMap aAndB = factory.newMapBuilder(List.of("a", "b")).append("a1").append("b1").build();
+		MapVerifier.forInstance(aAndB).preservesInsertionOrder().verify();
+	}
+
+	@Test
+	public void testMapContract_nullValue() {
+		IAdhocMap aAndNull = factory.newMapBuilder(List.of("a", "b")).append("a1").append(null).build();
+		MapVerifier.forInstance(aAndNull).preservesInsertionOrder().verify();
+	}
+
+	@Test
+	public void testMapContract_singleEntry() {
+		IAdhocMap onlyA = factory.newMapBuilder(List.of("a")).append("a1").build();
+		MapVerifier.forInstance(onlyA).preservesInsertionOrder().verify();
+	}
 
 	@Test
 	public void testRetainAll() {
@@ -166,5 +191,15 @@ public class TestColumnSliceFactory {
 	public void testAppendTooMuch() {
 		Assertions.assertThatThrownBy(() -> factory.newMapBuilder(List.of("a", "b")).append("a1", "b1", "c1"))
 				.isInstanceOf(IllegalStateException.class);
+	}
+
+	@Test
+	public void testAsyncFreezer() {
+		ColumnSliceFactory sliceFactory = ColumnSliceFactory.builder()
+				.options(IHasOptionsAndExecutorService.directExecutor(() -> Set.of(StandardQueryOptions.CONCURRENT)))
+				.build();
+		MapBuilderPreKeys mapBuilder = (MapBuilderPreKeys) sliceFactory.newMapBuilder();
+		Assertions.assertThat(AppendableTableUnsafe.getStrategy(((AAppendableTable) mapBuilder.pageFactory)))
+				.isInstanceOf(AsynchronousFreezingStrategy.class);
 	}
 }
