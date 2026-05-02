@@ -28,3 +28,6 @@ dist-ssr
 /playwright/.cache/
 
 vitest-report
+
+# Test coverage output (Jest/Vitest)
+coverage
