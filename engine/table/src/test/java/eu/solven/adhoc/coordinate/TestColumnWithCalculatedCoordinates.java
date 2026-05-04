@@ -25,9 +25,9 @@ package eu.solven.adhoc.coordinate;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import eu.solven.adhoc.column.ColumnWithCalculatedCoordinates;
 import eu.solven.adhoc.column.coordinate.CalculatedCoordinate;
 import eu.solven.adhoc.filter.AdhocPublicJackson;
+import eu.solven.adhoc.model.column.ColumnWithCalculatedCoordinates;
 import eu.solven.adhoc.model.column.IAdhocColumn;
 import eu.solven.pepper.unittest.PepperJackson3TestHelper;
 

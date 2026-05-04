@@ -44,7 +44,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 
-import eu.solven.adhoc.column.ColumnWithCalculatedCoordinates;
 import eu.solven.adhoc.cuboid.ICuboid;
 import eu.solven.adhoc.engine.cache.IQueryStepCache;
 import eu.solven.adhoc.engine.cache.TransverseCacheHelper;
@@ -62,6 +61,7 @@ import eu.solven.adhoc.measure.forest.IMeasureResolver;
 import eu.solven.adhoc.measure.model.ITableMeasure;
 import eu.solven.adhoc.measure.transformator.IHasUnderlyingMeasures;
 import eu.solven.adhoc.measure.transformator.step.IMeasureQueryStep;
+import eu.solven.adhoc.model.column.ColumnWithCalculatedCoordinates;
 import eu.solven.adhoc.model.column.FunctionCalculatedColumn;
 import eu.solven.adhoc.model.column.IAdhocColumn;
 import eu.solven.adhoc.model.measure.Aggregator;
