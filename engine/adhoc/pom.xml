@@ -24,7 +24,7 @@
 			<groupId>org.jspecify</groupId>
 			<artifactId>jspecify</artifactId>
 		</dependency>
-		
+
 		<!-- https://mvnrepository.com/artifact/org.duckdb/duckdb_jdbc -->
 		<dependency>
 			<groupId>org.duckdb</groupId>
