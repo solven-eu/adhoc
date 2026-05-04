@@ -41,6 +41,7 @@ import eu.solven.adhoc.util.IHasName;
 // https://dax.guide/st/measure/
 // `@JsonTypeInfo` is ambiguous given MeasureSetFromResources. But it is useful for SchemaMetadata
 // https://github.com/FasterXML/jackson-databind/issues/4983
+// Jackson 3.2
 @JsonTypeInfo(use = JsonTypeInfo.Id.MINIMAL_CLASS, property = "type", defaultImpl = ReferencedMeasure.class)
 @JsonSubTypes({ @JsonSubTypes.Type(value = ReferencedMeasure.class, name = "ref"), })
 public interface IMeasure extends IHasName, IHasTags {

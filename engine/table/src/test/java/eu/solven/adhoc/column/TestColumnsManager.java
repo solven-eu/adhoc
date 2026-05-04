@@ -27,6 +27,7 @@ import java.util.Set;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import eu.solven.adhoc.model.column.TableExpressionColumn;
 import eu.solven.adhoc.model.query.IGroupBy;
 import eu.solven.adhoc.model.query.groupby.GroupByColumns;
 import eu.solven.adhoc.table.transcoder.AliasingContext;

@@ -38,5 +38,7 @@ import eu.solven.adhoc.util.IHasName;
 		property = "type",
 		defaultImpl = ReferencedColumn.class)
 @FunctionalInterface
+// https://github.com/FasterXML/jackson-databind/issues/4983
+// Jackson 3.2
 public interface IAdhocColumn extends IHasName {
 }

@@ -30,6 +30,7 @@ import org.junit.jupiter.api.Test;
 import eu.solven.adhoc.cuboid.slice.SliceHelpers;
 import eu.solven.adhoc.dataframe.row.TabularRecordOverMaps;
 import eu.solven.adhoc.filter.AdhocPublicJackson;
+import eu.solven.adhoc.model.column.EvaluatedExpressionColumn;
 import eu.solven.adhoc.model.column.IAdhocColumn;
 import eu.solven.adhoc.model.query.groupby.GroupByColumns;
 import eu.solven.pepper.collection.MapWithNulls;

@@ -20,9 +20,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.column;
+package eu.solven.adhoc.model.column;
 
-import eu.solven.adhoc.model.column.IAdhocColumn;
 import eu.solven.adhoc.model.query.groupby.IHasSqlExpression;
 import eu.solven.adhoc.table.ITableWrapper;
 import lombok.Builder;

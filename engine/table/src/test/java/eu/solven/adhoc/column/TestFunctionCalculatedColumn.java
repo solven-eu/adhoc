@@ -26,6 +26,7 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.column.calculated.ICalculatedColumn;
+import eu.solven.adhoc.model.column.FunctionCalculatedColumn;
 import eu.solven.adhoc.model.column.ReferencedColumn;
 import eu.solven.adhoc.model.query.groupby.GroupByColumns;
 import eu.solven.pepper.unittest.PepperJackson3TestHelper;

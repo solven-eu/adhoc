@@ -37,6 +37,7 @@ import eu.solven.adhoc.dataframe.tabular.MapBasedTabularView;
 import eu.solven.adhoc.engine.query.CubeQuery;
 import eu.solven.adhoc.engine.tabular.optimizer.CubeWrapperEditor;
 import eu.solven.adhoc.measure.sum.SumAggregation;
+import eu.solven.adhoc.model.column.FunctionCalculatedColumn;
 import eu.solven.adhoc.model.measure.Aggregator;
 import eu.solven.adhoc.table.transcoder.MapTableAliaser;
 

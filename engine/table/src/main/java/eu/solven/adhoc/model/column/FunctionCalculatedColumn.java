@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.column;
+package eu.solven.adhoc.model.column;
 
 import java.util.Collection;
 import java.util.LinkedHashSet;
@@ -35,7 +35,6 @@ import eu.solven.adhoc.column.calculated.ICalculatedColumn;
 import eu.solven.adhoc.cuboid.slice.Slice;
 import eu.solven.adhoc.cuboid.tabular.ITabularGroupByRecord;
 import eu.solven.adhoc.dataframe.row.ITabularRecord;
-import eu.solven.adhoc.model.column.ReferencedColumn;
 import eu.solven.adhoc.model.query.IGroupBy;
 import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.table.ITableWrapper;
