@@ -186,3 +186,10 @@ Pivotable.
 The reference Spring Boot web application wrapping Adhoc. It exposes cube queries over HTTP (REST +
 optional GraphQL) and provides a Vue.js front-end. `Pivotable` is to `Adhoc` what a web server is
 to a query engine.
+
+---
+
+## See also
+
+- [Foundations](foundations.md) — the conceptual underpinnings (OLAP, DAGs, Boolean algebra of filters, aggregator linearity) behind the terms above.
+- [Concepts](concepts.md) — concrete architecture and query flow that use these terms.

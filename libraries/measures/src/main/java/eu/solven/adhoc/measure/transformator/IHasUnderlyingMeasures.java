@@ -34,6 +34,7 @@ public interface IHasUnderlyingMeasures extends IHasUnderlyingNames {
 
 	// AWKWARD Enables IMeasure not to know about ICuboid
 	default String queryStepClass() {
-		return "eu.solven.adhoc.measure.transformator.step.%sQueryStep".formatted(this.getClass().getSimpleName());
+		return IHasUnderlyingMeasures.class.getPackageName()
+				+ ".step.%sQueryStep".formatted(this.getClass().getSimpleName());
 	}
 }

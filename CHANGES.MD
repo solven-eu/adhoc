@@ -11,6 +11,9 @@ We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 
 Bump to 0.1.0 to mark the move to JDK 25 (still 0.x — Adhoc is not yet API-stable).
 
+### Added
+- `RoutingMeasure` (`engine/adhoc`, package `eu.solven.adhoc.measure.routing`): an `ICombinator`-style measure that dispatches each `CubeQueryStep` to one of several declared underlying measures via a caller-provided `Function<CubeQueryStep, String>`. Useful for migrations (typically Atoti → Adhoc) where a logical measure maps to different physical measures depending on the slice — e.g. one underlying for data before a modelling cutoff, another for data after. The function returns exactly one underlying name per step, so the framework cannot detect cross-boundary queries; callers must ensure their queries do not straddle the routing boundary, or accept silent dispatch to whichever branch the function chose. Because the function field is not Jackson-serializable, instances must be registered programmatically and cannot be declared in a measure-forest YAML/JSON resource file.
+
 ### Changed
 - Aggregator restructuring: the `adhoc` and `adhoc-table` Maven modules are now nested under a new `engine/` aggregator pom (`adhoc-engine`). The `adhoc-table` folder has been renamed `engine/table/`. Artifact coordinates (`eu.solven.adhoc:adhoc`, `eu.solven.adhoc:adhoc-table`) are unchanged; only the source-tree layout and the project version are affected.
 - `adhoc-model`: every package now declares `@NullMarked` (JSpecify) via `package-info.java` — parameters, return types and fields are non-null by default; explicit `@Nullable` opt-outs are required for legitimately-nullable references.
