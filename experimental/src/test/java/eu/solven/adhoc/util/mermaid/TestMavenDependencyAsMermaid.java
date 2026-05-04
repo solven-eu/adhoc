@@ -92,8 +92,8 @@ public class TestMavenDependencyAsMermaid {
 		Assertions.assertThat(graph.containsVertex("adhoc")).isTrue();
 		boolean experimentalDependsOnAdhoc = graph.outgoingEdgesOf("adhoc-experimental")
 				.stream()
-				.anyMatch(e -> "adhoc".equals(graph.getEdgeTarget(e)));
-		Assertions.assertThat(experimentalDependsOnAdhoc).as("adhoc-experimental should depend on adhoc").isTrue();
+				.anyMatch(e -> "adhoc-cube".equals(graph.getEdgeTarget(e)));
+		Assertions.assertThat(experimentalDependsOnAdhoc).as("adhoc-experimental should depend on adhoc-cube").isTrue();
 
 		// pivotable-server depends on pivotable-server-core
 		boolean serverDependsOnCore = graph.outgoingEdgesOf("pivotable-server")

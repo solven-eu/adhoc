@@ -4,6 +4,7 @@ flowchart LR
     adhoc_bom["adhoc-bom"]
     adhoc_calcite["adhoc-calcite"]
     adhoc_cell["adhoc-cell"]
+    adhoc_cube["adhoc-cube"]
     adhoc_dataframe["adhoc-dataframe"]
     adhoc_encoding["adhoc-encoding"]
     adhoc_engine["adhoc-engine"]
@@ -35,24 +36,25 @@ flowchart LR
         aggregator_adhoc["aggregator-adhoc"]
     end
 
-    adhoc --> adhoc_dataframe
-    adhoc --> adhoc_encoding
-    adhoc --> adhoc_model
-    adhoc --> adhoc_table
+    adhoc --> adhoc_cube
     adhoc_atoti --> adhoc
-    adhoc_calcite --> adhoc
+    adhoc_calcite --> adhoc_cube
     adhoc_cell --> adhoc_encoding
     adhoc_cell --> adhoc_filters
+    adhoc_cube --> adhoc_dataframe
+    adhoc_cube --> adhoc_encoding
+    adhoc_cube --> adhoc_model
+    adhoc_cube --> adhoc_table
     adhoc_dataframe --> adhoc_cell
     adhoc_dataframe --> adhoc_encoding
     adhoc_dataframe --> adhoc_measures
     adhoc_dataframe --> adhoc_model
     adhoc_encoding --> adhoc_fsst
     adhoc_encoding --> adhoc_model
-    adhoc_experimental --> adhoc
+    adhoc_experimental --> adhoc_cube
     adhoc_filters --> adhoc_model
     adhoc_measures --> adhoc_cell
-    adhoc_spring --> adhoc
+    adhoc_spring --> adhoc_cube
     adhoc_table --> adhoc_cell
     adhoc_table --> adhoc_dataframe
     adhoc_table --> adhoc_encoding
