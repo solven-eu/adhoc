@@ -24,11 +24,15 @@ package eu.solven.adhoc.dataframe.aggregating;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.function.IntPredicate;
 
 import org.jspecify.annotations.Nullable;
+import org.roaringbitmap.RoaringBitmap;
 
 import eu.solven.adhoc.dataframe.column.IMultitypeColumn;
 import eu.solven.adhoc.dataframe.column.IMultitypeColumnFastGet;
+import eu.solven.adhoc.dataframe.column.IMultitypeIntColumnFastGet;
+import eu.solven.adhoc.dataframe.column.UndictionarizedColumn;
 import eu.solven.adhoc.dataframe.column.navigable.IHasSortedLeg;
 import eu.solven.adhoc.dataframe.row.ITabularRecordStream;
 import eu.solven.adhoc.dataframe.tabular.IMultitypeMergeableGrid;
@@ -36,6 +40,9 @@ import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.model.IAliasedAggregator;
 import eu.solven.adhoc.measure.operator.IOperatorFactory;
 import eu.solven.adhoc.measure.operator.StandardOperatorFactory;
+import it.unimi.dsi.fastutil.ints.Int2ObjectFunction;
+import it.unimi.dsi.fastutil.ints.IntArrayList;
+import it.unimi.dsi.fastutil.objects.Object2IntFunction;
 import lombok.Builder.Default;
 import lombok.NonNull;
 import lombok.experimental.SuperBuilder;
@@ -169,4 +176,35 @@ public abstract class AAggregatingColumns<T extends Comparable<T>, K> implements
 				_ -> operatorFactory.makeAggregation(aggregator.getAggregator()));
 	}
 
+	@SuppressWarnings("PMD.LooseCoupling")
+	protected IMultitypeColumnFastGet<T> undictionarizeColumn(IMultitypeIntColumnFastGet column,
+			Object2IntFunction<T> sliceToIndex,
+			Int2ObjectFunction<T> indexToSlice,
+			long nbSorted) {
+
+		// BEWARE In edge-cases, the navigable column may be interlaced with the hash column. TODO Improve the detection
+		// of this case to skip the bitmap creation.
+		// Snapshot the sorted-prefix index set from the source column's natural stream order *before* copying, so the
+		// bitmap reflects which original indices belong to the slice-ascending head of the dictionarization. The
+		// wrapper then uses this bitmap as its sortedLeg predicate, independent of the destination column's own key
+		// ordering.
+		int nbSortedInt = (int) nbSorted;
+		IntPredicate bitmap = makeIntPredicate(column, nbSortedInt);
+
+		return UndictionarizedColumn.<T>builder()
+				.indexToSlice(indexToSlice)
+				.sliceToIndex(sliceToIndex)
+				.column(column)
+				.sortedLength(nbSortedInt)
+				.sortedLeg(bitmap)
+				.build();
+	}
+
+	protected IntPredicate makeIntPredicate(IMultitypeIntColumnFastGet column, int nbSortedInt) {
+		IntArrayList intArrayList = new IntArrayList(nbSortedInt);
+		column.limit(nbSortedInt).forEach(s -> intArrayList.add(s.getSlice().intValue()));
+
+		RoaringBitmap bitmap = RoaringBitmap.bitmapOf(intArrayList.elements());
+		return bitmap::contains;
+	}
 }

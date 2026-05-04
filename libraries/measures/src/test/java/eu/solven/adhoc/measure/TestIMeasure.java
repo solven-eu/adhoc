@@ -26,9 +26,9 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.measure.combination.CoalesceCombination;
-import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.model.MeasureHelpers;
 import eu.solven.adhoc.measure.sum.SumCombination;
+import eu.solven.adhoc.model.measure.Combinator;
 import eu.solven.adhoc.model.measure.ReferencedMeasure;
 
 public class TestIMeasure {

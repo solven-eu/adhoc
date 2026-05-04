@@ -40,10 +40,10 @@ import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.filter.value.EqualsMatcher;
 import eu.solven.adhoc.filter.value.IValueMatcher;
 import eu.solven.adhoc.filter.value.InMatcher;
-import eu.solven.adhoc.measure.model.Aggregator;
-import eu.solven.adhoc.measure.model.Filtrator;
-import eu.solven.adhoc.measure.model.Shiftor;
+import eu.solven.adhoc.model.measure.Aggregator;
+import eu.solven.adhoc.model.measure.Filtrator;
 import eu.solven.adhoc.model.measure.IMeasure;
+import eu.solven.adhoc.model.measure.Shiftor;
 import lombok.experimental.UtilityClass;
 
 /**

@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.measure.model;
+package eu.solven.adhoc.model.measure;
 
 import java.util.List;
 
@@ -29,14 +29,16 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
-import eu.solven.adhoc.filter.ISliceFilter;
-import eu.solven.adhoc.measure.AdhocIdentity;
-import eu.solven.adhoc.measure.lambda.LambdaCombination;
-import eu.solven.adhoc.measure.lambda.LambdaEditor;
-import eu.solven.adhoc.measure.lambda.LambdaEditor.ILambdaFilterEditor;
-import eu.solven.adhoc.measure.transformator.IHasUnderlyingMeasures;
+import eu.solven.adhoc.measure.aggregation.IAggregation;
+import eu.solven.adhoc.measure.sum.SumAggregation;
+import eu.solven.adhoc.measure.sum.SumCombination;
+import eu.solven.adhoc.measure.transformator.ICombineUnderlyingMeasures;
+import eu.solven.adhoc.measure.transformator.IHasAggregationKey;
 import eu.solven.adhoc.model.measure.IMeasure;
+import eu.solven.adhoc.model.query.IGroupBy;
+import eu.solven.adhoc.model.query.IHasGroupBy;
 import lombok.Builder;
+import lombok.Builder.Default;
 import lombok.NonNull;
 import lombok.Singular;
 import lombok.Value;
@@ -45,19 +47,19 @@ import lombok.extern.jackson.Jacksonized;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * A {@link Shiftor} is an {@link IMeasure} which is enables modifying the slice to which underlying are queried.
- * 
- * It relates with {@link Filtrator} (which AND with a hardcoded {@link ISliceFilter}).
- * 
- * It relates with {@link Unfiltrator} (which remove some columns from the queryStep {@link ISliceFilter}).
+ * This {@link IMeasure} will aggregate underlying measure, evaluated at buckets defined by a {@link IGroupBy}, and
+ * aggregated through an {@link IAggregation}.
  *
+ * A typical use-case is the Foreign-Exchange conversion, as we need to evaluate underlying measures on a per-currency
+ * basis.
+ * 
  * @author Benoit Lacelle
  */
 @Value
 @Builder(toBuilder = true)
-@Jacksonized
 @Slf4j
-public class Shiftor implements IMeasure, IHasUnderlyingMeasures {
+@Jacksonized
+public class Partitionor implements IMeasure, ICombineUnderlyingMeasures, IHasAggregationKey, IHasGroupBy {
 	@NonNull
 	String name;
 
@@ -67,30 +69,34 @@ public class Shiftor implements IMeasure, IHasUnderlyingMeasures {
 	ImmutableSet<String> tags;
 
 	@NonNull
-	String underlying;
+	@Singular
+	ImmutableList<String> underlyings;
 
 	@NonNull
-	@Builder.Default
-	String editorKey = AdhocIdentity.KEY;
+	@Default
+	String aggregationKey = SumAggregation.KEY;
 
 	@NonNull
 	@Singular
-	ImmutableMap<String, ?> editorOptions;
+	ImmutableMap<String, ?> aggregationOptions;
+
+	// Accept a combinator key, to be applied on each groupBy
+	@NonNull
+	@Default
+	String combinationKey = SumCombination.KEY;
+
+	@NonNull
+	@Singular
+	ImmutableMap<String, ?> combinationOptions;
+
+	@NonNull
+	@Default
+	IGroupBy groupBy = IGroupBy.GRAND_TOTAL;
 
 	@JsonIgnore
 	@Override
 	public List<String> getUnderlyingNames() {
-		return ImmutableList.of(underlying);
+		return getUnderlyings();
 	}
 
-	/**
-	 * Lombok @Builder
-	 */
-	// Builder fields populated via chained setters before .build(); NullAway can't see the cross-method init.
-	@SuppressWarnings("NullAway.Init")
-	public static class ShiftorBuilder {
-		public ShiftorBuilder lambda(ILambdaFilterEditor lambda) {
-			return editorKey(LambdaEditor.class.getName()).editorOption(LambdaCombination.K_LAMBDA, lambda);
-		}
-	}
 }

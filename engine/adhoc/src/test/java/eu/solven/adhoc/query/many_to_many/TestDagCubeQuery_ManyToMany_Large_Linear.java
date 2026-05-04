@@ -51,9 +51,9 @@ import eu.solven.adhoc.filter.value.IValueMatcher;
 import eu.solven.adhoc.measure.decomposition.IDecomposition;
 import eu.solven.adhoc.measure.decomposition.many2many.IManyToMany1DDefinition;
 import eu.solven.adhoc.measure.decomposition.many2many.ManyToMany1DDecomposition;
-import eu.solven.adhoc.measure.model.Dispatchor;
 import eu.solven.adhoc.measure.operator.IOperatorFactory;
 import eu.solven.adhoc.measure.operator.StandardOperatorFactory;
+import eu.solven.adhoc.model.measure.Dispatchor;
 import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
 import lombok.NonNull;
 

@@ -32,9 +32,9 @@ import com.google.common.collect.SetMultimap;
 
 import eu.solven.adhoc.filter.AndFilter;
 import eu.solven.adhoc.filter.ColumnFilter;
-import eu.solven.adhoc.measure.model.Aggregator;
-import eu.solven.adhoc.measure.model.Filtrator;
-import eu.solven.adhoc.measure.model.Shiftor;
+import eu.solven.adhoc.model.measure.Aggregator;
+import eu.solven.adhoc.model.measure.Filtrator;
+import eu.solven.adhoc.model.measure.Shiftor;
 
 public class TestMeasureForestAnalyzer {
 

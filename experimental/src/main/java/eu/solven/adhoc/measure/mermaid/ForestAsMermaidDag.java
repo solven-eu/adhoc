@@ -30,13 +30,13 @@ import java.util.Set;
 import com.google.common.collect.ImmutableList;
 
 import eu.solven.adhoc.measure.forest.IMeasureForest;
-import eu.solven.adhoc.measure.model.Aggregator;
-import eu.solven.adhoc.measure.model.Combinator;
-import eu.solven.adhoc.measure.model.Dispatchor;
-import eu.solven.adhoc.measure.model.Filtrator;
-import eu.solven.adhoc.measure.model.Partitionor;
 import eu.solven.adhoc.measure.transformator.IHasUnderlyingMeasures;
+import eu.solven.adhoc.model.measure.Aggregator;
+import eu.solven.adhoc.model.measure.Combinator;
+import eu.solven.adhoc.model.measure.Dispatchor;
+import eu.solven.adhoc.model.measure.Filtrator;
 import eu.solven.adhoc.model.measure.IMeasure;
+import eu.solven.adhoc.model.measure.Partitionor;
 import eu.solven.adhoc.resource.MeasureForests;
 import lombok.Builder;
 import lombok.Value;

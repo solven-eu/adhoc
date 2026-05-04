@@ -40,8 +40,8 @@ import com.google.cloud.bigquery.BigQueryOptions;
 import com.google.cloud.http.HttpTransportOptions;
 
 import eu.solven.adhoc.column.TableExpressionColumn;
-import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.model.column.ReferencedColumn;
+import eu.solven.adhoc.model.measure.Aggregator;
 import eu.solven.adhoc.model.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.query.top.AdhocTopClause;

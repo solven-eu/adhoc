@@ -27,7 +27,7 @@ import java.util.List;
 import org.jspecify.annotations.Nullable;
 
 import eu.solven.adhoc.measure.aggregation.carrier.IAggregationCarrier;
-import eu.solven.adhoc.measure.model.Combinator;
+import eu.solven.adhoc.model.measure.Combinator;
 import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.primitive.IValueReceiver;
 

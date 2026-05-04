@@ -24,6 +24,8 @@ package eu.solven.adhoc.measure.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
+import eu.solven.adhoc.model.measure.Aggregator;
+
 /**
  * Wraps an {@link Aggregator} with an alias. This is useful when a given {@link Aggregator} is referenced multiple
  * times in a {@link TableQueryV2}.

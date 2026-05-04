@@ -30,7 +30,7 @@ import org.assertj.core.api.Assertions;
 import eu.solven.adhoc.ATestDagInMemory;
 import eu.solven.adhoc.dataframe.tabular.ITabularView;
 import eu.solven.adhoc.engine.query.CubeQuery;
-import eu.solven.adhoc.measure.model.Aggregator;
+import eu.solven.adhoc.model.measure.Aggregator;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.InMemoryTable;
 import io.cucumber.datatable.DataTable;

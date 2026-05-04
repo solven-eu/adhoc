@@ -20,13 +20,15 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.measure.model;
+package eu.solven.adhoc.model.measure;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.measure.lambda.LambdaAggregation;
 import eu.solven.adhoc.measure.lambda.LambdaAggregation.ILambdaAggregation;
+import eu.solven.adhoc.measure.model.IAliasedAggregator;
+import eu.solven.adhoc.measure.model.ITableMeasure;
 import eu.solven.adhoc.measure.sum.CountAggregation;
 import eu.solven.adhoc.measure.sum.EmptyAggregation;
 import eu.solven.adhoc.measure.sum.SumAggregation;

@@ -54,7 +54,7 @@
 
 		<!-- https://mvnrepository.com/artifact/org.roaringbitmap/RoaringBitmap -->
 		<dependency>
-			<!-- Used as null-bitset in MultitypeArrayColumn -->
+			<!-- Used as int-set bitmap in AggregatingColumns -->
 			<groupId>org.roaringbitmap</groupId>
 			<artifactId>RoaringBitmap</artifactId>
 			<!-- Can not upgrade due to

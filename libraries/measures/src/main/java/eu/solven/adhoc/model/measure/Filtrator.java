@@ -20,20 +20,19 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.measure.model;
+package eu.solven.adhoc.model.measure;
 
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
-import eu.solven.adhoc.measure.sum.SumCombination;
-import eu.solven.adhoc.measure.transformator.ICombinator;
+import eu.solven.adhoc.filter.ISliceFilter;
+import eu.solven.adhoc.filter.editor.IFilterEditor;
+import eu.solven.adhoc.measure.transformator.IHasUnderlyingMeasures;
 import eu.solven.adhoc.model.measure.IMeasure;
 import lombok.Builder;
-import lombok.Builder.Default;
 import lombok.NonNull;
 import lombok.Singular;
 import lombok.Value;
@@ -42,34 +41,30 @@ import lombok.extern.jackson.Jacksonized;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * A {@link Columnator} is a {@link IMeasure} which applies its logic only if given columns are expressed. A column is
- * expressed if it groupedBy, or if it is mono-selected (e.g. with a simple `EqualsMatcher`).
- * 
- * If the flag `required` is turned to `false`, this turns into a `rejected` behavior: given columns must not be
- * filtered at all.
- * 
+ * A {@link Filtrator} is a specialisation of {@link Shiftor} where the {@link IFilterEditor} always ANDs a fixed,
+ * hardcoded {@link ISliceFilter} onto the query filter. Because this pattern is extremely common (e.g. "always restrict
+ * to {@code country=FR}"), {@link Filtrator} provides a simpler builder that does not require implementing a full
+ * {@link IFilterEditor}.
+ *
+ * <p>
+ * The effective filter passed to the underlying measure is:
+ *
+ * <pre>
+ * effective = queryStep.filter AND filtrator.filter
+ * </pre>
+ *
+ * <p>
+ * The result is always written back to the original (un-filtered) slice coordinates.
+ *
+ * @see Shiftor the generalisation that supports arbitrary filter transformations via {@link IFilterEditor}
+ * @see Unfiltrator the counterpart that widens (removes) filter constraints
  * @author Benoit Lacelle
  */
 @Value
 @Builder(toBuilder = true)
 @Jacksonized
 @Slf4j
-// BEWARE This is a poorly named class. It shall be renamed at some point.
-public class Columnator implements ICombinator {
-	/**
-	 * Different modes describing how columns has to be hidden.
-	 * 
-	 * @author Benoit Lacelle
-	 */
-	// https://stackoverflow.com/questions/3069743/coding-conventions-naming-enums
-	@SuppressWarnings("PMD.FieldNamingConventions")
-	public enum Mode {
-		// required: the selected columns are required in the slice, else null
-		HideIfMissing,
-		// rejected: the select columns must be missing from the slice, else null
-		HideIfPresent,
-	}
-
+public class Filtrator implements IMeasure, IHasUnderlyingMeasures {
 	@NonNull
 	String name;
 
@@ -79,36 +74,15 @@ public class Columnator implements ICombinator {
 	ImmutableSet<String> tags;
 
 	@NonNull
-	@Singular
-	ImmutableSet<String> columns;
-
-	// required=true: the selected columns are required in the slice.
-	// else rejected: the select columns must be missing from the slice.
-	@Default
-	Mode mode = Mode.HideIfMissing;
+	String underlying;
 
 	@NonNull
-	@Singular
-	ImmutableList<String> underlyings;
-
-	/**
-	 * @see eu.solven.adhoc.measure.combination.ICombination
-	 */
-	@NonNull
-	@Default
-	String combinationKey = SumCombination.KEY;
-
-	/**
-	 * @see eu.solven.adhoc.measure.combination.ICombination
-	 */
-	@NonNull
-	@Singular
-	ImmutableMap<String, ?> combinationOptions;
+	ISliceFilter filter;
 
 	@JsonIgnore
 	@Override
 	public List<String> getUnderlyingNames() {
-		return underlyings;
+		return ImmutableList.of(underlying);
 	}
 
 }

@@ -37,9 +37,9 @@ import eu.solven.adhoc.engine.query.CubeQuery;
 import eu.solven.adhoc.measure.aggregation.comparable.MaxAggregation;
 import eu.solven.adhoc.measure.aggregation.comparable.MinAggregation;
 import eu.solven.adhoc.measure.aggregation.comparable.RankAggregation;
-import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.sum.CountAggregation;
 import eu.solven.adhoc.measure.sum.SumAggregation;
+import eu.solven.adhoc.model.measure.Aggregator;
 
 public class TestDagTransformator_Aggregator extends ATestDagInMemory implements IAdhocTestConstants {
 	@Override

@@ -43,7 +43,7 @@ import eu.solven.adhoc.filter.editor.SimpleFilterEditor;
 import eu.solven.adhoc.filter.value.ComparingMatcher;
 import eu.solven.adhoc.measure.decomposition.CumulatingDecomposition;
 import eu.solven.adhoc.measure.decomposition.DuplicatingDecomposition;
-import eu.solven.adhoc.measure.model.Dispatchor;
+import eu.solven.adhoc.model.measure.Dispatchor;
 
 public class TestDagCubeQuery_CumulatingDecomposition extends ATestDagInMemory implements IAdhocTestConstants {
 

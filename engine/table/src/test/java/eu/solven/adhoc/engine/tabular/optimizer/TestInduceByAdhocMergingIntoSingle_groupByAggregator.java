@@ -48,7 +48,7 @@ import eu.solven.adhoc.filter.optimizer.FilterOptimizerWithCache;
 import eu.solven.adhoc.filter.optimizer.IFilterOptimizerFactory;
 import eu.solven.adhoc.filter.stripper.FilterStripperFactory;
 import eu.solven.adhoc.filter.stripper.FilterStripperUnsafe;
-import eu.solven.adhoc.measure.model.Aggregator;
+import eu.solven.adhoc.model.measure.Aggregator;
 import eu.solven.adhoc.model.query.groupby.GroupByColumns;
 import eu.solven.adhoc.options.IHasOptionsAndExecutorService;
 import eu.solven.adhoc.query.table.TableQuery;

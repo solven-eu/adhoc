@@ -25,8 +25,8 @@ package eu.solven.adhoc.measure;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.sum.SumAggregation;
+import eu.solven.adhoc.model.measure.Aggregator;
 import eu.solven.adhoc.model.measure.IMeasure;
 import eu.solven.pepper.unittest.PepperJackson3TestHelper;
 import eu.solven.pepper.unittest.PepperTestHelper;
@@ -110,7 +110,15 @@ public class TestAggregator {
 						.build());
 
 		Assertions.assertThat(asString).isEqualTo("""
-
-				""");
+				{
+				  "type" : ".Aggregator",
+				  "aggregationKey" : "someKey",
+				  "aggregationOptions" : {
+				    "someOptionKey" : "someOptionValue"
+				  },
+				  "columnName" : "otherColumnName",
+				  "name" : "someName",
+				  "tags" : [ "someTag" ]
+				}""");
 	}
 }

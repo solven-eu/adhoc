@@ -34,14 +34,14 @@ import eu.solven.adhoc.filter.editor.SimpleFilterEditor;
 import eu.solven.adhoc.filter.value.IValueMatcher;
 import eu.solven.adhoc.measure.aggregation.comparable.MaxCombination;
 import eu.solven.adhoc.measure.combination.EvaluatedExpressionCombination;
-import eu.solven.adhoc.measure.model.Aggregator;
-import eu.solven.adhoc.measure.model.Combinator;
-import eu.solven.adhoc.measure.model.Dispatchor;
-import eu.solven.adhoc.measure.model.Filtrator;
-import eu.solven.adhoc.measure.model.Partitionor;
-import eu.solven.adhoc.measure.model.Shiftor;
-import eu.solven.adhoc.measure.model.Unfiltrator;
 import eu.solven.adhoc.measure.sum.SumAggregation;
+import eu.solven.adhoc.model.measure.Aggregator;
+import eu.solven.adhoc.model.measure.Combinator;
+import eu.solven.adhoc.model.measure.Dispatchor;
+import eu.solven.adhoc.model.measure.Filtrator;
+import eu.solven.adhoc.model.measure.Partitionor;
+import eu.solven.adhoc.model.measure.Shiftor;
+import eu.solven.adhoc.model.measure.Unfiltrator;
 import eu.solven.adhoc.model.query.groupby.GroupByColumns;
 
 public interface IAdhocTestConstants {

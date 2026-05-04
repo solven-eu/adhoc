@@ -20,69 +20,44 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.measure.model;
+package eu.solven.adhoc.model.measure;
 
 import java.util.List;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
-import eu.solven.adhoc.filter.ISliceFilter;
-import eu.solven.adhoc.filter.editor.IFilterEditor;
 import eu.solven.adhoc.measure.transformator.IHasUnderlyingMeasures;
 import eu.solven.adhoc.model.measure.IMeasure;
 import lombok.Builder;
+import lombok.Builder.Default;
 import lombok.NonNull;
-import lombok.Singular;
 import lombok.Value;
 import lombok.With;
 import lombok.extern.jackson.Jacksonized;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * A {@link Filtrator} is a specialisation of {@link Shiftor} where the {@link IFilterEditor} always ANDs a fixed,
- * hardcoded {@link ISliceFilter} onto the query filter. Because this pattern is extremely common (e.g. "always restrict
- * to {@code country=FR}"), {@link Filtrator} provides a simpler builder that does not require implementing a full
- * {@link IFilterEditor}.
- *
- * <p>
- * The effective filter passed to the underlying measure is:
- *
- * <pre>
- * effective = queryStep.filter AND filtrator.filter
- * </pre>
- *
- * <p>
- * The result is always written back to the original (un-filtered) slice coordinates.
- *
- * @see Shiftor the generalisation that supports arbitrary filter transformations via {@link IFilterEditor}
- * @see Unfiltrator the counterpart that widens (removes) filter constraints
+ * This is a technical measure, useful for edge-cases (e.g. not throwing when requesting an unknown measure).
+ * 
  * @author Benoit Lacelle
+ *
  */
 @Value
-@Builder(toBuilder = true)
+@Builder
 @Jacksonized
 @Slf4j
-public class Filtrator implements IMeasure, IHasUnderlyingMeasures {
-	@NonNull
+public class EmptyMeasure implements IMeasure, IHasUnderlyingMeasures {
 	String name;
 
 	@NonNull
-	@Singular
+	@Default
 	@With
-	ImmutableSet<String> tags;
+	ImmutableSet<String> tags = ImmutableSet.of("technical");
 
-	@NonNull
-	String underlying;
-
-	@NonNull
-	ISliceFilter filter;
-
-	@JsonIgnore
 	@Override
 	public List<String> getUnderlyingNames() {
-		return ImmutableList.of(underlying);
+		return ImmutableList.of();
 	}
 
 }

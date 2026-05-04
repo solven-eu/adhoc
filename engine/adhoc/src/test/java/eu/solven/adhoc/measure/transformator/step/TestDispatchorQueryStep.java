@@ -37,7 +37,7 @@ import eu.solven.adhoc.engine.step.SliceAsMapWithStep;
 import eu.solven.adhoc.factories.AdhocFactories;
 import eu.solven.adhoc.filter.AndFilter;
 import eu.solven.adhoc.filter.ISliceFilter;
-import eu.solven.adhoc.measure.model.Dispatchor;
+import eu.solven.adhoc.model.measure.Dispatchor;
 import eu.solven.adhoc.model.query.IGroupBy;
 import eu.solven.adhoc.model.query.groupby.GroupByColumns;
 

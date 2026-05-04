@@ -29,7 +29,7 @@ import com.quartetfs.fwk.Registry;
 import com.quartetfs.fwk.contributions.impl.AnnotationContributionProvider;
 
 import eu.solven.adhoc.engine.context.QueryPod;
-import eu.solven.adhoc.measure.model.Aggregator;
+import eu.solven.adhoc.model.measure.Aggregator;
 import eu.solven.adhoc.query.table.FilteredAggregator;
 import eu.solven.adhoc.query.table.TableQueryV2;
 

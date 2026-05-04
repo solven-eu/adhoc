@@ -41,7 +41,7 @@ import eu.solven.adhoc.engine.step.TableQueryStep;
 import eu.solven.adhoc.engine.tabular.optimizer.SplitTableQueries;
 import eu.solven.adhoc.engine.tabular.optimizer.TableQueryFactory;
 import eu.solven.adhoc.factories.AdhocFactories;
-import eu.solven.adhoc.measure.model.Aggregator;
+import eu.solven.adhoc.model.measure.Aggregator;
 import eu.solven.adhoc.model.query.IGroupBy;
 import eu.solven.adhoc.options.StandardQueryOptions;
 import eu.solven.adhoc.query.table.FilteredAggregator;

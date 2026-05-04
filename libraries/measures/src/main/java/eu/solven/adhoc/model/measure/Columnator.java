@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.measure.model;
+package eu.solven.adhoc.model.measure;
 
 import java.util.List;
 
@@ -29,14 +29,9 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
-import eu.solven.adhoc.measure.aggregation.IAggregation;
-import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.measure.sum.SumCombination;
-import eu.solven.adhoc.measure.transformator.ICombineUnderlyingMeasures;
-import eu.solven.adhoc.measure.transformator.IHasAggregationKey;
+import eu.solven.adhoc.measure.transformator.ICombinator;
 import eu.solven.adhoc.model.measure.IMeasure;
-import eu.solven.adhoc.model.query.IGroupBy;
-import eu.solven.adhoc.model.query.IHasGroupBy;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;
@@ -47,19 +42,34 @@ import lombok.extern.jackson.Jacksonized;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * This {@link IMeasure} will aggregate underlying measure, evaluated at buckets defined by a {@link IGroupBy}, and
- * aggregated through an {@link IAggregation}.
- *
- * A typical use-case is the Foreign-Exchange conversion, as we need to evaluate underlying measures on a per-currency
- * basis.
+ * A {@link Columnator} is a {@link IMeasure} which applies its logic only if given columns are expressed. A column is
+ * expressed if it groupedBy, or if it is mono-selected (e.g. with a simple `EqualsMatcher`).
+ * 
+ * If the flag `required` is turned to `false`, this turns into a `rejected` behavior: given columns must not be
+ * filtered at all.
  * 
  * @author Benoit Lacelle
  */
 @Value
 @Builder(toBuilder = true)
-@Slf4j
 @Jacksonized
-public class Partitionor implements IMeasure, ICombineUnderlyingMeasures, IHasAggregationKey, IHasGroupBy {
+@Slf4j
+// BEWARE This is a poorly named class. It shall be renamed at some point.
+public class Columnator implements ICombinator {
+	/**
+	 * Different modes describing how columns has to be hidden.
+	 * 
+	 * @author Benoit Lacelle
+	 */
+	// https://stackoverflow.com/questions/3069743/coding-conventions-naming-enums
+	@SuppressWarnings("PMD.FieldNamingConventions")
+	public enum Mode {
+		// required: the selected columns are required in the slice, else null
+		HideIfMissing,
+		// rejected: the select columns must be missing from the slice, else null
+		HideIfPresent,
+	}
+
 	@NonNull
 	String name;
 
@@ -70,33 +80,35 @@ public class Partitionor implements IMeasure, ICombineUnderlyingMeasures, IHasAg
 
 	@NonNull
 	@Singular
-	ImmutableList<String> underlyings;
+	ImmutableSet<String> columns;
 
-	@NonNull
+	// required=true: the selected columns are required in the slice.
+	// else rejected: the select columns must be missing from the slice.
 	@Default
-	String aggregationKey = SumAggregation.KEY;
+	Mode mode = Mode.HideIfMissing;
 
 	@NonNull
 	@Singular
-	ImmutableMap<String, ?> aggregationOptions;
+	ImmutableList<String> underlyings;
 
-	// Accept a combinator key, to be applied on each groupBy
+	/**
+	 * @see eu.solven.adhoc.measure.combination.ICombination
+	 */
 	@NonNull
 	@Default
 	String combinationKey = SumCombination.KEY;
 
+	/**
+	 * @see eu.solven.adhoc.measure.combination.ICombination
+	 */
 	@NonNull
 	@Singular
 	ImmutableMap<String, ?> combinationOptions;
 
-	@NonNull
-	@Default
-	IGroupBy groupBy = IGroupBy.GRAND_TOTAL;
-
 	@JsonIgnore
 	@Override
 	public List<String> getUnderlyingNames() {
-		return getUnderlyings();
+		return underlyings;
 	}
 
 }

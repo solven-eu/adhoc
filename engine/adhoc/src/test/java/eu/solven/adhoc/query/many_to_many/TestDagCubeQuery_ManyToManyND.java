@@ -49,9 +49,9 @@ import eu.solven.adhoc.measure.decomposition.many2many.IManyToManyNDDefinition;
 import eu.solven.adhoc.measure.decomposition.many2many.ManyToMany1DDecomposition;
 import eu.solven.adhoc.measure.decomposition.many2many.ManyToManyNDDecomposition;
 import eu.solven.adhoc.measure.decomposition.many2many.ManyToManyNDInMemoryDefinition;
-import eu.solven.adhoc.measure.model.Dispatchor;
 import eu.solven.adhoc.measure.operator.IOperatorFactory;
 import eu.solven.adhoc.measure.operator.StandardOperatorFactory;
+import eu.solven.adhoc.model.measure.Dispatchor;
 
 public class TestDagCubeQuery_ManyToManyND extends ATestDagInMemory implements IAdhocTestConstants {
 

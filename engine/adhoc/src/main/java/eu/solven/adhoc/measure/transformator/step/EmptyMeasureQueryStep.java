@@ -29,7 +29,7 @@ import com.google.common.collect.ImmutableList;
 import eu.solven.adhoc.cuboid.ICuboid;
 import eu.solven.adhoc.dataframe.column.Cuboid;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
-import eu.solven.adhoc.measure.model.EmptyMeasure;
+import eu.solven.adhoc.model.measure.EmptyMeasure;
 
 /**
  * {@link IMeasureQueryStep} for {@link EmptyMeasure}.

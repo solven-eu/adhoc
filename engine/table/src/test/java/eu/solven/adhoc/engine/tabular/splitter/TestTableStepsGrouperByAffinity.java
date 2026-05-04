@@ -33,7 +33,7 @@ import com.google.common.collect.ImmutableSet;
 import eu.solven.adhoc.engine.step.TableQueryStep;
 import eu.solven.adhoc.engine.tabular.grouper.TableStepsGrouperByAffinity;
 import eu.solven.adhoc.filter.ColumnFilter;
-import eu.solven.adhoc.measure.model.Aggregator;
+import eu.solven.adhoc.model.measure.Aggregator;
 import eu.solven.adhoc.model.query.groupby.GroupByColumns;
 
 public class TestTableStepsGrouperByAffinity {

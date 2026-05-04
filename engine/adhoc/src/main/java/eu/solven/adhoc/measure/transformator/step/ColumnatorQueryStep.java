@@ -32,7 +32,7 @@ import eu.solven.adhoc.filter.FilterHelpers;
 import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.filter.value.EqualsMatcher;
 import eu.solven.adhoc.filter.value.IValueMatcher;
-import eu.solven.adhoc.measure.model.Columnator;
+import eu.solven.adhoc.model.measure.Columnator;
 import eu.solven.adhoc.util.NotYetImplementedException;
 import lombok.extern.slf4j.Slf4j;
 

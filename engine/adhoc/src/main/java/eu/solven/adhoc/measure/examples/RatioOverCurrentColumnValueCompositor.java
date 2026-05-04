@@ -28,12 +28,12 @@ import java.util.Set;
 import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.measure.forest.IMeasureForestVisitor;
-import eu.solven.adhoc.measure.model.Columnator;
-import eu.solven.adhoc.measure.model.Combinator;
-import eu.solven.adhoc.measure.model.Partitionor;
-import eu.solven.adhoc.measure.model.Unfiltrator;
 import eu.solven.adhoc.measure.sum.DivideCombination;
+import eu.solven.adhoc.model.measure.Columnator;
+import eu.solven.adhoc.model.measure.Combinator;
 import eu.solven.adhoc.model.measure.IMeasure;
+import eu.solven.adhoc.model.measure.Partitionor;
+import eu.solven.adhoc.model.measure.Unfiltrator;
 import eu.solven.adhoc.model.query.groupby.GroupByColumns;
 
 /**

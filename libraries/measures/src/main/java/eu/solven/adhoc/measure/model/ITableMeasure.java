@@ -22,6 +22,7 @@
  */
 package eu.solven.adhoc.measure.model;
 
+import eu.solven.adhoc.model.measure.Aggregator;
 import eu.solven.adhoc.model.measure.IMeasure;
 
 /**

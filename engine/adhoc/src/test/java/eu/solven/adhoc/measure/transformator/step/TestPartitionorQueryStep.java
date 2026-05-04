@@ -30,7 +30,7 @@ import org.mockito.Mockito;
 
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.factories.IAdhocFactories;
-import eu.solven.adhoc.measure.model.Partitionor;
+import eu.solven.adhoc.model.measure.Partitionor;
 import eu.solven.adhoc.model.query.IGroupBy;
 import eu.solven.adhoc.model.query.groupby.GroupByColumns;
 

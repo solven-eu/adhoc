@@ -24,7 +24,7 @@ package eu.solven.adhoc.engine.tabular.splitter;
 
 import eu.solven.adhoc.engine.step.TableQueryStep;
 import eu.solven.adhoc.filter.ISliceFilter;
-import eu.solven.adhoc.measure.model.Aggregator;
+import eu.solven.adhoc.model.measure.Aggregator;
 import eu.solven.adhoc.model.query.IGroupBy;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

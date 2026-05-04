@@ -30,7 +30,7 @@ import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.engine.query.CubeQuery;
 import eu.solven.adhoc.filter.AdhocPublicJackson;
-import eu.solven.adhoc.measure.model.Aggregator;
+import eu.solven.adhoc.model.measure.Aggregator;
 import eu.solven.adhoc.options.StandardQueryOptions;
 import eu.solven.adhoc.query.InternalQueryOptions;
 import eu.solven.pepper.unittest.PepperJackson3TestHelper;

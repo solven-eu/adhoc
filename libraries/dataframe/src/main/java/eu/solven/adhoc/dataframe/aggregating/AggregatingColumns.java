@@ -26,6 +26,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.function.IntPredicate;
 import java.util.function.Supplier;
 
 import org.jspecify.annotations.Nullable;
@@ -48,8 +49,8 @@ import eu.solven.adhoc.factories.AdhocFactories;
 import eu.solven.adhoc.factories.IAdhocFactories;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.aggregation.carrier.IAggregationCarrier.IHasCarriers;
-import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.IAliasedAggregator;
+import eu.solven.adhoc.model.measure.Aggregator;
 import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import eu.solven.pepper.core.PepperStreamHelper;
@@ -184,33 +185,6 @@ public class AggregatingColumns<T extends Comparable<T>> extends AAggregatingCol
 		// `.parallelStream()`?
 		sliceToIndex.object2IntEntrySet().forEach(e -> indexToSlice.put(e.getIntValue(), e.getKey()));
 		return indexToSlice::get;
-	}
-
-	@SuppressWarnings("PMD.LooseCoupling")
-	protected static <T> IMultitypeColumnFastGet<T> undictionarizeColumn(IMultitypeIntColumnFastGet column,
-			Object2IntFunction<T> sliceToIndex,
-			Int2ObjectFunction<T> indexToSlice,
-			long nbSorted) {
-
-		// BEWARE In edge-cases, the navigable column may be interlaced with the hash column. TODO Improve the detection
-		// of this case to skip the bitmap creation.
-		// Snapshot the sorted-prefix index set from the source column's natural stream order *before* copying, so the
-		// bitmap reflects which original indices belong to the slice-ascending head of the dictionarization. The
-		// wrapper then uses this bitmap as its sortedLeg predicate, independent of the destination column's own key
-		// ordering.
-		int nbSortedInt = (int) nbSorted;
-		IntArrayList intArrayList = new IntArrayList(nbSortedInt);
-		column.limit(nbSortedInt).forEach(s -> intArrayList.add(s.getSlice().intValue()));
-
-		RoaringBitmap bitmap = RoaringBitmap.bitmapOf(intArrayList.elements());
-
-		return UndictionarizedColumn.<T>builder()
-				.indexToSlice(indexToSlice)
-				.sliceToIndex(sliceToIndex)
-				.column(column)
-				.sortedLength(nbSortedInt)
-				.sortedLeg(bitmap::contains)
-				.build();
 	}
 
 	@Override

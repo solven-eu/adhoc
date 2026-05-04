@@ -25,7 +25,7 @@ package eu.solven.adhoc.measure.sum;
 import org.jspecify.annotations.Nullable;
 
 import eu.solven.adhoc.measure.aggregation.IAggregation;
-import eu.solven.adhoc.measure.model.Aggregator;
+import eu.solven.adhoc.model.measure.Aggregator;
 
 /**
  * Used when the aggregation is an expression for {@link eu.solven.adhoc.table.ITableWrapper}.

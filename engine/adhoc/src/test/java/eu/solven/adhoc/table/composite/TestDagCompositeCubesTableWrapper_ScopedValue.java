@@ -38,7 +38,7 @@ import eu.solven.adhoc.factories.AdhocFactories;
 import eu.solven.adhoc.map.factory.ColumnSliceFactory;
 import eu.solven.adhoc.measure.forest.IMeasureForest;
 import eu.solven.adhoc.measure.forest.UnsafeMeasureForest;
-import eu.solven.adhoc.measure.model.Aggregator;
+import eu.solven.adhoc.model.measure.Aggregator;
 import eu.solven.adhoc.options.StandardQueryOptions;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.InMemoryTable;

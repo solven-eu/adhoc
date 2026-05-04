@@ -37,9 +37,9 @@ import eu.solven.adhoc.engine.query.CubeQuery;
 import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.filter.editor.IFilterEditor;
 import eu.solven.adhoc.filter.editor.SimpleFilterEditor;
-import eu.solven.adhoc.measure.model.Combinator;
-import eu.solven.adhoc.measure.model.Shiftor;
 import eu.solven.adhoc.measure.sum.SubstractionCombination;
+import eu.solven.adhoc.model.measure.Combinator;
+import eu.solven.adhoc.model.measure.Shiftor;
 
 /**
  * Reproducer for the regression introduced by

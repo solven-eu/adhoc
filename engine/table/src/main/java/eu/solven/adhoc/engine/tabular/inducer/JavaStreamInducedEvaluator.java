@@ -39,7 +39,7 @@ import eu.solven.adhoc.factories.IAdhocFactories;
 import eu.solven.adhoc.factories.IColumnFactory;
 import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
-import eu.solven.adhoc.measure.model.Aggregator;
+import eu.solven.adhoc.model.measure.Aggregator;
 import lombok.extern.slf4j.Slf4j;
 
 /**

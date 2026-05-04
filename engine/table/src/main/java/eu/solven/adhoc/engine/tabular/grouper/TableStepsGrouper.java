@@ -28,7 +28,7 @@ import eu.solven.adhoc.engine.query.CubeQuery;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.TableQueryStep;
 import eu.solven.adhoc.filter.ISliceFilter;
-import eu.solven.adhoc.measure.model.Aggregator;
+import eu.solven.adhoc.model.measure.Aggregator;
 import eu.solven.adhoc.model.query.IGroupBy;
 import eu.solven.adhoc.options.IQueryOption;
 import eu.solven.adhoc.query.table.TableQueryV3;

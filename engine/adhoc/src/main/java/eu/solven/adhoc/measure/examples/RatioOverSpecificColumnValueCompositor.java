@@ -29,11 +29,11 @@ import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.filter.ColumnFilter;
 import eu.solven.adhoc.measure.forest.IMeasureForestVisitor;
-import eu.solven.adhoc.measure.model.Combinator;
-import eu.solven.adhoc.measure.model.Filtrator;
-import eu.solven.adhoc.measure.model.Unfiltrator;
 import eu.solven.adhoc.measure.sum.DivideCombination;
+import eu.solven.adhoc.model.measure.Combinator;
+import eu.solven.adhoc.model.measure.Filtrator;
 import eu.solven.adhoc.model.measure.IMeasure;
+import eu.solven.adhoc.model.measure.Unfiltrator;
 
 /**
  * This defines a pattern, relying on multiple {@link IMeasure}, to produce one or multiple measures. The intermediate

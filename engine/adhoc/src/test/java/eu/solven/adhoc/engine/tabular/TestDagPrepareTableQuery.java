@@ -39,8 +39,8 @@ import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.TableQueryStep;
 import eu.solven.adhoc.engine.tabular.inducer.ITableQueryInducer;
 import eu.solven.adhoc.engine.tabular.optimizer.ITableQueryFactory;
-import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.sum.SumCombination;
+import eu.solven.adhoc.model.measure.Combinator;
 import eu.solven.adhoc.options.IHasQueryOptions;
 
 public class TestDagPrepareTableQuery extends ATestDagInMemory implements IAdhocTestConstants {

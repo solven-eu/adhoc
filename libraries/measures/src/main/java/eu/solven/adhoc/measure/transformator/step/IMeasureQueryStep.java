@@ -26,7 +26,7 @@ import java.util.List;
 
 import eu.solven.adhoc.cuboid.ICuboid;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
-import eu.solven.adhoc.measure.model.Aggregator;
+import eu.solven.adhoc.model.measure.Aggregator;
 import eu.solven.adhoc.model.measure.IMeasure;
 
 /**

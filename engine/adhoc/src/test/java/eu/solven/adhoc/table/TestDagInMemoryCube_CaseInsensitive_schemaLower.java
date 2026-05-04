@@ -42,7 +42,7 @@ import eu.solven.adhoc.engine.ICubeQueryEngine;
 import eu.solven.adhoc.engine.query.CubeQuery;
 import eu.solven.adhoc.filter.ColumnFilter;
 import eu.solven.adhoc.filter.editor.SimpleFilterEditor;
-import eu.solven.adhoc.measure.model.Shiftor;
+import eu.solven.adhoc.model.measure.Shiftor;
 
 /**
  * Verifies that {@link CaseInsensitiveCubeQueryEngine} normalizes filter and groupBy column names to the canonical
