@@ -17,7 +17,7 @@
 	<modules>
 		<module>table</module>
 		<module>cube</module>
-		
+
 		<module>adhoc</module>
 	</modules>
 </project>
