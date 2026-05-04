@@ -27,9 +27,9 @@ import java.util.Optional;
 
 import com.google.common.collect.ImmutableSet;
 
-import eu.solven.adhoc.column.IAdhocColumn;
 import eu.solven.adhoc.filter.FilterHelpers;
 import eu.solven.adhoc.filter.ISliceFilter;
+import eu.solven.adhoc.model.column.IAdhocColumn;
 import lombok.experimental.UtilityClass;
 
 /**

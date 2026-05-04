@@ -34,9 +34,9 @@ import java.util.function.Supplier;
 import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
 
-import eu.solven.adhoc.measure.IReferencedMeasure;
-import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.measure.transformator.IHasUnderlyingMeasures;
+import eu.solven.adhoc.model.measure.IMeasure;
+import eu.solven.adhoc.model.measure.IReferencedMeasure;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NonNull;

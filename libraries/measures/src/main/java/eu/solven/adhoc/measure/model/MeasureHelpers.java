@@ -26,8 +26,9 @@ import java.util.Objects;
 
 import com.google.common.collect.Lists;
 
-import eu.solven.adhoc.measure.ReferencedMeasure;
 import eu.solven.adhoc.measure.combination.CoalesceCombination;
+import eu.solven.adhoc.model.measure.IMeasure;
+import eu.solven.adhoc.model.measure.ReferencedMeasure;
 import lombok.experimental.UtilityClass;
 
 /**

@@ -29,11 +29,12 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
 import eu.solven.adhoc.collection.AdhocCollectionHelpers;
-import eu.solven.adhoc.column.IAdhocColumn;
 import eu.solven.adhoc.cuboid.slice.ISlice;
 import eu.solven.adhoc.dataframe.column.ConstantMaskMultitypeColumn;
 import eu.solven.adhoc.dataframe.column.IMultitypeColumnFastGet;
-import eu.solven.adhoc.query.cube.IGroupBy;
+import eu.solven.adhoc.model.column.IAdhocColumn;
+import eu.solven.adhoc.model.query.IGroupBy;
+import eu.solven.adhoc.model.query.groupby.GroupByColumns;
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
 

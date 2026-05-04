@@ -37,7 +37,7 @@ import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.filter.OrFilter;
 import eu.solven.adhoc.filter.editor.SimpleFilterEditor;
 import eu.solven.adhoc.filter.optimizer.IFilterOptimizer;
-import eu.solven.adhoc.query.cube.IGroupBy;
+import eu.solven.adhoc.model.query.IGroupBy;
 import eu.solven.adhoc.util.AdhocFactoriesUnsafe;
 import lombok.Builder;
 import lombok.Builder.Default;

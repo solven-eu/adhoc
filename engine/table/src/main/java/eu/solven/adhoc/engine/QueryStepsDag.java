@@ -40,7 +40,7 @@ import eu.solven.adhoc.engine.observability.SizeAndDuration;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.ICubeQueryStep;
 import eu.solven.adhoc.engine.tabular.optimizer.IHasDagFromInducedToInducer;
-import eu.solven.adhoc.measure.ReferencedMeasure;
+import eu.solven.adhoc.model.measure.ReferencedMeasure;
 import eu.solven.pepper.core.PepperLogHelper;
 import lombok.Builder;
 import lombok.Builder.Default;

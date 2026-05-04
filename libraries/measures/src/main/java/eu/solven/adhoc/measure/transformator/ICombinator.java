@@ -24,7 +24,7 @@ package eu.solven.adhoc.measure.transformator;
 
 import eu.solven.adhoc.measure.model.Columnator;
 import eu.solven.adhoc.measure.model.Combinator;
-import eu.solven.adhoc.measure.model.IMeasure;
+import eu.solven.adhoc.model.measure.IMeasure;
 
 /**
  * {@link Combinator} has an interface as many {@link IMeasure} has a related simple logic

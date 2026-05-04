@@ -51,9 +51,9 @@ import eu.solven.adhoc.measure.model.Columnator;
 import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.model.Dispatchor;
 import eu.solven.adhoc.measure.model.Filtrator;
-import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.measure.model.Partitionor;
 import eu.solven.adhoc.measure.model.Shiftor;
+import eu.solven.adhoc.model.measure.IMeasure;
 
 public class TestMeasureForestConcealer {
 
@@ -388,7 +388,7 @@ public class TestMeasureForestConcealer {
 		Partitionor secret = Partitionor.builder()
 				.name("fxRevenue")
 				.underlying("revenue")
-				.groupBy(eu.solven.adhoc.query.groupby.GroupByColumns.named("ccy", "region"))
+				.groupBy(eu.solven.adhoc.model.query.groupby.GroupByColumns.named("ccy", "region"))
 				.build();
 		IMeasureForest forest =
 				MeasureForest.builder().name("myForest").measure(Aggregator.sum("revenue")).measure(secret).build();

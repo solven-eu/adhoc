@@ -25,9 +25,9 @@ package eu.solven.adhoc.cube.training.a_basics;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import eu.solven.adhoc.column.ReferencedColumn;
-import eu.solven.adhoc.query.cube.IGroupBy;
-import eu.solven.adhoc.query.groupby.GroupByColumns;
+import eu.solven.adhoc.model.column.ReferencedColumn;
+import eu.solven.adhoc.model.query.IGroupBy;
+import eu.solven.adhoc.model.query.groupby.GroupByColumns;
 
 /**
  * A GROUP BY is a typical OLAP operation, when data are aggregated at given granularity. The granularity is defined by

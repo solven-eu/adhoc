@@ -43,7 +43,7 @@ import eu.solven.adhoc.filter.editor.IFilterEditor;
 import eu.solven.adhoc.filter.value.IValueMatcher;
 import eu.solven.adhoc.filter.value.NotMatcher;
 import eu.solven.adhoc.filter.value.OrMatcher;
-import eu.solven.adhoc.measure.model.IMeasure;
+import eu.solven.adhoc.model.measure.IMeasure;
 import eu.solven.adhoc.query.MeasurelessQuery;
 import eu.solven.adhoc.util.map.AdhocMapPathGet;
 import lombok.AccessLevel;

@@ -27,7 +27,7 @@ import org.jspecify.annotations.Nullable;
 import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.measure.model.Shiftor;
 import eu.solven.adhoc.measure.transformator.step.IMeasureQueryStep;
-import eu.solven.adhoc.query.cube.IHasCustomMarker;
+import eu.solven.adhoc.model.query.IHasCustomMarker;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.Value;

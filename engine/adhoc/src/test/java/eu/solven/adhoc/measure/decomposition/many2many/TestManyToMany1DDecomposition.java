@@ -41,8 +41,8 @@ import eu.solven.adhoc.filter.ColumnFilter;
 import eu.solven.adhoc.filter.FilterBuilder;
 import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.measure.decomposition.IDecompositionEntry;
+import eu.solven.adhoc.model.query.groupby.GroupByColumns;
 import eu.solven.adhoc.primitive.IValueProvider;
-import eu.solven.adhoc.query.groupby.GroupByColumns;
 
 public class TestManyToMany1DDecomposition {
 

@@ -30,8 +30,8 @@ import java.util.Set;
 
 import eu.solven.adhoc.beta.schema.CoordinatesSample;
 import eu.solven.adhoc.filter.value.IValueMatcher;
-import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.measure.operator.IOperatorFactory;
+import eu.solven.adhoc.model.measure.IMeasure;
 import lombok.experimental.UtilityClass;
 
 /**

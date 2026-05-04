@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,22 +20,42 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.column;
+package eu.solven.adhoc.model.query;
 
-import java.util.Map;
+import java.util.Optional;
+
+import org.jspecify.annotations.Nullable;
+
+import eu.solven.adhoc.model.measure.IMeasure;
 
 /**
- * Helps describing the column of some data-structure.
+ * Some Database may enable custom behavior, through additional flags. This flag would be evaluated along the DAG of
+ * {@link eu.solven.adhoc.engine.step.CubeQueryStep}.
+ *
+ * For instance, in ActivePivot/Atoti, this could be an IContextValue.
  * 
  * @author Benoit Lacelle
+ *
  */
 @FunctionalInterface
-public interface IHasColumnTypes {
-
+public interface IHasCustomMarker {
 	/**
+	 * A customMarker is any {@link Object} (but not an {@link Optional}). It is typically interpreted by an
+	 * {@link IMeasure}, or a {@link ITableWrapper}.
 	 * 
-	 * @return the columns available for groupBy operations, mapped to the Java-type of given column.
+	 * @return
 	 */
-	Map<String, Class<?>> getColumnTypes();
+	// friendly with Jackson
+	@Nullable
+	Object getCustomMarker();
 
+	default Optional<?> optCustomMarker() {
+		Object customMarker = getCustomMarker();
+
+		if (customMarker instanceof Optional<?> opt) {
+			// This is useful to prevent Optional<Optional<?>>
+			return opt;
+		}
+		return Optional.ofNullable(customMarker);
+	}
 }

@@ -48,7 +48,7 @@ import eu.solven.adhoc.map.factory.RowSliceFactory;
 import eu.solven.adhoc.measure.forest.IMeasureForest;
 import eu.solven.adhoc.measure.forest.MeasureForest;
 import eu.solven.adhoc.measure.model.EmptyMeasure;
-import eu.solven.adhoc.measure.model.IMeasure;
+import eu.solven.adhoc.model.measure.IMeasure;
 import eu.solven.adhoc.options.HasOptionsAndExecutorService;
 import eu.solven.adhoc.options.IQueryOption;
 import eu.solven.adhoc.options.StandardQueryOptions;

@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.query.cube;
+package eu.solven.adhoc.model.query;
 
 import java.util.List;
 import java.util.NavigableMap;
@@ -32,8 +32,8 @@ import java.util.Set;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.ImmutableSet;
 
-import eu.solven.adhoc.column.IAdhocColumn;
-import eu.solven.adhoc.query.groupby.GroupByColumns;
+import eu.solven.adhoc.model.column.IAdhocColumn;
+import eu.solven.adhoc.model.query.groupby.GroupByColumns;
 import tools.jackson.databind.annotation.JsonDeserialize;
 
 /**

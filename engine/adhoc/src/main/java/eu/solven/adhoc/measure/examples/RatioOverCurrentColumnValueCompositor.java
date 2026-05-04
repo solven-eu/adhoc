@@ -30,11 +30,11 @@ import com.google.common.collect.ImmutableSet;
 import eu.solven.adhoc.measure.forest.IMeasureForestVisitor;
 import eu.solven.adhoc.measure.model.Columnator;
 import eu.solven.adhoc.measure.model.Combinator;
-import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.measure.model.Partitionor;
 import eu.solven.adhoc.measure.model.Unfiltrator;
 import eu.solven.adhoc.measure.sum.DivideCombination;
-import eu.solven.adhoc.query.groupby.GroupByColumns;
+import eu.solven.adhoc.model.measure.IMeasure;
+import eu.solven.adhoc.model.query.groupby.GroupByColumns;
 
 /**
  * Technically-wise, this defines a pattern, relying on multiple {@link IMeasure}, to produce one or multiple measures.

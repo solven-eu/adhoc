@@ -42,9 +42,9 @@ import eu.solven.adhoc.encoding.perfect_hashing.PerfectHashKeyset;
 import eu.solven.adhoc.encoding.perfect_hashing.PerfectHashMap;
 import eu.solven.adhoc.map.factory.ColumnSliceFactory;
 import eu.solven.adhoc.map.factory.ISliceFactory;
+import eu.solven.adhoc.model.query.IGroupBy;
+import eu.solven.adhoc.model.query.groupby.GroupByColumns;
 import eu.solven.adhoc.options.IHasOptionsAndExecutorService;
-import eu.solven.adhoc.query.cube.IGroupBy;
-import eu.solven.adhoc.query.groupby.GroupByColumns;
 
 /**
  * Tests for {@link JooqTabularRecordFactory}.

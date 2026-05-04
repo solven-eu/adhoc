@@ -31,7 +31,6 @@ import java.util.function.Supplier;
 import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
 
-import eu.solven.adhoc.column.IAdhocColumn;
 import eu.solven.adhoc.column.calculated.ICalculatedColumn;
 import eu.solven.adhoc.cuboid.ICuboid;
 import eu.solven.adhoc.cuboid.slice.ISlice;
@@ -60,8 +59,9 @@ import eu.solven.adhoc.measure.decomposition.IDecompositionEntry;
 import eu.solven.adhoc.measure.decomposition.IDecompositionFactory;
 import eu.solven.adhoc.measure.model.Dispatchor;
 import eu.solven.adhoc.measure.transformator.AMeasureQueryStep;
+import eu.solven.adhoc.model.column.IAdhocColumn;
+import eu.solven.adhoc.model.query.IGroupBy;
 import eu.solven.adhoc.primitive.IValueProvider;
-import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.util.AdhocDebug;
 import lombok.AccessLevel;
 import lombok.Getter;

@@ -26,6 +26,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import eu.solven.adhoc.measure.AdhocBlackHole;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Fork;
@@ -46,7 +47,6 @@ import eu.solven.adhoc.measure.sum.SubstractionCombination;
 import eu.solven.adhoc.measure.transformator.ICombinationBinding;
 import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.primitive.IValueReceiver;
-import eu.solven.adhoc.util.AdhocBlackHole;
 
 /**
  * Benchmarks related with {@link SubstractionCombination}.

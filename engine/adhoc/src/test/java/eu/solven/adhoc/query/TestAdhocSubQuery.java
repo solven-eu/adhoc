@@ -27,7 +27,7 @@ import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.engine.query.CubeQuery;
 import eu.solven.adhoc.engine.step.ICubeQuery;
-import eu.solven.adhoc.measure.ReferencedMeasure;
+import eu.solven.adhoc.model.measure.ReferencedMeasure;
 import nl.jqno.equalsverifier.EqualsVerifier;
 
 public class TestAdhocSubQuery {

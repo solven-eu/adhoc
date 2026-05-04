@@ -32,6 +32,7 @@ import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.column.generated_column.IColumnGenerator;
 import eu.solven.adhoc.column.generated_column.IMayHaveColumnGenerator;
+import eu.solven.adhoc.measure.AdhocIdentity;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.decomposition.IDecomposition;
 import eu.solven.adhoc.measure.operator.IOperatorFactory;
@@ -39,7 +40,7 @@ import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.measure.transformator.IHasAggregationKey;
 import eu.solven.adhoc.measure.transformator.IHasDecompositionKey;
 import eu.solven.adhoc.measure.transformator.IHasUnderlyingMeasures;
-import eu.solven.adhoc.util.AdhocIdentity;
+import eu.solven.adhoc.model.measure.IMeasure;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;

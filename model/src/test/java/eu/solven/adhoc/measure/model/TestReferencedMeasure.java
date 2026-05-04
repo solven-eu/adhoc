@@ -26,7 +26,7 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-import eu.solven.adhoc.measure.ReferencedMeasure;
+import eu.solven.adhoc.model.measure.ReferencedMeasure;
 import eu.solven.pepper.unittest.PepperJackson3TestHelper;
 import tools.jackson.databind.ObjectMapper;
 

@@ -27,7 +27,7 @@ import java.util.Map;
 import com.google.common.collect.ImmutableList;
 
 import eu.solven.adhoc.cuboid.slice.ISlice;
-import eu.solven.adhoc.query.cube.IGroupBy;
+import eu.solven.adhoc.model.query.IGroupBy;
 
 /**
  * Enable building {@link Map} and {@link ISlice} in Adhoc context.

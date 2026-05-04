@@ -28,9 +28,9 @@ import org.jspecify.annotations.Nullable;
 
 import eu.solven.adhoc.engine.step.ICubeQuery;
 import eu.solven.adhoc.filter.ISliceFilter;
-import eu.solven.adhoc.measure.model.IMeasure;
+import eu.solven.adhoc.model.measure.IMeasure;
+import eu.solven.adhoc.model.query.IGroupBy;
 import eu.solven.adhoc.options.IQueryOption;
-import eu.solven.adhoc.query.cube.IGroupBy;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.Value;

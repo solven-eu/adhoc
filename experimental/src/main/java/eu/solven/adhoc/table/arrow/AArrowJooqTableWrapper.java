@@ -34,7 +34,7 @@ import org.jooq.conf.ParamType;
 import eu.solven.adhoc.dataframe.row.ITabularRecord;
 import eu.solven.adhoc.dataframe.row.ITabularRecordFactory;
 import eu.solven.adhoc.engine.cancel.CancelledQueryException;
-import eu.solven.adhoc.query.cube.IGroupBy;
+import eu.solven.adhoc.model.query.IGroupBy;
 import eu.solven.adhoc.stream.ConsumingStream;
 import eu.solven.adhoc.stream.IConsumingStream;
 import eu.solven.adhoc.table.IQueryPod;

@@ -25,9 +25,9 @@ package eu.solven.adhoc.measure.forest;
 import java.util.Optional;
 import java.util.Set;
 
-import eu.solven.adhoc.measure.ReferencedMeasure;
-import eu.solven.adhoc.measure.model.IMeasure;
-import eu.solven.adhoc.query.cube.IHasMeasures;
+import eu.solven.adhoc.model.measure.IMeasure;
+import eu.solven.adhoc.model.measure.ReferencedMeasure;
+import eu.solven.adhoc.model.query.IHasMeasures;
 import eu.solven.adhoc.util.IHasName;
 import eu.solven.adhoc.util.map.AdhocMapPathGet;
 

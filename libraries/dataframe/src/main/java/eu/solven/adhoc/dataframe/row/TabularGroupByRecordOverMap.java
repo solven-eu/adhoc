@@ -34,7 +34,7 @@ import org.jspecify.annotations.Nullable;
 import eu.solven.adhoc.cuboid.slice.ISlice;
 import eu.solven.adhoc.cuboid.tabular.ITabularGroupByRecord;
 import eu.solven.adhoc.map.IAdhocMap;
-import eu.solven.adhoc.query.cube.IGroupBy;
+import eu.solven.adhoc.model.query.IGroupBy;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NonNull;

@@ -23,10 +23,10 @@
 package eu.solven.adhoc.engine.step;
 
 import eu.solven.adhoc.filter.ISliceFilter;
+import eu.solven.adhoc.model.query.IGroupBy;
+import eu.solven.adhoc.model.query.IHasCustomMarker;
+import eu.solven.adhoc.model.query.IHasMeasures;
 import eu.solven.adhoc.options.IHasQueryOptions;
-import eu.solven.adhoc.query.cube.IGroupBy;
-import eu.solven.adhoc.query.cube.IHasCustomMarker;
-import eu.solven.adhoc.query.cube.IHasMeasures;
 
 /**
  * A aggregation query. It is configured by:

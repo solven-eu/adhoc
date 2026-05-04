@@ -24,11 +24,11 @@ package eu.solven.adhoc.data.cell;
 
 import org.jspecify.annotations.Nullable;
 
+import eu.solven.adhoc.measure.AdhocBlackHole;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.sum.CoalesceAggregation;
 import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.primitive.IValueReceiver;
-import eu.solven.adhoc.util.AdhocBlackHole;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.RequiredArgsConstructor;

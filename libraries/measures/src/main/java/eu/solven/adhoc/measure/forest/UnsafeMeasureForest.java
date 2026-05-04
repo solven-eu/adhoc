@@ -30,9 +30,9 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-import eu.solven.adhoc.measure.IReferencedMeasure;
-import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.measure.transformator.IHasUnderlyingMeasures;
+import eu.solven.adhoc.model.measure.IMeasure;
+import eu.solven.adhoc.model.measure.IReferencedMeasure;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.Getter;

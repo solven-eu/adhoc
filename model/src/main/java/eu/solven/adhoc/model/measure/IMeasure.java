@@ -20,23 +20,44 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.column;
+package eu.solven.adhoc.model.measure;
 
+import java.util.Set;
+
+import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.google.common.collect.ImmutableSet;
 
-import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.util.IHasName;
 
 /**
- * A column definition, typically used in {@link IGroupBy}
+ * A node in a DAG of measures. Typically an {@link Aggregator} or a {@link Combinator}.
+ * 
+ * Any {@link IMeasure} should be (de)serializable with Jackson.
  * 
  * @author Benoit Lacelle
  *
  */
-@JsonTypeInfo(use = JsonTypeInfo.Id.MINIMAL_CLASS,
-		include = JsonTypeInfo.As.PROPERTY,
-		property = "type",
-		defaultImpl = ReferencedColumn.class)
-@FunctionalInterface
-public interface IAdhocColumn extends IHasName {
+// https://dax.guide/st/measure/
+// `@JsonTypeInfo` is ambiguous given MeasureSetFromResources. But it is useful for SchemaMetadata
+// https://github.com/FasterXML/jackson-databind/issues/4983
+@JsonTypeInfo(use = JsonTypeInfo.Id.MINIMAL_CLASS, property = "type", defaultImpl = ReferencedMeasure.class)
+@JsonSubTypes({ @JsonSubTypes.Type(value = ReferencedMeasure.class, name = "ref"), })
+public interface IMeasure extends IHasName, IHasTags {
+
+	/**
+	 * 
+	 * @return the name of the {@link IMeasure}. It has to be unique within a given {@link MeasureForest}.
+	 */
+	@Override
+	String getName();
+
+	/**
+	 * 
+	 * @param tags
+	 * @return a copy of the measure with given {@link Set} of tags. Old tag are removed if not present in the provided
+	 *         set.
+	 */
+	IMeasure withTags(ImmutableSet<String> tags);
+
 }

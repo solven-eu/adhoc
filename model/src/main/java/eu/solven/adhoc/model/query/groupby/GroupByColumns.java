@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.query.groupby;
+package eu.solven.adhoc.model.query.groupby;
 
 import java.util.Collection;
 import java.util.LinkedHashSet;
@@ -41,9 +41,9 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.MultimapBuilder;
 import com.google.common.collect.SetMultimap;
 
-import eu.solven.adhoc.column.IAdhocColumn;
-import eu.solven.adhoc.column.ReferencedColumn;
-import eu.solven.adhoc.query.cube.IGroupBy;
+import eu.solven.adhoc.model.column.IAdhocColumn;
+import eu.solven.adhoc.model.column.ReferencedColumn;
+import eu.solven.adhoc.model.query.IGroupBy;
 import eu.solven.adhoc.util.IHasName;
 import eu.solven.adhoc.util.cache.LastLookupCache1;
 import lombok.Builder;

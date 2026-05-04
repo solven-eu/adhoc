@@ -32,7 +32,7 @@ import com.google.common.collect.ImmutableSet;
 import eu.solven.adhoc.engine.step.TableQueryStep;
 import eu.solven.adhoc.engine.tabular.grouper.TableStepsGrouperByAggregator;
 import eu.solven.adhoc.measure.model.Aggregator;
-import eu.solven.adhoc.query.groupby.GroupByColumns;
+import eu.solven.adhoc.model.query.groupby.GroupByColumns;
 
 /**
  * Demonstrates how to keep in a dedicated tqbleQuery all TableQuerySteps referring to a column.

@@ -20,40 +20,46 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.query.cube;
+package eu.solven.adhoc.measure;
 
-import java.util.Map;
-import java.util.Set;
+import java.util.function.Supplier;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
+import org.jspecify.annotations.Nullable;
 
-import eu.solven.adhoc.measure.model.IMeasure;
+import com.google.common.base.Suppliers;
+
+import eu.solven.adhoc.eventbus.IAdhocEventBus;
+import eu.solven.adhoc.primitive.IValueReceiver;
 
 /**
- * Holds a {@link Set} of {@link IMeasure}, independent of an underlying {@link ITableWrapper}.
+ * Centralizes all implementations doing nothing given input data.
  * 
  * @author Benoit Lacelle
  */
-public interface IHasMeasures {
+public class AdhocBlackHole implements IValueReceiver, IAdhocEventBus {
+	private static final Supplier<AdhocBlackHole> MEMOIZED = Suppliers.memoize(() -> new AdhocBlackHole());
 
-	/**
-	 * This recalls such objects requires not to have {@link IMeasure} with conflicting names.
-	 * 
-	 * @return a {@link Map} from measure name to the measure.
-	 */
-	@JsonIgnore
-	default Map<String, IMeasure> getNameToMeasure() {
-		return getMeasures().stream().collect(ImmutableMap.toImmutableMap(IMeasure::getName, m -> m));
+	public static AdhocBlackHole getInstance() {
+		return MEMOIZED.get();
 	}
 
-	/**
-	 * 
-	 * @return the {@link Set} of {@link IMeasure}
-	 */
-	default Set<IMeasure> getMeasures() {
-		return getNameToMeasure().values().stream().collect(ImmutableSet.toImmutableSet());
+	@Override
+	public void onLong(long v) {
+		// do nothing with the value
 	}
 
+	@Override
+	public void onDouble(double v) {
+		// do nothing with the value
+	}
+
+	@Override
+	public void onObject(@Nullable Object v) {
+		// do nothing with the value
+	}
+
+	@Override
+	public void post(Object event) {
+		// do nothing with given event
+	}
 }

@@ -34,7 +34,7 @@ import eu.solven.adhoc.dataframe.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.dataframe.tabular.IMultitypeMergeableGrid;
 import eu.solven.adhoc.engine.step.ICubeQueryStep;
 import eu.solven.adhoc.measure.model.IAliasedAggregator;
-import eu.solven.adhoc.query.cube.IGroupBy;
+import eu.solven.adhoc.model.query.IGroupBy;
 import lombok.Builder;
 
 /**

@@ -46,7 +46,7 @@ import eu.solven.adhoc.measure.operator.IOperatorFactory;
 import eu.solven.adhoc.measure.operator.StandardOperatorFactory;
 import eu.solven.adhoc.measure.ratio.AdhocExplainerTestHelper;
 import eu.solven.adhoc.measure.sum.SumElseSetAggregation;
-import eu.solven.adhoc.query.groupby.GroupByColumns;
+import eu.solven.adhoc.model.query.groupby.GroupByColumns;
 import lombok.NonNull;
 
 /**

@@ -20,90 +20,57 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.measure;
+package eu.solven.adhoc.model.column;
 
-import java.util.Set;
-
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.google.common.collect.ImmutableSet;
-
-import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.resource.HasWrappedSerializer;
 import eu.solven.adhoc.util.IHasWrapped;
 import lombok.Builder;
-import lombok.NonNull;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
-import lombok.extern.slf4j.Slf4j;
 import tools.jackson.databind.annotation.JsonSerialize;
 
 /**
- * This is useful to refer to an existing {@link IMeasure} in the {@link MeasureForest}, hence preventing to need to
- * provide its definition.
- *
+ * A simple column, explicitly referred.
+ * 
  * @author Benoit Lacelle
  *
  */
-@Value
 @Builder
+@Value
 @Jacksonized
 @JsonSerialize(using = HasWrappedSerializer.class)
-@Slf4j
-public class ReferencedMeasure implements IMeasure, IReferencedMeasure, IHasWrapped {
+public class ReferencedColumn implements IAdhocColumn, IHasWrapped {
 	// https://github.com/FasterXML/jackson-databind/issues/5030
 	// @JsonValue
-	@SuppressWarnings("PMD.AvoidFieldNameMatchingMethodName")
-	@NonNull
-	String ref;
+	String name;
 
 	@Override
 	public Object getWrapped() {
 		return getName();
 	}
 
-	/**
-	 * The name is the same as the ref, so a measure and its reference would conflict.
-	 */
-	@Override
-	@JsonIgnore
-	public String getName() {
-		return ref;
-	}
-
-	@Override
-	@JsonIgnore
-	public Set<String> getTags() {
-		return ImmutableSet.of("reference");
-	}
-
-	@Override
-	public IMeasure withTags(ImmutableSet<String> tags) {
-		log.warn("Can not edit tags of {}", this);
-		return this;
-	}
-
-	public static ReferencedMeasure ref(String name) {
-		return ReferencedMeasure.builder().ref(name).build();
+	public static ReferencedColumn ref(String column) {
+		return ReferencedColumn.builder().name(column).build();
 	}
 
 	/**
 	 * Lombok @Builder
-	 *
+	 * 
 	 * @author Benoit Lacelle
 	 */
-	public static class ReferencedMeasureBuilder {
+	public static class ReferencedColumnBuilder {
 
-		// Lombok @Builder fills `ref` via the chained setter `.ref(...)`; NullAway can't see the cross-method init.
+		// Lombok @Builder fills `name` via the chained setter `.name(...)`; NullAway can't see the cross-method init.
 		@SuppressWarnings("NullAway.Init")
-		public ReferencedMeasureBuilder() {
+		public ReferencedColumnBuilder() {
 			// Lombok @Builder
 		}
 
 		// Enable Jackson deserialization given a plain String
-		// NullAway can't see that `.ref(...)` initializes the underlying `ref` field through the chained setter.
+		// NullAway can't see that `.name(...)` initializes the underlying `name` field through the chained setter.
 		@SuppressWarnings("NullAway.Init")
-		public ReferencedMeasureBuilder(String measure) {
-			this.ref(measure);
+		public ReferencedColumnBuilder(String column) {
+			this.name(column);
 		}
 	}
 }

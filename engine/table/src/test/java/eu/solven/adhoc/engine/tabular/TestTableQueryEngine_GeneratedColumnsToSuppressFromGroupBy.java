@@ -30,9 +30,9 @@ import org.junit.jupiter.api.Test;
 import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.column.FunctionCalculatedColumn;
-import eu.solven.adhoc.column.ReferencedColumn;
-import eu.solven.adhoc.query.cube.IGroupBy;
-import eu.solven.adhoc.query.groupby.GroupByColumns;
+import eu.solven.adhoc.model.column.ReferencedColumn;
+import eu.solven.adhoc.model.query.IGroupBy;
+import eu.solven.adhoc.model.query.groupby.GroupByColumns;
 
 /**
  * Unit tests for {@link TableQueryEngine#generatedColumnsToSuppressFromGroupBy(IGroupBy, Set)}.

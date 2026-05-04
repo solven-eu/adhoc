@@ -50,8 +50,8 @@ import eu.solven.adhoc.measure.aggregation.comparable.MaxCombination;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.Filtrator;
 import eu.solven.adhoc.measure.model.Partitionor;
+import eu.solven.adhoc.model.query.groupby.GroupByColumns;
 import eu.solven.adhoc.options.IHasQueryOptions;
-import eu.solven.adhoc.query.groupby.GroupByColumns;
 
 /**
  * This will test actual queries over TableQueryOptimizerSinglePerAggregator.

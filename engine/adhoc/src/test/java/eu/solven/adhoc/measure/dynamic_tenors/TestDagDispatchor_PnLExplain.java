@@ -42,7 +42,7 @@ import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.model.Dispatchor;
 import eu.solven.adhoc.measure.model.Partitionor;
-import eu.solven.adhoc.query.groupby.GroupByColumns;
+import eu.solven.adhoc.model.query.groupby.GroupByColumns;
 
 /**
  * Consider a model where Adhoc received {@link Map}, providing some aggregable values (e.g. some risk/sensitivity (e.g.

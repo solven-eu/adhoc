@@ -30,7 +30,7 @@ import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.engine.step.IWhereGroupByQuery;
 
 /**
- * Used for {@link eu.solven.adhoc.measure.model.IMeasure} which generates/contributes into multiple slices given an
+ * Used for {@link eu.solven.adhoc.model.measure.IMeasure} which generates/contributes into multiple slices given an
  * underlying slice. It may be used for rebucketing (e.g. `123 on 0.2` may be decomposed into `123*0.2 into 0 and
  * 123*0.8 into 1.0`).
  *

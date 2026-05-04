@@ -36,7 +36,7 @@ import eu.solven.adhoc.cuboid.slice.ISlice;
 import eu.solven.adhoc.dataframe.row.ITabularRecord;
 import eu.solven.adhoc.dataframe.row.TabularRecordOverMaps;
 import eu.solven.adhoc.map.factory.IMapBuilderPreKeys;
-import eu.solven.adhoc.query.cube.IGroupBy;
+import eu.solven.adhoc.model.query.IGroupBy;
 import eu.solven.adhoc.stream.IConsumingStream;
 import eu.solven.adhoc.table.IQueryPod;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;

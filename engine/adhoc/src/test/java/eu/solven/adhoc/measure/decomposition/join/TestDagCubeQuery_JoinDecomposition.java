@@ -39,7 +39,7 @@ import eu.solven.adhoc.measure.decomposition.IDecomposition;
 import eu.solven.adhoc.measure.model.Dispatchor;
 import eu.solven.adhoc.measure.operator.IOperatorFactory;
 import eu.solven.adhoc.measure.operator.StandardOperatorFactory;
-import eu.solven.adhoc.query.groupby.GroupByColumns;
+import eu.solven.adhoc.model.query.groupby.GroupByColumns;
 
 /**
  * End-to-end tests for {@link JoinDecomposition} with <em>multiple</em> output columns. The scenario: table rows carry

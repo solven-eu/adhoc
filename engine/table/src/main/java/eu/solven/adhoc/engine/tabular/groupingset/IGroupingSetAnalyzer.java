@@ -24,7 +24,7 @@ package eu.solven.adhoc.engine.tabular.groupingset;
 
 import eu.solven.adhoc.dataframe.row.ITabularRecord;
 import eu.solven.adhoc.map.keyset.SequencedSetLikeList;
-import eu.solven.adhoc.query.cube.IGroupBy;
+import eu.solven.adhoc.model.query.IGroupBy;
 
 /**
  * Helps identifying the groupingSet of a {@link ITabularRecord}.

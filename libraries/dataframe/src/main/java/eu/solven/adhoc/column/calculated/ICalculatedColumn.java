@@ -22,9 +22,9 @@
  */
 package eu.solven.adhoc.column.calculated;
 
-import eu.solven.adhoc.column.IAdhocColumn;
 import eu.solven.adhoc.cuboid.tabular.ITabularGroupByRecord;
 import eu.solven.adhoc.dataframe.row.ITabularRecord;
+import eu.solven.adhoc.model.column.IAdhocColumn;
 
 /**
  * Typically extended by an {@link IAdhocColumn} in order to generate a column based on the output from the

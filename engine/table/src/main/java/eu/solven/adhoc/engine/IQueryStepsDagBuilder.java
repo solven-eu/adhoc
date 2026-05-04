@@ -25,7 +25,7 @@ package eu.solven.adhoc.engine;
 import java.util.Set;
 
 import eu.solven.adhoc.engine.step.ICubeQuery;
-import eu.solven.adhoc.measure.model.IMeasure;
+import eu.solven.adhoc.model.measure.IMeasure;
 
 /**
  * Helps building a DAG for a {@link ICubeQuery} steps.

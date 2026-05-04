@@ -42,7 +42,7 @@ import eu.solven.adhoc.measure.model.Partitionor;
 import eu.solven.adhoc.measure.model.Shiftor;
 import eu.solven.adhoc.measure.model.Unfiltrator;
 import eu.solven.adhoc.measure.sum.SumAggregation;
-import eu.solven.adhoc.query.groupby.GroupByColumns;
+import eu.solven.adhoc.model.query.groupby.GroupByColumns;
 
 public interface IAdhocTestConstants {
 	Aggregator k1Sum = Aggregator.builder().name("k1").aggregationKey(SumAggregation.KEY).build();

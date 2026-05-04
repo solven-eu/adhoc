@@ -40,7 +40,7 @@ import eu.solven.adhoc.measure.forest.MeasureForest;
 import eu.solven.adhoc.measure.forest.UnsafeMeasureForest;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.Combinator;
-import eu.solven.adhoc.measure.model.IMeasure;
+import eu.solven.adhoc.model.measure.IMeasure;
 import eu.solven.adhoc.table.InMemoryTable;
 import eu.solven.adhoc.table.composite.CompositeCubesTableWrapper;
 

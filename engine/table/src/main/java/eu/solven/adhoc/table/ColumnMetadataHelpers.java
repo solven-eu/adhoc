@@ -27,7 +27,7 @@ import java.util.List;
 
 import eu.solven.adhoc.beta.schema.CoordinatesSample;
 import eu.solven.adhoc.filter.value.IValueMatcher;
-import eu.solven.adhoc.query.groupby.GroupByColumns;
+import eu.solven.adhoc.model.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.table.TableQuery;
 import lombok.experimental.UtilityClass;
 

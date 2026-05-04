@@ -25,7 +25,7 @@ package eu.solven.adhoc.query.table;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import eu.solven.adhoc.query.groupby.GroupByColumns;
+import eu.solven.adhoc.model.query.groupby.GroupByColumns;
 
 public class TestTableQueryV3 {
 	@Test

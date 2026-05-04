@@ -35,8 +35,8 @@ import java.util.stream.Collectors;
 
 import eu.solven.adhoc.engine.step.TableQueryStep;
 import eu.solven.adhoc.filter.ISliceFilter;
-import eu.solven.adhoc.measure.model.IMeasure;
-import eu.solven.adhoc.query.cube.IGroupBy;
+import eu.solven.adhoc.model.measure.IMeasure;
+import eu.solven.adhoc.model.query.IGroupBy;
 import eu.solven.adhoc.query.table.TableQueryV3;
 
 /**

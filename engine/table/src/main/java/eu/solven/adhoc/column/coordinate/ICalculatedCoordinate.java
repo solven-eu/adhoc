@@ -24,8 +24,8 @@ package eu.solven.adhoc.column.coordinate;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
-import eu.solven.adhoc.column.IAdhocColumn;
 import eu.solven.adhoc.filter.ISliceFilter;
+import eu.solven.adhoc.model.column.IAdhocColumn;
 
 /**
  * A Coordinate is a possible value along an {@link IAdhocColumn}. While most coordinate are defined as distinct values,

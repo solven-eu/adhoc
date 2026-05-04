@@ -53,7 +53,7 @@ import eu.solven.adhoc.filter.value.StringMatcher;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.Filtrator;
 import eu.solven.adhoc.measure.sum.SumAggregation;
-import eu.solven.adhoc.query.groupby.GroupByColumns;
+import eu.solven.adhoc.model.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.sql.IDSLSupplier;

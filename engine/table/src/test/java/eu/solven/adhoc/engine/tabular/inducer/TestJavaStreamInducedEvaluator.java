@@ -45,9 +45,9 @@ import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.aggregation.comparable.MaxAggregation;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.sum.SumAggregation;
+import eu.solven.adhoc.model.query.groupby.GroupByColumns;
 import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.primitive.IValueProviderTestHelpers;
-import eu.solven.adhoc.query.groupby.GroupByColumns;
 
 /**
  * Unit tests for {@link JavaStreamInducedEvaluator}, the universal Java-stream fallback path.

@@ -24,7 +24,7 @@ package eu.solven.adhoc.table.transcoder.value;
 
 import org.jspecify.annotations.Nullable;
 
-import eu.solven.adhoc.column.IHasColumnTypes;
+import eu.solven.adhoc.model.column.IHasColumnTypes;
 
 /**
  * Used to transcode types, typically from/to {@link ITableWrapper}.

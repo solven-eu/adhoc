@@ -48,7 +48,7 @@ import eu.solven.adhoc.filter.ColumnFilter;
 import eu.solven.adhoc.measure.forest.IMeasureForest;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.sum.ExpressionAggregation;
-import eu.solven.adhoc.query.groupby.GroupByColumns;
+import eu.solven.adhoc.model.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.table.FilteredAggregator;
 import eu.solven.adhoc.query.table.TableQueryV3;
 import eu.solven.adhoc.query.table.TableQueryV4;

@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,23 +20,17 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.measure.model;
+package eu.solven.adhoc.model.query;
 
-import java.util.Set;
+import java.util.List;
 
 /**
- * Used to provide synthetic information.
+ * A {@link List} of columns. Typically used by {@link ICubeQuery}.
  * 
  * @author Benoit Lacelle
+ *
  */
 @FunctionalInterface
-public interface IHasTags {
-	String TAG_DEBUG = "debug";
-
-	/**
-	 * Tags are useful for various operations, like documentation (e.g. coloring some graphviz by tag).
-	 * 
-	 * @return the tags applied to this measure.
-	 */
-	Set<String> getTags();
+public interface IHasGroupBy {
+	IGroupBy getGroupBy();
 }

@@ -1,11 +1,11 @@
 /**
- * Measure-side root types: aggregator, combinator and shared interfaces.
+ * Cube-level query DTOs: {@code CubeQuery}, custom markers and related options.
  *
  * <p>
  * All types in this package are null-marked: parameters, return types and fields are non-null by default; explicit
  * {@link org.jspecify.annotations.Nullable @Nullable} marks the opt-outs.
  */
 @NullMarked
-package eu.solven.adhoc.measure;
+package eu.solven.adhoc.model.query;
 
 import org.jspecify.annotations.NullMarked;

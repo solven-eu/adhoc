@@ -34,7 +34,7 @@ import eu.solven.adhoc.map.factory.IMapBuilderPreKeys;
 import eu.solven.adhoc.map.factory.ISliceFactory;
 import eu.solven.adhoc.map.keyset.SequencedSetLikeList;
 import eu.solven.adhoc.map.keyset.SequencedSetUnsafe;
-import eu.solven.adhoc.query.cube.IGroupBy;
+import eu.solven.adhoc.model.query.IGroupBy;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;

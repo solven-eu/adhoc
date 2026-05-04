@@ -31,6 +31,7 @@ import com.google.common.collect.ImmutableSet;
 import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.filter.editor.IFilterEditor;
 import eu.solven.adhoc.measure.transformator.IHasUnderlyingMeasures;
+import eu.solven.adhoc.model.measure.IMeasure;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.Singular;

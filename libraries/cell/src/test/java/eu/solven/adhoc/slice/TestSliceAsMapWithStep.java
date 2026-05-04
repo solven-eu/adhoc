@@ -35,8 +35,8 @@ import eu.solven.adhoc.engine.step.SliceAsMapWithStep;
 import eu.solven.adhoc.filter.AndFilter;
 import eu.solven.adhoc.filter.ColumnFilter;
 import eu.solven.adhoc.filter.ISliceFilter;
-import eu.solven.adhoc.measure.model.IMeasure;
-import eu.solven.adhoc.query.groupby.GroupByColumns;
+import eu.solven.adhoc.model.measure.IMeasure;
+import eu.solven.adhoc.model.query.groupby.GroupByColumns;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j

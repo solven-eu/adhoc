@@ -45,9 +45,9 @@ import eu.solven.adhoc.measure.aggregation.comparable.MinAggregation;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.sum.CountAggregation;
 import eu.solven.adhoc.measure.sum.SumAggregation;
+import eu.solven.adhoc.model.query.groupby.GroupByColumns;
 import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.primitive.IValueProviderTestHelpers;
-import eu.solven.adhoc.query.groupby.GroupByColumns;
 
 /**
  * Unit tests for {@link DuckDBInducedEvaluator} that verify the DuckDB-backed vectorised path produces the same results

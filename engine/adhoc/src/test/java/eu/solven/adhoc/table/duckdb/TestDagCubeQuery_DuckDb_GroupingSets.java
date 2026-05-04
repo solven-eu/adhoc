@@ -41,7 +41,7 @@ import eu.solven.adhoc.engine.query.CubeQuery;
 import eu.solven.adhoc.eventbus.UnsafeAdhocEventBusHelpers;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.Partitionor;
-import eu.solven.adhoc.query.groupby.GroupByColumns;
+import eu.solven.adhoc.model.query.groupby.GroupByColumns;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
 import eu.solven.adhoc.table.sql.duckdb.DuckDBHelper;

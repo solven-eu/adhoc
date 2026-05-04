@@ -20,19 +20,23 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.query.groupby;
+package eu.solven.adhoc.model.column;
+
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+
+import eu.solven.adhoc.model.query.IGroupBy;
+import eu.solven.adhoc.util.IHasName;
 
 /**
- * Some components have a SQL expression.
+ * A column definition, typically used in {@link IGroupBy}
  * 
  * @author Benoit Lacelle
  *
  */
+@JsonTypeInfo(use = JsonTypeInfo.Id.MINIMAL_CLASS,
+		include = JsonTypeInfo.As.PROPERTY,
+		property = "type",
+		defaultImpl = ReferencedColumn.class)
 @FunctionalInterface
-public interface IHasSqlExpression {
-	/**
-	 * 
-	 * @return a SQL expression, like `AS c1 + c2`.
-	 */
-	String getSql();
+public interface IAdhocColumn extends IHasName {
 }

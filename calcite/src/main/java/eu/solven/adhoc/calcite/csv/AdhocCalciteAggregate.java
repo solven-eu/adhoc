@@ -48,8 +48,8 @@ import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.sum.AvgAggregation;
 import eu.solven.adhoc.measure.sum.CountAggregation;
 import eu.solven.adhoc.measure.sum.SumAggregation;
+import eu.solven.adhoc.model.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.ICountMeasuresConstants;
-import eu.solven.adhoc.query.groupby.GroupByColumns;
 
 /**
  * Implementation of {@link org.apache.calcite.rel.core.Aggregate} relational expression in MongoDB.

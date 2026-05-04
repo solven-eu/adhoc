@@ -47,10 +47,10 @@ import eu.solven.adhoc.engine.tabular.optimizer.ITableQueryFactory;
 import eu.solven.adhoc.engine.tabular.optimizer.SplitTableQueries;
 import eu.solven.adhoc.measure.model.Partitionor;
 import eu.solven.adhoc.measure.sum.SumCombination;
+import eu.solven.adhoc.model.query.IGroupBy;
+import eu.solven.adhoc.model.query.groupby.GroupByColumns;
 import eu.solven.adhoc.primitive.IValueProviderTestHelpers;
 import eu.solven.adhoc.query.InternalQueryOptions;
-import eu.solven.adhoc.query.cube.IGroupBy;
-import eu.solven.adhoc.query.groupby.GroupByColumns;
 
 public class TestDagTableQueryEngine_induced extends ATestDagInMemory implements IAdhocTestConstants {
 

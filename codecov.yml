@@ -1,0 +1,24 @@
+# Codecov configuration. Validated via `curl --data-binary @codecov.yml https://codecov.io/validate`.
+#
+# `threshold` is in percentage points (NOT a ratio): 0.02 = 0.02 pp tolerance.
+#
+# project vs patch — the two status checks Codecov posts on every PR:
+#   - project: compares TOTAL repository coverage of the PR head against the base commit.
+#              Fails if overall coverage drops by more than `threshold` pp. Catches
+#              regressions where new code is tested but old code lost coverage (e.g. a
+#              test was deleted, or a previously-tested branch became unreachable).
+#   - patch:   looks ONLY at the lines added/changed in the PR diff and reports their
+#              own coverage ratio. Fails if the diff itself is below `target` (default
+#              = base coverage) by more than `threshold` pp. Catches PRs that ship
+#              untested new code, even if the project total stays flat because old
+#              well-tested code dilutes the average.
+# Both must pass — they answer different questions ("did the whole codebase regress?"
+# vs "is the new code tested?"), so we keep them both at the same tight threshold.
+coverage:
+  status:
+    project:
+      default:
+        threshold: 0.02%
+    patch:
+      default:
+        threshold: 0.02%

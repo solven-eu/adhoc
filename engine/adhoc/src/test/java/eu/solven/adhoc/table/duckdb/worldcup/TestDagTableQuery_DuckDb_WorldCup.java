@@ -53,7 +53,7 @@ import eu.solven.adhoc.filter.AndFilter;
 import eu.solven.adhoc.filter.ColumnFilter;
 import eu.solven.adhoc.measure.forest.IMeasureForest;
 import eu.solven.adhoc.measure.forest.MeasureForest;
-import eu.solven.adhoc.query.groupby.GroupByColumns;
+import eu.solven.adhoc.model.query.groupby.GroupByColumns;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.duckdb.ATestDagDuckDb;
 import eu.solven.adhoc.util.AdhocBenchmark;

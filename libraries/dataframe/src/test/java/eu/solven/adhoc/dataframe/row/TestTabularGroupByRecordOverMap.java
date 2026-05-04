@@ -32,7 +32,7 @@ import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.cuboid.slice.ISlice;
 import eu.solven.adhoc.cuboid.slice.SliceHelpers;
-import eu.solven.adhoc.query.groupby.GroupByColumns;
+import eu.solven.adhoc.model.query.groupby.GroupByColumns;
 
 public class TestTabularGroupByRecordOverMap {
 	@Test

@@ -52,8 +52,6 @@ import org.jspecify.annotations.Nullable;
 
 import com.google.common.collect.ImmutableSet;
 
-import eu.solven.adhoc.column.IAdhocColumn;
-import eu.solven.adhoc.column.ReferencedColumn;
 import eu.solven.adhoc.dataframe.row.AggregatedRecordFields;
 import eu.solven.adhoc.filter.AdhocFilterUnsafe;
 import eu.solven.adhoc.filter.FilterHelpers;
@@ -71,7 +69,9 @@ import eu.solven.adhoc.measure.sum.CountAggregation;
 import eu.solven.adhoc.measure.sum.EmptyAggregation;
 import eu.solven.adhoc.measure.sum.ExpressionAggregation;
 import eu.solven.adhoc.measure.sum.SumAggregation;
-import eu.solven.adhoc.query.groupby.IHasSqlExpression;
+import eu.solven.adhoc.model.column.IAdhocColumn;
+import eu.solven.adhoc.model.column.ReferencedColumn;
+import eu.solven.adhoc.model.query.groupby.IHasSqlExpression;
 import eu.solven.adhoc.query.table.FilteredAggregator;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.query.table.TableQueryV2;

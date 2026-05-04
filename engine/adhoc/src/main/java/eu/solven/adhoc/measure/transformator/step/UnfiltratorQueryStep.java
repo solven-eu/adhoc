@@ -35,7 +35,6 @@ import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.filter.editor.IFilterEditor;
 import eu.solven.adhoc.filter.editor.SimpleFilterEditor;
 import eu.solven.adhoc.measure.model.Unfiltrator;
-import eu.solven.adhoc.measure.model.Unfiltrator.Mode;
 import eu.solven.adhoc.util.NotYetImplementedException;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -57,11 +56,11 @@ public class UnfiltratorQueryStep implements IMeasureQueryStep {
 		Unfiltrator unfiltrator = getUnfiltrator();
 
 		Set<String> columns = unfiltrator.getColumns();
-		Mode mode = unfiltrator.getMode();
-		if (mode == Mode.Retain) {
+		Unfiltrator.Mode mode = unfiltrator.getMode();
+		if (mode == Unfiltrator.Mode.Retain) {
 			// retains listed columns, unfilter the others
 			return SimpleFilterEditor.retainsColumns(columns);
-		} else if (unfiltrator.getMode() == Mode.Suppress) {
+		} else if (unfiltrator.getMode() == Unfiltrator.Mode.Suppress) {
 			// retains listed columns, unfilter the others
 			return SimpleFilterEditor.suppressColumn(columns);
 		} else {

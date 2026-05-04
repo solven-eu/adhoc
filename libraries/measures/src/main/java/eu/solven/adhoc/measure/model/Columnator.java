@@ -31,6 +31,7 @@ import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.measure.sum.SumCombination;
 import eu.solven.adhoc.measure.transformator.ICombinator;
+import eu.solven.adhoc.model.measure.IMeasure;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;

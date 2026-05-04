@@ -48,9 +48,9 @@ import eu.solven.adhoc.engine.tabular.inducer.ITableQueryInducer;
 import eu.solven.adhoc.engine.tabular.inducer.TableQueryInducer;
 import eu.solven.adhoc.map.factory.RowSliceFactory;
 import eu.solven.adhoc.measure.model.Aggregator;
+import eu.solven.adhoc.model.query.groupby.GroupByColumns;
 import eu.solven.adhoc.options.IHasQueryOptions;
 import eu.solven.adhoc.primitive.IValueProviderTestHelpers;
-import eu.solven.adhoc.query.groupby.GroupByColumns;
 
 public class TestTableQueryFactory_Perf {
 

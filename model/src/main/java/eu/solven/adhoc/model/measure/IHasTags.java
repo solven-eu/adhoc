@@ -20,46 +20,23 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.util;
+package eu.solven.adhoc.model.measure;
 
-import java.util.function.Supplier;
-
-import org.jspecify.annotations.Nullable;
-
-import com.google.common.base.Suppliers;
-
-import eu.solven.adhoc.eventbus.IAdhocEventBus;
-import eu.solven.adhoc.primitive.IValueReceiver;
+import java.util.Set;
 
 /**
- * Centralizes all implementations doing nothing given input data.
+ * Used to provide synthetic information.
  * 
  * @author Benoit Lacelle
  */
-public class AdhocBlackHole implements IValueReceiver, IAdhocEventBus {
-	private static final Supplier<AdhocBlackHole> MEMOIZED = Suppliers.memoize(() -> new AdhocBlackHole());
+@FunctionalInterface
+public interface IHasTags {
+	String TAG_DEBUG = "debug";
 
-	public static AdhocBlackHole getInstance() {
-		return MEMOIZED.get();
-	}
-
-	@Override
-	public void onLong(long v) {
-		// do nothing with the value
-	}
-
-	@Override
-	public void onDouble(double v) {
-		// do nothing with the value
-	}
-
-	@Override
-	public void onObject(@Nullable Object v) {
-		// do nothing with the value
-	}
-
-	@Override
-	public void post(Object event) {
-		// do nothing with given event
-	}
+	/**
+	 * Tags are useful for various operations, like documentation (e.g. coloring some graphviz by tag).
+	 * 
+	 * @return the tags applied to this measure.
+	 */
+	Set<String> getTags();
 }

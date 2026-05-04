@@ -36,7 +36,6 @@ import java.util.stream.Collectors;
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableSet;
 
-import eu.solven.adhoc.column.IAdhocColumn;
 import eu.solven.adhoc.engine.dag.GraphHelpers;
 import eu.solven.adhoc.engine.dag.IAdhocDag;
 import eu.solven.adhoc.engine.step.TableQueryStep;
@@ -44,7 +43,8 @@ import eu.solven.adhoc.filter.FilterHelpers;
 import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.filter.stripper.IFilterStripper;
 import eu.solven.adhoc.filter.stripper.IFilterStripperFactory;
-import eu.solven.adhoc.query.cube.IGroupBy;
+import eu.solven.adhoc.model.column.IAdhocColumn;
+import eu.solven.adhoc.model.query.IGroupBy;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

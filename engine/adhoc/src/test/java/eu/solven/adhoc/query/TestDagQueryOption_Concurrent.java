@@ -39,8 +39,8 @@ import eu.solven.adhoc.engine.context.StandardQueryPreparator;
 import eu.solven.adhoc.engine.query.CubeQuery;
 import eu.solven.adhoc.measure.combination.CoalesceCombination;
 import eu.solven.adhoc.measure.model.Partitionor;
+import eu.solven.adhoc.model.query.groupby.GroupByColumns;
 import eu.solven.adhoc.options.StandardQueryOptions;
-import eu.solven.adhoc.query.groupby.GroupByColumns;
 
 public class TestDagQueryOption_Concurrent extends ATestDagInMemory implements IAdhocTestConstants {
 

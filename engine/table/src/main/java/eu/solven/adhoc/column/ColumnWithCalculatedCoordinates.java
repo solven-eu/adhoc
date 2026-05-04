@@ -27,6 +27,8 @@ import com.google.common.collect.ImmutableList;
 
 import eu.solven.adhoc.column.coordinate.ICalculatedCoordinate;
 import eu.solven.adhoc.column.coordinate.IHasCalculatedCoordinates;
+import eu.solven.adhoc.model.column.IAdhocColumn;
+import eu.solven.adhoc.model.column.ReferencedColumn;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.Singular;

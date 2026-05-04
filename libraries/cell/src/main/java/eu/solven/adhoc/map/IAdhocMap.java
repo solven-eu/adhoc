@@ -29,7 +29,7 @@ import java.util.Set;
 
 import eu.solven.adhoc.cuboid.slice.ISlice;
 import eu.solven.adhoc.map.factory.ISliceFactory;
-import eu.solven.adhoc.query.cube.IGroupBy;
+import eu.solven.adhoc.model.query.IGroupBy;
 import eu.solven.adhoc.util.immutable.IImmutable;
 
 /**

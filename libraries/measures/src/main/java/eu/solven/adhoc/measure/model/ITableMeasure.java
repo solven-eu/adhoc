@@ -22,6 +22,8 @@
  */
 package eu.solven.adhoc.measure.model;
 
+import eu.solven.adhoc.model.measure.IMeasure;
+
 /**
  * {@link IMeasure} which are evaluated by the {@link ITableWrapper}. They have no real underlying measures.
  * 

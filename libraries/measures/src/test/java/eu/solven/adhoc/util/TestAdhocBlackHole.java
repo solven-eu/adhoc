@@ -24,6 +24,8 @@ package eu.solven.adhoc.util;
 
 import org.junit.jupiter.api.Test;
 
+import eu.solven.adhoc.measure.AdhocBlackHole;
+
 public class TestAdhocBlackHole {
 	@Test
 	public void testNominal() {

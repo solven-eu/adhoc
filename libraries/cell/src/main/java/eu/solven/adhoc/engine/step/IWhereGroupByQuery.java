@@ -27,8 +27,8 @@ import java.util.List;
 import eu.solven.adhoc.filter.IHasFilters;
 import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.filter.NotFilter;
-import eu.solven.adhoc.query.cube.IGroupBy;
-import eu.solven.adhoc.query.cube.IHasGroupBy;
+import eu.solven.adhoc.model.query.IGroupBy;
+import eu.solven.adhoc.model.query.IHasGroupBy;
 
 /**
  * An {@link IWhereGroupByQuery} is view of a query, not expressing its measures.

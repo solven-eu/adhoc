@@ -20,20 +20,40 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.measure;
+package eu.solven.adhoc.model.query;
 
-import eu.solven.adhoc.measure.model.IMeasure;
+import java.util.Map;
+import java.util.Set;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+
+import eu.solven.adhoc.model.measure.IMeasure;
 
 /**
- * Used by {@link IMeasure} which are referred by their name.
+ * Holds a {@link Set} of {@link IMeasure}, independent of an underlying {@link ITableWrapper}.
  * 
  * @author Benoit Lacelle
  */
-@FunctionalInterface
-public interface IReferencedMeasure {
+public interface IHasMeasures {
+
+	/**
+	 * This recalls such objects requires not to have {@link IMeasure} with conflicting names.
+	 * 
+	 * @return a {@link Map} from measure name to the measure.
+	 */
+	@JsonIgnore
+	default Map<String, IMeasure> getNameToMeasure() {
+		return getMeasures().stream().collect(ImmutableMap.toImmutableMap(IMeasure::getName, m -> m));
+	}
+
 	/**
 	 * 
-	 * @return the name of the underlying/referenced object.
+	 * @return the {@link Set} of {@link IMeasure}
 	 */
-	String getRef();
+	default Set<IMeasure> getMeasures() {
+		return getNameToMeasure().values().stream().collect(ImmutableSet.toImmutableSet());
+	}
+
 }

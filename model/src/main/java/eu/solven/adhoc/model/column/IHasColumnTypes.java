@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,17 +20,22 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.query.cube;
+package eu.solven.adhoc.model.column;
 
-import java.util.List;
+import java.util.Map;
 
 /**
- * A {@link List} of columns. Typically used by {@link ICubeQuery}.
+ * Helps describing the column of some data-structure.
  * 
  * @author Benoit Lacelle
- *
  */
 @FunctionalInterface
-public interface IHasGroupBy {
-	IGroupBy getGroupBy();
+public interface IHasColumnTypes {
+
+	/**
+	 * 
+	 * @return the columns available for groupBy operations, mapped to the Java-type of given column.
+	 */
+	Map<String, Class<?>> getColumnTypes();
+
 }

@@ -24,11 +24,11 @@ package eu.solven.adhoc.measure.transformator;
 
 import eu.solven.adhoc.data.cell.MultitypeCell;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
+import eu.solven.adhoc.measure.AdhocBlackHole;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.sum.CoalesceAggregation;
 import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.primitive.IValueReceiver;
-import eu.solven.adhoc.util.AdhocBlackHole;
 
 /**
  * Enables processing an {@link ICombination} along columns, without having to create {@link IValueReceiver} for each

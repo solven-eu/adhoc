@@ -42,8 +42,8 @@ import eu.solven.adhoc.filter.value.IValueMatcher;
 import eu.solven.adhoc.filter.value.InMatcher;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.Filtrator;
-import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.measure.model.Shiftor;
+import eu.solven.adhoc.model.measure.IMeasure;
 import lombok.experimental.UtilityClass;
 
 /**
