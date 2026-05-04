@@ -42,7 +42,7 @@ import eu.solven.adhoc.engine.context.StandardQueryPreparator;
 import eu.solven.adhoc.engine.query.CubeQuery;
 import eu.solven.adhoc.eventbus.AdhocEventsFromGuavaEventBusToSfl4j;
 import eu.solven.adhoc.measure.forest.UnsafeMeasureForest;
-import eu.solven.adhoc.measure.model.Aggregator;
+import eu.solven.adhoc.model.measure.Aggregator;
 import eu.solven.adhoc.table.InMemoryTable;
 
 /**

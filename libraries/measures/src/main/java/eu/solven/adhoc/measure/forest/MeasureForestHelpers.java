@@ -28,9 +28,9 @@ import java.util.Deque;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import eu.solven.adhoc.measure.IReferencedMeasure;
-import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.measure.transformator.IHasUnderlyingMeasures;
+import eu.solven.adhoc.model.measure.IMeasure;
+import eu.solven.adhoc.model.measure.IReferencedMeasure;
 import eu.solven.adhoc.util.map.AdhocMapPathGet;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;

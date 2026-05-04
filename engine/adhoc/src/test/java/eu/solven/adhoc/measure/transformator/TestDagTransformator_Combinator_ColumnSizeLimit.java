@@ -37,8 +37,8 @@ import eu.solven.adhoc.dataframe.tabular.MapBasedTabularView;
 import eu.solven.adhoc.encoding.column.AdhocColumnUnsafe;
 import eu.solven.adhoc.engine.query.CubeQuery;
 import eu.solven.adhoc.measure.combination.CoalesceCombination;
-import eu.solven.adhoc.measure.model.Partitionor;
-import eu.solven.adhoc.query.groupby.GroupByColumns;
+import eu.solven.adhoc.model.measure.Partitionor;
+import eu.solven.adhoc.model.query.groupby.GroupByColumns;
 
 public class TestDagTransformator_Combinator_ColumnSizeLimit extends ATestDagInMemory implements IAdhocTestConstants {
 

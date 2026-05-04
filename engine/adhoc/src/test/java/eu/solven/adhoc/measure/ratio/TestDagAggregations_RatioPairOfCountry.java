@@ -36,11 +36,11 @@ import eu.solven.adhoc.dataframe.tabular.ITabularView;
 import eu.solven.adhoc.dataframe.tabular.MapBasedTabularView;
 import eu.solven.adhoc.engine.query.CubeQuery;
 import eu.solven.adhoc.filter.ColumnFilter;
-import eu.solven.adhoc.measure.model.Aggregator;
-import eu.solven.adhoc.measure.model.Combinator;
-import eu.solven.adhoc.measure.model.Filtrator;
 import eu.solven.adhoc.measure.sum.DivideCombination;
 import eu.solven.adhoc.measure.sum.SumAggregation;
+import eu.solven.adhoc.model.measure.Aggregator;
+import eu.solven.adhoc.model.measure.Combinator;
+import eu.solven.adhoc.model.measure.Filtrator;
 import lombok.extern.slf4j.Slf4j;
 
 /**

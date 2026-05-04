@@ -30,8 +30,10 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.filter.AdhocPublicJackson;
-import eu.solven.adhoc.query.cube.IGroupBy;
-import eu.solven.adhoc.query.groupby.GroupByColumns;
+import eu.solven.adhoc.model.column.IAdhocColumn;
+import eu.solven.adhoc.model.column.ReferencedColumn;
+import eu.solven.adhoc.model.query.IGroupBy;
+import eu.solven.adhoc.model.query.groupby.GroupByColumns;
 import eu.solven.pepper.unittest.PepperJackson3TestHelper;
 import lombok.Builder;
 import lombok.Value;

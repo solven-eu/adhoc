@@ -22,7 +22,7 @@
  */
 package eu.solven.adhoc.measure.transformator;
 
-import eu.solven.adhoc.measure.model.Combinator;
+import eu.solven.adhoc.model.measure.Combinator;
 
 /**
  * Relates with {@link Combinator}.

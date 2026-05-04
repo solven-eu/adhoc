@@ -31,7 +31,7 @@ import org.openjdk.jol.info.GraphLayout;
 import eu.solven.adhoc.collection.FrozenException;
 import eu.solven.adhoc.dataframe.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
-import eu.solven.adhoc.measure.model.Aggregator;
+import eu.solven.adhoc.model.measure.Aggregator;
 import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.pepper.memory.PepperFootprintHelper;
 

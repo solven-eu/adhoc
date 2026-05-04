@@ -31,10 +31,10 @@ import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.ATestDagInMemory;
 import eu.solven.adhoc.column.ColumnsManager;
-import eu.solven.adhoc.column.FunctionCalculatedColumn;
 import eu.solven.adhoc.cube.CubeWrapper;
-import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.sum.SumAggregation;
+import eu.solven.adhoc.model.column.FunctionCalculatedColumn;
+import eu.solven.adhoc.model.measure.Aggregator;
 import eu.solven.adhoc.table.transcoder.value.StandardCustomTypeManager;
 
 /**

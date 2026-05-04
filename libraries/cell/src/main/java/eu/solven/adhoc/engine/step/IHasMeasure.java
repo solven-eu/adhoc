@@ -22,7 +22,7 @@
  */
 package eu.solven.adhoc.engine.step;
 
-import eu.solven.adhoc.measure.model.IMeasure;
+import eu.solven.adhoc.model.measure.IMeasure;
 
 /**
  * For object with a single well-defined measure.

@@ -30,12 +30,12 @@ import org.jspecify.annotations.Nullable;
 import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.filter.ISliceFilter;
-import eu.solven.adhoc.measure.ReferencedMeasure;
-import eu.solven.adhoc.measure.model.IMeasure;
+import eu.solven.adhoc.model.measure.IMeasure;
+import eu.solven.adhoc.model.measure.ReferencedMeasure;
+import eu.solven.adhoc.model.query.IGroupBy;
+import eu.solven.adhoc.model.query.IHasCustomMarker;
 import eu.solven.adhoc.options.IHasQueryOptions;
 import eu.solven.adhoc.options.IQueryOption;
-import eu.solven.adhoc.query.cube.IGroupBy;
-import eu.solven.adhoc.query.cube.IHasCustomMarker;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NonNull;

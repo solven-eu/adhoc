@@ -37,21 +37,21 @@ import eu.solven.adhoc.ATestDagInMemory;
 import eu.solven.adhoc.cube.ICubeWrapper;
 import eu.solven.adhoc.dataframe.tabular.ITabularView;
 import eu.solven.adhoc.dataframe.tabular.MapBasedTabularView;
-import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.query.CubeQuery;
 import eu.solven.adhoc.engine.tabular.splitter.InduceByAdhocComplete;
 import eu.solven.adhoc.eventbus.TableStepIsEvaluating;
+import eu.solven.adhoc.factories.AdhocFactories;
 import eu.solven.adhoc.filter.AndFilter;
 import eu.solven.adhoc.filter.ColumnFilter;
 import eu.solven.adhoc.filter.IFilterFactories;
 import eu.solven.adhoc.filter.IFilterQueryBundle;
 import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.measure.aggregation.comparable.MaxCombination;
-import eu.solven.adhoc.measure.model.Aggregator;
-import eu.solven.adhoc.measure.model.Filtrator;
-import eu.solven.adhoc.measure.model.Partitionor;
+import eu.solven.adhoc.model.measure.Aggregator;
+import eu.solven.adhoc.model.measure.Filtrator;
+import eu.solven.adhoc.model.measure.Partitionor;
+import eu.solven.adhoc.model.query.groupby.GroupByColumns;
 import eu.solven.adhoc.options.IHasQueryOptions;
-import eu.solven.adhoc.query.groupby.GroupByColumns;
 
 /**
  * This will test actual queries over TableQueryOptimizerSinglePerAggregator.

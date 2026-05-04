@@ -23,8 +23,8 @@
 package eu.solven.adhoc.query.table;
 
 import eu.solven.adhoc.filter.ISliceFilter;
-import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.IAliasedAggregator;
+import eu.solven.adhoc.model.measure.Aggregator;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;

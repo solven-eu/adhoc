@@ -28,11 +28,11 @@ import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.engine.step.IWhereGroupByQuery;
 import eu.solven.adhoc.filter.ISliceFilter;
-import eu.solven.adhoc.measure.model.Aggregator;
+import eu.solven.adhoc.model.measure.Aggregator;
+import eu.solven.adhoc.model.query.IGroupBy;
+import eu.solven.adhoc.model.query.IHasCustomMarker;
 import eu.solven.adhoc.options.IHasQueryOptions;
 import eu.solven.adhoc.options.IQueryOption;
-import eu.solven.adhoc.query.cube.IGroupBy;
-import eu.solven.adhoc.query.cube.IHasCustomMarker;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.Singular;

@@ -23,7 +23,7 @@
 package eu.solven.adhoc.dataframe.column;
 
 import eu.solven.adhoc.measure.aggregation.IAggregation;
-import eu.solven.adhoc.measure.model.Partitionor;
+import eu.solven.adhoc.model.measure.Partitionor;
 import eu.solven.adhoc.primitive.IValueReceiver;
 
 /**

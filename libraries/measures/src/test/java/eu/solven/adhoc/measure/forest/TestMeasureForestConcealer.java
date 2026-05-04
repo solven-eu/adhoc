@@ -46,14 +46,14 @@ import eu.solven.adhoc.filter.value.OrMatcher;
 import eu.solven.adhoc.filter.value.StringMatcher;
 import eu.solven.adhoc.measure.forest.MeasureForestConcealer.ConcealingDefinition;
 import eu.solven.adhoc.measure.forest.MeasureForestConcealer.ConcealingResult;
-import eu.solven.adhoc.measure.model.Aggregator;
-import eu.solven.adhoc.measure.model.Columnator;
-import eu.solven.adhoc.measure.model.Combinator;
-import eu.solven.adhoc.measure.model.Dispatchor;
-import eu.solven.adhoc.measure.model.Filtrator;
-import eu.solven.adhoc.measure.model.IMeasure;
-import eu.solven.adhoc.measure.model.Partitionor;
-import eu.solven.adhoc.measure.model.Shiftor;
+import eu.solven.adhoc.model.measure.Aggregator;
+import eu.solven.adhoc.model.measure.Columnator;
+import eu.solven.adhoc.model.measure.Combinator;
+import eu.solven.adhoc.model.measure.Dispatchor;
+import eu.solven.adhoc.model.measure.Filtrator;
+import eu.solven.adhoc.model.measure.IMeasure;
+import eu.solven.adhoc.model.measure.Partitionor;
+import eu.solven.adhoc.model.measure.Shiftor;
 
 public class TestMeasureForestConcealer {
 
@@ -388,7 +388,7 @@ public class TestMeasureForestConcealer {
 		Partitionor secret = Partitionor.builder()
 				.name("fxRevenue")
 				.underlying("revenue")
-				.groupBy(eu.solven.adhoc.query.groupby.GroupByColumns.named("ccy", "region"))
+				.groupBy(eu.solven.adhoc.model.query.groupby.GroupByColumns.named("ccy", "region"))
 				.build();
 		IMeasureForest forest =
 				MeasureForest.builder().name("myForest").measure(Aggregator.sum("revenue")).measure(secret).build();

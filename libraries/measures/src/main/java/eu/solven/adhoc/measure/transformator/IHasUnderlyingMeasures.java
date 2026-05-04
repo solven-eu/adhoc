@@ -22,7 +22,7 @@
  */
 package eu.solven.adhoc.measure.transformator;
 
-import eu.solven.adhoc.measure.model.IMeasure;
+import eu.solven.adhoc.model.measure.IMeasure;
 
 /**
  * For {@link IMeasure} which has underlying measures.

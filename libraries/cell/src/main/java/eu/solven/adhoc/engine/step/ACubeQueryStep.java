@@ -36,11 +36,11 @@ import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.filter.FilterHelpers;
 import eu.solven.adhoc.filter.ISliceFilter;
-import eu.solven.adhoc.measure.model.IHasTags;
-import eu.solven.adhoc.measure.model.IMeasure;
+import eu.solven.adhoc.model.measure.IHasTags;
+import eu.solven.adhoc.model.measure.IMeasure;
+import eu.solven.adhoc.model.query.IGroupBy;
 import eu.solven.adhoc.options.IQueryOption;
 import eu.solven.adhoc.options.StandardQueryOptions;
-import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import lombok.Getter;
 

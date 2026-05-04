@@ -32,9 +32,9 @@ import org.junit.jupiter.api.Test;
 import eu.solven.adhoc.ATestDagInMemory;
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.engine.query.CubeQuery;
-import eu.solven.adhoc.measure.model.Aggregator;
-import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.sum.SumAggregation;
+import eu.solven.adhoc.model.measure.Aggregator;
+import eu.solven.adhoc.model.measure.Combinator;
 import eu.solven.adhoc.options.StandardQueryOptions;
 import lombok.extern.slf4j.Slf4j;
 

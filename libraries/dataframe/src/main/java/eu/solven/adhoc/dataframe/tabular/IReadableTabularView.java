@@ -30,7 +30,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import eu.solven.adhoc.cuboid.IColumnScanner;
 import eu.solven.adhoc.cuboid.slice.ISlice;
 import eu.solven.adhoc.engine.step.ICubeQuery;
-import eu.solven.adhoc.measure.model.IMeasure;
+import eu.solven.adhoc.model.measure.IMeasure;
 
 /**
  * Holds the data for a {@link Set} of {@link ISlice} and a {@link Set} of {@link IMeasure}. Typical output of an

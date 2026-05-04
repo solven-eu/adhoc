@@ -28,18 +28,18 @@ import java.util.Set;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import eu.solven.adhoc.column.FunctionCalculatedColumn;
 import eu.solven.adhoc.cuboid.slice.ISlice;
 import eu.solven.adhoc.cuboid.slice.SliceHelpers;
-import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.engine.step.SliceAsMapWithStep;
+import eu.solven.adhoc.factories.AdhocFactories;
 import eu.solven.adhoc.filter.AndFilter;
 import eu.solven.adhoc.filter.ISliceFilter;
-import eu.solven.adhoc.measure.model.Dispatchor;
-import eu.solven.adhoc.query.cube.IGroupBy;
-import eu.solven.adhoc.query.groupby.GroupByColumns;
+import eu.solven.adhoc.model.column.FunctionCalculatedColumn;
+import eu.solven.adhoc.model.measure.Dispatchor;
+import eu.solven.adhoc.model.query.IGroupBy;
+import eu.solven.adhoc.model.query.groupby.GroupByColumns;
 
 public class TestDispatchorQueryStep {
 	private boolean isRelevant(Map<String, String> decompositionSLice, ISliceFilter stepFilter) {

@@ -27,10 +27,10 @@ import java.util.Map;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
-import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.ITableMeasure;
 import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.measure.transformator.IHasAggregationKey;
+import eu.solven.adhoc.model.measure.Aggregator;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;

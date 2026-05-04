@@ -34,8 +34,8 @@ import org.jspecify.annotations.Nullable;
 import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.cuboid.slice.ISlice;
+import eu.solven.adhoc.model.query.IGroupBy;
 import eu.solven.adhoc.primitive.IValueProvider;
-import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.table.transcoder.ITableReverseAliaser;
 import eu.solven.adhoc.table.transcoder.value.IColumnValueTranscoder;
 import lombok.Builder;

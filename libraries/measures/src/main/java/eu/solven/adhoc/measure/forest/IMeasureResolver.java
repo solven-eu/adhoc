@@ -22,8 +22,8 @@
  */
 package eu.solven.adhoc.measure.forest;
 
-import eu.solven.adhoc.measure.ReferencedMeasure;
-import eu.solven.adhoc.measure.model.IMeasure;
+import eu.solven.adhoc.model.measure.IMeasure;
+import eu.solven.adhoc.model.measure.ReferencedMeasure;
 
 /**
  * Typically useful to resolve {@link ReferencedMeasure}

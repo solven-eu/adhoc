@@ -39,7 +39,7 @@ import eu.solven.adhoc.dataframe.tabular.MapBasedTabularView;
 import eu.solven.adhoc.engine.query.CubeQuery;
 import eu.solven.adhoc.filter.ColumnFilter;
 import eu.solven.adhoc.measure.combination.EvaluatedExpressionCombination;
-import eu.solven.adhoc.measure.model.Combinator;
+import eu.solven.adhoc.model.measure.Combinator;
 
 public class TestDagTransformator_ExpressionCombination extends ATestDagInMemory implements IAdhocTestConstants {
 

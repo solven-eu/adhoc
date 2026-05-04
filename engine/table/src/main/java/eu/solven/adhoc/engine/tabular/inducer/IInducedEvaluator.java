@@ -31,7 +31,7 @@ import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.TableQueryStep;
 import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
-import eu.solven.adhoc.measure.model.Aggregator;
+import eu.solven.adhoc.model.measure.Aggregator;
 
 /**
  * Defines the contract for evaluating an induced {@link CubeQueryStep} into an aggregated result column.

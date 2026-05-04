@@ -34,7 +34,7 @@ import eu.solven.adhoc.filter.value.EqualsMatcher;
 import eu.solven.adhoc.map.IAdhocMap;
 import eu.solven.adhoc.map.IHasAdhocMap;
 import eu.solven.adhoc.map.factory.ISliceFactory;
-import eu.solven.adhoc.query.cube.IGroupBy;
+import eu.solven.adhoc.model.query.IGroupBy;
 
 /**
  * A slice expresses the coordinates of an output row, given columns expressed by a {@link IGroupBy}.

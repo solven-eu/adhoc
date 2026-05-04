@@ -33,11 +33,11 @@ import eu.solven.adhoc.measure.forest.IMeasureForest;
 import eu.solven.adhoc.measure.forest.IMeasureForestVisitor;
 import eu.solven.adhoc.measure.forest.MeasureForest;
 import eu.solven.adhoc.measure.forest.MeasureForestHelpers;
-import eu.solven.adhoc.measure.model.Aggregator;
-import eu.solven.adhoc.measure.model.Combinator;
-import eu.solven.adhoc.measure.model.Filtrator;
-import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.measure.sum.SumCombination;
+import eu.solven.adhoc.model.measure.Aggregator;
+import eu.solven.adhoc.model.measure.Combinator;
+import eu.solven.adhoc.model.measure.Filtrator;
+import eu.solven.adhoc.model.measure.IMeasure;
 
 public class TestMeasureForest implements IAdhocTestConstants {
 	@Test

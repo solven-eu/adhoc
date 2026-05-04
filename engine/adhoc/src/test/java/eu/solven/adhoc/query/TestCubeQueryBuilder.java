@@ -31,8 +31,8 @@ import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.engine.query.CubeQuery;
 import eu.solven.adhoc.filter.AndFilter;
+import eu.solven.adhoc.model.query.groupby.GroupByColumns;
 import eu.solven.adhoc.options.StandardQueryOptions;
-import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.resource.AdhocJackson;
 import io.cucumber.core.internal.com.fasterxml.jackson.core.JsonProcessingException;
 import tools.jackson.databind.ObjectMapper;

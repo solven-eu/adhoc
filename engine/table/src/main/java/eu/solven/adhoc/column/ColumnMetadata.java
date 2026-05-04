@@ -33,7 +33,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
 import eu.solven.adhoc.collection.AdhocCollectionHelpers;
-import eu.solven.adhoc.measure.model.IHasTags;
+import eu.solven.adhoc.model.measure.IHasTags;
 import eu.solven.adhoc.util.IHasName;
 import lombok.Builder;
 import lombok.Builder.Default;

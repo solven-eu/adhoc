@@ -31,11 +31,11 @@ import eu.solven.adhoc.measure.examples.RatioOverCurrentColumnValueCompositor;
 import eu.solven.adhoc.measure.examples.RatioOverSpecificColumnValueCompositor;
 import eu.solven.adhoc.measure.forest.IMeasureForest;
 import eu.solven.adhoc.measure.forest.MeasureForest;
-import eu.solven.adhoc.measure.model.Aggregator;
-import eu.solven.adhoc.measure.model.Combinator;
-import eu.solven.adhoc.measure.model.Dispatchor;
 import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.measure.sum.SumCombination;
+import eu.solven.adhoc.model.measure.Aggregator;
+import eu.solven.adhoc.model.measure.Combinator;
+import eu.solven.adhoc.model.measure.Dispatchor;
 import eu.solven.adhoc.resource.MeasureForests;
 
 public class TestForestAsMermaidDag {

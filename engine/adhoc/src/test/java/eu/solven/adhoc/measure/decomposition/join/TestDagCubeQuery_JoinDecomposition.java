@@ -33,13 +33,13 @@ import eu.solven.adhoc.ATestDagInMemory;
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.dataframe.tabular.ITabularView;
 import eu.solven.adhoc.dataframe.tabular.MapBasedTabularView;
-import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.query.CubeQuery;
+import eu.solven.adhoc.factories.AdhocFactories;
 import eu.solven.adhoc.measure.decomposition.IDecomposition;
-import eu.solven.adhoc.measure.model.Dispatchor;
 import eu.solven.adhoc.measure.operator.IOperatorFactory;
 import eu.solven.adhoc.measure.operator.StandardOperatorFactory;
-import eu.solven.adhoc.query.groupby.GroupByColumns;
+import eu.solven.adhoc.model.measure.Dispatchor;
+import eu.solven.adhoc.model.query.groupby.GroupByColumns;
 
 /**
  * End-to-end tests for {@link JoinDecomposition} with <em>multiple</em> output columns. The scenario: table rows carry

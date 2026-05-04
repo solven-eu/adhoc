@@ -41,8 +41,8 @@ import eu.solven.adhoc.engine.query.CubeQuery;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.eventbus.QueryLifecycleEvent;
 import eu.solven.adhoc.measure.combination.ICombination;
-import eu.solven.adhoc.measure.model.Aggregator;
-import eu.solven.adhoc.measure.model.Combinator;
+import eu.solven.adhoc.model.measure.Aggregator;
+import eu.solven.adhoc.model.measure.Combinator;
 
 public class TestDagAdhocQueryMonitor extends ATestDagInMemory {
 	public static class AdhocQueryMonitorGuava extends AdhocQueryMonitor {

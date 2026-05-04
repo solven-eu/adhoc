@@ -28,9 +28,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import com.google.common.base.MoreObjects;
 import com.google.common.base.MoreObjects.ToStringHelper;
 
+import eu.solven.adhoc.factories.AdhocFactoriesUnsafe;
 import eu.solven.adhoc.map.factory.ISliceFactory;
 import eu.solven.adhoc.options.IHasOptionsAndExecutorService;
-import eu.solven.adhoc.util.AdhocFactoriesUnsafe;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import lombok.Builder.Default;
 import lombok.experimental.SuperBuilder;

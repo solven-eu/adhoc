@@ -31,9 +31,10 @@ import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedSet;
 
-import eu.solven.adhoc.column.IAdhocColumn;
-import eu.solven.adhoc.column.ReferencedColumn;
-import eu.solven.adhoc.query.cube.IGroupBy;
+import eu.solven.adhoc.model.column.IAdhocColumn;
+import eu.solven.adhoc.model.column.ReferencedColumn;
+import eu.solven.adhoc.model.query.IGroupBy;
+import eu.solven.adhoc.model.query.groupby.GroupByColumns;
 import eu.solven.pepper.unittest.PepperJackson3TestHelper;
 import lombok.Builder;
 import lombok.Getter;

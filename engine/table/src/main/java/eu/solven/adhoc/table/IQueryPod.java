@@ -23,14 +23,14 @@
 package eu.solven.adhoc.table;
 
 import eu.solven.adhoc.column.IColumnsManager;
-import eu.solven.adhoc.engine.IHasExecutorAndSliceFactory;
 import eu.solven.adhoc.engine.cache.IQueryStepCache;
 import eu.solven.adhoc.engine.context.IIsCancellable;
 import eu.solven.adhoc.engine.step.IWhereGroupByQuery;
+import eu.solven.adhoc.factories.IHasExecutorAndSliceFactory;
 import eu.solven.adhoc.measure.forest.IMeasureResolver;
+import eu.solven.adhoc.model.query.IHasMeasures;
 import eu.solven.adhoc.options.IHasOptionsAndExecutorService;
 import eu.solven.adhoc.query.AdhocQueryId;
-import eu.solven.adhoc.query.cube.IHasMeasures;
 
 /**
  * The slice of a query context that an {@link ITableWrapper} actually consumes — executor service, options, slice

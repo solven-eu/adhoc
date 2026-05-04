@@ -1,0 +1,135 @@
+/**
+ * The MIT License
+ * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
+package eu.solven.adhoc.model.measure;
+
+import java.util.List;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
+
+import eu.solven.adhoc.filter.ISliceFilter;
+import eu.solven.adhoc.filter.editor.IFilterEditor;
+import eu.solven.adhoc.measure.transformator.IHasUnderlyingMeasures;
+import lombok.Builder;
+import lombok.Builder.Default;
+import lombok.NonNull;
+import lombok.Singular;
+import lombok.Value;
+import lombok.With;
+import lombok.extern.jackson.Jacksonized;
+import lombok.extern.slf4j.Slf4j;
+
+/**
+ * An {@link Unfiltrator} is a specialisation of {@link Shiftor} where the {@link IFilterEditor} widens the current
+ * filter by replacing constraints on selected columns with {@code matchAll}. Because this pattern (requesting
+ * underlying measures at a coarser granularity) is extremely common, {@link Unfiltrator} provides a simpler builder
+ * that does not require implementing a full {@link IFilterEditor}.
+ *
+ * <p>
+ * Two modes are available via {@link Mode}:
+ * <ul>
+ * <li>{@link Mode#Suppress} — listed columns have their filter replaced by {@code matchAll}; all others are kept.</li>
+ * <li>{@link Mode#Retain} — listed columns keep their filter; all other columns are replaced by {@code matchAll}.</li>
+ * </ul>
+ *
+ * <p>
+ * A typical use-case is computing a hierarchical share-of-total: the numerator is filtered to a city, while the
+ * denominator uses an {@link Unfiltrator} with {@link Mode#Retain} on {@code country} to widen the slice to the
+ * full-country total.
+ *
+ * @see Shiftor the generalisation that supports arbitrary filter transformations via {@link IFilterEditor}
+ * @see Filtrator the counterpart that narrows (ANDs) the filter instead of widening it
+ * @author Benoit Lacelle
+ */
+@Value
+@Builder(toBuilder = true)
+@Jacksonized
+@Slf4j
+public class Unfiltrator implements IMeasure, IHasUnderlyingMeasures {
+	/**
+	 * Different mode to modify the {@link ISliceFilter}.
+	 * 
+	 * @author Benoit Lacelle
+	 */
+	// https://stackoverflow.com/questions/3069743/coding-conventions-naming-enums
+	@SuppressWarnings("PMD.FieldNamingConventions")
+	public enum Mode {
+		// if a column is listed, its filters are neutralized into matchAll
+		Suppress,
+		// if a column is not listed, its filters are neutralized into matchAll
+		Retain,
+	}
+
+	@NonNull
+	String name;
+
+	@NonNull
+	@Singular
+	@With
+	ImmutableSet<String> tags;
+
+	@NonNull
+	String underlying;
+
+	@NonNull
+	@Singular
+	ImmutableSet<String> columns;
+
+	// By default, the selected columns are turned to `matchAll`.
+	// If true, only selected columns are kept; others are turned into `matchAll`.
+	@Default
+	Mode mode = Mode.Suppress;
+
+	@JsonIgnore
+	@Override
+	public List<String> getUnderlyingNames() {
+		return ImmutableList.of(underlying);
+	}
+
+	/**
+	 * Lombok @Builder
+	 *
+	 * @author Benoit Lacelle
+	 */
+	// Builder fields populated via chained setters before .build(); NullAway can't see the cross-method init.
+	@SuppressWarnings("NullAway.Init")
+	public static class UnfiltratorBuilder {
+		/**
+		 * Use this if you want only given columns to be filtered, while others are turned into `matchAll`.
+		 *
+		 * @param column
+		 * @param moreColumns
+		 * @return current builder.
+		 */
+		public UnfiltratorBuilder unfilterOthersThan(String column, String... moreColumns) {
+			this.clearColumns().columns(Lists.asList(column, moreColumns));
+
+			this.mode(Mode.Retain);
+
+			return this;
+		}
+	}
+
+}

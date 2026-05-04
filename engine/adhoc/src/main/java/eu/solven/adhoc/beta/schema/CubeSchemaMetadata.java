@@ -26,7 +26,7 @@ import com.google.common.collect.ImmutableMap;
 
 import eu.solven.adhoc.cube.ICubeWrapper;
 import eu.solven.adhoc.engine.step.ICubeQuery;
-import eu.solven.adhoc.measure.model.IMeasure;
+import eu.solven.adhoc.model.measure.IMeasure;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.Singular;

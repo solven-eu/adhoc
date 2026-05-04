@@ -36,14 +36,14 @@ import com.google.common.util.concurrent.ListeningExecutorService;
 
 import eu.solven.adhoc.cuboid.ICuboid;
 import eu.solven.adhoc.dataframe.row.ITabularRecordStream;
-import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.dag.GraphHelpers;
 import eu.solven.adhoc.engine.step.TableQueryStep;
 import eu.solven.adhoc.engine.tabular.optimizer.SplitTableQueries;
 import eu.solven.adhoc.engine.tabular.optimizer.TableQueryFactory;
-import eu.solven.adhoc.measure.model.Aggregator;
+import eu.solven.adhoc.factories.AdhocFactories;
+import eu.solven.adhoc.model.measure.Aggregator;
+import eu.solven.adhoc.model.query.IGroupBy;
 import eu.solven.adhoc.options.StandardQueryOptions;
-import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.query.table.FilteredAggregator;
 import eu.solven.adhoc.query.table.TableQueryV4;
 import eu.solven.adhoc.table.ITableWrapper;

@@ -27,7 +27,7 @@ import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.dataframe.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
-import eu.solven.adhoc.measure.model.Aggregator;
+import eu.solven.adhoc.model.measure.Aggregator;
 
 public class TestPartitionedMultitypeMergeableGrid {
 	Aggregator sum = Aggregator.sum("k1");

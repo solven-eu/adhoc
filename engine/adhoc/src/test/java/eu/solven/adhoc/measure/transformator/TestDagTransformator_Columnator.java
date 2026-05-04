@@ -37,9 +37,9 @@ import eu.solven.adhoc.dataframe.tabular.MapBasedTabularView;
 import eu.solven.adhoc.engine.query.CubeQuery;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.measure.combination.ICombination;
-import eu.solven.adhoc.measure.model.Columnator;
-import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.sum.SumCombination;
+import eu.solven.adhoc.model.measure.Columnator;
+import eu.solven.adhoc.model.measure.Combinator;
 import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
 
 public class TestDagTransformator_Columnator extends ATestDagInMemory implements IAdhocTestConstants {

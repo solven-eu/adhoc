@@ -29,7 +29,6 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.jspecify.annotations.Nullable;
-import org.roaringbitmap.RoaringBitmap;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.base.MoreObjects.ToStringHelper;
@@ -40,24 +39,21 @@ import eu.solven.adhoc.dataframe.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.dataframe.column.IMultitypeIntColumnFastGet;
 import eu.solven.adhoc.dataframe.column.IMultitypeMergeableColumn;
 import eu.solven.adhoc.dataframe.column.IMultitypeMergeableIntColumn;
-import eu.solven.adhoc.dataframe.column.UndictionarizedColumn;
 import eu.solven.adhoc.dataframe.column.hash.MultitypeHashColumn;
 import eu.solven.adhoc.dataframe.column.hash.MultitypeHashIntColumn;
-import eu.solven.adhoc.engine.AdhocFactories;
-import eu.solven.adhoc.engine.IAdhocFactories;
 import eu.solven.adhoc.engine.step.ICubeQueryStep;
+import eu.solven.adhoc.factories.AdhocFactories;
+import eu.solven.adhoc.factories.IAdhocFactories;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.aggregation.carrier.IAggregationCarrier.IHasCarriers;
-import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.IAliasedAggregator;
+import eu.solven.adhoc.model.measure.Aggregator;
 import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import eu.solven.pepper.core.PepperStreamHelper;
 import it.unimi.dsi.fastutil.ints.Int2ObjectFunction;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
-import it.unimi.dsi.fastutil.ints.IntArrayList;
-import it.unimi.dsi.fastutil.objects.Object2IntFunction;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import lombok.Builder.Default;
 import lombok.NonNull;
@@ -184,33 +180,6 @@ public class AggregatingColumns<T extends Comparable<T>> extends AAggregatingCol
 		// `.parallelStream()`?
 		sliceToIndex.object2IntEntrySet().forEach(e -> indexToSlice.put(e.getIntValue(), e.getKey()));
 		return indexToSlice::get;
-	}
-
-	@SuppressWarnings("PMD.LooseCoupling")
-	protected static <T> IMultitypeColumnFastGet<T> undictionarizeColumn(IMultitypeIntColumnFastGet column,
-			Object2IntFunction<T> sliceToIndex,
-			Int2ObjectFunction<T> indexToSlice,
-			long nbSorted) {
-
-		// BEWARE In edge-cases, the navigable column may be interlaced with the hash column. TODO Improve the detection
-		// of this case to skip the bitmap creation.
-		// Snapshot the sorted-prefix index set from the source column's natural stream order *before* copying, so the
-		// bitmap reflects which original indices belong to the slice-ascending head of the dictionarization. The
-		// wrapper then uses this bitmap as its sortedLeg predicate, independent of the destination column's own key
-		// ordering.
-		int nbSortedInt = (int) nbSorted;
-		IntArrayList intArrayList = new IntArrayList(nbSortedInt);
-		column.limit(nbSortedInt).forEach(s -> intArrayList.add(s.getSlice().intValue()));
-
-		RoaringBitmap bitmap = RoaringBitmap.bitmapOf(intArrayList.elements());
-
-		return UndictionarizedColumn.<T>builder()
-				.indexToSlice(indexToSlice)
-				.sliceToIndex(sliceToIndex)
-				.column(column)
-				.sortedLength(nbSortedInt)
-				.sortedLeg(bitmap::contains)
-				.build();
 	}
 
 	@Override

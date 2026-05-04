@@ -38,8 +38,8 @@ import eu.solven.adhoc.filter.AndFilter;
 import eu.solven.adhoc.filter.ColumnFilter;
 import eu.solven.adhoc.filter.FilterBuilder;
 import eu.solven.adhoc.filter.value.InMatcher;
-import eu.solven.adhoc.measure.model.Aggregator;
-import eu.solven.adhoc.query.groupby.GroupByColumns;
+import eu.solven.adhoc.model.measure.Aggregator;
+import eu.solven.adhoc.model.query.groupby.GroupByColumns;
 
 public class TestAddSharedNodes {
 	IAddSharedNodes sharedNodes = AddSharedNodes.builder().build();

@@ -38,8 +38,8 @@ import eu.solven.adhoc.engine.query.CubeQuery;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.filter.ColumnFilter;
 import eu.solven.adhoc.measure.forest.UnsafeMeasureForest;
-import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.sum.SumCombination;
+import eu.solven.adhoc.model.measure.Combinator;
 import eu.solven.adhoc.table.InMemoryTable;
 
 public class TestQueryStepsDag implements IAdhocTestConstants {

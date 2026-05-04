@@ -34,7 +34,7 @@ import com.google.common.collect.ImmutableSet;
 import eu.solven.adhoc.map.ICoordinateNormalizer;
 import eu.solven.adhoc.map.StandardCoordinateNormalizer;
 import eu.solven.adhoc.map.keyset.SequencedSetUnsafe;
-import eu.solven.adhoc.query.cube.IGroupBy;
+import eu.solven.adhoc.model.query.IGroupBy;
 import eu.solven.adhoc.util.IHasCache;
 import lombok.Builder.Default;
 import lombok.experimental.SuperBuilder;

@@ -46,13 +46,13 @@ import eu.solven.adhoc.dataframe.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.dataframe.column.IMultitypeIntColumnFastGet;
 import eu.solven.adhoc.dataframe.column.IMultitypeMergeableColumn;
 import eu.solven.adhoc.dataframe.column.hash.MultitypeHashColumn;
-import eu.solven.adhoc.engine.AdhocFactories;
-import eu.solven.adhoc.engine.IAdhocFactories;
 import eu.solven.adhoc.engine.step.ICubeQueryStep;
+import eu.solven.adhoc.factories.AdhocFactories;
+import eu.solven.adhoc.factories.IAdhocFactories;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.aggregation.carrier.IAggregationCarrier.IHasCarriers;
-import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.IAliasedAggregator;
+import eu.solven.adhoc.model.measure.Aggregator;
 import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import eu.solven.pepper.core.PepperStreamHelper;
@@ -180,7 +180,7 @@ public class AggregatingColumnsDistinct<T extends Comparable<T>> extends AAggreg
 		// Turn the columnByIndex to a columnBySlice. Pass the prefix length so the wrapper exposes the leading
 		// slice-sorted run via stream(SORTED_SUB) / onValue(slice, SORTED_SUB). The inner column is already
 		// int-specialized: `AggregatingColumns.undictionarizeColumn`'s `asNavigableInt` short-circuits to identity.
-		return AggregatingColumns.undictionarizeColumn(column,
+		return undictionarizeColumn(column,
 				memoizeSliceToIndex.get(),
 				indexToSlice::get,
 				getNbSorted(aggregatorName, column));

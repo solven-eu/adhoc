@@ -33,8 +33,8 @@ import eu.solven.adhoc.engine.step.TableQueryStep;
 import eu.solven.adhoc.engine.tabular.splitter.merger.IMergeInducers;
 import eu.solven.adhoc.engine.tabular.splitter.merger.MergeInducersLaxGroupBy;
 import eu.solven.adhoc.filter.ColumnFilter;
-import eu.solven.adhoc.measure.model.Aggregator;
-import eu.solven.adhoc.query.groupby.GroupByColumns;
+import eu.solven.adhoc.model.measure.Aggregator;
+import eu.solven.adhoc.model.query.groupby.GroupByColumns;
 
 @Disabled("TODO")
 public class TestMergeInducersLaxGroupBy {

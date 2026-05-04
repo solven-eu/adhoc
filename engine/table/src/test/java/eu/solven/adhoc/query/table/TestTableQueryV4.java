@@ -32,9 +32,9 @@ import org.junit.jupiter.api.Test;
 import com.google.common.collect.ImmutableSetMultimap;
 
 import eu.solven.adhoc.filter.ColumnFilter;
-import eu.solven.adhoc.measure.model.Aggregator;
-import eu.solven.adhoc.query.cube.IGroupBy;
-import eu.solven.adhoc.query.groupby.GroupByColumns;
+import eu.solven.adhoc.model.measure.Aggregator;
+import eu.solven.adhoc.model.query.IGroupBy;
+import eu.solven.adhoc.model.query.groupby.GroupByColumns;
 
 public class TestTableQueryV4 {
 

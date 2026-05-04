@@ -34,8 +34,8 @@ import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.dataframe.tabular.ITabularView;
 import eu.solven.adhoc.dataframe.tabular.MapBasedTabularView;
 import eu.solven.adhoc.engine.query.CubeQuery;
-import eu.solven.adhoc.measure.model.Dispatchor;
 import eu.solven.adhoc.measure.sum.SumAggregation;
+import eu.solven.adhoc.model.measure.Dispatchor;
 
 public class TestDagTransformator_Dispatchor extends ATestDagInMemory implements IAdhocTestConstants {
 	@Override

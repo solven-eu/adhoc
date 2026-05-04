@@ -39,11 +39,12 @@ import eu.solven.adhoc.filter.value.NullMatcher;
 import eu.solven.adhoc.measure.aggregation.comparable.MaxAggregation;
 import eu.solven.adhoc.measure.aggregation.comparable.MinAggregation;
 import eu.solven.adhoc.measure.aggregation.comparable.RankAggregation;
-import eu.solven.adhoc.measure.model.Aggregator;
-import eu.solven.adhoc.query.groupby.GroupByColumns;
+import eu.solven.adhoc.model.measure.Aggregator;
+import eu.solven.adhoc.model.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.table.FilteredAggregator;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.query.table.TableQueryV2;
+import eu.solven.adhoc.query.table.TableQueryV3;
 
 public class TestJooqTableQueryFactory_Postgres {
 	static {
@@ -351,6 +352,57 @@ public class TestJooqTableQueryFactory_Postgres {
 				  "k1" is not null
 				  and "k1" = 'v1'
 				)""");
+	}
+
+	/**
+	 * Reproducer for the leftover-filter / GROUPING SETS bug in {@link JooqTableQueryFactory#makeGroupingFields} (the
+	 * {@code else} branch around line 609 — at least 2 grouping sets, which is the only code path that does NOT hoist
+	 * leftover columns into the GROUP BY).
+	 *
+	 * <p>
+	 * Symptom: a leftover-filter column (filter on a non-transcodable matcher, here {@code "c"}) is correctly added to
+	 * the SELECT list (so it appears in {@code AggregatedRecordFields.leftovers}), but is missing from the rendered
+	 * {@code GROUP BY GROUPING SETS (...)} clause. Postgres-like engines reject such SQL outright, or NULL the column
+	 * across every row — either way the post-fetch leftover filter has nothing real to match against and silently drops
+	 * matching slices.
+	 *
+	 * <p>
+	 * Expected (post-fix) shape: the leftover column appears in the {@code GROUP BY} clause, either hoisted as a
+	 * constant prefix outside the GROUPING SETS (cleanest: {@code GROUP BY "c", GROUPING SETS (("a"), ("b"))} — the SQL
+	 * engine multiplies the prefix against each set) or duplicated inside every set. The assertion below is shape-
+	 * agnostic: it only requires that the leftover column reference appears somewhere after the {@code GROUP BY}
+	 * keyword.
+	 */
+	@Test
+	public void testMultiGroupingSets_leftoverFilter_columnMustAppearInGroupBy() {
+		ColumnFilter customFilter =
+				ColumnFilter.builder().column("c").valueMatcher(IAdhocTestConstants.randomMatcher).build();
+
+		TableQueryV3 v3 = TableQueryV3.builder()
+				.aggregator(FilteredAggregator.builder().aggregator(Aggregator.sum("k")).build())
+				.groupBy(GroupByColumns.named("a"))
+				.groupBy(GroupByColumns.named("b"))
+				.filter(customFilter)
+				.build();
+
+		QueryWithLeftover condition = queryFactory.prepareSliceQuery(v3);
+
+		// Sanity: the leftover-propagation half is fine — the customFilter is recorded as the leftover.
+		Assertions.assertThat(condition.getLeftover()).satisfies(l -> Assertions.assertThat(l).isEqualTo(customFilter));
+
+		String sql = condition.getQuery().getSQL(ParamType.INLINED);
+
+		// Sanity: the leftover column is in SELECT (the bug is downstream of this).
+		Assertions.assertThat(sql).contains("\"c\"");
+
+		// Bug assertion: the leftover column MUST also appear after the `group by` keyword. Without this, post-fetch
+		// leftover filtering cannot inspect per-row values for `c`.
+		int groupByIdx = sql.toLowerCase().indexOf("group by");
+		Assertions.assertThat(groupByIdx).as("SQL must contain a GROUP BY clause: %s", sql).isPositive();
+		Assertions.assertThat(sql.substring(groupByIdx))
+				.as("leftover column \"c\" must appear in GROUP BY (as a hoisted prefix or inside every grouping set); full SQL: %s",
+						sql)
+				.contains("\"c\"");
 	}
 
 }

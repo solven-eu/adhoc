@@ -39,8 +39,8 @@ import eu.solven.adhoc.dataframe.column.navigable_else_hash.MultitypeNavigableEl
 import eu.solven.adhoc.dataframe.column.navigable_else_hash.MultitypeNavigableElseHashMergeableColumn;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
-import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.sum.SumAggregation;
+import eu.solven.adhoc.model.measure.Aggregator;
 import lombok.extern.slf4j.Slf4j;
 
 /**

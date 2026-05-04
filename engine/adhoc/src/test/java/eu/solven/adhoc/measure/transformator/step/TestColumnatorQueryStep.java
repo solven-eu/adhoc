@@ -26,12 +26,11 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
-import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.factories.AdhocFactories;
 import eu.solven.adhoc.filter.ColumnFilter;
 import eu.solven.adhoc.filter.ISliceFilter;
-import eu.solven.adhoc.measure.model.Columnator;
-import eu.solven.adhoc.measure.model.Columnator.Mode;
+import eu.solven.adhoc.model.measure.Columnator;
 
 public class TestColumnatorQueryStep {
 
@@ -39,7 +38,7 @@ public class TestColumnatorQueryStep {
 	public void testDefaultIsRequired() {
 		Columnator measure = Columnator.builder().name("measureName").column("c").build();
 
-		Assertions.assertThat(measure.getMode()).isEqualTo(Mode.HideIfMissing);
+		Assertions.assertThat(measure.getMode()).isEqualTo(Columnator.Mode.HideIfMissing);
 	}
 
 	@Test

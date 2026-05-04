@@ -26,14 +26,13 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
-import eu.solven.adhoc.engine.IAdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.factories.IAdhocFactories;
 import eu.solven.adhoc.filter.FilterHelpers;
 import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.filter.value.EqualsMatcher;
 import eu.solven.adhoc.filter.value.IValueMatcher;
-import eu.solven.adhoc.measure.model.Columnator;
-import eu.solven.adhoc.measure.model.Columnator.Mode;
+import eu.solven.adhoc.model.measure.Columnator;
 import eu.solven.adhoc.util.NotYetImplementedException;
 import lombok.extern.slf4j.Slf4j;
 
@@ -71,11 +70,11 @@ public class ColumnatorQueryStep extends CombinatorQueryStep {
 	protected boolean isHiding(String column) {
 		boolean columnIsPresent = isColumnPresent(column);
 
-		Mode mode = columnator.getMode();
-		if (columnator.getMode() == Mode.HideIfMissing) {
+		Columnator.Mode mode = columnator.getMode();
+		if (columnator.getMode() == Columnator.Mode.HideIfMissing) {
 			// hideIfMissing and !present: hidden
 			return !columnIsPresent;
-		} else if (mode == Mode.HideIfPresent) {
+		} else if (mode == Columnator.Mode.HideIfPresent) {
 			// hideIfPresent and present: hidden
 			return columnIsPresent;
 		} else {

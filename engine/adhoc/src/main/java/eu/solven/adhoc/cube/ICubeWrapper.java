@@ -32,7 +32,7 @@ import eu.solven.adhoc.dataframe.tabular.ITabularView;
 import eu.solven.adhoc.engine.ICubeQueryEngine;
 import eu.solven.adhoc.engine.step.ICubeQuery;
 import eu.solven.adhoc.filter.value.IValueMatcher;
-import eu.solven.adhoc.query.cube.IHasMeasures;
+import eu.solven.adhoc.model.query.IHasMeasures;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.util.IHasName;
 

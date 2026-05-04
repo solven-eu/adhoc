@@ -32,16 +32,16 @@ import org.junit.jupiter.api.Test;
 
 import com.google.common.eventbus.EventBus;
 
-import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.QueryStepsDag;
 import eu.solven.adhoc.engine.QueryStepsDagBuilder;
 import eu.solven.adhoc.engine.cache.IQueryStepCache;
 import eu.solven.adhoc.engine.query.CubeQuery;
-import eu.solven.adhoc.measure.ReferencedMeasure;
+import eu.solven.adhoc.factories.AdhocFactories;
 import eu.solven.adhoc.measure.forest.IMeasureResolver;
-import eu.solven.adhoc.measure.model.Aggregator;
-import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.measure.ratio.AdhocExplainerTestHelper;
+import eu.solven.adhoc.model.measure.Aggregator;
+import eu.solven.adhoc.model.measure.IMeasure;
+import eu.solven.adhoc.model.measure.ReferencedMeasure;
 import eu.solven.adhoc.query.AdhocQueryIds;
 
 public class TestDagExplainerForPerfs {

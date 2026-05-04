@@ -27,19 +27,19 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 
-import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.CubeQueryEngine;
-import eu.solven.adhoc.engine.IAdhocFactories;
-import eu.solven.adhoc.engine.IColumnFactory;
 import eu.solven.adhoc.engine.ICubeQueryEngine;
-import eu.solven.adhoc.engine.StandardColumnFactory;
 import eu.solven.adhoc.eventbus.IAdhocEventBus;
+import eu.solven.adhoc.factories.AdhocFactories;
+import eu.solven.adhoc.factories.AdhocFactoriesUnsafe;
+import eu.solven.adhoc.factories.IAdhocFactories;
+import eu.solven.adhoc.factories.IColumnFactory;
+import eu.solven.adhoc.factories.StandardColumnFactory;
 import eu.solven.adhoc.map.factory.ISliceFactory;
 import eu.solven.adhoc.map.factory.ISliceFactoryFactory;
 import eu.solven.adhoc.map.factory.RowSliceFactory;
 import eu.solven.adhoc.measure.operator.IOperatorFactory;
 import eu.solven.adhoc.measure.operator.StandardOperatorFactory;
-import eu.solven.adhoc.util.AdhocFactoriesUnsafe;
 import eu.solven.adhoc.util.IStopwatchFactory;
 
 /**

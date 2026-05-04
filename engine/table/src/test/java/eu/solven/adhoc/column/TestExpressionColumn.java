@@ -25,6 +25,8 @@ package eu.solven.adhoc.column;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import eu.solven.adhoc.model.column.IAdhocColumn;
+import eu.solven.adhoc.model.column.TableExpressionColumn;
 import eu.solven.pepper.unittest.PepperJackson3TestHelper;
 import nl.jqno.equalsverifier.EqualsVerifier;
 

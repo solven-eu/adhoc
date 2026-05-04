@@ -28,7 +28,7 @@ import com.google.common.collect.ImmutableMap;
 
 import eu.solven.adhoc.column.generated_column.IColumnGenerator;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
-import eu.solven.adhoc.measure.model.Aggregator;
+import eu.solven.adhoc.model.measure.Aggregator;
 import eu.solven.adhoc.query.table.TableQueryV3;
 import eu.solven.adhoc.table.ITableWrapper;
 import lombok.Builder;

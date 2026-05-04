@@ -25,8 +25,8 @@ package eu.solven.adhoc.cuboid.tabular;
 import java.util.NavigableSet;
 import java.util.Set;
 
-import eu.solven.adhoc.query.cube.IGroupBy;
-import eu.solven.adhoc.query.cube.IHasGroupBy;
+import eu.solven.adhoc.model.query.IGroupBy;
+import eu.solven.adhoc.model.query.IHasGroupBy;
 
 /**
  * Used to hold the slice (given the groupBy) from {@link ITableWrapper}.

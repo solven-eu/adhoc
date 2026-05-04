@@ -27,9 +27,9 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import eu.solven.adhoc.filter.ISliceFilter;
-import eu.solven.adhoc.measure.model.Aggregator;
+import eu.solven.adhoc.model.measure.Aggregator;
+import eu.solven.adhoc.model.query.IGroupBy;
 import eu.solven.adhoc.options.StandardQueryOptions;
-import eu.solven.adhoc.query.cube.IGroupBy;
 import nl.jqno.equalsverifier.EqualsVerifier;
 
 public class TestTableQueryStep {

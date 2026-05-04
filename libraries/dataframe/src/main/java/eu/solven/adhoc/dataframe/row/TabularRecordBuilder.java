@@ -26,8 +26,8 @@ import org.jspecify.annotations.Nullable;
 
 import eu.solven.adhoc.encoding.perfect_hashing.PerfectHashMap;
 import eu.solven.adhoc.map.factory.IMapBuilderPreKeys;
+import eu.solven.adhoc.model.query.IGroupBy;
 import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
-import eu.solven.adhoc.query.cube.IGroupBy;
 import lombok.RequiredArgsConstructor;
 
 /**

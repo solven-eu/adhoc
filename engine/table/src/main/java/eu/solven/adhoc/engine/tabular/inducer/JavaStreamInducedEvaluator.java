@@ -34,12 +34,12 @@ import eu.solven.adhoc.cuboid.ICuboid;
 import eu.solven.adhoc.cuboid.slice.ISlice;
 import eu.solven.adhoc.dataframe.column.IMultitypeMergeableColumn;
 import eu.solven.adhoc.dataframe.filter.FilterMatcher;
-import eu.solven.adhoc.engine.IAdhocFactories;
-import eu.solven.adhoc.engine.IColumnFactory;
 import eu.solven.adhoc.engine.step.TableQueryStep;
+import eu.solven.adhoc.factories.IAdhocFactories;
+import eu.solven.adhoc.factories.IColumnFactory;
 import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
-import eu.solven.adhoc.measure.model.Aggregator;
+import eu.solven.adhoc.model.measure.Aggregator;
 import lombok.extern.slf4j.Slf4j;
 
 /**

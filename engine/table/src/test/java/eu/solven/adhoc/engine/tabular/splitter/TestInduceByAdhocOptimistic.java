@@ -35,7 +35,6 @@ import org.junit.jupiter.api.Test;
 
 import com.google.common.collect.ImmutableSet;
 
-import eu.solven.adhoc.column.IAdhocColumn;
 import eu.solven.adhoc.engine.dag.GraphHelpers;
 import eu.solven.adhoc.engine.dag.IAdhocDag;
 import eu.solven.adhoc.engine.step.TableQueryStep;
@@ -45,10 +44,11 @@ import eu.solven.adhoc.filter.FilterBuilder;
 import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.filter.OrFilter;
 import eu.solven.adhoc.filter.stripper.FilterStripperFactory;
-import eu.solven.adhoc.measure.model.Aggregator;
+import eu.solven.adhoc.model.column.IAdhocColumn;
+import eu.solven.adhoc.model.measure.Aggregator;
+import eu.solven.adhoc.model.query.IGroupBy;
+import eu.solven.adhoc.model.query.groupby.GroupByColumns;
 import eu.solven.adhoc.options.IHasOptionsAndExecutorService;
-import eu.solven.adhoc.query.cube.IGroupBy;
-import eu.solven.adhoc.query.groupby.GroupByColumns;
 
 public class TestInduceByAdhocOptimistic {
 	Aggregator m1 = Aggregator.sum("m1");

@@ -38,9 +38,9 @@ import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.cube.CubeWrapper;
 import eu.solven.adhoc.dataframe.tabular.ITabularView;
 import eu.solven.adhoc.dataframe.tabular.MapBasedTabularView;
-import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.CubeQueryEngine;
 import eu.solven.adhoc.engine.query.CubeQuery;
+import eu.solven.adhoc.factories.AdhocFactories;
 import eu.solven.adhoc.filter.ColumnFilter;
 import eu.solven.adhoc.filter.FilterBuilder;
 import eu.solven.adhoc.filter.value.EqualsMatcher;
@@ -49,9 +49,9 @@ import eu.solven.adhoc.measure.decomposition.many2many.IManyToManyNDDefinition;
 import eu.solven.adhoc.measure.decomposition.many2many.ManyToMany1DDecomposition;
 import eu.solven.adhoc.measure.decomposition.many2many.ManyToManyNDDecomposition;
 import eu.solven.adhoc.measure.decomposition.many2many.ManyToManyNDInMemoryDefinition;
-import eu.solven.adhoc.measure.model.Dispatchor;
 import eu.solven.adhoc.measure.operator.IOperatorFactory;
 import eu.solven.adhoc.measure.operator.StandardOperatorFactory;
+import eu.solven.adhoc.model.measure.Dispatchor;
 
 public class TestDagCubeQuery_ManyToManyND extends ATestDagInMemory implements IAdhocTestConstants {
 

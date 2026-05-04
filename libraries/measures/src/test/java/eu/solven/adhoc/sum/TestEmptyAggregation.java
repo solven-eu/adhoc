@@ -27,8 +27,8 @@ import java.util.Set;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.sum.EmptyAggregation;
+import eu.solven.adhoc.model.measure.Aggregator;
 
 public class TestEmptyAggregation {
 	EmptyAggregation agg = new EmptyAggregation();

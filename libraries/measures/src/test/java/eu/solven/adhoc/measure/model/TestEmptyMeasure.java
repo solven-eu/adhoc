@@ -27,6 +27,8 @@ import org.junit.jupiter.api.Test;
 
 import com.google.common.collect.ImmutableSet;
 
+import eu.solven.adhoc.model.measure.EmptyMeasure;
+
 public class TestEmptyMeasure {
 	@Test
 	public void testTags() {

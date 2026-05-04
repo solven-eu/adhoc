@@ -37,7 +37,7 @@ import eu.solven.adhoc.engine.query.CubeQuery;
 import eu.solven.adhoc.filter.editor.SimpleFilterEditor;
 import eu.solven.adhoc.measure.lambda.LambdaEditor;
 import eu.solven.adhoc.measure.lambda.LambdaEditor.ILambdaFilterEditor;
-import eu.solven.adhoc.measure.model.Shiftor;
+import eu.solven.adhoc.model.measure.Shiftor;
 import eu.solven.adhoc.options.StandardQueryOptions;
 
 /**

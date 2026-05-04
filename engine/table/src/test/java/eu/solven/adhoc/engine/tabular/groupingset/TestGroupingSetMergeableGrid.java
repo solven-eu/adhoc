@@ -32,9 +32,9 @@ import eu.solven.adhoc.cuboid.slice.SliceHelpers;
 import eu.solven.adhoc.dataframe.aggregating.AggregatingColumnsDistinct;
 import eu.solven.adhoc.dataframe.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
-import eu.solven.adhoc.measure.model.Aggregator;
+import eu.solven.adhoc.model.measure.Aggregator;
+import eu.solven.adhoc.model.query.groupby.GroupByColumns;
 import eu.solven.adhoc.primitive.IValueProvider;
-import eu.solven.adhoc.query.groupby.GroupByColumns;
 
 public class TestGroupingSetMergeableGrid {
 	Aggregator a = Aggregator.sum("v");

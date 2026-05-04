@@ -25,9 +25,9 @@ package eu.solven.adhoc.query.table;
 import java.util.Set;
 
 import eu.solven.adhoc.filter.IHasFilters;
+import eu.solven.adhoc.model.query.IGroupBy;
+import eu.solven.adhoc.model.query.IHasCustomMarker;
 import eu.solven.adhoc.options.IHasQueryOptions;
-import eu.solven.adhoc.query.cube.IGroupBy;
-import eu.solven.adhoc.query.cube.IHasCustomMarker;
 
 /**
  * Common interface to any table query

@@ -34,15 +34,15 @@ import org.jspecify.annotations.Nullable;
 
 import com.google.common.collect.ImmutableSet;
 
-import eu.solven.adhoc.column.IAdhocColumn;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.CubeQueryStep.CubeQueryStepBuilder;
 import eu.solven.adhoc.engine.step.ICubeQueryStep;
 import eu.solven.adhoc.filter.FilterBuilder;
 import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.filter.optimizer.IFilterOptimizer;
+import eu.solven.adhoc.model.column.IAdhocColumn;
+import eu.solven.adhoc.model.query.IGroupBy;
 import eu.solven.adhoc.options.IQueryOption;
-import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.query.top.AdhocTopClause;
 import eu.solven.adhoc.table.ITableWrapper;
 import lombok.Builder;

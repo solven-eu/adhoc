@@ -37,7 +37,7 @@ import eu.solven.adhoc.engine.query.CubeQuery;
 import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.filter.editor.IFilterEditor;
 import eu.solven.adhoc.filter.editor.SimpleFilterEditor;
-import eu.solven.adhoc.measure.model.Shiftor;
+import eu.solven.adhoc.model.measure.Shiftor;
 import lombok.extern.slf4j.Slf4j;
 
 /**

@@ -25,8 +25,10 @@ package eu.solven.adhoc.measure;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.sum.SumAggregation;
+import eu.solven.adhoc.model.measure.Aggregator;
+import eu.solven.adhoc.model.measure.IMeasure;
+import eu.solven.pepper.unittest.PepperJackson3TestHelper;
 
 public class TestAggregator {
 	@Test
@@ -93,5 +95,29 @@ public class TestAggregator {
 				.aggregationOption("someOptionKey", "someOptionValue")
 				.tag("someTag")
 				.build()).hasToString("someName:someKey(otherColumnName){someOptionKey=someOptionValue}");
+	}
+
+	@Test
+	public void testJackson() {
+		String asString = PepperJackson3TestHelper.verifyJackson(IMeasure.class,
+				Aggregator.builder()
+						.name("someName")
+						.columnName("otherColumnName")
+						.aggregationKey("someKey")
+						.aggregationOption("someOptionKey", "someOptionValue")
+						.tag("someTag")
+						.build());
+
+		Assertions.assertThat(asString).isEqualToNormalizingNewlines("""
+				{
+				  "type" : ".Aggregator",
+				  "aggregationKey" : "someKey",
+				  "aggregationOptions" : {
+				    "someOptionKey" : "someOptionValue"
+				  },
+				  "columnName" : "otherColumnName",
+				  "name" : "someName",
+				  "tags" : [ "someTag" ]
+				}""");
 	}
 }

@@ -26,7 +26,7 @@ import java.util.Set;
 
 import com.google.common.collect.ImmutableSet;
 
-import eu.solven.adhoc.measure.model.IMeasure;
+import eu.solven.adhoc.model.measure.IMeasure;
 
 /**
  * Used to interact with a measure forest. Can be used for both read and write operations.

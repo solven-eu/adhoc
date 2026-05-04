@@ -37,8 +37,8 @@ import eu.solven.adhoc.dataframe.tabular.MapBasedTabularView;
 import eu.solven.adhoc.engine.query.CubeQuery;
 import eu.solven.adhoc.measure.ThrowingCombination;
 import eu.solven.adhoc.measure.ThrowingCombination.ThrowingCombinationException;
-import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.sum.SumCombination;
+import eu.solven.adhoc.model.measure.Combinator;
 
 public class TestDagTransformator_Combinator_Exception extends ATestDagInMemory implements IAdhocTestConstants {
 	@BeforeEach

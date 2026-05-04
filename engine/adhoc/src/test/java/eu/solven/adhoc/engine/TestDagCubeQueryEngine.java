@@ -53,9 +53,9 @@ import eu.solven.adhoc.measure.aggregation.comparable.MaxAggregation;
 import eu.solven.adhoc.measure.combination.CoalesceCombination;
 import eu.solven.adhoc.measure.combination.EvaluatedExpressionCombination;
 import eu.solven.adhoc.measure.forest.MeasureForest;
-import eu.solven.adhoc.measure.model.Aggregator;
-import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.transformator.step.IMeasureQueryStep;
+import eu.solven.adhoc.model.measure.Aggregator;
+import eu.solven.adhoc.model.measure.Combinator;
 import eu.solven.adhoc.table.InMemoryTable;
 import eu.solven.adhoc.util.AdhocUnsafe;
 

@@ -32,15 +32,15 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.eventbus.EventBus;
 
 import eu.solven.adhoc.IAdhocTestConstants;
-import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.IQueryStepsDagBuilder;
 import eu.solven.adhoc.engine.QueryStepsDagBuilder;
 import eu.solven.adhoc.engine.query.CubeQuery;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.factories.AdhocFactories;
 import eu.solven.adhoc.measure.forest.UnsafeMeasureForest;
-import eu.solven.adhoc.measure.model.Aggregator;
-import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.measure.ratio.AdhocExplainerTestHelper;
+import eu.solven.adhoc.model.measure.Aggregator;
+import eu.solven.adhoc.model.measure.IMeasure;
 import eu.solven.adhoc.query.AdhocQueryIds;
 import eu.solven.adhoc.table.IQueryPod;
 import eu.solven.adhoc.table.InMemoryTable;

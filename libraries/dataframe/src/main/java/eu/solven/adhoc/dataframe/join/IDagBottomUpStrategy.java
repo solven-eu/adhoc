@@ -30,8 +30,8 @@ import eu.solven.adhoc.cuboid.SliceAndMeasure;
 import eu.solven.adhoc.cuboid.slice.Slice;
 import eu.solven.adhoc.dataframe.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.dataframe.column.IMultitypeMergeableColumn;
-import eu.solven.adhoc.engine.IColumnFactory.ColumnParams;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.factories.IColumnFactory.ColumnParams;
 import eu.solven.adhoc.measure.transformator.step.IMeasureQueryStep;
 import eu.solven.adhoc.stream.IConsumingStream;
 

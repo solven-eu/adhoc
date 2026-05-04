@@ -35,6 +35,8 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 
+import eu.solven.adhoc.factories.IHasExecutorAndSliceFactory;
+import eu.solven.adhoc.factories.PodExecutors;
 import eu.solven.adhoc.map.factory.IMapBuilderPreKeys;
 import eu.solven.adhoc.map.factory.IScopeBinder;
 import eu.solven.adhoc.map.factory.ISliceFactory;

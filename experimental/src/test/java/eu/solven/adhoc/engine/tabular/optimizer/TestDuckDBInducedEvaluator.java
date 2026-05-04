@@ -33,8 +33,8 @@ import eu.solven.adhoc.dataframe.column.Cuboid;
 import eu.solven.adhoc.dataframe.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.dataframe.column.IMultitypeMergeableColumn;
 import eu.solven.adhoc.dataframe.column.hash.MultitypeHashColumn;
-import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.step.TableQueryStep;
+import eu.solven.adhoc.factories.AdhocFactories;
 import eu.solven.adhoc.filter.ColumnFilter;
 import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.filter.optimizer.FilterOptimizer;
@@ -42,12 +42,12 @@ import eu.solven.adhoc.map.factory.RowSliceFactory;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.aggregation.comparable.MaxAggregation;
 import eu.solven.adhoc.measure.aggregation.comparable.MinAggregation;
-import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.sum.CountAggregation;
 import eu.solven.adhoc.measure.sum.SumAggregation;
+import eu.solven.adhoc.model.measure.Aggregator;
+import eu.solven.adhoc.model.query.groupby.GroupByColumns;
 import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.primitive.IValueProviderTestHelpers;
-import eu.solven.adhoc.query.groupby.GroupByColumns;
 
 /**
  * Unit tests for {@link DuckDBInducedEvaluator} that verify the DuckDB-backed vectorised path produces the same results

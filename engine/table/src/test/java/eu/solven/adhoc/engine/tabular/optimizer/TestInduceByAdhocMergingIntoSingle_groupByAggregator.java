@@ -32,12 +32,12 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.MoreExecutors;
 
 import eu.solven.adhoc.IAdhocTestConstants;
-import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.dag.IAdhocDag;
 import eu.solven.adhoc.engine.step.TableQueryStep;
 import eu.solven.adhoc.engine.tabular.splitter.InduceByAdhoc;
 import eu.solven.adhoc.engine.tabular.splitter.InduceByAdhocComplete;
 import eu.solven.adhoc.engine.tabular.splitter.merger.MergeInducersIntoSingle;
+import eu.solven.adhoc.factories.AdhocFactories;
 import eu.solven.adhoc.filter.AndFilter;
 import eu.solven.adhoc.filter.ColumnFilter;
 import eu.solven.adhoc.filter.FilterBuilder;
@@ -48,9 +48,9 @@ import eu.solven.adhoc.filter.optimizer.FilterOptimizerWithCache;
 import eu.solven.adhoc.filter.optimizer.IFilterOptimizerFactory;
 import eu.solven.adhoc.filter.stripper.FilterStripperFactory;
 import eu.solven.adhoc.filter.stripper.FilterStripperUnsafe;
-import eu.solven.adhoc.measure.model.Aggregator;
+import eu.solven.adhoc.model.measure.Aggregator;
+import eu.solven.adhoc.model.query.groupby.GroupByColumns;
 import eu.solven.adhoc.options.IHasOptionsAndExecutorService;
-import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.table.TableQuery;
 
 public class TestInduceByAdhocMergingIntoSingle_groupByAggregator implements IAdhocTestConstants {

@@ -24,7 +24,7 @@ package eu.solven.adhoc.pivotable.app.example;
 
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.custom_marker.ACustomMarkerCombination;
-import eu.solven.adhoc.measure.model.IMeasure;
+import eu.solven.adhoc.model.measure.IMeasure;
 import lombok.extern.slf4j.Slf4j;
 
 /**

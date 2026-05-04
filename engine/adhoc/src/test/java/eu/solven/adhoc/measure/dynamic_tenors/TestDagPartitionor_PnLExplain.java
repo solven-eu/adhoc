@@ -42,12 +42,12 @@ import eu.solven.adhoc.engine.query.CubeQuery;
 import eu.solven.adhoc.filter.ColumnFilter;
 import eu.solven.adhoc.measure.combination.EvaluatedExpressionCombination;
 import eu.solven.adhoc.measure.decomposition.DuplicatingDecomposition;
-import eu.solven.adhoc.measure.model.Aggregator;
-import eu.solven.adhoc.measure.model.Combinator;
-import eu.solven.adhoc.measure.model.Dispatchor;
-import eu.solven.adhoc.measure.model.Partitionor;
 import eu.solven.adhoc.measure.sum.CoalesceAggregation;
-import eu.solven.adhoc.query.groupby.GroupByColumns;
+import eu.solven.adhoc.model.measure.Aggregator;
+import eu.solven.adhoc.model.measure.Combinator;
+import eu.solven.adhoc.model.measure.Dispatchor;
+import eu.solven.adhoc.model.measure.Partitionor;
+import eu.solven.adhoc.model.query.groupby.GroupByColumns;
 
 /**
  * Consider a model where Adhoc received {@link Map}, providing some aggregable values (e.g. some risk/sensitivity (e.g.

@@ -34,8 +34,8 @@ import eu.solven.adhoc.engine.measure.MeasureQueryStepFactory;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.combination.CoalesceCombination;
 import eu.solven.adhoc.measure.combination.ICombination;
-import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.transformator.IHasUnderlyingNames;
+import eu.solven.adhoc.model.measure.Combinator;
 
 public class TestCombinatorQueryStep {
 

@@ -43,7 +43,7 @@ import eu.solven.adhoc.filter.value.IValueMatcher;
 import eu.solven.adhoc.filter.value.LikeMatcher;
 import eu.solven.adhoc.filter.value.NotMatcher;
 import eu.solven.adhoc.filter.value.StringMatcher;
-import eu.solven.adhoc.query.groupby.GroupByColumns;
+import eu.solven.adhoc.model.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.table.sql.AdhocJooqHelper;
 import eu.solven.adhoc.table.sql.IDSLSupplier;

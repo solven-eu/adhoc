@@ -36,9 +36,9 @@ import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.dataframe.tabular.ITabularView;
 import eu.solven.adhoc.dataframe.tabular.MapBasedTabularView;
 import eu.solven.adhoc.engine.query.CubeQuery;
-import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.ratio.AdhocExplainerTestHelper;
 import eu.solven.adhoc.measure.sum.SumCombination;
+import eu.solven.adhoc.model.measure.Combinator;
 
 public class TestDagAggregations_Filter extends ATestDagInMemory implements IAdhocTestConstants {
 	@Override

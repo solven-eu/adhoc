@@ -24,7 +24,7 @@ package eu.solven.adhoc.measure.transformator;
 
 import java.util.Map;
 
-import eu.solven.adhoc.measure.model.Combinator;
+import eu.solven.adhoc.model.measure.Combinator;
 
 /**
  * Anything which may require a configured {@link Combinator}
