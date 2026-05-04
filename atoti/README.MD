@@ -260,8 +260,8 @@ The migration strategy is:
 Given heterogenous requirement on JDK version, you may need to switch from one JDK to another:
 
 ```bash
-echo $JAVA21_HOME
-export JAVA_HOME=$JAVA21_HOME
+echo $JAVA25_HOME
+export JAVA_HOME=$JAVA25_HOME
 ```
 
 ```powershell
