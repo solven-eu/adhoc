@@ -32,7 +32,6 @@ import com.google.common.collect.Lists;
 import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.filter.editor.IFilterEditor;
 import eu.solven.adhoc.measure.transformator.IHasUnderlyingMeasures;
-import eu.solven.adhoc.model.measure.IMeasure;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;

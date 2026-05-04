@@ -35,7 +35,6 @@ import eu.solven.adhoc.measure.lambda.LambdaCombination;
 import eu.solven.adhoc.measure.lambda.LambdaEditor;
 import eu.solven.adhoc.measure.lambda.LambdaEditor.ILambdaFilterEditor;
 import eu.solven.adhoc.measure.transformator.IHasUnderlyingMeasures;
-import eu.solven.adhoc.model.measure.IMeasure;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.Singular;

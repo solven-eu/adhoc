@@ -29,7 +29,6 @@ import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.model.measure.Aggregator;
 import eu.solven.adhoc.model.measure.IMeasure;
 import eu.solven.pepper.unittest.PepperJackson3TestHelper;
-import eu.solven.pepper.unittest.PepperTestHelper;
 
 public class TestAggregator {
 	@Test

@@ -479,7 +479,8 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 			selectedFields.add(field);
 		});
 
-		// TODO Should the leftover be also added in `.makeGroupingFields`?
+		// Leftover columns are also woven into GROUP BY by `makeGroupingFields` (single-groupBy non-`ALL`
+		// arm and the multi-grouping-sets arm both hoist them), so adding them here in SELECT is safe.
 		fields.getLeftovers().forEach(leftover -> {
 			Field<Object> field = columnAsField(ReferencedColumn.ref(leftover));
 			selectedFields.add(field);
@@ -608,6 +609,17 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 			}
 		} else {
 			// At least 2 groupingSets
+
+			// Leftover-filter columns must be in GROUP BY too — otherwise they appear in SELECT but never
+			// participate in any grouping set, so the engine either rejects the SQL or NULLs them across
+			// every output row, making post-fetch leftover-filter evaluation unable to see real values.
+			// Hoisting them here as a constant prefix is equivalent to repeating them in every set:
+			// `GROUP BY <leftover>, GROUPING SETS ((a), (b))` ≡ `GROUPING SETS ((<leftover>, a), (<leftover>, b))`,
+			// and avoids exploding the grouping-set tuples. Mirrors the single-groupBy `!canGroupByAll()` arm above.
+			FilterHelpers.getFilteredColumns(leftoverFilter).forEach(column -> {
+				Field<Object> field = columnAsField(ReferencedColumn.ref(column));
+				groupedFields.add(field);
+			});
 
 			List<? extends List<? extends Field<?>>> fields2 = tableQuery.streamGroupBy().map(gb -> {
 				return gb.getColumns().stream().map(this::columnAsField).toList();

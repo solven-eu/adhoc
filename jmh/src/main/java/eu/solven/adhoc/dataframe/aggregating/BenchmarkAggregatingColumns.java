@@ -47,7 +47,7 @@ import org.slf4j.LoggerFactory;
 import eu.solven.adhoc.cuboid.slice.ISlice;
 import eu.solven.adhoc.cuboid.slice.SliceHelpers;
 import eu.solven.adhoc.dataframe.tabular.primitives.Object2IntBiConsumer;
-import eu.solven.adhoc.measure.model.Aggregator;
+import eu.solven.adhoc.model.measure.Aggregator;
 import it.unimi.dsi.fastutil.objects.AbstractObject2IntMap;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;

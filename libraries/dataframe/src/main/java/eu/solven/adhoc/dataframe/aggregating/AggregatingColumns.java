@@ -26,11 +26,9 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
-import java.util.function.IntPredicate;
 import java.util.function.Supplier;
 
 import org.jspecify.annotations.Nullable;
-import org.roaringbitmap.RoaringBitmap;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.base.MoreObjects.ToStringHelper;
@@ -41,7 +39,6 @@ import eu.solven.adhoc.dataframe.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.dataframe.column.IMultitypeIntColumnFastGet;
 import eu.solven.adhoc.dataframe.column.IMultitypeMergeableColumn;
 import eu.solven.adhoc.dataframe.column.IMultitypeMergeableIntColumn;
-import eu.solven.adhoc.dataframe.column.UndictionarizedColumn;
 import eu.solven.adhoc.dataframe.column.hash.MultitypeHashColumn;
 import eu.solven.adhoc.dataframe.column.hash.MultitypeHashIntColumn;
 import eu.solven.adhoc.engine.step.ICubeQueryStep;
@@ -57,8 +54,6 @@ import eu.solven.pepper.core.PepperStreamHelper;
 import it.unimi.dsi.fastutil.ints.Int2ObjectFunction;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
-import it.unimi.dsi.fastutil.ints.IntArrayList;
-import it.unimi.dsi.fastutil.objects.Object2IntFunction;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import lombok.Builder.Default;
 import lombok.NonNull;

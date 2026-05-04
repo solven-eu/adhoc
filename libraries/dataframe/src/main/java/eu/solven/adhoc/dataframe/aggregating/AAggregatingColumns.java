@@ -176,7 +176,6 @@ public abstract class AAggregatingColumns<T extends Comparable<T>, K> implements
 				_ -> operatorFactory.makeAggregation(aggregator.getAggregator()));
 	}
 
-	@SuppressWarnings("PMD.LooseCoupling")
 	protected IMultitypeColumnFastGet<T> undictionarizeColumn(IMultitypeIntColumnFastGet column,
 			Object2IntFunction<T> sliceToIndex,
 			Int2ObjectFunction<T> indexToSlice,
@@ -200,6 +199,7 @@ public abstract class AAggregatingColumns<T extends Comparable<T>, K> implements
 				.build();
 	}
 
+	@SuppressWarnings("PMD.LooseCoupling")
 	protected IntPredicate makeIntPredicate(IMultitypeIntColumnFastGet column, int nbSortedInt) {
 		IntArrayList intArrayList = new IntArrayList(nbSortedInt);
 		column.limit(nbSortedInt).forEach(s -> intArrayList.add(s.getSlice().intValue()));

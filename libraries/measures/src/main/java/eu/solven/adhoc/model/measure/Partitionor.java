@@ -34,7 +34,6 @@ import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.measure.sum.SumCombination;
 import eu.solven.adhoc.measure.transformator.ICombineUnderlyingMeasures;
 import eu.solven.adhoc.measure.transformator.IHasAggregationKey;
-import eu.solven.adhoc.model.measure.IMeasure;
 import eu.solven.adhoc.model.query.IGroupBy;
 import eu.solven.adhoc.model.query.IHasGroupBy;
 import lombok.Builder;

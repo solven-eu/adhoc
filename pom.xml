@@ -713,7 +713,9 @@
 								</excludedMutators>
 							</cleanthat>
 
-							<!--							<removeUnusedImports />-->
+							<removeUnusedImports>
+								<engine>cleanthat-javaparser-unnecessaryimport</engine>
+							</removeUnusedImports>
 							<importOrder>
 								<file>${maven.multiModuleProjectDirectory}/.cleanthat/eclipse.importorder</file>
 								<!--order>java,javax,org,com</order-->

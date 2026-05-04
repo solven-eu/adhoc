@@ -26,7 +26,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import eu.solven.adhoc.measure.AdhocBlackHole;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Fork;
@@ -43,6 +42,7 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 import eu.solven.adhoc.data.row.ISlicedRecord;
 import eu.solven.adhoc.data.row.SlicedRecordFromSlices;
+import eu.solven.adhoc.measure.AdhocBlackHole;
 import eu.solven.adhoc.measure.sum.SubstractionCombination;
 import eu.solven.adhoc.measure.transformator.ICombinationBinding;
 import eu.solven.adhoc.primitive.IValueProvider;

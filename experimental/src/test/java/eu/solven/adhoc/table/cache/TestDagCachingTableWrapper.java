@@ -42,7 +42,6 @@ import eu.solven.adhoc.model.measure.Aggregator;
 import eu.solven.adhoc.options.StandardQueryOptions;
 import eu.solven.adhoc.util.AdhocBenchmark;
 
-
 public class TestDagCachingTableWrapper extends ATestDagInMemory implements IAdhocTestConstants {
 
 	CachingTableWrapper caching = CachingTableWrapper.builder().decorated(tableSupplier.get()).build();

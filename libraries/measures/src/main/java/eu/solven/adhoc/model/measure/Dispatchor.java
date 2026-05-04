@@ -40,7 +40,6 @@ import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.measure.transformator.IHasAggregationKey;
 import eu.solven.adhoc.measure.transformator.IHasDecompositionKey;
 import eu.solven.adhoc.measure.transformator.IHasUnderlyingMeasures;
-import eu.solven.adhoc.model.measure.IMeasure;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;

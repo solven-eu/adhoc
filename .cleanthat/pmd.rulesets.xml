@@ -145,8 +145,11 @@
 				 by the caller. `IAdhocFactories.getExecutorService()` returns a project-wide pool managed via
 				 `AdhocFactoriesUnsafe`; closing it from a caller would shut down the shared pool for the whole
 				 process. Without this exception, every assignment of `getExecutorService()` to a local
-				 reference triggers a CloseResource warning. -->
-			<property name="allowedResourceMethodPatterns" value="eu.solven.adhoc.engine.IHasExecutorAndSliceFactory#getExecutorService()" />
+				 reference triggers a CloseResource warning.
+				 BEWARE Keep these FQCNs in sync with the actual package of the interfaces — both live under
+				 `eu.solven.adhoc.factories` (libraries/dataframe). A package rename here silently disables the
+				 whitelist (PMD does not warn on unmatched patterns). -->
+			<property name="allowedResourceMethodPatterns" value="eu.solven.adhoc.factories.IHasExecutorAndSliceFactory#getExecutorService(),eu.solven.adhoc.factories.IAdhocFactories#getExecutorService()" />
 		</properties>
 	</rule>
 	<rule ref="category/java/multithreading.xml">
