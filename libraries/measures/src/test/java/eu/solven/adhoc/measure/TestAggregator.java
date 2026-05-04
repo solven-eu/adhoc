@@ -108,7 +108,7 @@ public class TestAggregator {
 						.tag("someTag")
 						.build());
 
-		Assertions.assertThat(asString).isEqualTo("""
+		Assertions.assertThat(asString).isEqualToNormalizingNewlines("""
 				{
 				  "type" : ".Aggregator",
 				  "aggregationKey" : "someKey",
