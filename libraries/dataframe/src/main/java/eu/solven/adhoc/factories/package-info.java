@@ -6,6 +6,6 @@
  * {@link org.jspecify.annotations.Nullable @Nullable} marks the opt-outs.
  */
 @NullMarked
-package eu.solven.adhoc.engine;
+package eu.solven.adhoc.factories;
 
 import org.jspecify.annotations.NullMarked;

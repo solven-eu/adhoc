@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.engine;
+package eu.solven.adhoc.factories;
 
 import java.util.List;
 import java.util.function.Consumer;
@@ -32,8 +32,8 @@ import eu.solven.adhoc.dataframe.column.IMultitypeMergeableColumn;
 import eu.solven.adhoc.dataframe.join.DagBottomUpStrategyNavigableElseHash;
 import eu.solven.adhoc.dataframe.join.IDagBottomUpStrategy;
 import eu.solven.adhoc.dataframe.join.SliceAndMeasures;
-import eu.solven.adhoc.engine.IColumnFactory.ColumnParams.ColumnParamsBuilder;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.factories.IColumnFactory.ColumnParams.ColumnParamsBuilder;
 import eu.solven.adhoc.stream.IConsumingStream;
 import lombok.Builder;
 import lombok.Builder.Default;

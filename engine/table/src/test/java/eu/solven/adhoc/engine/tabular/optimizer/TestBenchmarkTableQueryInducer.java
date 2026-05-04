@@ -43,13 +43,13 @@ import eu.solven.adhoc.engine.dag.IAdhocDag;
 import eu.solven.adhoc.engine.step.TableQueryStep;
 import eu.solven.adhoc.engine.tabular.inducer.ITableQueryInducer;
 import eu.solven.adhoc.engine.tabular.inducer.TableQueryInducer;
+import eu.solven.adhoc.factories.AdhocFactoriesUnsafe;
 import eu.solven.adhoc.map.factory.ISliceFactory;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.model.query.IGroupBy;
 import eu.solven.adhoc.model.query.groupby.GroupByColumns;
 import eu.solven.adhoc.options.IHasOptionsAndExecutorService;
 import eu.solven.adhoc.options.IHasQueryOptions;
-import eu.solven.adhoc.util.AdhocFactoriesUnsafe;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 

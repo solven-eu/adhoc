@@ -20,30 +20,49 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.engine;
+package eu.solven.adhoc.factories;
 
 import com.google.common.util.concurrent.ListeningExecutorService;
+import com.google.common.util.concurrent.MoreExecutors;
 
+import eu.solven.adhoc.engine.measure.IMeasureQueryStepFactory;
+import eu.solven.adhoc.filter.IFilterFactories;
 import eu.solven.adhoc.map.factory.ISliceFactory;
+import eu.solven.adhoc.map.factory.ISliceFactoryFactory;
+import eu.solven.adhoc.measure.operator.IOperatorFactory;
+import eu.solven.adhoc.options.IHasOptionsAndExecutorService;
+import eu.solven.adhoc.util.IStopwatchFactory;
 
 /**
- * Marker for contexts exposing both a {@link ISliceFactory} (for building {@code IAdhocMap}s) and a
- * {@link ListeningExecutorService} (for dispatching parallel work). Implemented by {@link IAdhocFactories} and
- * {@code QueryPod} so helpers — notably {@link PodExecutors} — can accept either transparently and centralise
- * scope-binding around dispatched tasks.
+ * Centralize the basic factories used through Adhoc.
  *
  * @author Benoit Lacelle
  */
-public interface IHasExecutorAndSliceFactory {
+public interface IAdhocFactories extends IFilterFactories, IHasExecutorAndSliceFactory {
+
+	IOperatorFactory getOperatorFactory();
+
+	IColumnFactory getColumnFactory();
+
+	ISliceFactoryFactory getSliceFactoryFactory();
+
+	@Override
+	default ISliceFactory getSliceFactory() {
+		return getSliceFactoryFactory().makeFactory(IHasOptionsAndExecutorService.noOption());
+	}
+
+	IStopwatchFactory getStopwatchFactory();
 
 	/**
-	 * @return the slice factory used to allocate {@code IAdhocMap} instances.
+	 * @return the executor service to use for parallel partition processing. Defaults to a direct (same-thread)
+	 *         executor; override in production contexts (e.g. {@code AdhocFactoriesUnsafe}) to use
+	 *         {@code AdhocUnsafe.adhocMixedPool}.
 	 */
-	ISliceFactory getSliceFactory();
+	@Override
+	default ListeningExecutorService getExecutorService() {
+		return MoreExecutors.newDirectExecutorService();
+	}
 
-	/**
-	 * @return the executor service onto which parallel work should be dispatched.
-	 */
-	ListeningExecutorService getExecutorService();
+	IMeasureQueryStepFactory getMeasureQueryStepFactory();
 
 }

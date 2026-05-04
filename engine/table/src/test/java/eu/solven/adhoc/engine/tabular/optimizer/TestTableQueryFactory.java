@@ -30,12 +30,12 @@ import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.column.ColumnWithCalculatedCoordinates;
 import eu.solven.adhoc.column.coordinate.CalculatedCoordinate;
-import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.dag.GraphHelpers;
 import eu.solven.adhoc.engine.dag.IAdhocDag;
 import eu.solven.adhoc.engine.step.TableQueryStep;
 import eu.solven.adhoc.engine.tabular.grouper.TableStepsGrouper;
 import eu.solven.adhoc.engine.tabular.splitter.InduceByAdhocComplete;
+import eu.solven.adhoc.factories.AdhocFactories;
 import eu.solven.adhoc.filter.ColumnFilter;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.model.query.groupby.GroupByColumns;

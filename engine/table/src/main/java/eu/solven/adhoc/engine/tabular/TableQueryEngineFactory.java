@@ -26,8 +26,6 @@ import java.util.Map;
 
 import eu.solven.adhoc.cuboid.ICuboid;
 import eu.solven.adhoc.dataframe.tabular.ITabularView;
-import eu.solven.adhoc.engine.AdhocFactories;
-import eu.solven.adhoc.engine.IAdhocFactories;
 import eu.solven.adhoc.engine.QueryStepsDag;
 import eu.solven.adhoc.engine.step.TableQueryStep;
 import eu.solven.adhoc.engine.tabular.inducer.ITableQueryInducer;
@@ -38,6 +36,8 @@ import eu.solven.adhoc.engine.tabular.optimizer.ITableQueryFactoryFactory;
 import eu.solven.adhoc.engine.tabular.optimizer.TableQueryFactoryFactory;
 import eu.solven.adhoc.eventbus.IAdhocEventBus;
 import eu.solven.adhoc.eventbus.UnsafeAdhocEventBusHelpers;
+import eu.solven.adhoc.factories.AdhocFactories;
+import eu.solven.adhoc.factories.IAdhocFactories;
 import eu.solven.adhoc.filter.optimizer.IFilterOptimizer;
 import eu.solven.adhoc.measure.AdhocBlackHole;
 import eu.solven.adhoc.table.IQueryPod;

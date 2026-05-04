@@ -32,11 +32,11 @@ import com.google.common.primitives.Ints;
 
 import eu.solven.adhoc.cuboid.IColumnScanner;
 import eu.solven.adhoc.cuboid.slice.ISlice;
+import eu.solven.adhoc.factories.AdhocFactoriesUnsafe;
 import eu.solven.adhoc.map.AdhocMapHelpers;
 import eu.solven.adhoc.map.MapComparators;
 import eu.solven.adhoc.map.factory.ISliceFactory;
 import eu.solven.adhoc.primitive.IValueReceiver;
-import eu.solven.adhoc.util.AdhocFactoriesUnsafe;
 import lombok.Builder.Default;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;

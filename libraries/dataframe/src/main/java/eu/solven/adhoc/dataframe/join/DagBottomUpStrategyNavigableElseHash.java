@@ -43,8 +43,8 @@ import eu.solven.adhoc.dataframe.column.navigable_else_hash.MultitypeNavigableEl
 import eu.solven.adhoc.dataframe.column.navigable_else_hash.MultitypeNavigableElseHashIntColumn;
 import eu.solven.adhoc.dataframe.column.navigable_else_hash.MultitypeNavigableElseHashMergeableColumn;
 import eu.solven.adhoc.dataframe.column.navigable_else_hash.MultitypeNavigableElseHashMergeableIntColumn;
-import eu.solven.adhoc.engine.IColumnFactory.ColumnParams;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.factories.IColumnFactory.ColumnParams;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.model.Dispatchor;
 import eu.solven.adhoc.measure.model.Shiftor;

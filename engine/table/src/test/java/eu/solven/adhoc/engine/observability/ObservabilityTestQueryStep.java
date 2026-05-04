@@ -29,8 +29,8 @@ import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
 
 import eu.solven.adhoc.cuboid.ICuboid;
-import eu.solven.adhoc.engine.IAdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.factories.IAdhocFactories;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.Combinator;

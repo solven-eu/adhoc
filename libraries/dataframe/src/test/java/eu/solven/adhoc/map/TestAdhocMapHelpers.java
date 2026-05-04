@@ -31,11 +31,11 @@ import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.dataframe.row.ITabularRecord;
 import eu.solven.adhoc.dataframe.row.TabularRecordOverMaps;
+import eu.solven.adhoc.factories.AdhocFactoriesUnsafe;
 import eu.solven.adhoc.map.factory.ISliceFactory;
 import eu.solven.adhoc.model.query.groupby.GroupByColumns;
 import eu.solven.adhoc.options.IHasOptionsAndExecutorService;
 import eu.solven.adhoc.table.transcoder.value.IColumnValueTranscoder;
-import eu.solven.adhoc.util.AdhocFactoriesUnsafe;
 
 public class TestAdhocMapHelpers {
 	ISliceFactory sliceFactory = AdhocFactoriesUnsafe.factories.getSliceFactoryFactory()

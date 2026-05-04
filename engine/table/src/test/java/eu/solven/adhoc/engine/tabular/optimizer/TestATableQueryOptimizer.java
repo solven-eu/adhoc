@@ -34,6 +34,7 @@ import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.TableQueryStep;
+import eu.solven.adhoc.factories.AdhocFactoriesUnsafe;
 import eu.solven.adhoc.filter.AndFilter;
 import eu.solven.adhoc.filter.ColumnFilter;
 import eu.solven.adhoc.filter.ISliceFilter;
@@ -48,7 +49,6 @@ import eu.solven.adhoc.model.query.groupby.GroupByColumns;
 import eu.solven.adhoc.options.IHasOptionsAndExecutorService;
 import eu.solven.adhoc.query.table.FilteredAggregator;
 import eu.solven.adhoc.query.table.TableQueryV4;
-import eu.solven.adhoc.util.AdhocFactoriesUnsafe;
 
 public class TestATableQueryOptimizer {
 

@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2026 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,31 +20,38 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.engine.tabular.inducer;
+package eu.solven.adhoc.factories;
 
-import eu.solven.adhoc.factories.IAdhocFactories;
-import eu.solven.adhoc.filter.optimizer.IFilterOptimizer;
-import lombok.Builder;
-import lombok.NonNull;
+import eu.solven.adhoc.filter.optimizer.IFilterOptimizerFactory;
+import lombok.experimental.UtilityClass;
+import lombok.extern.slf4j.Slf4j;
 
 /**
- * Default {@link IInducedEvaluatorFactory} that produces a {@link ChainedInducedEvaluator} which tries
- * {@link DuckDBInducedEvaluator} first and falls back to {@link JavaStreamInducedEvaluator}.
- *
+ * Some various unsafe constants, one should edit if he knows what he's doing.
+ * 
  * @author Benoit Lacelle
  */
-@Builder
-public class StandardInducedEvaluatorFactory implements IInducedEvaluatorFactory {
-
-	@NonNull
-	final IAdhocFactories factories;
-
-	@NonNull
-	final IFilterOptimizer filterOptimizer;
-
-	@Override
-	public IInducedEvaluator build() {
-		// TODO Work on new DuckDBInducedEvaluator(factories)
-		return ChainedInducedEvaluator.of(new JavaStreamInducedEvaluator(factories));
+@UtilityClass
+@Slf4j
+@SuppressWarnings({ "PMD.MutableStaticState", "PMD.FieldDeclarationsShouldBeAtStartOfClass" })
+public class AdhocFactoriesUnsafe {
+	static {
+		resetAll();
 	}
+
+	public static void resetProperties() {
+		log.info("Resetting {} configuration", AdhocFactoriesUnsafe.class.getName());
+
+	}
+
+	public static void resetAll() {
+		resetProperties();
+
+		factories = DEFAULT_FACTORIES;
+	}
+
+	private static final IAdhocFactories DEFAULT_FACTORIES =
+			AdhocFactories.builder().filterOptimizerFactory(IFilterOptimizerFactory.standard()).build();
+	public static IAdhocFactories factories = DEFAULT_FACTORIES;
+
 }

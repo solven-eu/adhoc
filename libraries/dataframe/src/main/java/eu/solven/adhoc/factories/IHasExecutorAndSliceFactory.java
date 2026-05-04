@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2026 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,40 +20,30 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.util;
+package eu.solven.adhoc.factories;
 
-import eu.solven.adhoc.engine.AdhocFactories;
-import eu.solven.adhoc.engine.IAdhocFactories;
-import eu.solven.adhoc.filter.optimizer.IFilterOptimizerFactory;
-import lombok.experimental.UtilityClass;
-import lombok.extern.slf4j.Slf4j;
+import com.google.common.util.concurrent.ListeningExecutorService;
+
+import eu.solven.adhoc.map.factory.ISliceFactory;
 
 /**
- * Some various unsafe constants, one should edit if he knows what he's doing.
- * 
+ * Marker for contexts exposing both a {@link ISliceFactory} (for building {@code IAdhocMap}s) and a
+ * {@link ListeningExecutorService} (for dispatching parallel work). Implemented by {@link IAdhocFactories} and
+ * {@code QueryPod} so helpers — notably {@link PodExecutors} — can accept either transparently and centralise
+ * scope-binding around dispatched tasks.
+ *
  * @author Benoit Lacelle
  */
-@UtilityClass
-@Slf4j
-@SuppressWarnings({ "PMD.MutableStaticState", "PMD.FieldDeclarationsShouldBeAtStartOfClass" })
-public class AdhocFactoriesUnsafe {
-	static {
-		resetAll();
-	}
+public interface IHasExecutorAndSliceFactory {
 
-	public static void resetProperties() {
-		log.info("Resetting {} configuration", AdhocFactoriesUnsafe.class.getName());
+	/**
+	 * @return the slice factory used to allocate {@code IAdhocMap} instances.
+	 */
+	ISliceFactory getSliceFactory();
 
-	}
-
-	public static void resetAll() {
-		resetProperties();
-
-		factories = DEFAULT_FACTORIES;
-	}
-
-	private static final AdhocFactories DEFAULT_FACTORIES =
-			AdhocFactories.builder().filterOptimizerFactory(IFilterOptimizerFactory.standard()).build();
-	public static IAdhocFactories factories = DEFAULT_FACTORIES;
+	/**
+	 * @return the executor service onto which parallel work should be dispatched.
+	 */
+	ListeningExecutorService getExecutorService();
 
 }

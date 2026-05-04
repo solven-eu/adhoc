@@ -22,8 +22,8 @@
  */
 package eu.solven.adhoc.engine.measure;
 
-import eu.solven.adhoc.engine.IAdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.factories.IAdhocFactories;
 import eu.solven.adhoc.measure.transformator.IHasUnderlyingMeasures;
 import eu.solven.adhoc.measure.transformator.step.IMeasureQueryStep;
 

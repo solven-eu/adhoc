@@ -26,8 +26,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
-import eu.solven.adhoc.engine.IAdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.factories.IAdhocFactories;
 import eu.solven.adhoc.filter.FilterHelpers;
 import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.filter.value.EqualsMatcher;
