@@ -20,7 +20,7 @@
 	<dependencies>
 		<dependency>
 			<groupId>eu.solven.adhoc</groupId>
-			<artifactId>adhoc</artifactId>
+			<artifactId>adhoc-recipes</artifactId>
 			<version>${project.version}</version>
 		</dependency>
 

@@ -1,9 +1,9 @@
 # RoutingMeasure — A Walkthrough
 
-This page walks through the actual `RoutingMeasure` shipped in `engine/adhoc`, focusing on the
+This page walks through the actual `RoutingMeasure` shipped in `engine/recipes`, focusing on the
 practical tricks you hit when writing a custom measure: where the runtime wiring lives, what
-Jackson can and cannot serialize, how `getUnderlyingSteps` shapes the DAG, and what
-`produceOutputColumn` is allowed to assume.
+Jackson can and cannot serialize, how `getUnderlyingSteps` shapes the DAG, what
+`produceOutputColumn` is allowed to assume, and why the cross-step combine is *coalesce*, not SUM.
 
 For the abstract pattern guide and the full contract surface, see
 [Custom Measures](custom-measure.md). This page is the worked-example companion.
@@ -12,29 +12,35 @@ For the abstract pattern guide and the full contract surface, see
 
 ## What `RoutingMeasure` does
 
-A `RoutingMeasure` dispatches each `CubeQueryStep` to one of several declared underlying
-measures, picked by a caller-supplied `Function<CubeQueryStep, String>`. The typical use case
-is migrations (e.g. Atoti → Adhoc) where one logical measure must map to different physical
-measures depending on the slice — one underlying for data before a modelling cutoff, another
-for data after it.
+A `RoutingMeasure` decomposes each `CubeQueryStep` into one or more underlying steps via a
+caller-supplied `IRoutingLogic`. The typical use case is a migration (e.g. Atoti → Adhoc) where
+one logical measure must map to different physical measures or filters depending on the slice
+— one underlying for data before a modelling cutoff, another for data after it.
 
 ```java
 RoutingMeasure.builder()
     .name("dRouted")
-    .underlying("d")              // declared universe...
-    .underlying("d_fr")           //   ...the routeFunction
-    .underlying("d_us")           //   ...may pick from
-    .routeFunction(step -> {
-        Object country = FilterHelpers.asMap(step.getFilter()).get("country");
-        if ("FR".equals(country)) return "d_fr";
-        if ("US".equals(country)) return "d_us";
-        return "d";
+    .underlying("d_legacy")            // covering set of underlying names...
+    .underlying("d_modern")            //   ...the routingLogic may reference
+    .routingLogic(step -> {
+        // Decompose into legacy + modern, each with the appropriate date filter.
+        ISliceFilter before = ColumnFilter.builder().column("date")
+                .matching(ComparingMatcher.strictlyLowerThan("2026-01-01")).build();
+        ISliceFilter after  = ColumnFilter.builder().column("date")
+                .matching(ComparingMatcher.greaterThanOrEqual("2026-01-01")).build();
+        return List.of(
+            CubeQueryStep.edit(step).measure("d_legacy")
+                    .filter(FilterBuilder.and(step.getFilter(), before).optimize()).build(),
+            CubeQueryStep.edit(step).measure("d_modern")
+                    .filter(FilterBuilder.and(step.getFilter(), after).optimize()).build()
+        );
     })
     .build();
 ```
 
-Source: [`RoutingMeasure`](https://github.com/solven-eu/adhoc/blob/master/engine/adhoc/src/main/java/eu/solven/adhoc/measure/routing/RoutingMeasure.java),
-[`RoutingMeasureQueryStep`](https://github.com/solven-eu/adhoc/blob/master/engine/adhoc/src/main/java/eu/solven/adhoc/measure/routing/RoutingMeasureQueryStep.java).
+Source: [`RoutingMeasure`](https://github.com/solven-eu/adhoc/blob/master/engine/recipes/src/main/java/eu/solven/adhoc/measure/routing/RoutingMeasure.java),
+[`IRoutingLogic`](https://github.com/solven-eu/adhoc/blob/master/engine/recipes/src/main/java/eu/solven/adhoc/measure/routing/IRoutingLogic.java),
+[`RoutingMeasureQueryStep`](https://github.com/solven-eu/adhoc/blob/master/engine/recipes/src/main/java/eu/solven/adhoc/measure/routing/RoutingMeasureQueryStep.java).
 
 ---
 
@@ -42,16 +48,15 @@ Source: [`RoutingMeasure`](https://github.com/solven-eu/adhoc/blob/master/engine
 
 Every custom measure that uses underlyings is two classes:
 
-|         File         |                                        Role                                        |
-|----------------------|-------------------------------------------------------------------------------------|
-| `RoutingMeasure`     | The **spec** (data class). Implements `ICombinator`. Held in the `MeasureForest`.   |
-| `RoutingMeasureQueryStep` | The **runtime** (logic). Extends `AMeasureQueryStep`. Built per query step.    |
+|         File         |                                                Role                                                 |
+|----------------------|-----------------------------------------------------------------------------------------------------|
+| `RoutingMeasure`     | The **spec** (data class). Implements `IMeasure + IHasUnderlyingMeasures`. Held in the forest.      |
+| `RoutingMeasureQueryStep` | The **runtime** (logic). Extends `AMeasureQueryStep`. Built per query step.                    |
 
 The engine pairs them via `IMeasure.queryStepClass()`. The default convention
-`<measure>` ↔ `<measure>QueryStep` works as long as both classes live in packages the engine's
-classloader can resolve — which is always true for code in your own module.
-
-`RoutingMeasure` overrides `queryStepClass()` explicitly:
+`<measure>` ↔ `<measure>QueryStep` works only when the step lives at
+`eu.solven.adhoc.measure.transformator.step.<X>QueryStep`. Anything outside that package must
+override:
 
 ```java
 @Override
@@ -60,76 +65,105 @@ public String queryStepClass() {
 }
 ```
 
-Two reasons to override rather than rely on the convention:
-
-1. **Refactoring safety.** If someone renames the spec class, the IDE updates the override
-   automatically; the convention's string-formatting trick wouldn't catch it until the next
-   query at runtime.
-2. **Custom packaging.** The convention assumes the step lives in
-   `eu.solven.adhoc.measure.transformator.step.<X>QueryStep`. Custom measures placed outside
-   that package must override.
+`RoutingMeasure` overrides for both reasons: package mismatch and refactoring safety
+(IDE renames the override; the string-formatted convention wouldn't catch it until the next
+query at runtime).
 
 ---
 
-## Trick 1 — Jackson and the `Function`
+## Trick 1 — Jackson and the `IRoutingLogic`
 
-`RoutingMeasure` carries a `Function<CubeQueryStep, String>`. **Lambdas are not
-JSON-serializable.** This has two consequences you must accept:
+`RoutingMeasure` carries an `IRoutingLogic` (a `@FunctionalInterface`, so a lambda is enough at
+the call site). **Lambdas / interface references are not JSON-serializable.** The class is
+`@Jacksonized`, so the *other* fields round-trip cleanly:
 
 ```java
 @JsonIgnore
-@NonNull
-Function<CubeQueryStep, String> routeFunction;
+@Nullable
+IRoutingLogic routingLogic;
 ```
 
-1. **The forest cannot be declared in YAML/JSON.** `MeasureForestFromResource` will succeed
-   parsing every other field but the `routeFunction` cannot be reconstructed. Any forest
-   containing a `RoutingMeasure` must be registered programmatically.
-2. **`@JsonIgnore` is not optional.** Without it, Jackson will fail to serialize the spec at
-   all (the default ObjectMapper has no idea how to write a lambda). With it, the spec is
-   round-trippable for the *other* fields — useful for explain/debug output that prints the
-   measure tree without trying to reconstruct the function.
+Three consequences:
+
+1. **The forest cannot be declared in YAML/JSON today.** `MeasureForestFromResource` will parse
+   every other field but `routingLogic` deserializes to `null`. A `RoutingMeasure` with
+   `routingLogic == null` is *spec-only* — usable for introspection (forest summaries,
+   dependency-graph generation, the explain output) but not for query execution
+   (`RoutingMeasureQueryStep` throws on null).
+2. **`@JsonIgnore` is not optional.** Without it, Jackson would fail on the lambda. With it,
+   serialization is partial-by-design.
+3. **Equality must exclude `routingLogic`** — otherwise a deserialized spec-only instance
+   wouldn't equal the original. The class uses `@EqualsAndHashCode(exclude = "routingLogic")`
+   so Jackson roundtrip preserves equality for the introspection use case.
 
 The other examples in the codebase that need pluggable logic (e.g. `Combinator`,
 `Dispatchor`) avoid this trap by identifying their logic with a string `combinationKey` /
 `decompositionKey` resolved through `IOperatorFactory`. That keeps them YAML-declarable but
-forces the logic class to be discoverable by name — a different ergonomic trade-off.
+forces the logic class to be discoverable by name. The `routingOptions` field on
+`RoutingMeasure` is reserved for a future declarative path: when an `IOperatorFactory` method
+exists to resolve an `IRoutingLogic` implementation from a class FQCN plus an options map,
+`routingOptions` will be passed to that implementation's `Map<String, ?>`-arg constructor.
+The plumbing isn't there yet.
 
 ---
 
-## Trick 2 — Carrying `combinationKey` even when you don't combine
-
-`ICombinator` extends `IHasCombinationKey`, which mandates a `combinationKey` and
-`combinationOptions`. `RoutingMeasure` never actually invokes a combination — it just passes
-the routed branch's value through unchanged. But the interface contract forces the field:
+## Trick 2 — `underlyings` is a covering set, not a runtime constraint pretending to be informational
 
 ```java
-@NonNull
-@Builder.Default
-String combinationKey = SumCombination.KEY;
-
-@NonNull
-@Builder.Default
-Map<String, ?> combinationOptions = Collections.emptyMap();
+@Singular
+ImmutableList<String> underlyings;
 ```
 
-Defaulting to `SumCombination.KEY` is not load-bearing; the value is never consulted. If the
-field ever appears wrong in an explain trace, that's a hint someone is invoking the
-combination machinery for routing, which they shouldn't be — see Trick 4.
+`underlyings` declares the closed set of measure names the `routingLogic` may reference. It
+serves two distinct audiences:
 
-If your custom measure has *no* sensible combination (e.g. its logic genuinely cannot be
-expressed as combine-of-N-values), consider whether `ICombinator` is actually the right
-super-interface. `IHasUnderlyingMeasures` (without combination) is the lower-level option,
-at the cost of writing a bit more wiring yourself.
+- **Static tooling** — `MeasureForest` summaries, dependency-graph generators, the explain
+  output. None of these can run the routing logic to discover its targets, so they read this
+  field to render the measure's dependencies.
+- **Runtime validation** — `RoutingMeasureQueryStep` checks every step the logic returns
+  against this set, and throws if a returned step targets a measure not listed. This makes
+  the field load-bearing rather than informational, which keeps documentation and runtime
+  behaviour in sync.
+
+The error message names the bad return, the closed list, and the parent step:
+
+```
+RoutingMeasure 'dRouted': routingLogic returned a step targeting measure 'd_modern',
+not in declared underlyings [d_legacy]. step=...
+```
+
+If you find yourself wanting to bypass the closed set ("the routing logic is dynamic and
+depends on the query"), that's a hint to revisit the design — the logic isn't really routing,
+it's something that needs a different measure type.
 
 ---
 
-## Trick 3 — `getUnderlyingNames` vs `getUnderlyingSteps`: the closed set vs the runtime set
+## Trick 3 — Coalesce, not SUM
+
+The cross-step combine in `RoutingMeasureQueryStep` is hardcoded to `CoalesceCombination`
+(first-non-null wins), not `SumCombination`. The contract is "one slice ↔ one sub-step":
+
+- When the routing column is in the groupBy (or the user's filter restricts to one side),
+  exactly one sub-step produces a value for any given output slice. The other side returns
+  `null`. Coalesce passes the value through structurally — no arithmetic, no rounding, no
+  type promotion.
+- When filters happen to overlap, SUM would silently double-count. Coalesce surfaces the
+  overlap as a "first wins" anomaly that's easier to spot. Routing isn't an aggregation
+  operation — there is no "right way" to combine two values for the same logical cell, so
+  refusing to merge is the safer default.
+
+A short-circuit makes this efficient: with a single returned step, `produceOutputColumn`
+returns the underlying cuboid as-is rather than rebuilding through coalesce. Mirrors
+`CombinatorQueryStep`'s identical short-circuit.
+
+---
+
+## Trick 4 — `getUnderlyingNames` vs `getUnderlyingSteps`: the closed set vs the runtime decomposition
 
 These two methods look similar and are easy to confuse:
 
 ```java
-// Spec side — the universe of measures this measure may consume.
+// Spec side — the closed set of measure names the logic MAY reference.
 @JsonIgnore
 @Override
 public List<String> getUnderlyingNames() {
@@ -139,9 +173,9 @@ public List<String> getUnderlyingNames() {
 // Step side — the actual queries the engine must run for THIS step.
 @Override
 public List<CubeQueryStep> getUnderlyingSteps() {
-    String chosen = measure.getRouteFunction().apply(step);
-    // ... validation ...
-    return List.of(CubeQueryStep.edit(step).measure(chosen).build());
+    List<CubeQueryStep> steps = measure.getRoutingLogic().route(step);
+    // ... validation: each step's measure ∈ underlyings ...
+    return steps;
 }
 ```
 
@@ -149,150 +183,122 @@ The engine uses `getUnderlyingNames` at **planning time** to know which measures
 must contain. It uses `getUnderlyingSteps` at **evaluation time** to know which subqueries to
 issue.
 
-For `RoutingMeasure` they have different cardinalities: 3 names declared, exactly 1 step
-issued. That asymmetry is fine — the engine doesn't require them to match.
-
-**The validation matters.** If `routeFunction` returns `"d_xx"` (a name not in the closed
-list), the engine has no way to compose the result back into the DAG: it never planned for
-`d_xx`. Catching this in the step with a precise error is non-negotiable:
-
-```java
-if (!measure.getUnderlyings().contains(chosen)) {
-    throw new IllegalStateException(
-        "RoutingMeasure '%s': routeFunction returned '%s', not in declared underlyings %s. step=%s"
-            .formatted(measure.getName(), chosen, measure.getUnderlyings(), step));
-}
-```
-
-The exception message includes the measure name, the bad return, the closed list, and the
-full step — everything a debugger needs without re-running with `--explain`.
+For `RoutingMeasure` the cardinalities can differ: 2 names declared, 1 or 2 steps issued —
+depending on whether the routing logic returns a single-step (passthrough) or multi-step
+(decomposition) result. The engine doesn't require them to match.
 
 ---
 
-## Trick 4 — `produceOutputColumn`: passthrough vs combination
+## Trick 5 — `produceOutputColumn` and the column-factory pattern
 
-`AMeasureQueryStep.produceOutputColumn(List<? extends ICuboid>)` is where the runtime turns
-underlying results into the measure's own output. `RoutingMeasureQueryStep` does a
-**passthrough** — for every slice in the (single) underlying cuboid, it emits the same value
-attached to its own step:
+`RoutingMeasureQueryStep` builds its output column via `IColumnFactory`, not by directly
+constructing a `MultitypeHashColumn`:
 
 ```java
-@Override
-public ICuboid produceOutputColumn(List<? extends ICuboid> underlyings) {
-    if (underlyings.size() != 1) {
-        throw new IllegalArgumentException(/* ... */);
-    }
-
-    IMultitypeColumnFastGet<ISlice> values = makeStorage();
-    ICombination passthroughCombination = factories.getOperatorFactory().makeCombination(measure);
-    forEachDistinctSlice(underlyings, passthroughCombination, values::append);
-
-    return Cuboid.forGroupBy(step).values(values).build();
-}
-
-@Override
-protected void onSlice(SliceAndMeasures slice, ICombination combination, ISliceAndValueConsumer output) {
-    Object value = slice.getMeasures().asList().get(0);
-    output.putSlice(slice.getSlice().getSlice()).onObject(value);
-}
+IMultitypeColumnFastGet<ISlice> values = factories.getColumnFactory()
+        .makeColumn(p -> p.initialCapacity(IColumnFactory.sumSizes(underlyings)));
 ```
 
-Two practical things to notice:
+Two reasons not to call the column constructor directly:
 
-1. **Don't return the underlying cuboid directly.** `underlyings.get(0)` is tied to the
-   *underlying step's* identity, not ours. Downstream consumers (caching, explain traces,
-   the DAG join logic) match cuboids by step, so the values must be re-attached to *our*
-   step via `Cuboid.forGroupBy(step).values(...).build()`. A naive `return underlyings.get(0)`
-   compiles, runs, and produces correct numbers — but breaks observability.
+1. **`IColumnFactory` may return a partitioned column** when the underlyings are partitioned,
+   without the QueryStep needing to know. Hand-rolling `MultitypeHashColumn.builder()` opts
+   the measure out of that optimization.
+2. **Capacity sizing.** `IColumnFactory.sumSizes(underlyings)` gives a sensible upper bound
+   for capacity, avoiding rehashing during the slice walk. Manually-built columns default to
+   the (small) standard initial capacity.
 
-2. **`onSlice` ignores the `combination` parameter.** The `passthroughCombination` is required
-   by `AMeasureQueryStep#forEachDistinctSlice`'s signature but never invoked by our `onSlice`.
-   That's the price of reusing the existing slice-iteration scaffolding for a non-combining
-   measure. The alternative — calling `joinCuboids(underlyings)` directly without going
-   through `forEachDistinctSlice` — duplicates a lot of debug-logging and error-wrapping
-   from the parent class for no real benefit.
+The output is then attached to *our* step via `Cuboid.forGroupBy(step).values(values).build()`
+— never `return underlyings.get(0)`, because the underlying cuboid is tied to the *underlying
+step's* identity. The single-underlying coalesce short-circuit is the one exception, and it's
+safe specifically because coalesce's output equals the underlying's output verbatim.
 
 ---
 
-## Trick 5 — How the DAG sees a routing measure
+## Trick 6 — Debug logging via `ProxyValueReceiver`
+
+`onSlice` writes to an `IValueReceiver` directly rather than going through
+`ICombination.combine(slice, list) → Object`. The receiver-based combine is the non-deprecated
+form, but it doesn't *return* a value — which makes a `[DEBUG]` log line ("we wrote X for
+slice Y") awkward to construct.
+
+The trick: wrap the receiver in a `ProxyValueReceiver` that captures whatever the combine
+writes, log it, then pass it through. Mirrors `CombinatorQueryStep#combine`. The two copies
+of this pattern should probably move to a shared helper on `AMeasureQueryStep`; until that
+refactor lands, treat the two sites as paired.
+
+---
+
+## Trick 7 — How the DAG sees a routing measure
 
 Routing creates an interesting DAG shape: the measure declares N underlyings (so the planner
-plans for all N) but at runtime only 1 underlying is actually queried per step. Walking
-through a query like `cube.execute(measure="dRouted", filter="country=FR")` with the routing
-function above:
+plans for all N) and the runtime issues 1+ of them. Walking through a query like
+`cube.execute(measure="dRouted", filter="country=FR")` with the date-cutoff routing above:
 
 ```text
-Cube DAG (planning, before routeFunction runs):
-    dRouted ───► d
-            ├──► d_fr      ◄── declared dependencies (closed set)
-            └──► d_us
+Cube DAG (planning, before routingLogic runs):
+    dRouted ───► d_legacy
+            └──► d_modern    ◄── declared closed set (covering)
 
-Cube DAG (after the step is built and routeFunction returned "d_fr"):
-    dRouted ───► d_fr      ◄── only the chosen branch is materialized
-                              d and d_us are NOT queried
+Cube DAG (after the step is built):
+    dRouted ───► d_legacy filter=country=FR AND date<2026-01-01
+            └──► d_modern filter=country=FR AND date>=2026-01-01
 ```
 
-This is fine. The Cube DAG is a *plan*; only the steps that an upstream actually requires
-are executed. `RoutingMeasureQueryStep#getUnderlyingSteps` returning a single `CubeQueryStep`
-means the planner only allocates a query for that one branch.
-
-What this **doesn't** do: it doesn't free your routing function from the responsibility of
-picking the right branch. The DAG won't second-guess your function's choice — if the query
-filter was `country=FR` but you returned `d_us`, the engine will dutifully query `d_us` and
-return its (probably wrong) value. Whatever invariants the routing represents must be
-enforced inside `routeFunction`.
+This is fine. The Cube DAG is a *plan*; only the steps an upstream actually requires are
+executed, and identical steps coming from different measures are deduplicated. Routing
+benefits from that deduplication for free as long as `getUnderlyingSteps()` builds steps via
+`CubeQueryStep.edit(step).measure(...).filter(...).build()` (which preserves identity for
+the unchanged fields).
 
 For background on the two-DAG model and how custom measures fit, see
 [CubeQueryEngine](cube-query-engine.md) and [Foundations § DAGs](foundations.md#dags-and-the-measure-tree).
 
 ---
 
-## Trick 6 — Cross-boundary queries are not supported
+## Trick 8 — Cross-boundary correctness is the caller's problem
 
-The contract is "one underlying per step". A query whose filter spans both sides of the
-routing boundary *without* the routing column being part of the groupBy presents a problem
-the framework cannot solve from inside this measure: there is no single underlying that holds
-the right value for the whole slice.
+The framework cannot detect:
 
-`RoutingMeasure` does not detect this case. The function is opaque — the engine cannot tell
-whether `routeFunction.apply(step)` is "correct" for a step that straddles the boundary.
-Two coping strategies:
+- Whether returned steps' filters are disjoint.
+- Whether the underlying aggregator is linear (SUM, COUNT) or not (MAX, RANK, percentile).
+- Whether the routing column is in the groupBy.
+
+Coalesce is correct when *exactly one* sub-step contributes a value per output slice — i.e.
+when filters are disjoint AND (the routing column is in the groupBy OR the user's filter
+already restricts to one side). When that doesn't hold, the result is order-dependent or
+silently wrong.
+
+Two coping strategies, neither of which the framework imposes:
 
 - **Caller-side**: ensure the routing column is always in the groupBy when querying across
-  the cutover, so each output slice maps to exactly one branch. This is the standard
-  recommendation.
-- **Function-side**: have `routeFunction` throw with a precise message when it detects the
-  cross-boundary case, refusing to dispatch silently to one side. The exception will surface
-  in the DAG as a step failure, which is louder than a wrong number.
+  the cutover. The standard recommendation. The DAG-level test
+  `testGroupByDate_oneSidePerOutputSlice` shows this scenario.
+- **Logic-side**: have `routingLogic.route(step)` throw when it detects the cross-boundary
+  case. The exception surfaces as a step failure — louder than a wrong number.
 
-A future iteration could replace `Function<CubeQueryStep, String>` with a decomposition
-strategy that returns multiple `(filter, underlying)` pairs covering the step's filter
-disjointly — at which point `produceOutputColumn` would need to combine the results, and
-the linearity question becomes load-bearing (see
-[Foundations § Linearity](foundations.md#linearity-and-why-sum-is-special)). The current
-shape was deliberately chosen to not pretend to solve this case.
+A future iteration could replace the simple SUM-vs-coalesce knob with a
+decomposition-aware combine that exploits filter disjointness statically, but the current
+shape was deliberately chosen not to pretend to solve this case. See
+[Foundations § Linearity](foundations.md#linearity-and-why-sum-is-special) for the underlying
+reason.
 
 ---
 
-## Trick 7 — Tests live alongside, not below
+## Trick 9 — Tests live alongside, not below
 
-`engine/adhoc/src/test/java/eu/solven/adhoc/measure/routing/TestDag_RoutingMeasure.java`
-holds the full coverage in a single class — routing decisions, error cases (unknown
-underlying, null underlying), and DAG fan-out scenarios where the routing measure is
-queried alongside its raw underlyings. It mirrors the precedent of
-`TestDagAggregations_RatioByCombinator`: one class, all tests against the same in-memory
-fixture.
+`engine/recipes/src/test/java/eu/solven/adhoc/measure/routing/` holds:
 
-The fixture base class `ATestDagInMemory` (from `engine/cube/src/test/java/...`, available
-via the `tests` classifier) gives you a `forest`, a `table()` and a `cube()` ready to use.
-DAG-level tests catch both logic bugs (a wrong routing decision shows up as a wrong number)
-and wiring bugs (e.g. forgetting `Cuboid.forGroupBy` in `produceOutputColumn` shows up as
-caching / explain breakage).
+- `TestRoutingMeasure` — lightweight unit tests on the spec class only: builder defaults,
+  `toString`, Jackson roundtrip. Does NOT extend the cube fixture; this is the place for
+  tests that don't need an in-memory cube to mean something.
+- `TestDag_RoutingMeasure` — DAG-level integration: registers the measure on a fixture cube
+  and asserts end-to-end results across the date cutover, mirroring
+  `TestDagAggregations_RatioByCombinator`.
 
-A separate pure-unit test class would only be worthwhile if the spec or step had logic
-that's awkward to exercise via a cube — which is not the case here. Don't split a class
-into two just because the test count is high; split only when the second class can drop
-the cube fixture entirely.
+Don't split a class into two just because the test count is high; split only when the second
+class can drop the cube fixture entirely. `TestRoutingMeasure` is split off precisely because
+it tests serialization and builder behaviour that have nothing to do with running queries.
 
 ---
 

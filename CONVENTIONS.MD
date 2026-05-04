@@ -113,6 +113,26 @@ All checkers are informational — they never block the build.
   - Comment `else` branches and fall-through paths, even when they simply continue the loop or reach the end of the method.
   - A missing comment on a branch forces the reader to re-derive the logic; a one-line comment prevents that.
 
+- **Nullness is package-level via JSpecify for static analysis; field-level `@lombok.NonNull` for runtime enforcement.** Every package under `src/main/java/eu/solven/adhoc/**` must declare `@NullMarked` (JSpecify) in its `package-info.java`. Once a package is `@NullMarked`, parameters, return types and fields are non-null by default; an explicit `@org.jspecify.annotations.Nullable` marks the legitimately-nullable ones. NullAway (wired through the `errorprone` profile) reads `@NullMarked` and rejects unsafe deref / pass / return at compile time.
+  - **`@NullMarked` is NOT consulted by Lombok** — tracked upstream as [projectlombok/lombok#3861](https://github.com/projectlombok/lombok/issues/3861). It does not influence Lombok's `@Builder` / `@SuperBuilder` / `@Setter` runtime null checks. A field annotated only by package-level `@NullMarked` will silently accept null at `builder.build()`. See `model/.../util/TestLombokJSpecify` (project-wide regression guard, covers both `@Builder` and `@SuperBuilder`) — those tests will start failing if Lombok ever gains `@NullMarked` support.
+  - **Use `@lombok.NonNull`** on fields where you want the builder to reject null at `.build()` time (i.e. mandatory-required fields with no sensible default), especially on `@Builder` and `@SuperBuilder` classes. Package-level `@NullMarked` documents the intent for static analysis; the explicit `@lombok.NonNull` is the runtime enforcement on top, and remains required until lombok#3861 is fixed.
+  - **Do not import `org.jspecify.annotations.NonNull`** — redundant when the package is `@NullMarked`. Use `@org.jspecify.annotations.Nullable` only to opt out.
+  - When introducing a new package under `src/main/java/`, drop a `package-info.java` next to the first source file. The minimal form is:
+    ```java
+    /**
+     * Short one-line description of what this package contains.
+     *
+     * <p>
+     * All types in this package are null-marked: parameters, return types and fields are non-null by default;
+     * explicit {@link org.jspecify.annotations.Nullable @Nullable} marks the opt-outs.
+     */
+    @NullMarked
+    package eu.solven.adhoc.your.new.pkg;
+
+    import org.jspecify.annotations.NullMarked;
+    ```
+  - **Test packages do not get `package-info.java` / `@NullMarked`.** NullAway and the JSpecify pass run on production code only; adding `@NullMarked` to a `src/test/java/...` package adds noise without value. Existing `src/test/java` mirrors this convention — there are zero package-info files under any test tree.
+
 ---
 
 ## Naming Conventions
