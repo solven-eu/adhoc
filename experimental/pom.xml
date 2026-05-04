@@ -48,7 +48,7 @@
 	<dependencies>
 		<dependency>
 			<groupId>eu.solven.adhoc</groupId>
-			<artifactId>adhoc</artifactId>
+			<artifactId>adhoc-cube</artifactId>
 			<version>${project.version}</version>
 		</dependency>
 
@@ -195,7 +195,7 @@
 		<dependency>
 			<!-- Enable shared code between benchmarks and profilable tests -->
 			<groupId>eu.solven.adhoc</groupId>
-			<artifactId>adhoc</artifactId>
+			<artifactId>adhoc-cube</artifactId>
 			<version>${project.version}</version>
 			<classifier>tests</classifier>
 			<scope>test</scope>

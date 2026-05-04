@@ -192,6 +192,19 @@
 								<!-- Skip modules without test sources (e.g. the
 								aggregator POM) -->
 								<skipIfEmpty>true</skipIfEmpty>
+								<!-- These files are auto-loaded by their respective frameworks
+								whenever they appear on the classpath, which would force
+								the consuming module to follow our test setup. Keep them
+								in src/test/resources for our own tests, but strip them
+								from the published tests-jar so downstream tests / benchmarks
+								keep their own configuration:
+								- `logback-test.xml`: Logback test logging config.
+								- `junit-platform.properties`: JUnit Platform discovery /
+								  parallelism settings (see model/src/test/resources). -->
+								<excludes>
+									<exclude>logback-test.xml</exclude>
+									<exclude>junit-platform.properties</exclude>
+								</excludes>
 							</configuration>
 						</execution>
 					</executions>

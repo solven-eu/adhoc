@@ -46,7 +46,7 @@
 		<dependency>
 			<!-- Used to share some code between unitTests and benchmarks -->
 			<groupId>eu.solven.adhoc</groupId>
-			<artifactId>adhoc</artifactId>
+			<artifactId>adhoc-cube</artifactId>
 			<version>${project.version}</version>
 			<classifier>tests</classifier>
 		</dependency>
