@@ -170,7 +170,8 @@ public class SliceToJooqCondition implements ISliceToJooqCondition {
 		List<ConditionWithFilter> conditions = operands.stream().map(c -> toCondition(c, hasParentNot)).toList();
 
 		List<Condition> sqlConditions = conditions.stream().map(ConditionWithFilter::getCondition).toList();
-		List<ISliceFilter> nonPushdownsConditions = conditions.stream().map(ConditionWithFilter::getNonPushdown).toList();
+		List<ISliceFilter> nonPushdownsConditions =
+				conditions.stream().map(ConditionWithFilter::getNonPushdown).toList();
 
 		return and(sqlConditions, nonPushdownsConditions);
 	}
@@ -190,11 +191,15 @@ public class SliceToJooqCondition implements ISliceToJooqCondition {
 
 		List<Condition> sqlConditions = conditions.stream().map(ConditionWithFilter::getCondition).toList();
 
-		return ConditionWithFilter.builder().condition(DSL.or(sqlConditions)).nonPushdown(ISliceFilter.MATCH_ALL).build();
+		return ConditionWithFilter.builder()
+				.condition(DSL.or(sqlConditions))
+				.nonPushdown(ISliceFilter.MATCH_ALL)
+				.build();
 	}
 
 	@Override
-	public ConditionWithFilter and(Collection<Condition> sqlConditions, Collection<ISliceFilter> nonPushdownsConditions) {
+	public ConditionWithFilter and(Collection<Condition> sqlConditions,
+			Collection<ISliceFilter> nonPushdownsConditions) {
 		return ConditionWithFilter.builder()
 				.condition(andSql(sqlConditions))
 				.nonPushdown(FilterBuilder.and(nonPushdownsConditions).optimize(filterOptimizer))

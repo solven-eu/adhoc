@@ -80,7 +80,6 @@ import eu.solven.adhoc.query.table.TableQueryV4;
 import eu.solven.adhoc.query.top.AdhocTopClause;
 import eu.solven.adhoc.table.transcoder.AliasingContext;
 import eu.solven.adhoc.table.transcoder.ITableAliaser;
-import eu.solven.adhoc.util.IHasName;
 import eu.solven.adhoc.util.NotYetImplementedException;
 import eu.solven.pepper.core.PepperLogHelper;
 import lombok.AccessLevel;
@@ -315,11 +314,11 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 			}
 		});
 
-		ImmutableSet<ISliceFilter> leftovers = ImmutableSet.<ISliceFilter>builder()
+		ImmutableSet<ISliceFilter> nonPushdowns = ImmutableSet.<ISliceFilter>builder()
 				.add(conditionAndNonPushdown.getNonPushdown())
 				.addAll(aggregateToNonPushdown.values())
 				.build();
-		AggregatedRecordFields fields = selectedColumns(tableQuery, leftovers);
+		AggregatedRecordFields fields = selectedColumns(tableQuery, nonPushdowns);
 
 		// `SELECT ...` — the FIRST mode-specific axis.
 		Collection<SelectFieldOrAsterisk> selectedFields = switch (mode) {
@@ -359,8 +358,8 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 		// The right choice depends on the DB engine, the scale factor, and the degree of aggregator-set
 		// overlap. Benchmark with TestDagTableQuery_DuckDb_Tpch.testGroupingSets_vs_UnionAll_* to decide.
 		ResultQuery<Record> beforeOrder = switch (mode) {
-		case SLICES -> selectFromWhere
-				.groupBy(makeGroupingFields(tableQuery, conditionAndNonPushdown.getNonPushdown()));
+		case SLICES ->
+			selectFromWhere.groupBy(makeGroupingFields(tableQuery, conditionAndNonPushdown.getNonPushdown()));
 		case ROWS -> selectFromWhere;
 		};
 
@@ -553,11 +552,11 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 	/**
 	 *
 	 * @param tableQuery
-	 * @param leftoverFilter
+	 * @param nonPushdownFilter
 	 *            the filter which has not been able to be transcoded into a {@link Condition}
 	 * @return
 	 */
-	protected Collection<GroupField> makeGroupingFields(TableQueryV3 tableQuery, ISliceFilter leftoverFilter) {
+	protected Collection<GroupField> makeGroupingFields(TableQueryV3 tableQuery, ISliceFilter nonPushdownFilter) {
 		List<GroupField> groupedFields = new ArrayList<>();
 		if (tableQuery.singleGroupBy().isPresent()) {
 			if (canGroupByAll()) {
@@ -571,7 +570,7 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 					groupedFields.add(field);
 				});
 
-				FilterHelpers.getFilteredColumns(leftoverFilter).forEach(column -> {
+				FilterHelpers.getFilteredColumns(nonPushdownFilter).forEach(column -> {
 					Field<Object> field = columnAsField(ReferencedColumn.ref(column));
 					groupedFields.add(field);
 				});
@@ -585,7 +584,7 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 			// Hoisting them here as a constant prefix is equivalent to repeating them in every set:
 			// `GROUP BY <leftover>, GROUPING SETS ((a), (b))` ≡ `GROUPING SETS ((<leftover>, a), (<leftover>, b))`,
 			// and avoids exploding the grouping-set tuples. Mirrors the single-groupBy `!canGroupByAll()` arm above.
-			FilterHelpers.getFilteredColumns(leftoverFilter).forEach(column -> {
+			FilterHelpers.getFilteredColumns(nonPushdownFilter).forEach(column -> {
 				Field<Object> field = columnAsField(ReferencedColumn.ref(column));
 				groupedFields.add(field);
 			});

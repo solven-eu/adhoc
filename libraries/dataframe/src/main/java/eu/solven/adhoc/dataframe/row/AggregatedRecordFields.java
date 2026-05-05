@@ -58,7 +58,7 @@ public class AggregatedRecordFields {
 	@Singular
 	// List as more useful for consumer, but it has to be a distinct List
 	ImmutableList<String> columns;
-	
+
 	// Additional columns needed for filters which are executed by Adhoc (and not by the ITableWrapper)
 	@NonNull
 	@Singular
