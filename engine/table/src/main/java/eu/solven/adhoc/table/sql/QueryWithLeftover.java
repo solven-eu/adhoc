@@ -43,7 +43,6 @@ import eu.solven.adhoc.query.table.TableQueryV2;
 import eu.solven.adhoc.query.table.TableQueryV3;
 import eu.solven.cleanthat.SuppressCleanthat;
 import lombok.Builder;
-import lombok.NonNull;
 import lombok.Singular;
 import lombok.Value;
 
