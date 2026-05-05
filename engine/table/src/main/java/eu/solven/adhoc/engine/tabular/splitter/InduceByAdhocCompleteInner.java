@@ -71,9 +71,9 @@ public class InduceByAdhocCompleteInner {
 	 * <li>Filter strictness index: for each distinct inducer filter, the set of induced filters that are stricter —
 	 * computed once per distinct filter pair (O(f²)) using a shared per-filter {@link IFilterStripper}.</li>
 	 * </ul>
-	 * The leftover-filter check (whether the extra filtering imposed by the induced step is expressible using only the
-	 * inducer groupBy columns) is inlined in the inner loop and reuses the {@link IFilterStripper} already built for
-	 * the outer inducer step, avoiding any additional {@code makeFilterStripper} calls.
+	 * The nonPushdown-filter check (whether the extra filtering imposed by the induced step is expressible using only
+	 * the inducer groupBy columns) is inlined in the inner loop and reuses the {@link IFilterStripper} already built
+	 * for the outer inducer step, avoiding any additional {@code makeFilterStripper} calls.
 	 *
 	 * <p>
 	 * This method is thread-safe: it operates exclusively on a new local graph and its inputs are read-only.
@@ -88,7 +88,7 @@ public class InduceByAdhocCompleteInner {
 				makeInducerGroupByToInducedGroupBys(contextSteps);
 
 		// Phase 3: one IFilterStripper per distinct filter, shared across both the strictness index and
-		// the per-pair leftover check — no redundant makeFilterStripper calls.
+		// the per-pair nonPushdown check — no redundant makeFilterStripper calls.
 		ImmutableSet<ISliceFilter> distinctFilters =
 				contextSteps.stream().map(TableQueryStep::getFilter).collect(ImmutableSet.toImmutableSet());
 		Map<ISliceFilter, IFilterStripper> filterToStripper = makeFilterToStripper(distinctFilters);

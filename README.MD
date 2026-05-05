@@ -58,7 +58,7 @@ CPU: any JVM can run Adhoc. If multiple cores are available, Adhoc will takes ad
 ## Set-up
 
 1. Ensure you have JDK 21 available
-2. Add a (`maven`/`gradle`) dependency to `eu.solven.adhoc:adhoc:0.0.18` (they are deployed to m2central: https://central.sonatype.com/artifact/eu.solven.adhoc/adhoc)
+2. Add a (`maven`/`gradle`) dependency to `eu.solven.adhoc:adhoc-recipes:0.1.0` — the natural single-module entry point, bundling the cube/table engine plus advanced-measure recipes and example datasets. (Deployed to m2central: https://central.sonatype.com/artifact/eu.solven.adhoc/adhoc-recipes. The artifact was renamed from `eu.solven.adhoc:adhoc` in 0.1.0 to better reflect its role; downstream consumers on `0.0.x` must update their `<artifactId>` accordingly.)
 3. Define an `ITableWrapper`: it defines how Adhoc can access your data
 
 Assuming your data is queryable with JooQ:

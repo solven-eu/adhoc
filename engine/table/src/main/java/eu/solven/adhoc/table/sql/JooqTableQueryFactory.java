@@ -80,7 +80,6 @@ import eu.solven.adhoc.query.table.TableQueryV4;
 import eu.solven.adhoc.query.top.AdhocTopClause;
 import eu.solven.adhoc.table.transcoder.AliasingContext;
 import eu.solven.adhoc.table.transcoder.ITableAliaser;
-import eu.solven.adhoc.util.IHasName;
 import eu.solven.adhoc.util.NotYetImplementedException;
 import eu.solven.pepper.core.PepperLogHelper;
 import lombok.AccessLevel;
@@ -208,7 +207,7 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 		// Holds the filter of the conditions which were not translated into SQL
 		@NonNull
 		@Builder.Default
-		ISliceFilter leftover = ISliceFilter.MATCH_ALL;
+		ISliceFilter nonPushdown = ISliceFilter.MATCH_ALL;
 	}
 
 	@Deprecated
@@ -302,23 +301,24 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 	protected QueryWithLeftover prepareQuery(TableQueryV3 tableQuery, TableLike<?> fromTable, SqlRenderMode mode) {
 		ISliceToJooqCondition toCondition = makeToCondition();
 
-		ConditionWithFilter conditionAndLeftover = toConditions(toCondition, tableQuery);
+		ConditionWithFilter conditionAndNonPushdown = toConditions(toCondition, tableQuery);
 
 		// Leftover in FILTER clause — common to both modes: any FA whose FILTER cannot be transcoded fully into
 		// SQL records its leftover here, and the JooqTableWrapper applies the leftover post-fetch.
-		Map<String, ISliceFilter> aggregateToLeftover = new LinkedHashMap<>();
+		Map<String, ISliceFilter> aggregateToNonPushdown = new LinkedHashMap<>();
 		tableQuery.getAggregators().forEach(filtered -> {
-			ConditionWithFilter conditionWithFilter = toCondition.toConditionSplitLeftover(filtered.getFilter());
-			if (!conditionWithFilter.getLeftover().isMatchAll()) {
-				aggregateToLeftover.put(filtered.getAlias(), conditionWithFilter.getLeftover());
+			ConditionWithFilter conditionWithFilter = toCondition.toConditionSplitNonPushdown(filtered.getFilter());
+			ISliceFilter nonPushdown = conditionWithFilter.getNonPushdown();
+			if (!nonPushdown.isMatchAll()) {
+				aggregateToNonPushdown.put(filtered.getAlias(), nonPushdown);
 			}
 		});
 
-		ImmutableSet<ISliceFilter> leftovers = ImmutableSet.<ISliceFilter>builder()
-				.add(conditionAndLeftover.getLeftover())
-				.addAll(aggregateToLeftover.values())
+		ImmutableSet<ISliceFilter> nonPushdowns = ImmutableSet.<ISliceFilter>builder()
+				.add(conditionAndNonPushdown.getNonPushdown())
+				.addAll(aggregateToNonPushdown.values())
 				.build();
-		AggregatedRecordFields fields = selectedColumns(tableQuery, leftovers);
+		AggregatedRecordFields fields = selectedColumns(tableQuery, nonPushdowns);
 
 		// `SELECT ...` — the FIRST mode-specific axis.
 		Collection<SelectFieldOrAsterisk> selectedFields = switch (mode) {
@@ -331,10 +331,10 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 
 		// `WHERE ...`
 		SelectConnectByStep<Record> selectFromWhere;
-		if (conditionAndLeftover.getCondition() instanceof True) {
+		if (conditionAndNonPushdown.getCondition() instanceof True) {
 			selectFromWhere = selectFrom;
 		} else {
-			selectFromWhere = selectFrom.where(conditionAndLeftover.getCondition());
+			selectFromWhere = selectFrom.where(conditionAndNonPushdown.getCondition());
 		}
 
 		// `GROUP BY ...` — the SECOND mode-specific axis. ROWS emits no GROUP BY at all.
@@ -358,7 +358,8 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 		// The right choice depends on the DB engine, the scale factor, and the degree of aggregator-set
 		// overlap. Benchmark with TestDagTableQuery_DuckDb_Tpch.testGroupingSets_vs_UnionAll_* to decide.
 		ResultQuery<Record> beforeOrder = switch (mode) {
-		case SLICES -> selectFromWhere.groupBy(makeGroupingFields(tableQuery, conditionAndLeftover.getLeftover()));
+		case SLICES ->
+			selectFromWhere.groupBy(makeGroupingFields(tableQuery, conditionAndNonPushdown.getNonPushdown()));
 		case ROWS -> selectFromWhere;
 		};
 
@@ -373,8 +374,8 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 
 		return QueryWithLeftover.builder()
 				.queries(partitionQuery(resultQuery))
-				.leftover(conditionAndLeftover.getLeftover())
-				.aggregatorToLeftovers(aggregateToLeftover)
+				.nonPushdown(conditionAndNonPushdown.getNonPushdown())
+				.aggregatorToNonPushdowns(aggregateToNonPushdown)
 				.fields(fields)
 				.build();
 	}
@@ -394,7 +395,7 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 				return;
 			}
 			Field<Object> rawColumn = DSL.field(name(a.getColumnName()));
-			ConditionWithFilter faCondition = toCondition.toConditionSplitLeftover(filteredAggregator.getFilter());
+			ConditionWithFilter faCondition = toCondition.toConditionSplitNonPushdown(filteredAggregator.getFilter());
 			Field<Object> withCase = asCase(faCondition.getCondition(), rawColumn);
 			selectedFields.add(withCase.as(filteredAggregator.getAlias()));
 		});
@@ -403,8 +404,8 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 			Field<Object> field = columnAsField(column);
 			selectedFields.add(field);
 		});
-		fields.getLeftovers().forEach(leftover -> {
-			Field<Object> field = columnAsField(ReferencedColumn.ref(leftover));
+		fields.getNonPushdowns().forEach(nonPushdown -> {
+			Field<Object> field = columnAsField(ReferencedColumn.ref(nonPushdown));
 			selectedFields.add(field);
 		});
 		if (selectedFields.isEmpty()) {
@@ -441,19 +442,19 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 
 	protected ConditionWithFilter toConditions(ISliceToJooqCondition toCondition, TableQueryV3 tableQuery) {
 		Collection<Condition> conditions = new ArrayList<>();
-		Collection<ISliceFilter> leftoverFilters = new ArrayList<>();
+		Collection<ISliceFilter> nonPushdownFilters = new ArrayList<>();
 
 		// Conditions from filters
 		{
 			ISliceFilter filter = tableQuery.getFilter();
-			ConditionWithFilter conditionWithFilter = toCondition.toConditionSplitLeftover(filter);
+			ConditionWithFilter conditionWithFilter = toCondition.toConditionSplitNonPushdown(filter);
 
 			conditions.add(conditionWithFilter.getCondition());
-			leftoverFilters.add(conditionWithFilter.getLeftover());
+			nonPushdownFilters.add(conditionWithFilter.getNonPushdown());
 		}
 
 		// AND conditions from measures and from filters
-		return makeToCondition().and(conditions, leftoverFilters);
+		return makeToCondition().and(conditions, nonPushdownFilters);
 	}
 
 	protected List<SelectFieldOrAsterisk> selectedSliceFields(ISliceToJooqCondition toCondition,
@@ -481,8 +482,8 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 
 		// Leftover columns are also woven into GROUP BY by `makeGroupingFields` (single-groupBy non-`ALL`
 		// arm and the multi-grouping-sets arm both hoist them), so adding them here in SELECT is safe.
-		fields.getLeftovers().forEach(leftover -> {
-			Field<Object> field = columnAsField(ReferencedColumn.ref(leftover));
+		fields.getNonPushdowns().forEach(nonPushdown -> {
+			Field<Object> field = columnAsField(ReferencedColumn.ref(nonPushdown));
 			selectedFields.add(field);
 		});
 
@@ -504,39 +505,6 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 		}
 
 		return selectedFields;
-	}
-
-	/**
-	 * @param tableQuery
-	 *            the initial tableQuery
-	 * @param leftovers
-	 *            the filter which has to be applied manually over the output slices (e.g. on a customFilter which can
-	 *            not be transcoded for given table). As a set as there may be a leftover on the common `WHERE` clause,
-	 *            and on each `FILTER` clause.
-	 * @return the {@link List} of the columns to be output by the tableQuery
-	 */
-	// BEWARE Is this a JooQ specific logic?
-	public static AggregatedRecordFields makeSelectedColumns(TableQueryV2 tableQuery, Set<ISliceFilter> leftovers) {
-		List<String> aggregatorNames = tableQuery.getAggregators()
-				.stream()
-				.distinct()
-				.filter(a -> !EmptyAggregation.isEmpty(a.getAggregator().getAggregationKey()))
-				.map(FilteredAggregator::getAlias)
-				.toList();
-
-		List<String> groupByColumns = tableQuery.getGroupBy().getColumns().stream().map(IHasName::getName).toList();
-
-		List<String> leftoversColumns = new ArrayList<>(
-				leftovers.stream().flatMap(leftover -> FilterHelpers.getFilteredColumns(leftover).stream()).toList());
-
-		// Make sure a late column is not also a normal groupBy column
-		leftoversColumns.removeAll(groupByColumns);
-
-		return AggregatedRecordFields.builder()
-				.aggregates(aggregatorNames)
-				.columns(groupByColumns)
-				.leftovers(leftoversColumns)
-				.build();
 	}
 
 	protected AggregatedRecordFields selectedColumns(TableQueryV3 tableQuery, Set<ISliceFilter> leftovers) {
@@ -584,11 +552,11 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 	/**
 	 *
 	 * @param tableQuery
-	 * @param leftoverFilter
+	 * @param nonPushdownFilter
 	 *            the filter which has not been able to be transcoded into a {@link Condition}
 	 * @return
 	 */
-	protected Collection<GroupField> makeGroupingFields(TableQueryV3 tableQuery, ISliceFilter leftoverFilter) {
+	protected Collection<GroupField> makeGroupingFields(TableQueryV3 tableQuery, ISliceFilter nonPushdownFilter) {
 		List<GroupField> groupedFields = new ArrayList<>();
 		if (tableQuery.singleGroupBy().isPresent()) {
 			if (canGroupByAll()) {
@@ -602,27 +570,25 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 					groupedFields.add(field);
 				});
 
-				FilterHelpers.getFilteredColumns(leftoverFilter).forEach(column -> {
+				FilterHelpers.getFilteredColumns(nonPushdownFilter).forEach(column -> {
 					Field<Object> field = columnAsField(ReferencedColumn.ref(column));
 					groupedFields.add(field);
 				});
 			}
 		} else {
-			// At least 2 groupingSets
-
-			// Leftover-filter columns must be in GROUP BY too — otherwise they appear in SELECT but never
-			// participate in any grouping set, so the engine either rejects the SQL or NULLs them across
-			// every output row, making post-fetch leftover-filter evaluation unable to see real values.
-			// Hoisting them here as a constant prefix is equivalent to repeating them in every set:
-			// `GROUP BY <leftover>, GROUPING SETS ((a), (b))` ≡ `GROUPING SETS ((<leftover>, a), (<leftover>, b))`,
-			// and avoids exploding the grouping-set tuples. Mirrors the single-groupBy `!canGroupByAll()` arm above.
-			FilterHelpers.getFilteredColumns(leftoverFilter).forEach(column -> {
-				Field<Object> field = columnAsField(ReferencedColumn.ref(column));
-				groupedFields.add(field);
-			});
+			// At least 2 groupingSets. Hoist nonPushdown columns into each grouping set individually (only when
+			// not already present) so each row's keyset still identifies its original groupBy; downstream
+			// projection then strips the hoisted columns back out.
+			Set<String> nonPushdownColumns = FilterHelpers.getFilteredColumns(nonPushdownFilter);
 
 			List<? extends List<? extends Field<?>>> fields2 = tableQuery.streamGroupBy().map(gb -> {
-				return gb.getColumns().stream().map(this::columnAsField).toList();
+				Set<String> gbColumns = gb.getSortedColumns();
+				List<Field<?>> gbFields = new ArrayList<>();
+				gb.getColumns().forEach(c -> gbFields.add(columnAsField(c)));
+				nonPushdownColumns.stream()
+						.filter(c -> !gbColumns.contains(c))
+						.forEach(c -> gbFields.add(columnAsField(ReferencedColumn.ref(c))));
+				return gbFields;
 			}).toList();
 
 			Collection<? extends Field<?>>[] fieldSets = fields2.toArray(List[]::new);
@@ -694,9 +660,9 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 			String columnName) {
 		Name namedColumn = name(columnName);
 
-		ConditionWithFilter condition = toCondition.toConditionSplitLeftover(filteredAggregator.getFilter());
-		if (!condition.getLeftover().isMatchAll()) {
-			log.debug("FILTER with a postFilter. filter={}",
+		ConditionWithFilter condition = toCondition.toConditionSplitNonPushdown(filteredAggregator.getFilter());
+		if (!condition.getNonPushdown().isMatchAll()) {
+			log.debug("FILTER with a nonPushdown. filter={}",
 					PepperLogHelper.getObjectAndClass(filteredAggregator.getFilter()));
 		}
 

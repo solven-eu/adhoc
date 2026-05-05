@@ -37,7 +37,7 @@ public class TestAggregatedRecordFields {
 
 	@Test
 	public void allColumns() {
-		AggregatedRecordFields fields = AggregatedRecordFields.builder().column("a").leftover("b").build();
+		AggregatedRecordFields fields = AggregatedRecordFields.builder().column("a").nonPushdown("b").build();
 		Assertions.assertThat(fields.getAllColumns()).containsExactly("a", "b");
 	}
 }

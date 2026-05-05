@@ -93,7 +93,8 @@ public class TestDuckDBHelper {
 
 		QueryWithLeftover condition = queryFactory.prepareSliceQuery(tableQueryBuilder.build());
 
-		Assertions.assertThat(condition.getLeftover()).satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
+		Assertions.assertThat(condition.getNonPushdown())
+				.satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
 		Assertions.assertThat(condition.getQuery().getSQL(ParamType.INLINED))
 				.isEqualTo(
 						"""
@@ -117,7 +118,7 @@ public class TestDuckDBHelper {
 
 		QueryWithLeftover queryWithLeftover = queryFactory.prepareSliceQuery(tableQueryBuilder.build());
 
-		Assertions.assertThat(queryWithLeftover.getLeftover())
+		Assertions.assertThat(queryWithLeftover.getNonPushdown())
 				.satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
 		Assertions.assertThat(queryWithLeftover.getQuery().getSQL(ParamType.INLINED))
 				.isEqualTo(
@@ -138,7 +139,7 @@ public class TestDuckDBHelper {
 
 		QueryWithLeftover queryWithLeftover = queryFactory.prepareSliceQuery(tableQueryBuilder.build());
 
-		Assertions.assertThat(queryWithLeftover.getLeftover())
+		Assertions.assertThat(queryWithLeftover.getNonPushdown())
 				.satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
 		Assertions.assertThat(queryWithLeftover.getQuery().getSQL(ParamType.INLINED))
 				.isEqualTo(
@@ -158,7 +159,7 @@ public class TestDuckDBHelper {
 		QueryWithLeftover queryWithLeftover =
 				queryFactory.prepareSliceQuery(tableQueryBuilder.groupBy(GroupByColumns.named("b", "a")).build());
 
-		Assertions.assertThat(queryWithLeftover.getLeftover())
+		Assertions.assertThat(queryWithLeftover.getNonPushdown())
 				.satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
 		Assertions.assertThat(queryWithLeftover.getQuery().getSQL(ParamType.INLINED)).isEqualTo("""
 				select "b", "a" from someTable group by ALL""");

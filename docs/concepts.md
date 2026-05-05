@@ -150,3 +150,8 @@ On top of aggregated-measures, one can define transformators.
 - Partitionor: evaluates the underlying measures with an additional groupBy, then aggregates up to the node granularity.
 - Dispatchor: given an cell, it will contribute into multiple cells. Useful for `many-to-many` or `rebucketing`.
 
+## See also
+
+- [Foundations](foundations.md) — the conceptual underpinnings (OLAP, DAGs, Boolean algebra of filters, aggregator linearity) behind the architecture above.
+- [Lexicon](lexicon.md) — definitions of every term used here, with cross-references to standard OLAP and ActivePivot/Atoti vocabulary.
+

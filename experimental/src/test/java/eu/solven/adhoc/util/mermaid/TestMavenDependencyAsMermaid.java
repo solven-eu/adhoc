@@ -85,11 +85,9 @@ public class TestMavenDependencyAsMermaid {
 
 		// Key modules must be present as vertices
 		Assertions.assertThat(graph.vertexSet())
-				.contains("adhoc", "adhoc-experimental", "pivotable-server-core", "pivotable-server");
+				.contains("adhoc-recipes", "adhoc-experimental", "pivotable-server-core", "pivotable-server");
 
 		// adhoc-experimental depends on adhoc (compile scope)
-		Assertions.assertThat(graph.containsVertex("adhoc-experimental")).isTrue();
-		Assertions.assertThat(graph.containsVertex("adhoc")).isTrue();
 		boolean experimentalDependsOnAdhoc = graph.outgoingEdgesOf("adhoc-experimental")
 				.stream()
 				.anyMatch(e -> "adhoc-cube".equals(graph.getEdgeTarget(e)));

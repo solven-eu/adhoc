@@ -16,16 +16,20 @@
 		<jacoco.instruction.ratio>0.63</jacoco.instruction.ratio>
 		<automatic.module.name>eu.solven.adhoc.experimental</automatic.module.name>
 
-		<!-- \-\-add-opens=java.base/java.nio=org.apache.arrow.memory.core,ALL-UNNAMED is for arrow -->
+		<!--
+		\-\-add-opens=java.base/java.nio=org.apache.arrow.memory.core,ALL-UNNAMED
+		is for arrow -->
 		<!-- https://arrow.apache.org/java/current/install.html -->
 		<!-- -Dio.netty.noUnsafe=false is from -->
 		<!-- https://github.com/apache/arrow-java/issues/728-->
-		<customArgLine>--add-opens=java.base/java.nio=org.apache.arrow.memory.core,ALL-UNNAMED -Dio.netty.noUnsafe=false</customArgLine>
+		<customArgLine>--add-opens=java.base/java.nio=org.apache.arrow.memory.core,ALL-UNNAMED
+			-Dio.netty.noUnsafe=false</customArgLine>
 	</properties>
 
 	<dependencyManagement>
 		<dependencies>
-			<!-- arrow first to have priority over google, typically around some netty versions-->
+			<!-- arrow first to have priority over google, typically around some
+			netty versions-->
 			<dependency>
 				<groupId>org.apache.arrow</groupId>
 				<artifactId>arrow-bom</artifactId>
@@ -50,6 +54,14 @@
 			<groupId>eu.solven.adhoc</groupId>
 			<artifactId>adhoc-cube</artifactId>
 			<version>${project.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>eu.solven.adhoc</groupId>
+			<artifactId>adhoc-recipes</artifactId>
+			<version>${project.version}</version>
+			<!-- Provide some Example cubes for tests -->
+			<scope>test</scope>
 		</dependency>
 
 		<!--
@@ -100,7 +112,8 @@
 			<optional>true</optional>
 		</dependency>
 		<dependency>
-			<!-- `Please add arrow-compression module to use CommonsCompressionFactory for LZ4_FRAME` -->
+			<!-- `Please add arrow-compression module to use
+			CommonsCompressionFactory for LZ4_FRAME` -->
 			<!-- https://github.com/apache/arrow/issues/41457 -->
 			<groupId>org.apache.arrow</groupId>
 			<artifactId>arrow-compression</artifactId>

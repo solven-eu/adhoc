@@ -308,6 +308,8 @@ public class MavenDependencyAsMermaid {
 				// sorted in FS is not necessary ordered
 				.sorted()) {
 			return walk.filter(p -> "pom.xml".equals(p.getFileName().toString()))
+					// Exclude technical pathes like `.claude`
+					.filter(p -> !p.toString().contains("/.") && !p.toString().contains("\\."))
 					.filter(p -> !p.toString().contains("/target/") && !p.toString().contains("\\target\\"))
 					// sorted in FS is not necessary ordered
 					.sorted()
