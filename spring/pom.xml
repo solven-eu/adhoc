@@ -23,7 +23,7 @@
 	<dependencies>
 		<dependency>
 			<groupId>eu.solven.adhoc</groupId>
-			<artifactId>adhoc</artifactId>
+			<artifactId>adhoc-cube</artifactId>
 			<version>${project.version}</version>
 		</dependency>
 

@@ -26,12 +26,18 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 
 import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 
 public class TestJUnitConfiguration {
 	// Ensures `junit-platform.properties` is present only once, typically only from adhoc-public
+	// Since 0.1.0, we exclude `junit-platform.properties` from tests jars. However, this file is still included in IDE
+	// which dynamically imports opened projects in the IDE. For now, we have one `junit-platform.properties` per module
+	// which is filtered in jars: in CI, this test would see 0 or 1 `junit-platform.properties` bu in IDE we may see
+	// multiple `junit-platform.properties`. So we disabled it for now.
+	@Disabled("https://github.com/junit-team/junit-framework/issues/2794")
 	@Test
 	public void testJUnitPlateformProperties() throws IOException, URISyntaxException {
 		PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
