@@ -58,18 +58,19 @@ public class AggregatedRecordFields {
 	@Singular
 	// List as more useful for consumer, but it has to be a distinct List
 	ImmutableList<String> columns;
-	// Additional columns needed for the leftover filters
+	
+	// Additional columns needed for filters which are executed by Adhoc (and not by the ITableWrapper)
 	@NonNull
 	@Singular
 	// List as more useful for consumer, but it has to be a distinct List
-	ImmutableList<String> leftovers;
+	ImmutableList<String> nonPushdowns;
 
 	@NonNull
 	@Singular
 	ImmutableSet<String> groupingColumns;
 
 	private final Supplier<ImmutableSet<String>> allColumns =
-			Suppliers.memoize(() -> ImmutableSet.copyOf(Iterables.concat(getColumns(), getLeftovers())));
+			Suppliers.memoize(() -> ImmutableSet.copyOf(Iterables.concat(getColumns(), getNonPushdowns())));
 
 	// Memoized so the perfect-hash table over `aggregates` is computed once per AggregatedRecordFields instance and
 	// reused by every TabularRecordBuilder produced by the owning TabularRecordFactory.

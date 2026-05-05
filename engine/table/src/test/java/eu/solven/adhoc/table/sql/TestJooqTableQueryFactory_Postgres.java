@@ -61,7 +61,7 @@ public class TestJooqTableQueryFactory_Postgres {
 	@Test
 	public void testToCondition_ColumnEquals() {
 		Condition condition =
-				conditionFactory.toConditionSplitLeftover(ColumnFilter.matchEq("k1", "v1")).getCondition();
+				conditionFactory.toConditionSplitNonPushdown(ColumnFilter.matchEq("k1", "v1")).getCondition();
 
 		Assertions.assertThat(condition.toString()).isEqualTo("""
 				"k1" = 'v1'
@@ -72,9 +72,10 @@ public class TestJooqTableQueryFactory_Postgres {
 	public void testToCondition_AndColumnsEquals() {
 		// ImmutableMap for ordering, as we later check the .toString
 		JooqTableQueryFactory.ConditionWithFilter condition =
-				conditionFactory.toConditionSplitLeftover(AndFilter.and("k1", "v1", "k2", "v2"));
+				conditionFactory.toConditionSplitNonPushdown(AndFilter.and("k1", "v1", "k2", "v2"));
 
-		Assertions.assertThat(condition.getLeftover()).satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
+		Assertions.assertThat(condition.getNonPushdown())
+				.satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
 		Assertions.assertThat(condition.getCondition().toString()).isEqualTo("""
 				(
 				  "k1" = 'v1'
@@ -86,9 +87,10 @@ public class TestJooqTableQueryFactory_Postgres {
 	public void testToCondition_OrColumnsEquals() {
 		ISliceFilter filter =
 				FilterBuilder.or(ColumnFilter.matchEq("k1", "v1"), ColumnFilter.matchEq("k2", "v2")).combine();
-		JooqTableQueryFactory.ConditionWithFilter condition = conditionFactory.toConditionSplitLeftover(filter);
+		JooqTableQueryFactory.ConditionWithFilter condition = conditionFactory.toConditionSplitNonPushdown(filter);
 
-		Assertions.assertThat(condition.getLeftover()).satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
+		Assertions.assertThat(condition.getNonPushdown())
+				.satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
 		Assertions.assertThat(condition.getCondition().toString()).isEqualTo("""
 				(
 				  "k1" = 'v1'
@@ -100,9 +102,10 @@ public class TestJooqTableQueryFactory_Postgres {
 	public void testToCondition_NotFilter() {
 		ISliceFilter filter =
 				FilterBuilder.or(ColumnFilter.matchEq("k1", "v1"), ColumnFilter.matchEq("k2", "v2")).combine().negate();
-		JooqTableQueryFactory.ConditionWithFilter condition = conditionFactory.toConditionSplitLeftover(filter);
+		JooqTableQueryFactory.ConditionWithFilter condition = conditionFactory.toConditionSplitNonPushdown(filter);
 
-		Assertions.assertThat(condition.getLeftover()).satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
+		Assertions.assertThat(condition.getNonPushdown())
+				.satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
 		Assertions.assertThat(condition.getCondition().toString()).isEqualTo("""
 				not (
 				  (
@@ -120,9 +123,10 @@ public class TestJooqTableQueryFactory_Postgres {
 	public void testToCondition_NotMatcher() {
 		ISliceFilter filter =
 				FilterBuilder.and(ColumnFilter.notEq("k1", "v1"), ColumnFilter.notEq("k2", "v2")).combine();
-		JooqTableQueryFactory.ConditionWithFilter condition = conditionFactory.toConditionSplitLeftover(filter);
+		JooqTableQueryFactory.ConditionWithFilter condition = conditionFactory.toConditionSplitNonPushdown(filter);
 
-		Assertions.assertThat(condition.getLeftover()).satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
+		Assertions.assertThat(condition.getNonPushdown())
+				.satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
 		Assertions.assertThat(condition.getCondition().toString()).isEqualTo("""
 				(
 				  not (
@@ -141,7 +145,8 @@ public class TestJooqTableQueryFactory_Postgres {
 		QueryWithLeftover condition = queryFactory
 				.prepareSliceQuery(TableQuery.builder().aggregator(Aggregator.builder().name("k").build()).build());
 
-		Assertions.assertThat(condition.getLeftover()).satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
+		Assertions.assertThat(condition.getNonPushdown())
+				.satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
 		Assertions.assertThat(condition.getQuery().getSQL(ParamType.INLINED)).isEqualTo("""
 				select sum("k") as "k" from "someTableName" group by ()""");
 	}
@@ -151,7 +156,8 @@ public class TestJooqTableQueryFactory_Postgres {
 		QueryWithLeftover condition = queryFactory.prepareSliceQuery(
 				TableQuery.builder().aggregator(Aggregator.builder().name("k.USD").columnName("t.k").build()).build());
 
-		Assertions.assertThat(condition.getLeftover()).satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
+		Assertions.assertThat(condition.getNonPushdown())
+				.satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
 		Assertions.assertThat(condition.getQuery().getSQL(ParamType.INLINED)).isEqualTo("""
 				select sum("t"."k") as "k.USD" from "someTableName" group by ()""");
 	}
@@ -163,7 +169,8 @@ public class TestJooqTableQueryFactory_Postgres {
 				.groupBy(GroupByColumns.named("a@b@c"))
 				.build());
 
-		Assertions.assertThat(condition.getLeftover()).satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
+		Assertions.assertThat(condition.getNonPushdown())
+				.satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
 		Assertions.assertThat(condition.getQuery().getSQL(ParamType.INLINED)).isEqualTo("""
 				select sum("k") as "k", "a@b@c" from "someTableName" group by "a@b@c"
 				""".trim());
@@ -176,7 +183,8 @@ public class TestJooqTableQueryFactory_Postgres {
 				.groupBy(GroupByColumns.named("pre post"))
 				.build());
 
-		Assertions.assertThat(condition.getLeftover()).satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
+		Assertions.assertThat(condition.getNonPushdown())
+				.satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
 		Assertions.assertThat(condition.getQuery().getSQL(ParamType.INLINED)).isEqualTo("""
 				select sum("k") as "k", "pre post" from "someTableName" group by "pre post"
 				""".trim());
@@ -187,7 +195,8 @@ public class TestJooqTableQueryFactory_Postgres {
 		QueryWithLeftover condition =
 				queryFactory.prepareSliceQuery(TableQuery.builder().aggregator(Aggregator.countAsterisk()).build());
 
-		Assertions.assertThat(condition.getLeftover()).satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
+		Assertions.assertThat(condition.getNonPushdown())
+				.satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
 		Assertions.assertThat(condition.getQuery().getSQL(ParamType.INLINED)).isEqualTo("""
 				select count(*) as "count(*)" from "someTableName" group by ()
 				""".trim());
@@ -198,7 +207,8 @@ public class TestJooqTableQueryFactory_Postgres {
 		QueryWithLeftover condition =
 				queryFactory.prepareSliceQuery(TableQuery.builder().aggregator(Aggregator.empty()).build());
 
-		Assertions.assertThat(condition.getLeftover()).satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
+		Assertions.assertThat(condition.getNonPushdown())
+				.satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
 		Assertions.assertThat(condition.getQuery().getSQL(ParamType.INLINED)).isEqualTo("""
 				select count(1) from "someTableName" group by ()
 				""".trim());
@@ -211,7 +221,8 @@ public class TestJooqTableQueryFactory_Postgres {
 		QueryWithLeftover condition = queryFactory
 				.prepareSliceQuery(TableQuery.builder().aggregator(Aggregator.sum("k")).filter(customFilter).build());
 
-		Assertions.assertThat(condition.getLeftover()).satisfies(l -> Assertions.assertThat(l).isSameAs(customFilter));
+		Assertions.assertThat(condition.getNonPushdown())
+				.satisfies(l -> Assertions.assertThat(l).isSameAs(customFilter));
 		Assertions.assertThat(condition.getQuery().getSQL(ParamType.INLINED)).isEqualTo("""
 				select sum("k") as "k", "c" from "someTableName" group by "c"
 				""".trim());
@@ -225,7 +236,7 @@ public class TestJooqTableQueryFactory_Postgres {
 		QueryWithLeftover condition = queryFactory
 				.prepareSliceQuery(TableQuery.builder().aggregator(Aggregator.sum("k")).filter(orFilter).build());
 
-		Assertions.assertThat(condition.getLeftover()).satisfies(l -> Assertions.assertThat(l).isEqualTo(orFilter));
+		Assertions.assertThat(condition.getNonPushdown()).satisfies(l -> Assertions.assertThat(l).isEqualTo(orFilter));
 		Assertions.assertThat(condition.getQuery().getSQL(ParamType.INLINED)).isEqualTo("""
 				select sum("k") as "k", "d", "c" from "someTableName" group by "d", "c"
 				""".trim());
@@ -239,7 +250,7 @@ public class TestJooqTableQueryFactory_Postgres {
 		QueryWithLeftover condition = queryFactory
 				.prepareSliceQuery(TableQuery.builder().aggregator(Aggregator.sum("k")).filter(orFilter).build());
 
-		Assertions.assertThat(condition.getLeftover())
+		Assertions.assertThat(condition.getNonPushdown())
 				.satisfies(l -> Assertions.assertThat(l).isEqualTo(customFilter.negate()));
 		Assertions.assertThat(condition.getQuery().getSQL(ParamType.INLINED))
 				.isEqualTo(
@@ -324,9 +335,10 @@ public class TestJooqTableQueryFactory_Postgres {
 	@Test
 	public void testToCondition_IsNull() {
 		ISliceFilter filter = ColumnFilter.match("k1", NullMatcher.matchNull());
-		JooqTableQueryFactory.ConditionWithFilter condition = conditionFactory.toConditionSplitLeftover(filter);
+		JooqTableQueryFactory.ConditionWithFilter condition = conditionFactory.toConditionSplitNonPushdown(filter);
 
-		Assertions.assertThat(condition.getLeftover()).satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
+		Assertions.assertThat(condition.getNonPushdown())
+				.satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
 		Assertions.assertThat(condition.getCondition().toString()).isEqualTo("""
 				"k1" is null""");
 	}
@@ -334,9 +346,10 @@ public class TestJooqTableQueryFactory_Postgres {
 	@Test
 	public void testToCondition_IsNotNull() {
 		ISliceFilter filter = ColumnFilter.match("k1", NotMatcher.not(NullMatcher.matchNull()));
-		JooqTableQueryFactory.ConditionWithFilter condition = conditionFactory.toConditionSplitLeftover(filter);
+		JooqTableQueryFactory.ConditionWithFilter condition = conditionFactory.toConditionSplitNonPushdown(filter);
 
-		Assertions.assertThat(condition.getLeftover()).satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
+		Assertions.assertThat(condition.getNonPushdown())
+				.satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
 		Assertions.assertThat(condition.getCondition().toString()).isEqualTo("""
 				not ("k1" is null)""");
 	}
@@ -344,9 +357,10 @@ public class TestJooqTableQueryFactory_Postgres {
 	@Test
 	public void testToCondition_IsNotValue() {
 		ISliceFilter filter = ColumnFilter.matchEq("k1", "v1").negate();
-		JooqTableQueryFactory.ConditionWithFilter condition = conditionFactory.toConditionSplitLeftover(filter);
+		JooqTableQueryFactory.ConditionWithFilter condition = conditionFactory.toConditionSplitNonPushdown(filter);
 
-		Assertions.assertThat(condition.getLeftover()).satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
+		Assertions.assertThat(condition.getNonPushdown())
+				.satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
 		Assertions.assertThat(condition.getCondition().toString()).isEqualTo("""
 				not (
 				  "k1" is not null
@@ -388,7 +402,8 @@ public class TestJooqTableQueryFactory_Postgres {
 		QueryWithLeftover condition = queryFactory.prepareSliceQuery(v3);
 
 		// Sanity: the leftover-propagation half is fine — the customFilter is recorded as the leftover.
-		Assertions.assertThat(condition.getLeftover()).satisfies(l -> Assertions.assertThat(l).isEqualTo(customFilter));
+		Assertions.assertThat(condition.getNonPushdown())
+				.satisfies(l -> Assertions.assertThat(l).isEqualTo(customFilter));
 
 		String sql = condition.getQuery().getSQL(ParamType.INLINED);
 

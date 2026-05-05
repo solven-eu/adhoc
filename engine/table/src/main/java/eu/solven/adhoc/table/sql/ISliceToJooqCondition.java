@@ -28,7 +28,6 @@ import org.jooq.Condition;
 
 import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.table.sql.JooqTableQueryFactory.ConditionWithFilter;
-import lombok.NonNull;
 
 /**
  * Enables convertion from an {@link ISliceFilter} to JooQ classes.
@@ -37,8 +36,8 @@ import lombok.NonNull;
  */
 public interface ISliceToJooqCondition {
 
-	ConditionWithFilter toConditionSplitLeftover(@NonNull ISliceFilter filter);
+	ConditionWithFilter toConditionSplitNonPushdown(ISliceFilter filter);
 
-	ConditionWithFilter and(Collection<Condition> conditions, Collection<ISliceFilter> leftoverFilters);
+	ConditionWithFilter and(Collection<Condition> conditions, Collection<ISliceFilter> nonPushdownFilters);
 
 }

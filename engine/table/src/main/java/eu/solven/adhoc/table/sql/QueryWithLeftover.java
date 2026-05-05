@@ -37,11 +37,13 @@ import eu.solven.adhoc.dataframe.row.AggregatedRecordFields;
 import eu.solven.adhoc.filter.FilterHelpers;
 import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.measure.sum.EmptyAggregation;
+import eu.solven.adhoc.model.query.IGroupBy;
 import eu.solven.adhoc.query.table.FilteredAggregator;
 import eu.solven.adhoc.query.table.TableQueryV2;
 import eu.solven.adhoc.query.table.TableQueryV3;
 import eu.solven.cleanthat.SuppressCleanthat;
 import lombok.Builder;
+import lombok.NonNull;
 import lombok.Singular;
 import lombok.Value;
 
@@ -63,10 +65,10 @@ public class QueryWithLeftover {
 	 * a filter to apply over the results from the SQL engine. Typically used for custom {@link ISliceFilter}, which can
 	 * not be translated into the SQL engine.
 	 */
-	ISliceFilter leftover;
+	ISliceFilter nonPushdown;
 
 	@Singular
-	ImmutableMap<String, ISliceFilter> aggregatorToLeftovers;
+	ImmutableMap<String, ISliceFilter> aggregatorToNonPushdowns;
 
 	AggregatedRecordFields fields;
 
@@ -78,14 +80,14 @@ public class QueryWithLeftover {
 	/**
 	 * @param tableQuery
 	 *            the initial tableQuery
-	 * @param leftovers
+	 * @param nonPushdowns
 	 *            the filter which has to be applied manually over the output slices (e.g. on a customFilter which can
 	 *            not be transcoded for given table). As a set as there may be a leftover on the common `WHERE` clause,
 	 *            and on each `FILTER` clause.
 	 * @return the {@link List} of the columns to be output by the tableQuery
 	 */
 	// BEWARE Is this a JooQ specific logic?
-	public static AggregatedRecordFields makeSelectedColumns(TableQueryV3 tableQuery, Set<ISliceFilter> leftovers) {
+	public static AggregatedRecordFields makeSelectedColumns(TableQueryV3 tableQuery, Set<ISliceFilter> nonPushdowns) {
 		List<String> aggregatorNames = tableQuery.getAggregators()
 				.stream()
 				.distinct()
@@ -102,13 +104,14 @@ public class QueryWithLeftover {
 		if (tableQuery.singleGroupBy().isPresent()) {
 			groupingColumns = ImmutableSet.of();
 		} else {
+			ImmutableSet<IGroupBy> groupedBy = tableQuery.getGroupBys();
 			groupingColumns = groupByColumns.stream()
-					.filter(c -> tableQuery.getGroupBys().stream().anyMatch(gb -> !gb.getSortedColumns().contains(c)))
+					.filter(c -> groupedBy.stream().anyMatch(gb -> !gb.getSortedColumns().contains(c)))
 					.collect(ImmutableSet.toImmutableSet());
 		}
 
-		List<String> leftoversColumns = leftovers.stream()
-				.flatMap(leftover -> FilterHelpers.getFilteredColumns(leftover).stream())
+		List<String> nonPushdownColumns = nonPushdowns.stream()
+				.flatMap(nonPushdown -> FilterHelpers.getFilteredColumns(nonPushdown).stream())
 				// Make sure a late column is not also a normal groupBy column
 				.filter(Predicate.not(groupByColumns::contains))
 				.toList();
@@ -116,7 +119,7 @@ public class QueryWithLeftover {
 		return AggregatedRecordFields.builder()
 				.aggregates(aggregatorNames)
 				.columns(groupByColumns)
-				.leftovers(leftoversColumns)
+				.nonPushdowns(nonPushdownColumns)
 				.groupingColumns(groupingColumns)
 				.build();
 	}

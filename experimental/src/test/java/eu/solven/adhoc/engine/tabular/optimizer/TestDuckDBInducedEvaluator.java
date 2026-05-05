@@ -126,10 +126,10 @@ public class TestDuckDBInducedEvaluator {
 				TableQueryStep.builder().aggregator(aggregator).groupBy(GroupByColumns.named("country")).build();
 
 		// Only keep rows where country = "FR"
-		ISliceFilter leftoverFilter = ColumnFilter.matchEq("country", "FR");
+		ISliceFilter nonPushdown = ColumnFilter.matchEq("country", "FR");
 
 		Optional<IMultitypeMergeableColumn<ISlice>> result =
-				evaluator.tryEvaluate(inducerValues, inducer, induced, leftoverFilter, aggregation, aggregator);
+				evaluator.tryEvaluate(inducerValues, inducer, induced, nonPushdown, aggregation, aggregator);
 
 		Assertions.assertThat(result).isPresent();
 		IMultitypeMergeableColumn<ISlice> col = result.get();
