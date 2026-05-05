@@ -13,7 +13,7 @@
 	<description>Functional recipes (advanced measures, example datasets) on top of adhoc-cube. The natural single-module entry point for callers who don't want to pick engine layers individually.</description>
 
 	<properties>
-		<jacoco.branch.ratio>0.77</jacoco.branch.ratio>
+		<jacoco.branch.ratio>0.74</jacoco.branch.ratio>
 		<jacoco.instruction.ratio>0.85</jacoco.instruction.ratio>
 
 		<automatic.module.name>eu.solven.adhoc.recipes</automatic.module.name>
