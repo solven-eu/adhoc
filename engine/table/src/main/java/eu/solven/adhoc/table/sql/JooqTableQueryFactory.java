@@ -576,21 +576,19 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 				});
 			}
 		} else {
-			// At least 2 groupingSets
-
-			// Leftover-filter columns must be in GROUP BY too — otherwise they appear in SELECT but never
-			// participate in any grouping set, so the engine either rejects the SQL or NULLs them across
-			// every output row, making post-fetch leftover-filter evaluation unable to see real values.
-			// Hoisting them here as a constant prefix is equivalent to repeating them in every set:
-			// `GROUP BY <leftover>, GROUPING SETS ((a), (b))` ≡ `GROUPING SETS ((<leftover>, a), (<leftover>, b))`,
-			// and avoids exploding the grouping-set tuples. Mirrors the single-groupBy `!canGroupByAll()` arm above.
-			FilterHelpers.getFilteredColumns(nonPushdownFilter).forEach(column -> {
-				Field<Object> field = columnAsField(ReferencedColumn.ref(column));
-				groupedFields.add(field);
-			});
+			// At least 2 groupingSets. Hoist nonPushdown columns into each grouping set individually (only when
+			// not already present) so each row's keyset still identifies its original groupBy; downstream
+			// projection then strips the hoisted columns back out.
+			Set<String> nonPushdownColumns = FilterHelpers.getFilteredColumns(nonPushdownFilter);
 
 			List<? extends List<? extends Field<?>>> fields2 = tableQuery.streamGroupBy().map(gb -> {
-				return gb.getColumns().stream().map(this::columnAsField).toList();
+				Set<String> gbColumns = gb.getSortedColumns();
+				List<Field<?>> gbFields = new ArrayList<>();
+				gb.getColumns().forEach(c -> gbFields.add(columnAsField(c)));
+				nonPushdownColumns.stream()
+						.filter(c -> !gbColumns.contains(c))
+						.forEach(c -> gbFields.add(columnAsField(ReferencedColumn.ref(c))));
+				return gbFields;
 			}).toList();
 
 			Collection<? extends Field<?>>[] fieldSets = fields2.toArray(List[]::new);

@@ -133,6 +133,21 @@ All checkers are informational — they never block the build.
     ```
   - **Test packages do not get `package-info.java` / `@NullMarked`.** NullAway and the JSpecify pass run on production code only; adding `@NullMarked` to a `src/test/java/...` package adds noise without value. Existing `src/test/java` mirrors this convention — there are zero package-info files under any test tree.
 
+- **Don't mutate inputs to produce extra outputs.** When a method needs to return more than one value, return a holder (a Lombok `@Value`/`@Builder` record-like, or a JDK `record`) rather than taking an output parameter (a mutable `Map`, `List`, `StringBuilder`, etc.) that the caller pre-allocates and the method fills. Two reasons:
+  - Output parameters force the caller to think about lifecycle ("am I supposed to clear this first?", "is it safe to reuse?") and split the method's contract across the return value and the side effect, making the call site harder to read.
+  - Input parameters that are mutated cannot be passed as immutable values. Callers tempted to use `Map.of(...)` or `List.of(...)` get a runtime `UnsupportedOperationException` instead of a compile-time signal.
+  ```java
+  // ✗ avoid — caller has to allocate the map and remember it gets filled
+  Map<X, Y> outMap = new LinkedHashMap<>();
+  TableQueryV4 transcoded = transcodeQuery(query, ctx, filter, cols, outMap);
+
+  // ✓ preferred — single immutable result holder
+  TranscodedQuery result = transcodeQuery(query, ctx, filter, cols);
+  TableQueryV4 transcoded = result.getTranscodedQuery();
+  Map<X, Y> map = result.getTranscodedToOriginal();
+  ```
+  Applies to *new* methods. Existing output-parameter APIs are not a refactor target on their own — only flag them when touching the surrounding code for another reason. Pure side-effecting methods (e.g. `forest.addMeasure(m)`, `builder.field(v)`) are not what this rule is about; the rule targets methods whose primary purpose is computing a result.
+
 ---
 
 ## Naming Conventions
@@ -157,6 +172,12 @@ All checkers are informational — they never block the build.
 - **Builder factory from existing instance**: use a static `edit(ExistingType)` method (not `from()`, `copy()`, or `of()`) to return a pre-populated Lombok builder.
   - `CubeQuery.edit(existingQuery)`
   - `Aggregator.edit(existingAggregator)`
+- **No fully-qualified type references in code**: always import the type and use the simple name (`@Nullable`, `Path`, `Map`, …); never write `@org.jspecify.annotations.Nullable`, `java.nio.file.Path`, `java.util.Map`, etc. inline. The fully-qualified form bloats lines, hides the dependency from the import block (which is the canonical place to scan a file's collaborators), and makes refactors (rename / move package) noisier. The two narrow exceptions:
+  - **Disambiguating a name clash** when two types with the same simple name are needed in the same file (e.g. `java.awt.List` vs `java.util.List`) — import one, qualify the other inline. Comment why.
+  - **Javadoc `{@link …}` to a type that is not otherwise imported**, when adding a `import` purely for the link would be misleading.
+
+  This rule applies equally to annotations (`@org.jspecify.annotations.Nullable` → import `org.jspecify.annotations.Nullable`, write `@Nullable`), method calls (`java.util.Objects.requireNonNull(x)` → import + use the simple form), and exception throws.
+
 - **Always qualify nested class references**: refer to a nested class as `Outer.Nested`, never as a bare `Nested` import. The qualified form makes it immediately obvious that the type is nested (and where it lives) and avoids ambiguity when several outer classes expose a nested type with the same name. Applies in code, parameter types, return types, and Javadoc `{@link}` references.
   ```java
   // ✓ preferred
