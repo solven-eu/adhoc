@@ -58,24 +58,24 @@ node is a `(measure, filter, groupBy, options)` tuple — the smallest unit of w
 can plan, cache, or skip. Edges go from a measure to its underlyings.
 
 ```text
-   user query: pnl.routed @ groupBy=desk @ filter=date >= 2026-01-01
-                       │
-                       ▼
-              ┌────────────────┐
-              │ pnl.routed     │   ◄─ root step (the user's measure)
-              └────────┬───────┘
-                       │  getUnderlyingSteps()
-            ┌──────────┴──────────┐
-            ▼                     ▼
-   ┌────────────────┐    ┌────────────────┐
-   │ pnl.legacy     │    │ pnl.new        │   ◄─ underlying steps
-   │ filter=before  │    │ filter=after   │      (filters narrowed
-   └────────┬───────┘    └────────┬───────┘      by the routing logic)
-            │                     │
-            ▼                     ▼
-   ┌────────────────┐    ┌────────────────┐
-   │ Aggregator     │    │ Aggregator     │   ◄─ leaves: actual table queries
-   └────────────────┘    └────────────────┘
+user query: pnl.routed @ groupBy=desk @ filter=date >= 2026-01-01
+					│
+					▼
+			┌────────────────┐
+			│ pnl.routed     │   ◄─ root step (the user's measure)
+			└────────┬───────┘
+					│  getUnderlyingSteps()
+			┌──────────┴──────────┐
+			▼                     ▼
+┌────────────────┐    ┌────────────────┐
+│ pnl.legacy     │    │ pnl.new        │   ◄─ underlying steps
+│ filter=before  │    │ filter=after   │      (filters narrowed
+└────────┬───────┘    └────────┬───────┘      by the routing logic)
+			│                     │
+			▼                     ▼
+┌────────────────┐    ┌────────────────┐
+│ Aggregator     │    │ Aggregator     │   ◄─ leaves: actual table queries
+└────────────────┘    └────────────────┘
 ```
 
 The DAG is built in two passes — the **Cube DAG** (measure logic) and the **Table DAG**
@@ -131,14 +131,14 @@ all rely on this. The DAG node is the step, not the measure.
 `ISliceFilter` is a Boolean algebra over slices. A slice either matches a filter or
 doesn't; filters compose with the standard operators:
 
-| Adhoc construct | Boolean meaning | Identity element |
-|---|---|---|
-| `AndFilter` | conjunction (AND) | `MATCH_ALL` (empty AND) |
-| `OrFilter` | disjunction (OR) | `MATCH_NONE` (empty OR) |
-| `NotFilter` | negation (NOT) | — |
-| `ColumnFilter` | atom: predicate on one column | — |
-| `MATCH_ALL` | tautology (⊤) | unit of AND |
-| `MATCH_NONE` | contradiction (⊥) | unit of OR |
+| Adhoc construct |        Boolean meaning        |    Identity element     |
+|-----------------|-------------------------------|-------------------------|
+| `AndFilter`     | conjunction (AND)             | `MATCH_ALL` (empty AND) |
+| `OrFilter`      | disjunction (OR)              | `MATCH_NONE` (empty OR) |
+| `NotFilter`     | negation (NOT)                | —                       |
+| `ColumnFilter`  | atom: predicate on one column | —                       |
+| `MATCH_ALL`     | tautology (⊤)                 | unit of AND             |
+| `MATCH_NONE`    | contradiction (⊥)             | unit of OR              |
 
 The standard identities all hold: `AND(x, MATCH_ALL) ≡ x`, `OR(x, MATCH_NONE) ≡ x`,
 `AND(x, MATCH_NONE) ≡ MATCH_NONE`, `OR(x, MATCH_ALL) ≡ MATCH_ALL`, `NOT(NOT(x)) ≡ x`,
@@ -190,15 +190,15 @@ An aggregation `f` is **linear** when, given any partition of the rows into disj
 groups `A` and `B`, `f(A ∪ B) = f(A) + f(B)` for some merging operator `+`. SUM and COUNT
 are linear — the merge operator is itself addition. Most other useful aggregations are not.
 
-| Aggregation | Linear? | Merge of disjoint partitions |
-|---|---|---|
-| `SUM` | yes | `f(A∪B) = f(A) + f(B)` |
-| `COUNT` | yes | `f(A∪B) = f(A) + f(B)` |
-| `AVG` | **no** | needs sum + count separately, then divide |
-| `MIN` / `MAX` | yes (idempotent merge) | `min(f(A), f(B))` / `max(...)` |
-| `RANK` / `top-K` | **no** | needs the raw values from both partitions |
-| `MEDIAN`, `PERCENTILE` | **no** | needs the full distribution |
-| `STDDEV` | **no** (without extra state) | needs sum of squares + sum + count |
+|      Aggregation       |           Linear?            |       Merge of disjoint partitions        |
+|------------------------|------------------------------|-------------------------------------------|
+| `SUM`                  | yes                          | `f(A∪B) = f(A) + f(B)`                    |
+| `COUNT`                | yes                          | `f(A∪B) = f(A) + f(B)`                    |
+| `AVG`                  | **no**                       | needs sum + count separately, then divide |
+| `MIN` / `MAX`          | yes (idempotent merge)       | `min(f(A), f(B))` / `max(...)`            |
+| `RANK` / `top-K`       | **no**                       | needs the raw values from both partitions |
+| `MEDIAN`, `PERCENTILE` | **no**                       | needs the full distribution               |
+| `STDDEV`               | **no** (without extra state) | needs sum of squares + sum + count        |
 
 This is more than vocabulary. Several patterns in Adhoc — and several use cases users want
 to write — work cleanly only when the aggregation is linear:
@@ -252,3 +252,4 @@ were RANK?" If the answer is no, document the constraint.
 - [Custom Measures](custom-measure.md) — the abstract pattern guide.
 - [Routing Measure](routing-measure.md) — concrete walkthrough that exercises every concept above.
 - [CubeQueryEngine](cube-query-engine.md) — two-DAG workflow (Cube DAG of measures, Table DAG of database queries).
+

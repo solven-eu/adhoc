@@ -19,23 +19,23 @@ one logical measure must map to different physical measures or filters depending
 
 ```java
 RoutingMeasure.builder()
-    .name("dRouted")
-    .underlying("d_legacy")            // covering set of underlying names...
-    .underlying("d_modern")            //   ...the routingLogic may reference
-    .routingLogic(step -> {
-        // Decompose into legacy + modern, each with the appropriate date filter.
-        ISliceFilter before = ColumnFilter.builder().column("date")
-                .matching(ComparingMatcher.strictlyLowerThan("2026-01-01")).build();
-        ISliceFilter after  = ColumnFilter.builder().column("date")
-                .matching(ComparingMatcher.greaterThanOrEqual("2026-01-01")).build();
-        return List.of(
-            CubeQueryStep.edit(step).measure("d_legacy")
-                    .filter(FilterBuilder.and(step.getFilter(), before).optimize()).build(),
-            CubeQueryStep.edit(step).measure("d_modern")
-                    .filter(FilterBuilder.and(step.getFilter(), after).optimize()).build()
-        );
-    })
-    .build();
+	.name("dRouted")
+	.underlying("d_legacy")            // covering set of underlying names...
+	.underlying("d_modern")            //   ...the routingLogic may reference
+	.routingLogic(step -> {
+		// Decompose into legacy + modern, each with the appropriate date filter.
+		ISliceFilter before = ColumnFilter.builder().column("date")
+				.matching(ComparingMatcher.strictlyLowerThan("2026-01-01")).build();
+		ISliceFilter after  = ColumnFilter.builder().column("date")
+				.matching(ComparingMatcher.greaterThanOrEqual("2026-01-01")).build();
+		return List.of(
+			CubeQueryStep.edit(step).measure("d_legacy")
+					.filter(FilterBuilder.and(step.getFilter(), before).optimize()).build(),
+			CubeQueryStep.edit(step).measure("d_modern")
+					.filter(FilterBuilder.and(step.getFilter(), after).optimize()).build()
+		);
+	})
+	.build();
 ```
 
 Source: [`RoutingMeasure`](https://github.com/solven-eu/adhoc/blob/master/engine/recipes/src/main/java/eu/solven/adhoc/measure/routing/RoutingMeasure.java),
@@ -48,9 +48,9 @@ Source: [`RoutingMeasure`](https://github.com/solven-eu/adhoc/blob/master/engine
 
 Every custom measure that uses underlyings is two classes:
 
-|         File         |                                                Role                                                 |
-|----------------------|-----------------------------------------------------------------------------------------------------|
-| `RoutingMeasure`     | The **spec** (data class). Implements `IMeasure + IHasUnderlyingMeasures`. Held in the forest.      |
+|           File            |                                              Role                                              |
+|---------------------------|------------------------------------------------------------------------------------------------|
+| `RoutingMeasure`          | The **spec** (data class). Implements `IMeasure + IHasUnderlyingMeasures`. Held in the forest. |
 | `RoutingMeasureQueryStep` | The **runtime** (logic). Extends `AMeasureQueryStep`. Built per query step.                    |
 
 The engine pairs them via `IMeasure.queryStepClass()`. The default convention
@@ -61,7 +61,7 @@ override:
 ```java
 @Override
 public String queryStepClass() {
-    return RoutingMeasureQueryStep.class.getName();
+	return RoutingMeasureQueryStep.class.getName();
 }
 ```
 
@@ -167,15 +167,15 @@ These two methods look similar and are easy to confuse:
 @JsonIgnore
 @Override
 public List<String> getUnderlyingNames() {
-    return underlyings;          // closed list, declared at build time
+	return underlyings;          // closed list, declared at build time
 }
 
 // Step side — the actual queries the engine must run for THIS step.
 @Override
 public List<CubeQueryStep> getUnderlyingSteps() {
-    List<CubeQueryStep> steps = measure.getRoutingLogic().route(step);
-    // ... validation: each step's measure ∈ underlyings ...
-    return steps;
+	List<CubeQueryStep> steps = measure.getRoutingLogic().route(step);
+	// ... validation: each step's measure ∈ underlyings ...
+	return steps;
 }
 ```
 
@@ -196,7 +196,7 @@ constructing a `MultitypeHashColumn`:
 
 ```java
 IMultitypeColumnFastGet<ISlice> values = factories.getColumnFactory()
-        .makeColumn(p -> p.initialCapacity(IColumnFactory.sumSizes(underlyings)));
+		.makeColumn(p -> p.initialCapacity(IColumnFactory.sumSizes(underlyings)));
 ```
 
 Two reasons not to call the column constructor directly:
@@ -237,12 +237,12 @@ plans for all N) and the runtime issues 1+ of them. Walking through a query like
 
 ```text
 Cube DAG (planning, before routingLogic runs):
-    dRouted ───► d_legacy
-            └──► d_modern    ◄── declared closed set (covering)
+	dRouted ───► d_legacy
+			└──► d_modern    ◄── declared closed set (covering)
 
 Cube DAG (after the step is built):
-    dRouted ───► d_legacy filter=country=FR AND date<2026-01-01
-            └──► d_modern filter=country=FR AND date>=2026-01-01
+	dRouted ───► d_legacy filter=country=FR AND date<2026-01-01
+			└──► d_modern filter=country=FR AND date>=2026-01-01
 ```
 
 This is fine. The Cube DAG is a *plan*; only the steps an upstream actually requires are
@@ -309,3 +309,4 @@ it tests serialization and builder behaviour that have nothing to do with runnin
 - [ICombination](combination.md) — when a pluggable function is enough and you don't need a custom QueryStep.
 - [Operators Factory](operators-factory.md) — how `combinationKey` strings get resolved into `ICombination` instances.
 - [CubeQueryEngine](cube-query-engine.md) — two-DAG workflow (Cube DAG of measure logic, Table DAG of database queries).
+

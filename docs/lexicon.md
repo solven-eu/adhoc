@@ -193,3 +193,4 @@ to a query engine.
 
 - [Foundations](foundations.md) — the conceptual underpinnings (OLAP, DAGs, Boolean algebra of filters, aggregator linearity) behind the terms above.
 - [Concepts](concepts.md) — concrete architecture and query flow that use these terms.
+

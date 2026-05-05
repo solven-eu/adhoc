@@ -31,26 +31,26 @@ import lombok.Value;
 import lombok.experimental.SuperBuilder;
 
 /**
- * Project-wide pinning tests for the interaction between JSpecify (package-level {@code @NullMarked}) and Lombok's
- * code generators. Lives in {@code adhoc-model} so any module can rely on the conclusions: the rules pinned here are
- * "do {@code @lombok.NonNull} and what you can drop" decisions that apply across the whole codebase.
+ * Project-wide pinning tests for the interaction between JSpecify (package-level {@code @NullMarked}) and Lombok's code
+ * generators. Lives in {@code adhoc-model} so any module can rely on the conclusions: the rules pinned here are "do
+ * {@code @lombok.NonNull} and what you can drop" decisions that apply across the whole codebase.
  *
  * <p>
  * Bottom line for callers: until <a href="https://github.com/projectlombok/lombok/issues/3861">lombok#3861</a> is
  * fixed, package-level {@code @NullMarked} buys static-analysis nullness (NullAway, IDE highlights) but nothing at
- * runtime — Lombok's {@code @Builder} and {@code @SuperBuilder} only generate runtime null checks for fields
- * explicitly annotated with {@code @lombok.NonNull}. {@code CONVENTIONS.MD} cites this test as the empirical evidence
- * for keeping {@code @lombok.NonNull} on required builder fields.
+ * runtime — Lombok's {@code @Builder} and {@code @SuperBuilder} only generate runtime null checks for fields explicitly
+ * annotated with {@code @lombok.NonNull}. {@code CONVENTIONS.MD} cites this test as the empirical evidence for keeping
+ * {@code @lombok.NonNull} on required builder fields.
  *
  * <p>
- * If any of these tests start failing — i.e. {@code .build()} starts throwing where it currently returns null —
- * Lombok has gained {@code @NullMarked} support at runtime. At that point reinstate the "drop {@code @NonNull}" line
- * in {@code CONVENTIONS.MD} and keep this class as the regression guard.
+ * If any of these tests start failing — i.e. {@code .build()} starts throwing where it currently returns null — Lombok
+ * has gained {@code @NullMarked} support at runtime. At that point reinstate the "drop {@code @NonNull}" line in
+ * {@code CONVENTIONS.MD} and keep this class as the regression guard.
  *
  * <p>
  * The fixtures intentionally live in {@code eu.solven.adhoc.util} (which is {@code @NullMarked} via the production
- * {@code package-info.java} — src/main and src/test share the same package). No {@code @lombok.NonNull} on the field
- * is the load-bearing detail; everything else is boilerplate.
+ * {@code package-info.java} — src/main and src/test share the same package). No {@code @lombok.NonNull} on the field is
+ * the load-bearing detail; everything else is boilerplate.
  */
 public class TestLombokJSpecify {
 
@@ -67,7 +67,7 @@ public class TestLombokJSpecify {
 
 	/**
 	 * @Builder + explicit @lombok.NonNull: build() throws (configured to {@code IllegalArgumentException} via
-	 * {@code lombok.config: lombok.nonNull.exceptionType = IllegalArgumentException}).
+	 *          {@code lombok.config: lombok.nonNull.exceptionType = IllegalArgumentException}).
 	 */
 	@Test
 	public void testBuilder_lombokNonNull_doesEnforceAtRuntime() {
