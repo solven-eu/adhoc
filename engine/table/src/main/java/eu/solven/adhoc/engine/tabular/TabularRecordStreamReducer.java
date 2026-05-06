@@ -24,7 +24,6 @@ package eu.solven.adhoc.engine.tabular;
 
 import java.util.Map;
 import java.util.NavigableSet;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.Executor;
@@ -142,8 +141,20 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 						return new GroupByMarker(gb, sequencedKeyset);
 					}));
 
-			return r -> Objects.requireNonNull(columnsToMarker.get(r.asSlice().columnsKeySet()),
-					"each scanned record must match a registered groupBy");
+			return r -> {
+				Set<String> recordColumnsKeySet = r.asSlice().columnsKeySet();
+				GroupByMarker marker = columnsToMarker.get(recordColumnsKeySet);
+				if (marker == null) {
+					throw new IllegalStateException(
+							"each scanned record must match a registered groupBy." + " record.columnsKeySet="
+									+ recordColumnsKeySet
+									+ " registeredGroupBys="
+									+ columnsToMarker.keySet()
+									+ " record="
+									+ r);
+				}
+				return marker;
+			};
 		}
 	}
 

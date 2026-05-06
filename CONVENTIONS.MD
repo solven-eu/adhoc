@@ -150,6 +150,30 @@ All checkers are informational — they never block the build.
 
 ---
 
+## Visibility — prefer `protected`
+
+This is a library designed for extensibility. `protected` is the **default** visibility for top-level classes' members; treat package-private and `private` as deliberate, justified narrowings.
+
+- **Top-level classes**: `public`. A package-private top-level class is presumed to be a leftover from "I forgot to type `public`", not an intentional restriction. If a class genuinely should not escape its package, add a one-line comment saying why (e.g. `// package-private: implementation detail of the SPI bootstrap`).
+- **Methods and fields**: `protected`, so subclasses can override or read them. `private` and package-private require an inline justification (e.g. `// private: implementation detail not safe to override`, `// package-private: accessed only by sibling test class`).
+- This applies to existing code too: when you touch a class for another reason and notice `class Foo` (no modifier) or `private` members without a justifying comment, widen the visibility in the same change rather than leaving it.
+
+```java
+// ✓ preferred — open for extension by default
+public class TranscodingTabularRecordStream implements ITabularRecordStream {
+    protected final ColumnsManager columnsManager;
+    protected void forEach(Consumer<ITabularRecord> consumer) { ... }
+}
+
+// ✗ avoid — package-private with no justification, blocks subclassing across packages
+class TranscodingTabularRecordStream implements ITabularRecordStream {
+    private final ColumnsManager columnsManager;
+    private void forEach(Consumer<ITabularRecord> consumer) { ... }
+}
+```
+
+---
+
 ## Naming Conventions
 
 - **Interfaces** are prefixed with `I` (e.g. `IQueryOption`, `ICubeQuery`).

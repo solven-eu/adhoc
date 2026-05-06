@@ -433,7 +433,7 @@ public class ColumnsManager implements IColumnsManager {
 					if (c instanceof ReferencedColumn referencedColumn) {
 						String columnName = referencedColumn.getName();
 						return Stream.of(aliasingContext.underlying(columnName)).map(ReferencedColumn::ref);
-					} else if (c instanceof FunctionCalculatedColumn calculatedColumn) {
+					} else if (c instanceof ICalculatedColumn calculatedColumn) {
 						aliasingContext.addCalculatedColumn(calculatedColumn);
 
 						Collection<ReferencedColumn> operandColumns =

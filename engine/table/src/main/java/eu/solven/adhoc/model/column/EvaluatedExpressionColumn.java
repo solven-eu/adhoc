@@ -40,11 +40,27 @@ import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
 
 /**
- * A {@link EvaluatedExpressionColumn} is a column which is calculated given an expression, by Adhoc engine, not by the
- * {@link ITableWrapper}.
+ * A {@link EvaluatedExpressionColumn} is a column whose value is computed by the Adhoc engine — not by the underlying
+ * {@link ITableWrapper} — by evaluating an <a href="https://github.com/ezylang/EvalEx">EvalEx</a> expression against
+ * each record's groupBy coordinates. Variables in the expression are resolved against the record's groupBy keys.
+ *
+ * <p>
+ * Example expressions:
+ * </p>
+ * <ul>
+ * <li>Arithmetic: {@code (a + 2 * b) / c} — evaluated as a numeric expression when {@code a}, {@code b}, {@code c} are
+ * numbers.</li>
+ * <li>String concatenation: {@code a + "-" + b} — note that string literals must be enclosed in <b>double</b> quotes
+ * (single quotes are not recognised by EvalEx as string literals).</li>
+ * <li>Conditional: {@code IF(a > 0, "positive", "non-positive")}.</li>
+ * <li>Function call: {@code STR_UPPER(country) + "/" + city}.</li>
+ * </ul>
+ *
+ * <p>
+ * See the EvalEx documentation for the complete list of operators and built-in functions.
+ * </p>
  *
  * @author Benoit Lacelle
- *
  */
 @Value
 @Builder

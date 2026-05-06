@@ -331,8 +331,7 @@ public class QueryStepsDagBuilder implements IQueryStepsDagBuilder, IHasTransver
 		// GraphCycleProhibitedException is a subClass of IllegalArgumentException
 		// But we may receive IllegalArgumentException
 		if (underlyingStep.equals(queriedStep)) {
-			return new IllegalStateException(
-					"A queryStep can not be its own underlying: `%s`".formatted(queriedStep),
+			return new IllegalStateException("A queryStep can not be its own underlying: `%s`".formatted(queriedStep),
 					cause);
 		}
 		// If there is already a path from underlyingStep to queriedStep, adding queriedStep→underlyingStep
@@ -346,8 +345,7 @@ public class QueryStepsDagBuilder implements IQueryStepsDagBuilder, IHasTransver
 				cycle.add(queriedStep);
 				cycle.addAll(existingPath.getVertexList());
 				return new IllegalStateException(
-						"Adding edge `%s`->`%s` would create a cycle: %s"
-								.formatted(queriedStep, underlyingStep, cycle),
+						"Adding edge `%s`->`%s` would create a cycle: %s".formatted(queriedStep, underlyingStep, cycle),
 						cause);
 			}
 		}

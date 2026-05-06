@@ -39,9 +39,8 @@ import eu.solven.adhoc.model.measure.Aggregator;
 import eu.solven.adhoc.model.query.IGroupBy;
 
 /**
- * Unit tests for {@link QueryStepsDagBuilder#registerUnderlying}: verifies that self-loops, direct cycles, and
- * indirect cycles all produce targeted, readable error messages via
- * {@link QueryStepsDagBuilder#buildAddEdgeException}.
+ * Unit tests for {@link QueryStepsDagBuilder#registerUnderlying}: verifies that self-loops, direct cycles, and indirect
+ * cycles all produce targeted, readable error messages via {@link QueryStepsDagBuilder#buildAddEdgeException}.
  *
  * @author Benoit Lacelle
  */

@@ -30,6 +30,7 @@ import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.ATestDagInMemory;
 import eu.solven.adhoc.IAdhocTestConstants;
+import eu.solven.adhoc.column.calculated.ICalculatedColumn;
 import eu.solven.adhoc.cube.CubeWrapper;
 import eu.solven.adhoc.cube.ICubeWrapper;
 import eu.solven.adhoc.dataframe.tabular.ITabularView;
@@ -41,7 +42,7 @@ import eu.solven.adhoc.model.column.FunctionCalculatedColumn;
 import eu.solven.adhoc.model.measure.Aggregator;
 import eu.solven.adhoc.table.transcoder.MapTableAliaser;
 
-public class TestDagCubeQuery_CalculatedColumn extends ATestDagInMemory implements IAdhocTestConstants {
+public class TestDagCubeQuery_CalculatedColumn_Function extends ATestDagInMemory implements IAdhocTestConstants {
 	@Override
 	@BeforeEach
 	public void feedTable() {
@@ -57,15 +58,23 @@ public class TestDagCubeQuery_CalculatedColumn extends ATestDagInMemory implemen
 				Aggregator.builder().name("k1.sum").columnName("k1").aggregationKey(SumAggregation.KEY).build());
 	}
 
+	protected ICalculatedColumn functionColumn() {
+		return FunctionCalculatedColumn.builder()
+				.name("custom")
+				.recordToCoordinate(r -> r.getGroupBy("a") + "-" + r.getGroupBy("b"))
+				.build();
+	}
+
+	protected ICalculatedColumn functionColumn_aliased() {
+		return FunctionCalculatedColumn.builder()
+				.name("custom")
+				.recordToCoordinate(r -> r.getGroupBy("proxy_a") + "-" + r.getGroupBy("proxy_b"))
+				.build();
+	}
+
 	@Test
 	public void test_groupBy_definitionInQuery() {
-		ITabularView view = cube().execute(CubeQuery.builder()
-				.measure("k1")
-				.groupByAlso(FunctionCalculatedColumn.builder()
-						.name("custom")
-						.recordToCoordinate(r -> r.getGroupBy("a") + "-" + r.getGroupBy("b"))
-						.build())
-				.build());
+		ITabularView view = cube().execute(CubeQuery.builder().measure("k1").groupByAlso(functionColumn()).build());
 
 		Assertions.assertThat(MapBasedTabularView.load(view).getCoordinatesToValues())
 				.containsEntry(Map.of("custom", "a1-null"), Map.of("k1", 0L + 123 + 345))
@@ -75,12 +84,8 @@ public class TestDagCubeQuery_CalculatedColumn extends ATestDagInMemory implemen
 
 	@Test
 	public void test_groupBy_definitionInCubeColumnManager() {
-		CubeWrapper cube = editCube().columnsManager(ColumnsManager.builder()
-				.calculatedColumn(FunctionCalculatedColumn.builder()
-						.name("custom")
-						.recordToCoordinate(r -> r.getGroupBy("a") + "-" + r.getGroupBy("b"))
-						.build())
-				.build()).build();
+		CubeWrapper cube =
+				editCube().columnsManager(ColumnsManager.builder().calculatedColumn(functionColumn()).build()).build();
 
 		ITabularView view = cube.execute(CubeQuery.builder().measure("k1").groupByAlso("custom").build());
 
@@ -92,14 +97,8 @@ public class TestDagCubeQuery_CalculatedColumn extends ATestDagInMemory implemen
 
 	@Test
 	public void test_groupBy_filter() {
-		ITabularView view = cube().execute(CubeQuery.builder()
-				.measure("k1")
-				.groupByAlso(FunctionCalculatedColumn.builder()
-						.name("custom")
-						.recordToCoordinate(r -> r.getGroupBy("a") + "-" + r.getGroupBy("b"))
-						.build())
-				.andFilter("custom", "a2-b2")
-				.build());
+		ITabularView view = cube().execute(
+				CubeQuery.builder().measure("k1").groupByAlso(functionColumn()).andFilter("custom", "a2-b2").build());
 
 		Assertions.assertThat(MapBasedTabularView.load(view).getCoordinatesToValues())
 				.containsEntry(Map.of("custom", "a2-b2"), Map.of("k1", 0L + 567))
@@ -108,12 +107,7 @@ public class TestDagCubeQuery_CalculatedColumn extends ATestDagInMemory implemen
 
 	@Test
 	public void test_filter_groupByUndelryingColumn() {
-		ICubeWrapper cube = CubeWrapperEditor.edit(cube())
-				.addCalculatedColumn(FunctionCalculatedColumn.builder()
-						.name("custom")
-						.recordToCoordinate(r -> r.getGroupBy("a") + "-" + r.getGroupBy("b"))
-						.build())
-				.build();
+		ICubeWrapper cube = CubeWrapperEditor.edit(cube()).addCalculatedColumn(functionColumn()).build();
 
 		ITabularView view =
 				cube.execute(CubeQuery.builder().measure("k1").groupByAlso("a").andFilter("custom", "a2-b2").build());
@@ -124,7 +118,7 @@ public class TestDagCubeQuery_CalculatedColumn extends ATestDagInMemory implemen
 	}
 
 	@Test
-	public void test_groupBy_rename() {
+	public void test_groupBy_aliased() {
 		CubeWrapper cube = editCube().columnsManager(ColumnsManager.builder()
 				.aliaser(MapTableAliaser.builder()
 						.aliasToOriginal("proxy_a", "a")
@@ -132,13 +126,8 @@ public class TestDagCubeQuery_CalculatedColumn extends ATestDagInMemory implemen
 						.build())
 				.build()).build();
 
-		ITabularView view = cube.execute(CubeQuery.builder()
-				.measure("k1")
-				.groupByAlso(FunctionCalculatedColumn.builder()
-						.name("custom")
-						.recordToCoordinate(r -> r.getGroupBy("proxy_a") + "-" + r.getGroupBy("proxy_b"))
-						.build())
-				.build());
+		ITabularView view =
+				cube.execute(CubeQuery.builder().measure("k1").groupByAlso(functionColumn_aliased()).build());
 
 		Assertions.assertThat(MapBasedTabularView.load(view).getCoordinatesToValues())
 				.containsEntry(Map.of("custom", "a1-null"), Map.of("k1", 0L + 123 + 345))

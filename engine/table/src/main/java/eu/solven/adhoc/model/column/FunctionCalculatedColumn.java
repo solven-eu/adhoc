@@ -176,13 +176,13 @@ public class FunctionCalculatedColumn implements ICalculatedColumn {
 
 	}
 
-	public static Collection<ReferencedColumn> getUnderlyingColumns(FunctionCalculatedColumn calculatedColumn) {
+	public static Collection<ReferencedColumn> getUnderlyingColumns(ICalculatedColumn calculatedColumn) {
 		RecordingRecord recording = new RecordingRecord();
 
 		// Invoke solely for its side-effect on `recording`; the computed coordinate is
 		// irrelevant. Assigning to the unnamed variable `_` makes the discard explicit
 		// and satisfies Error Prone's ReturnValueIgnored check.
-		var _ = calculatedColumn.getRecordToCoordinate().apply(recording);
+		var _ = calculatedColumn.computeCoordinate(recording);
 		return recording.getUsedColumn().stream().map(ReferencedColumn::ref).toList();
 	}
 
