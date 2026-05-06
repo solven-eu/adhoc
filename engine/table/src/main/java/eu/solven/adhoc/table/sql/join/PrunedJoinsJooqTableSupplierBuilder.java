@@ -35,6 +35,7 @@ import org.jooq.Name;
 import org.jooq.Record;
 import org.jooq.Table;
 import org.jooq.impl.DSL;
+import org.jspecify.annotations.Nullable;
 
 import com.google.common.collect.ImmutableSet;
 
@@ -196,20 +197,20 @@ public class PrunedJoinsJooqTableSupplierBuilder extends JooqTableSupplierBuilde
 		// the most-recent join. Star pattern is dominant; snowflake legs opt-in via `.from(prevJoin)`.
 		String fromAlias = Optional.ofNullable(joinBuilder.getFrom()).orElse(baseTableAlias);
 		Set<String> provided = joinBuilder.getProvidedColumns();
-		if (provided != null) {
-			leftJoin(fromAlias, joinBuilder.getTable(), joinBuilder.getAlias(), joinBuilder.getOn(), provided);
+		Set<String> columnsOverride;
+		if (provided == null) {
+			columnsOverride = null;
 		} else {
-			leftJoin(fromAlias, joinBuilder.getTable(), joinBuilder.getAlias(), joinBuilder.getOn());
+			columnsOverride = ImmutableSet.copyOf(provided);
 		}
-		// Honour an explicit `prunable(false)` opt-out by patching the just-appended JoinNode. Same post-patch
-		// pattern as `providedColumns` on the deprecated 5-arg overload: the underlying leftJoin(...) machinery
-		// always records prunable=true, then we flip the flag here when the consumer requested otherwise.
-		Boolean explicitPrunable = joinBuilder.getPrunable();
-		if (explicitPrunable != null && !explicitPrunable) {
-			int lastIdx = joinNodes.size() - 1;
-			JoinNode last = joinNodes.get(lastIdx);
-			joinNodes.set(lastIdx, last.toBuilder().prunable(false).build());
-		}
+
+		recordJoin(fromAlias,
+				joinBuilder.getTable(),
+				joinBuilder.getAlias(),
+				joinBuilder.getOn(),
+				joinBuilder.isPrunable(),
+				columnsOverride);
+
 		if (!joinBuilder.getColumnAliases().isEmpty()) {
 			withAliases(joinBuilder.getColumnAliases());
 		}
@@ -222,6 +223,26 @@ public class PrunedJoinsJooqTableSupplierBuilder extends JooqTableSupplierBuilde
 			Table<?> joinedTable,
 			String joinName,
 			List<Map.Entry<String, String>> on) {
+		recordJoin(leftTableAlias, joinedTable, joinName, on, true, null);
+		return this;
+	}
+
+	/**
+	 * Single point of {@link JoinNode} construction: parses the ON-clause, registers it in the aliaser, harvests
+	 * referenced aliases, and appends a fully-formed node to {@link #joinNodes}. Replaces the previous
+	 * "append-then-patch-the-last-element" idiom: every caller passes the values it actually wants, and the node is
+	 * built right the first time.
+	 *
+	 * @param columnsOverride
+	 *            explicit list of columns this join provides, or {@code null} to defer to the supplier's
+	 *            {@code columnsResolver}.
+	 */
+	protected void recordJoin(String leftTableAlias,
+			Table<?> joinedTable,
+			String joinName,
+			List<Map.Entry<String, String>> on,
+			boolean prunable,
+			@Nullable Set<String> columnsOverride) {
 		// Same side-effects as the parent (aliaser registration + latestJoin tracking), but we do NOT accumulate
 		// snowflakeTable — the FROM clause is rebuilt per-query by the supplier via `materialise(...)`.
 		ImmutableSet.Builder<String> referencedAliases = ImmutableSet.builder();
@@ -244,10 +265,9 @@ public class PrunedJoinsJooqTableSupplierBuilder extends JooqTableSupplierBuilde
 				.joinedTable(joinedTable)
 				.onConditions(onConditions)
 				.referencedAliases(referencedAliases.build())
-				.prunable(true)
+				.prunable(prunable)
+				.columnsOverride(columnsOverride)
 				.build());
-
-		return this;
 	}
 
 	/**
@@ -276,11 +296,7 @@ public class PrunedJoinsJooqTableSupplierBuilder extends JooqTableSupplierBuilde
 			String joinName,
 			List<Map.Entry<String, String>> on,
 			Set<String> providedColumns) {
-		leftJoin(leftTableAlias, joinedTable, joinName, on);
-		// Patch the just-appended node with the explicit columns override.
-		int lastIdx = joinNodes.size() - 1;
-		JoinNode last = joinNodes.get(lastIdx);
-		joinNodes.set(lastIdx, last.toBuilder().columnsOverride(ImmutableSet.copyOf(providedColumns)).build());
+		recordJoin(leftTableAlias, joinedTable, joinName, on, true, ImmutableSet.copyOf(providedColumns));
 		return this;
 	}
 

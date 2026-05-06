@@ -135,29 +135,46 @@ public class TestCombinator {
 	@Test
 	public void testLambda_Serializable_static() {
 		ILambdaCombinationS lambdaCombinationS = TestCombinator::lambdaAsMethod;
-		Assertions.assertThat(lambdaToString(lambdaCombinationS)).isEqualTo("TestCombinator::lambdaCombinationS");
+		Assertions.assertThat(lambdaToString(lambdaCombinationS))
+				.isEqualTo("eu.solven.adhoc.measure.TestCombinator::lambdaAsMethod");
 
 	}
 
 	@Test
 	public void testLambda_Serializable_Nested() {
 		ILambdaCombinationS lambdaCombinationSNested = NestedClass::lambdaAsMethodInNested;
-		Assertions.assertThat(lambdaToString(lambdaCombinationSNested)).isEqualTo("TestCombinator::lambdaCombinationS");
+		Assertions.assertThat(lambdaToString(lambdaCombinationSNested))
+				.isEqualTo("eu.solven.adhoc.measure.TestCombinator$NestedClass::lambdaAsMethodInNested");
 
 	}
 
 	@Test
 	public void testLambda_Serializable_anonymous() {
-		ILambdaCombinationS lambdaCombinationS2 = (slice, values) -> "outputValue";
-		Assertions.assertThat(lambdaToString(lambdaCombinationS2)).isEqualTo("outputValue");
+		ILambdaCombinationS lambdaCombinationS2 = (_, _) -> "outputValue";
+		Assertions.assertThat(lambdaToString(lambdaCombinationS2))
+				.isEqualTo("eu.solven.adhoc.measure.TestCombinator::lambda$3");
 
 		Combinator measure = Combinator.builder().name("measureName").lambda(lambdaCombinationS2).build();
 
-		String asString = PepperJackson3TestHelper.verifyJackson(measure);
+		String asString = PepperJackson3TestHelper.asString(measure);
+
+		// BEWARE This demonstrate the Lambda is still not serialized in a nice form
 		Assertions.assertThat(asString).isEqualTo("""
-				""");
+				{
+				  "type" : ".Combinator",
+				  "combinationKey" : "eu.solven.adhoc.measure.lambda.LambdaCombination",
+				  "combinationOptions" : {
+				    "lambda" : { }
+				  },
+				  "name" : "measureName",
+				  "tags" : [ ],
+				  "underlyings" : [ ]
+				}""");
 	}
 
+	/**
+	 * Combines a Lambda with a {@link Serializable} contract, enabling access to {@link SerializedLambda}.
+	 */
 	@FunctionalInterface
 	public interface ILambdaCombinationS extends LambdaCombination.ILambdaCombination, Serializable {
 
@@ -169,16 +186,12 @@ public class TestCombinator {
 			writeReplace.setAccessible(true);
 			SerializedLambda serializedLambda = (SerializedLambda) writeReplace.invoke(lambda);
 
-			return serializedLambda.getCapturingClass() + "::" + serializedLambda.getImplMethodName();
+			// `getCapturingClass` returns the root class but not the nested class if any
+			String capturingClassWithPackage = serializedLambda.getImplClass().replace('/', '.');
+			return capturingClassWithPackage + "::" + serializedLambda.getImplMethodName();
 		} catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
-			// throw new RuntimeException(e);
 			log.warn("Issue with SerializedLambda", e);
 			return "TODO lambdaToString";
 		}
-		//
-		// ((SerializedLambda) binaryOperator).getImplMethodName();
-		//
-		// binaryOperator.toString()
-
 	}
 }
