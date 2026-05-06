@@ -132,7 +132,7 @@ public class SliceToJooqCondition implements ISliceToJooqCondition {
 		Optional<Condition> optColumnFilterAsCondition = toCondition(columnFilter, hasParentNot);
 		if (optColumnFilterAsCondition.isEmpty()) {
 			log.debug("{} will be applied manually", columnFilter);
-			return ConditionWithFilter.builder().leftover(columnFilter).build();
+			return ConditionWithFilter.builder().nonPushdown(columnFilter).build();
 		}
 		return ConditionWithFilter.builder().condition(optColumnFilterAsCondition.get()).build();
 	}
@@ -143,11 +143,11 @@ public class SliceToJooqCondition implements ISliceToJooqCondition {
 		boolean oneIsMatchAll = false;
 
 		ISliceFilter negatedPostFilter;
-		if (negated.getLeftover().isMatchAll()) {
+		if (negated.getNonPushdown().isMatchAll()) {
 			negatedPostFilter = ISliceFilter.MATCH_ALL;
 			oneIsMatchAll = true;
 		} else {
-			negatedPostFilter = negated.getLeftover().negate();
+			negatedPostFilter = negated.getNonPushdown().negate();
 		}
 
 		Condition negatedCondition;
@@ -162,7 +162,7 @@ public class SliceToJooqCondition implements ISliceToJooqCondition {
 			throw new NotYetImplementedException("Converting `%s` to SQL".formatted(notFilter));
 		}
 
-		return ConditionWithFilter.builder().leftover(negatedPostFilter).condition(negatedCondition).build();
+		return ConditionWithFilter.builder().nonPushdown(negatedPostFilter).condition(negatedCondition).build();
 	}
 
 	private ConditionWithFilter handleAndFilter(IAndFilter andFilter, boolean hasParentNot) {
@@ -170,9 +170,10 @@ public class SliceToJooqCondition implements ISliceToJooqCondition {
 		List<ConditionWithFilter> conditions = operands.stream().map(c -> toCondition(c, hasParentNot)).toList();
 
 		List<Condition> sqlConditions = conditions.stream().map(ConditionWithFilter::getCondition).toList();
-		List<ISliceFilter> leftoversConditions = conditions.stream().map(ConditionWithFilter::getLeftover).toList();
+		List<ISliceFilter> nonPushdownsConditions =
+				conditions.stream().map(ConditionWithFilter::getNonPushdown).toList();
 
-		return and(sqlConditions, leftoversConditions);
+		return and(sqlConditions, nonPushdownsConditions);
 	}
 
 	private ConditionWithFilter handleOrFilter(IOrFilter orFilter, boolean hasParentNot) {
@@ -181,23 +182,27 @@ public class SliceToJooqCondition implements ISliceToJooqCondition {
 		List<ConditionWithFilter> conditions = operands.stream().map(c -> toCondition(c, hasParentNot)).toList();
 
 		boolean anyPostFilter =
-				conditions.stream().map(ConditionWithFilter::getLeftover).anyMatch(f -> !f.isMatchAll());
+				conditions.stream().map(ConditionWithFilter::getNonPushdown).anyMatch(f -> !f.isMatchAll());
 
 		if (anyPostFilter) {
 			log.debug("A postFilter with OR (`{}`) leads to no table filtering", orFilter);
-			return ConditionWithFilter.builder().condition(DSL.trueCondition()).leftover(orFilter).build();
+			return ConditionWithFilter.builder().condition(DSL.trueCondition()).nonPushdown(orFilter).build();
 		}
 
 		List<Condition> sqlConditions = conditions.stream().map(ConditionWithFilter::getCondition).toList();
 
-		return ConditionWithFilter.builder().condition(DSL.or(sqlConditions)).leftover(ISliceFilter.MATCH_ALL).build();
+		return ConditionWithFilter.builder()
+				.condition(DSL.or(sqlConditions))
+				.nonPushdown(ISliceFilter.MATCH_ALL)
+				.build();
 	}
 
 	@Override
-	public ConditionWithFilter and(Collection<Condition> sqlConditions, Collection<ISliceFilter> leftoversConditions) {
+	public ConditionWithFilter and(Collection<Condition> sqlConditions,
+			Collection<ISliceFilter> nonPushdownsConditions) {
 		return ConditionWithFilter.builder()
 				.condition(andSql(sqlConditions))
-				.leftover(FilterBuilder.and(leftoversConditions).optimize(filterOptimizer))
+				.nonPushdown(FilterBuilder.and(nonPushdownsConditions).optimize(filterOptimizer))
 				.build();
 	}
 
@@ -339,7 +344,7 @@ public class SliceToJooqCondition implements ISliceToJooqCondition {
 	}
 
 	@Override
-	public ConditionWithFilter toConditionSplitLeftover(ISliceFilter filter) {
+	public ConditionWithFilter toConditionSplitNonPushdown(ISliceFilter filter) {
 
 		// Split `AND` to enable `preFilter AND postFilter`
 		// This will also cover `NOT(OR(...))`
@@ -348,13 +353,13 @@ public class SliceToJooqCondition implements ISliceToJooqCondition {
 		// Partition conditions which can be translated into SQL or not.
 		// BEWARE It will lead to translating twice to SQL
 		Map<Boolean, List<ISliceFilter>> conditionAndFilters =
-				ands.stream().collect(Collectors.partitioningBy(f -> toCondition(f).getLeftover().isMatchAll()));
+				ands.stream().collect(Collectors.partitioningBy(f -> toCondition(f).getNonPushdown().isMatchAll()));
 		// `Collectors.partitioningBy` always populates both keys; narrow @Nullable Map.get into non-null locals.
-		List<ISliceFilter> withoutLeftover = Objects.requireNonNull(conditionAndFilters.get(true));
-		List<ISliceFilter> withLeftover = Objects.requireNonNull(conditionAndFilters.get(false));
+		List<ISliceFilter> withoutnonPushdown = Objects.requireNonNull(conditionAndFilters.get(true));
+		List<ISliceFilter> withnonPushdown = Objects.requireNonNull(conditionAndFilters.get(false));
 
-		ISliceFilter withoutPostFilter = FilterBuilder.and(withoutLeftover).optimize(filterOptimizer);
-		ISliceFilter withPostFilter = FilterBuilder.and(withLeftover).optimize(filterOptimizer);
+		ISliceFilter withoutPostFilter = FilterBuilder.and(withoutnonPushdown).optimize(filterOptimizer);
+		ISliceFilter withPostFilter = FilterBuilder.and(withnonPushdown).optimize(filterOptimizer);
 
 		if (ISliceFilter.MATCH_ALL.equals(withPostFilter)) {
 			// There is no customCondition: restore the original condition as it may have be changed by the
@@ -363,13 +368,13 @@ public class SliceToJooqCondition implements ISliceToJooqCondition {
 		}
 
 		ConditionWithFilter conditionWithout = toCondition(withoutPostFilter);
-		if (!ISliceFilter.MATCH_ALL.equals(conditionWithout.getLeftover())) {
+		if (!ISliceFilter.MATCH_ALL.equals(conditionWithout.getNonPushdown())) {
 			throw new IllegalStateException("Expected no postFilter from %s".formatted(withoutPostFilter));
 		}
 
 		return ConditionWithFilter.builder()
 				.condition(conditionWithout.getCondition())
-				.leftover(withPostFilter)
+				.nonPushdown(withPostFilter)
 				.build();
 	}
 

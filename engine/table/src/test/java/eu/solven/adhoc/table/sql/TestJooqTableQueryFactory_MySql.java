@@ -62,7 +62,7 @@ public class TestJooqTableQueryFactory_MySql {
 	@Test
 	public void testToCondition_ColumnEquals() {
 		Condition condition =
-				conditionFactory.toConditionSplitLeftover(ColumnFilter.matchEq("k1", "v1")).getCondition();
+				conditionFactory.toConditionSplitNonPushdown(ColumnFilter.matchEq("k1", "v1")).getCondition();
 
 		Assertions.assertThat(condition.toString()).isEqualTo("""
 				"k1" = 'v1'""");
@@ -72,9 +72,10 @@ public class TestJooqTableQueryFactory_MySql {
 	public void testToCondition_AndColumnsEquals() {
 		// ImmutableMap for ordering, as we later check the .toString
 		JooqTableQueryFactory.ConditionWithFilter condition =
-				conditionFactory.toConditionSplitLeftover(AndFilter.and("k1", "v1", "k2", "v2"));
+				conditionFactory.toConditionSplitNonPushdown(AndFilter.and("k1", "v1", "k2", "v2"));
 
-		Assertions.assertThat(condition.getLeftover()).satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
+		Assertions.assertThat(condition.getNonPushdown())
+				.satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
 		Assertions.assertThat(condition.getCondition().toString()).isEqualTo("""
 				(
 				  "k1" = 'v1'
@@ -86,9 +87,10 @@ public class TestJooqTableQueryFactory_MySql {
 	public void testToCondition_OrColumnsEquals() {
 		ISliceFilter filter =
 				FilterBuilder.or(ColumnFilter.matchEq("k1", "v1"), ColumnFilter.matchEq("k2", "v2")).combine();
-		JooqTableQueryFactory.ConditionWithFilter condition = conditionFactory.toConditionSplitLeftover(filter);
+		JooqTableQueryFactory.ConditionWithFilter condition = conditionFactory.toConditionSplitNonPushdown(filter);
 
-		Assertions.assertThat(condition.getLeftover()).satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
+		Assertions.assertThat(condition.getNonPushdown())
+				.satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
 		Assertions.assertThat(condition.getCondition().toString()).isEqualTo("""
 				(
 				  "k1" = 'v1'
@@ -100,9 +102,10 @@ public class TestJooqTableQueryFactory_MySql {
 	public void testToCondition_NotFilter() {
 		ISliceFilter filter =
 				FilterBuilder.or(ColumnFilter.matchEq("k1", "v1"), ColumnFilter.matchEq("k2", "v2")).combine().negate();
-		JooqTableQueryFactory.ConditionWithFilter condition = conditionFactory.toConditionSplitLeftover(filter);
+		JooqTableQueryFactory.ConditionWithFilter condition = conditionFactory.toConditionSplitNonPushdown(filter);
 
-		Assertions.assertThat(condition.getLeftover()).satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
+		Assertions.assertThat(condition.getNonPushdown())
+				.satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
 		Assertions.assertThat(condition.getCondition().toString()).isEqualTo("""
 				not (
 				  (
@@ -120,9 +123,10 @@ public class TestJooqTableQueryFactory_MySql {
 	public void testToCondition_NotMatcher() {
 		ISliceFilter filter =
 				FilterBuilder.and(ColumnFilter.notEq("k1", "v1"), ColumnFilter.notEq("k2", "v2")).combine();
-		JooqTableQueryFactory.ConditionWithFilter condition = conditionFactory.toConditionSplitLeftover(filter);
+		JooqTableQueryFactory.ConditionWithFilter condition = conditionFactory.toConditionSplitNonPushdown(filter);
 
-		Assertions.assertThat(condition.getLeftover()).satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
+		Assertions.assertThat(condition.getNonPushdown())
+				.satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
 		Assertions.assertThat(condition.getCondition().toString()).isEqualTo("""
 				(
 				  not (
@@ -141,7 +145,8 @@ public class TestJooqTableQueryFactory_MySql {
 		QueryWithLeftover condition = queryFactory
 				.prepareSliceQuery(TableQuery.builder().aggregator(Aggregator.builder().name("k").build()).build());
 
-		Assertions.assertThat(condition.getLeftover()).satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
+		Assertions.assertThat(condition.getNonPushdown())
+				.satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
 		Assertions.assertThat(condition.getQuery().getSQL(ParamType.INLINED))
 				.isEqualTo("select sum(`k`) as `k` from `someTableName` group by (select 1)");
 	}
@@ -151,7 +156,8 @@ public class TestJooqTableQueryFactory_MySql {
 		QueryWithLeftover condition = queryFactory.prepareSliceQuery(
 				TableQuery.builder().aggregator(Aggregator.builder().name("k.USD").columnName("t.k").build()).build());
 
-		Assertions.assertThat(condition.getLeftover()).satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
+		Assertions.assertThat(condition.getNonPushdown())
+				.satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
 		Assertions.assertThat(condition.getQuery().getSQL(ParamType.INLINED))
 				.isEqualTo("select sum(`t`.`k`) as `k.USD` from `someTableName` group by (select 1)");
 	}
@@ -162,7 +168,8 @@ public class TestJooqTableQueryFactory_MySql {
 				.aggregator(Aggregator.builder().name("k.USD").columnName("\"t.k\"").build())
 				.build());
 
-		Assertions.assertThat(condition.getLeftover()).satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
+		Assertions.assertThat(condition.getNonPushdown())
+				.satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
 		Assertions.assertThat(condition.getQuery().getSQL(ParamType.INLINED))
 				.isEqualTo("select sum(`t.k`) as `k.USD` from `someTableName` group by (select 1)");
 	}
@@ -174,7 +181,8 @@ public class TestJooqTableQueryFactory_MySql {
 				.groupBy(GroupByColumns.named("a@b@c"))
 				.build());
 
-		Assertions.assertThat(condition.getLeftover()).satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
+		Assertions.assertThat(condition.getNonPushdown())
+				.satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
 		Assertions.assertThat(condition.getQuery().getSQL(ParamType.INLINED))
 				.isEqualTo("select sum(`k`) as `k`, `a@b@c` from `someTableName` group by `a@b@c`");
 	}
@@ -186,7 +194,8 @@ public class TestJooqTableQueryFactory_MySql {
 				.groupBy(GroupByColumns.named("pre post"))
 				.build());
 
-		Assertions.assertThat(condition.getLeftover()).satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
+		Assertions.assertThat(condition.getNonPushdown())
+				.satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
 		Assertions.assertThat(condition.getQuery().getSQL(ParamType.INLINED))
 				.isEqualTo("select sum(`k`) as `k`, `pre post` from `someTableName` group by `pre post`");
 	}
@@ -196,7 +205,8 @@ public class TestJooqTableQueryFactory_MySql {
 		QueryWithLeftover condition =
 				queryFactory.prepareSliceQuery(TableQuery.builder().aggregator(Aggregator.countAsterisk()).build());
 
-		Assertions.assertThat(condition.getLeftover()).satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
+		Assertions.assertThat(condition.getNonPushdown())
+				.satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
 		Assertions.assertThat(condition.getQuery().getSQL(ParamType.INLINED))
 				.isEqualTo("select count(*) as `count(*)` from `someTableName` group by (select 1)");
 	}
@@ -206,7 +216,8 @@ public class TestJooqTableQueryFactory_MySql {
 		QueryWithLeftover condition =
 				queryFactory.prepareSliceQuery(TableQuery.builder().aggregator(Aggregator.empty()).build());
 
-		Assertions.assertThat(condition.getLeftover()).satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
+		Assertions.assertThat(condition.getNonPushdown())
+				.satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
 		Assertions.assertThat(condition.getQuery().getSQL(ParamType.INLINED))
 				.isEqualTo("select count(1) from `someTableName` group by (select 1)");
 	}
@@ -218,7 +229,8 @@ public class TestJooqTableQueryFactory_MySql {
 		QueryWithLeftover condition = queryFactory
 				.prepareSliceQuery(TableQuery.builder().aggregator(Aggregator.sum("k")).filter(customFilter).build());
 
-		Assertions.assertThat(condition.getLeftover()).satisfies(l -> Assertions.assertThat(l).isSameAs(customFilter));
+		Assertions.assertThat(condition.getNonPushdown())
+				.satisfies(l -> Assertions.assertThat(l).isSameAs(customFilter));
 		Assertions.assertThat(condition.getQuery().getSQL(ParamType.INLINED))
 				.isEqualTo("select sum(`k`) as `k`, `c` from `someTableName` group by `c`");
 	}
@@ -231,7 +243,7 @@ public class TestJooqTableQueryFactory_MySql {
 		QueryWithLeftover condition = queryFactory
 				.prepareSliceQuery(TableQuery.builder().aggregator(Aggregator.sum("k")).filter(orFilter).build());
 
-		Assertions.assertThat(condition.getLeftover()).satisfies(l -> Assertions.assertThat(l).isEqualTo(orFilter));
+		Assertions.assertThat(condition.getNonPushdown()).satisfies(l -> Assertions.assertThat(l).isEqualTo(orFilter));
 		Assertions.assertThat(condition.getQuery().getSQL(ParamType.INLINED))
 				.isEqualTo("select sum(`k`) as `k`, `d`, `c` from `someTableName` group by `d`, `c`");
 	}
@@ -244,7 +256,7 @@ public class TestJooqTableQueryFactory_MySql {
 		QueryWithLeftover condition = queryFactory
 				.prepareSliceQuery(TableQuery.builder().aggregator(Aggregator.sum("k")).filter(notFilter).build());
 
-		Assertions.assertThat(condition.getLeftover()).satisfies(l -> Assertions.assertThat(l).isEqualTo(notFilter));
+		Assertions.assertThat(condition.getNonPushdown()).satisfies(l -> Assertions.assertThat(l).isEqualTo(notFilter));
 		Assertions.assertThat(condition.getQuery().getSQL(ParamType.INLINED))
 				.isEqualTo("select sum(`k`) as `k`, `c` from `someTableName` group by `c`");
 	}
@@ -258,7 +270,7 @@ public class TestJooqTableQueryFactory_MySql {
 				.prepareSliceQuery(TableQuery.builder().aggregator(Aggregator.sum("k")).filter(notFilter).build());
 
 		// custom part is handled as leftover
-		Assertions.assertThat(condition.getLeftover())
+		Assertions.assertThat(condition.getNonPushdown())
 				.satisfies(l -> Assertions.assertThat(l).isEqualTo(customFilter.negate()));
 		// native part is managed by SQL: requesting `c` as groupBy to enable late filtering
 		Assertions.assertThat(condition.getQuery().getSQL(ParamType.INLINED))

@@ -38,6 +38,7 @@ import com.google.common.collect.Sets;
 
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.beta.schema.AdhocSchema;
+import eu.solven.adhoc.beta.schema.CoordinatesSample;
 import eu.solven.adhoc.beta.schema.RelevancyHeuristic;
 import eu.solven.adhoc.beta.schema.RelevancyHeuristic.CubeRelevancy;
 import eu.solven.adhoc.beta.schema.RelevancyHeuristic.MeasureRelevancy;
@@ -47,9 +48,11 @@ import eu.solven.adhoc.cube.ICubeWrapper;
 import eu.solven.adhoc.dataframe.tabular.ITabularView;
 import eu.solven.adhoc.dataframe.tabular.MapBasedTabularView;
 import eu.solven.adhoc.engine.query.CubeQuery;
+import eu.solven.adhoc.example.worldcup.DispatchedEvents;
 import eu.solven.adhoc.example.worldcup.WorldCupPlayersSchema;
 import eu.solven.adhoc.filter.AndFilter;
 import eu.solven.adhoc.filter.ColumnFilter;
+import eu.solven.adhoc.filter.value.IValueMatcher;
 import eu.solven.adhoc.measure.forest.IMeasureForest;
 import eu.solven.adhoc.measure.forest.MeasureForest;
 import eu.solven.adhoc.model.column.ColumnWithCalculatedCoordinates;
@@ -402,6 +405,50 @@ public class TestDagTableQuery_DuckDb_WorldCup extends ATestDagDuckDb implements
 					Assertions.assertThat(v).isEqualTo(Map.of("event_count", 100L));
 				})
 				.hasSize(1);
+	}
+
+	// ── ICubeWrapper.getCoordinates → DispatchedEvents.getCoordinates ──────────────
+	// `event_code` and `minute` are synthetic columns produced by the `DispatchedEvents` IDecomposition; the only path
+	// that reaches `DispatchedEvents.getCoordinates` is `ICubeWrapper.getCoordinates`, which the existing query tests
+	// never exercise. These tests close the JaCoCo gap on that switch (the `event_code`, `minute`, and `default`
+	// branches), and pin the cube-side wiring that routes synthetic-column coordinate enumeration through the
+	// decomposition.
+
+	@Test
+	public void testGetCoordinates_eventCode_returnsExpectedSet() {
+		CoordinatesSample sample = cube().getCoordinates("event_code", IValueMatcher.MATCH_ALL, 10);
+
+		// `DispatchedEvents.getCoordinates` returns "G" (goals) and "I" (injuries-or-similar) — see the source.
+		Assertions.assertThat(sample.getCoordinates()).containsExactlyInAnyOrder("G", "I");
+		Assertions.assertThat(sample.getEstimatedCardinality()).isEqualTo(2);
+	}
+
+	@Test
+	public void testGetCoordinates_minute_returnsRangeMatchingCardinality() {
+		// `MAX_MINUTES` is bumped by EventAggregation as a side-effect of seeing `minute` values during query
+		// execution. Trigger a query that populates it before reading the coordinates, to avoid order-dependence
+		// across test runs (the existing tests bump it but JUnit method ordering is not guaranteed).
+		cube().execute(CubeQuery.builder().measure("event_count").andFilter("minute", 13).build());
+
+		CoordinatesSample sample = cube().getCoordinates("minute", IValueMatcher.MATCH_ALL, 1000);
+
+		Assertions.assertThat(sample.getCoordinates()).isNotEmpty();
+		// The two outputs of `DispatchedEvents.getCoordinates("minute", …)` — the coordinates set and the
+		// estimated cardinality — must agree by construction (both are `IntStream.range(0, nbMinutes).count()`).
+		Assertions.assertThat((long) sample.getCoordinates().size()).isEqualTo(sample.getEstimatedCardinality());
+	}
+
+	@Test
+	public void testDispatchedEvents_unknownColumn_yieldsEmpty() {
+		// Drive the `default → CoordinatesSample.empty()` branch of DispatchedEvents.getCoordinates directly. Calling
+		// it via the cube would force the table side to resolve the unknown column too, which fails for unrelated
+		// reasons (see `PrunedJoinsJooqTableSupplier.computeNeededAliases`). Going straight at the decomposition is
+		// the cleanest way to cover that branch without dragging in unrelated table machinery.
+		CoordinatesSample sample =
+				new DispatchedEvents().getCoordinates("not_a_real_column", IValueMatcher.MATCH_ALL, 10);
+
+		Assertions.assertThat(sample.getCoordinates()).isEmpty();
+		Assertions.assertThat(sample.getEstimatedCardinality()).isEqualTo(CoordinatesSample.NO_ESTIMATION);
 	}
 
 }

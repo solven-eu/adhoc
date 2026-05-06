@@ -12,12 +12,12 @@
 	<packaging>pom</packaging>
 	<!-- `name` is required by Sonatype-->
 	<name>${project.groupId}:${project.artifactId}</name>
-	<description>Adhoc query engine: table-side stack (adhoc-table) and cube/engine layer (adhoc).</description>
+	<description>Adhoc query engine: table-side stack (adhoc-table), cube/engine layer (adhoc-cube), and recipes (adhoc-recipes — advanced measures + example datasets).</description>
 
 	<modules>
 		<module>table</module>
 		<module>cube</module>
 
-		<module>adhoc</module>
+		<module>recipes</module>
 	</modules>
 </project>

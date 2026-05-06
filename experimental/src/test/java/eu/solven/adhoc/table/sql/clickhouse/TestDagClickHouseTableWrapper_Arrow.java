@@ -130,8 +130,8 @@ public class TestDagClickHouseTableWrapper_Arrow extends ATestDagTableQuery_DB {
 						"Code: 184. DB::Exception: Aggregate function sum(k1) AS k1 is found in GROUP BY in query. (ILLEGAL_AGGREGATION)");
 	}
 
-	// This is an actual bug: if we end requesting twice the same aggregate, one with matchAll and other with a leftover
-	// filter, we should query the aggregate only once to DB
+	// This is an actual bug: if we end requesting twice the same aggregate, one with matchAll and other with a
+	// nonPushdown filter, we should query the aggregate only once to DB
 	@Disabled("TODO FIXME")
 	@Test
 	public void testFilter_custom_implicitColumns() {

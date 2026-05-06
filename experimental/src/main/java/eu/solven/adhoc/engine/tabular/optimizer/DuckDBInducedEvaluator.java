@@ -127,7 +127,7 @@ public class DuckDBInducedEvaluator implements IInducedEvaluator {
 	 *            the inducer {@link TableQueryStep}
 	 * @param induced
 	 *            the induced {@link TableQueryStep}
-	 * @param leftoverFilter
+	 * @param nonPushdown
 	 *            the additional filter to apply on top of the inducer data
 	 * @param aggregation
 	 *            the {@link IAggregation} for the output column
@@ -140,7 +140,7 @@ public class DuckDBInducedEvaluator implements IInducedEvaluator {
 	public Optional<IMultitypeMergeableColumn<ISlice>> tryEvaluate(ICuboid inducerValues,
 			TableQueryStep inducer,
 			TableQueryStep induced,
-			ISliceFilter leftoverFilter,
+			ISliceFilter nonPushdown,
 			IAggregation aggregation,
 			Aggregator aggregator) {
 
@@ -160,7 +160,7 @@ public class DuckDBInducedEvaluator implements IInducedEvaluator {
 		}
 
 		try {
-			return evaluateViaDuckDB(factories, inducerValues, inducer, induced, leftoverFilter, aggregation, aggKey);
+			return evaluateViaDuckDB(factories, inducerValues, inducer, induced, nonPushdown, aggregation, aggKey);
 		} catch (NoClassDefFoundError e) {
 			log.warn("DuckDB is not on the classpath — disabling DuckDB-backed evaluateInduced path", e);
 			duckDbUnavailable.set(true);
@@ -218,12 +218,12 @@ public class DuckDBInducedEvaluator implements IInducedEvaluator {
 			// ── 3. Build SELECT, filter it and execute ───────────────────────────────
 			Function<String, org.jooq.Name> toName = col -> AdhocJooqHelper.name(col, dsl::parser);
 			ISliceToJooqCondition sliceToJooq = new SliceToJooqConditionFactory().with(toName);
-			ConditionWithFilter conditionWithFilter = sliceToJooq.toConditionSplitLeftover(leftoverFilter);
+			ConditionWithFilter conditionWithFilter = sliceToJooq.toConditionSplitNonPushdown(leftoverFilter);
 
 			// If some filter predicates cannot be expressed in SQL, fall back to Java
-			if (!conditionWithFilter.getLeftover().isMatchAll()) {
+			if (!conditionWithFilter.getNonPushdown().isMatchAll()) {
 				log.debug("DuckDB evaluator: filter has SQL leftover; falling back to Java. leftover={}",
-						conditionWithFilter.getLeftover());
+						conditionWithFilter.getNonPushdown());
 				return Optional.empty();
 			}
 

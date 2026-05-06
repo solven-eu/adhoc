@@ -11,6 +11,7 @@ Pivotable is a referential implementation of a web application wrapping Adhoc ca
 ### Core concepts
 
 - [Lexicon](lexicon.md) — key terms and concepts used throughout the project
+- [Foundations](foundations.md) — the four families of ideas behind Adhoc: OLAP, DAGs, Boolean algebra of filters, aggregator linearity
 - [Concepts](concepts.md) — general architecture, query flow, measures, columns, and transcoders
 - [Architecture](architecture.md) — class hierarchy diagram generated from source
 - [Slice and IAdhocMap](slice.md) — what a slice is, how `IAdhocMap` backs it, perfect-hash key lookup and cached projections
@@ -44,6 +45,7 @@ Pivotable is a referential implementation of a web application wrapping Adhoc ca
 - [Hierarchies](hierarchies.md) — modelling multi-level dimensions today and the roadmap for native hierarchy support
 - [Many-to-many](many-to-many.md) — how a single fact can contribute to multiple coordinates via `Dispatchor`
 - [Custom Measures](custom-measure.md) — implementing `IHasUnderlyingMeasures` + `AMeasureQueryStep` for arbitrary evaluation logic; `RouterMeasure` example
+- [Routing Measure walkthrough](routing-measure.md) — concrete worked example using the shipped `RoutingMeasure`: Jackson serialization, `getUnderlyingSteps` shaping the DAG, passthrough in `produceOutputColumn`, and the cross-boundary trade-off
 - [Composite Cubes](composite-cubes.md) — unifying multiple `ICubeWrapper` instances via `CompositeCubesTableWrapper`
 - [Authorizations](authorizations.md) — rights management via `IImplicitFilter`
 - [Pivotable Security Model](pivotable-security.md) — SPA authentication flow, `SESSION` cookie vs applicative JWT, and the `/api/login/v1/*` routes involved

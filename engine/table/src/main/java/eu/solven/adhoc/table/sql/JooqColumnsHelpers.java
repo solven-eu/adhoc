@@ -26,6 +26,8 @@ import java.util.List;
 import java.util.function.Function;
 
 import org.jooq.Field;
+import org.jooq.Record;
+import org.jooq.SelectLimitPercentStep;
 import org.jooq.TableLike;
 
 import eu.solven.adhoc.table.sql.join.PrunedJoinsJooqTableSupplierBuilder;
@@ -109,10 +111,11 @@ public final class JooqColumnsHelpers {
 		@Override
 		public List<Field<?>> columnsOf(IDSLSupplier dslSupplier, TableLike<?> table) {
 			// Log in INFO as the round-trip may be slow on large-schema JDBC drivers.
-			log.info("Fetching fields via SELECT * LIMIT 0 of table={}",
-					PepperLogHelper
-							.lazyToString(() -> table.toString().replaceAll("\r", "\\r").replaceAll("\n", "\\n")));
-			return List.of(dslSupplier.getDSLContext().select().from(table).limit(0).fetch().fields());
+			SelectLimitPercentStep<Record> query = dslSupplier.getDSLContext().select().from(table).limit(0);
+
+			log.info("Fetching fields via SQL=`{}`", PepperLogHelper.lazyToString(() -> escapeEOL(query.toString())));
+
+			return List.of(query.fetch().fields());
 		}
 	}
 
@@ -130,9 +133,12 @@ public final class JooqColumnsHelpers {
 		@Override
 		public List<Field<?>> columnsOf(IDSLSupplier dslSupplier, TableLike<?> table) {
 			String sql = sqlBuilder.apply(table);
-			log.info("Fetching fields via predefined SQL={}",
-					PepperLogHelper.lazyToString(() -> sql.replaceAll("\r", "\\r").replaceAll("\n", "\\n")));
+			log.info("Fetching fields via predefined SQL=`{}`", PepperLogHelper.lazyToString(() -> escapeEOL(sql)));
 			return List.of(dslSupplier.getDSLContext().fetch(sql).fields());
 		}
+	}
+
+	private static String escapeEOL(String string) {
+		return string.replaceAll("\r", "\\r").replaceAll("\n", "\\n");
 	}
 }

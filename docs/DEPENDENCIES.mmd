@@ -1,5 +1,4 @@
 flowchart LR
-    adhoc["adhoc"]
     adhoc_atoti["adhoc-atoti"]
     adhoc_bom["adhoc-bom"]
     adhoc_calcite["adhoc-calcite"]
@@ -14,30 +13,26 @@ flowchart LR
     adhoc_libraries["adhoc-libraries"]
     adhoc_measures["adhoc-measures"]
     adhoc_model["adhoc-model"]
-    adhoc_public["adhoc-public"]
+    adhoc_recipes["adhoc-recipes"]
     adhoc_spring["adhoc-spring"]
     adhoc_table["adhoc-table"]
     pivotable["pivotable"]
-    pivotable_authorization["pivotable-authorization"]
     pivotable_bom["pivotable-bom"]
     pivotable_infra["pivotable-infra"]
     pivotable_js["pivotable-js"]
     pivotable_mcp["pivotable-mcp"]
     pivotable_model["pivotable-model"]
-    pivotable_public["pivotable-public"]
     pivotable_server["pivotable-server"]
     pivotable_server_core["pivotable-server-core"]
     pivotable_server_oauth2["pivotable-server-oauth2"]
     pivotable_server_webflux["pivotable-server-webflux"]
     pivotable_server_webmvc["pivotable-server-webmvc"]
-    pivotable_tools["pivotable-tools"]
 
     subgraph spring-boot-starter-parent
         aggregator_adhoc["aggregator-adhoc"]
     end
 
-    adhoc --> adhoc_cube
-    adhoc_atoti --> adhoc
+    adhoc_atoti --> adhoc_recipes
     adhoc_calcite --> adhoc_cube
     adhoc_cell --> adhoc_encoding
     adhoc_cell --> adhoc_filters
@@ -54,6 +49,7 @@ flowchart LR
     adhoc_experimental --> adhoc_cube
     adhoc_filters --> adhoc_model
     adhoc_measures --> adhoc_cell
+    adhoc_recipes --> adhoc_cube
     adhoc_spring --> adhoc_cube
     adhoc_table --> adhoc_cell
     adhoc_table --> adhoc_dataframe
@@ -61,15 +57,12 @@ flowchart LR
     adhoc_table --> adhoc_filters
     adhoc_table --> adhoc_measures
     adhoc_table --> adhoc_model
-    pivotable_authorization --> pivotable_public
-    pivotable_authorization --> pivotable_tools
     pivotable_mcp --> pivotable_server_core
     pivotable_model --> adhoc_filters
-    pivotable_public --> adhoc_filters
     pivotable_server --> pivotable_js
     pivotable_server --> pivotable_server_core
     pivotable_server --> pivotable_server_oauth2
-    pivotable_server_core --> adhoc
+    pivotable_server_core --> adhoc_recipes
     pivotable_server_core --> pivotable_infra
     pivotable_server_core --> pivotable_model
     pivotable_server_oauth2 --> pivotable_infra

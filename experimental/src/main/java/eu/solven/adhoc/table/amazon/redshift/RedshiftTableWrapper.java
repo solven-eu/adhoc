@@ -165,8 +165,8 @@ public class RedshiftTableWrapper extends JooqTableWrapper {
 			}
 		}
 
-		if (!sqlQuery.getFields().getLeftovers().isEmpty()) {
-			throw new NotYetImplementedException("leftovers=%s".formatted(sqlQuery.getFields().getLeftovers()));
+		if (!sqlQuery.getFields().getNonPushdowns().isEmpty()) {
+			throw new NotYetImplementedException("nonPushdowns=%s".formatted(sqlQuery.getFields().getNonPushdowns()));
 		}
 
 		ISlice sliceSlice = slice.build().asSlice();

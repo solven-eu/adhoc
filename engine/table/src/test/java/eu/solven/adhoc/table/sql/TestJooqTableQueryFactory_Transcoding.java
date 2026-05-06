@@ -57,9 +57,10 @@ public class TestJooqTableQueryFactory_Transcoding {
 	@Test
 	public void testToCondition_transcodingLeadsToMatchNone() {
 		JooqTableQueryFactory.ConditionWithFilter condition =
-				conditionFactory.toConditionSplitLeftover(AndFilter.and("k1", "v1", "k2", "v2"));
+				conditionFactory.toConditionSplitNonPushdown(AndFilter.and("k1", "v1", "k2", "v2"));
 
-		Assertions.assertThat(condition.getLeftover()).satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
+		Assertions.assertThat(condition.getNonPushdown())
+				.satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
 		Assertions.assertThat(condition.getCondition().toString()).isEqualTo("""
 				(
 				  "k1" = 'v1'
@@ -73,7 +74,8 @@ public class TestJooqTableQueryFactory_Transcoding {
 		QueryWithLeftover condition = queryFactory
 				.prepareSliceQuery(TableQuery.builder().filter(AndFilter.and("k1", "v1", "k2", "v2")).build());
 
-		Assertions.assertThat(condition.getLeftover()).satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
+		Assertions.assertThat(condition.getNonPushdown())
+				.satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
 		Assertions.assertThat(condition.getQuery().toString()).isEqualTo("""
 				select count(1)
 				from "someTableName"

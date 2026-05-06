@@ -309,7 +309,7 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache, IHasHealthDet
 			log.info("[EXPLAIN] SQL to db={}: `{}` and lateFilter={}",
 					getName(),
 					toSQL(resultQuery.getQuery()),
-					resultQuery.getLeftover());
+					resultQuery.getNonPushdown());
 		}
 		if (debug) {
 			debugResultQuery(resultQuery);
@@ -359,7 +359,7 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache, IHasHealthDet
 			// Given the groupBy, we are guaranteed to receive distinct records
 			// Clarify when partitioning breaks isDistinct
 			return false;
-		} else if (resultQuery.getLeftover().isMatchAll() && resultQuery.getAggregatorToLeftovers().isEmpty()) {
+		} else if (resultQuery.getNonPushdown().isMatchAll() && resultQuery.getAggregatorToNonPushdowns().isEmpty()) {
 			// SQL Engines guarantee a single record per groupBy
 			// InMemoryTable does not manage aggregation: how is this managed?
 			return true;
@@ -387,7 +387,7 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache, IHasHealthDet
 			String plan = dslContext.explain(resultQuery.getQuery()).plan();
 
 			log.info("[DEBUG] Query plan: {}{}", System.lineSeparator(), plan);
-			log.info("[DEBUG] Late filter: {}", resultQuery.getLeftover());
+			log.info("[DEBUG] Late filter: {}", resultQuery.getNonPushdown());
 		} catch (RuntimeException e) {
 			log.warn("[DEBUG] Issue on EXPLAIN on query={}", resultQuery, e);
 		}
@@ -412,7 +412,7 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache, IHasHealthDet
 		IConsumingStream<ITabularRecord> tabularRecords = streamTabularRecords(queryPod, mergedGroupBy, sqlQuery);
 		return tabularRecords
 				// leftover in WHERE
-				.filter(row -> MoreFilterHelpers.match(sqlQuery.getLeftover(), row))
+				.filter(row -> MoreFilterHelpers.match(sqlQuery.getNonPushdown(), row))
 				// leftover in FILTER
 				.map(row -> applyAggregatorLeftovers(sqlQuery, row));
 	}
@@ -433,7 +433,7 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache, IHasHealthDet
 	 * Applies any aggregator-level leftover filters that could not be pushed into the SQL FILTER clause.
 	 */
 	protected ITabularRecord applyAggregatorLeftovers(QueryWithLeftover sqlQuery, ITabularRecord row) {
-		Map<String, ISliceFilter> aggregatorToLeftovers = sqlQuery.getAggregatorToLeftovers();
+		Map<String, ISliceFilter> aggregatorToLeftovers = sqlQuery.getAggregatorToNonPushdowns();
 		if (aggregatorToLeftovers.isEmpty()) {
 			return row;
 		} else {

@@ -231,6 +231,8 @@ For cases where a pluggable function is sufficient, prefer `Combinator` (with a 
 
 ## Further reading
 
+- [Routing Measure walkthrough](routing-measure.md) — concrete worked example using the shipped `RoutingMeasure`: Jackson `@JsonIgnore` for non-serializable fields, the closed-set vs runtime-set distinction in `getUnderlyingSteps`, passthrough vs combination in `produceOutputColumn`, and the cross-boundary trade-off
+- [Foundations](foundations.md) — DAGs, Boolean algebra of filters, OLAP basics, and why aggregator linearity matters when designing custom measures
 - [Operators Factory](operators-factory.md) — injecting collaborators (including Spring beans) into combinations and filter editors
 - [Shiftor](shiftor.md) — the routing pattern applied to filter transformation
 - [Partitionor](partitionor.md) — the groupBy-widening pattern
