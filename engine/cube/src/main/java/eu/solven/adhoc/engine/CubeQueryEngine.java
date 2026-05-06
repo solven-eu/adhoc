@@ -643,9 +643,7 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 		}).toList();
 	}
 
-	@SuppressWarnings({ "PMD.InsufficientStringBufferDeclaration",
-			"PMD.ConsecutiveAppendsShouldReuse",
-			"checkstyle:MagicNumber" })
+	@SuppressWarnings({ "PMD.ConsecutiveAppendsShouldReuse", "checkstyle:MagicNumber" })
 	protected IllegalStateException rethrowWithDetails(CubeQueryStep queryStep,
 			QueryStepsDag queryStepsDag,
 			RuntimeException e) {

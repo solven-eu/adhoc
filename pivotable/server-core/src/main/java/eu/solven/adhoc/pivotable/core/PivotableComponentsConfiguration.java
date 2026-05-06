@@ -91,7 +91,9 @@ public class PivotableComponentsConfiguration {
 		return eventBus;
 	}
 
-	@Bean
+	@Deprecated(forRemoval = true,
+			since = "Writes in SLF4J which is done by default in UnsafeAdhocEventBusHelpers.logForkEventBus")
+	// @Bean
 	public Void registerAdhocLog(EventBus eventBus) {
 		AdhocEventFromGreenrobotToSlf4j subscriber = new AdhocEventFromGreenrobotToSlf4j();
 		log.info("Registering {} in {}", subscriber, eventBus);

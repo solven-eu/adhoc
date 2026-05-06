@@ -52,7 +52,6 @@ import lombok.extern.slf4j.Slf4j;
  * 
  * @author Benoit Lacelle
  */
-// TODO toString should be explicit, and skip `combinationOptions` if empty
 @Value
 @Builder(toBuilder = true)
 @Jacksonized
@@ -88,6 +87,22 @@ public class Combinator implements ICombinator {
 	@Override
 	public List<String> getUnderlyingNames() {
 		return underlyings;
+	}
+
+	@Override
+	public String toString() {
+		// Skip empty `tags` and `combinationOptions`: most Combinators use defaults, and printing `tags=[]`
+		// or `combinationOptions={}` is noise that drowns the meaningful fields in EXPLAIN logs and exception
+		// messages.
+		StringBuilder sb = new StringBuilder("Combinator(name=").append(name);
+		if (!tags.isEmpty()) {
+			sb.append(", tags=").append(tags);
+		}
+		sb.append(", underlyings=").append(underlyings).append(", combinationKey=").append(combinationKey);
+		if (!combinationOptions.isEmpty()) {
+			sb.append(", combinationOptions=").append(combinationOptions);
+		}
+		return sb.append(')').toString();
 	}
 
 	/**

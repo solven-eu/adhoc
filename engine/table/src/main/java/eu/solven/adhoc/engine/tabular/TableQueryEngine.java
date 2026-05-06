@@ -556,7 +556,6 @@ public class TableQueryEngine implements ITableQueryEngine {
 		return nameToColumns.asMap().values().stream().allMatch(c -> c.size() == 1);
 	}
 
-	// `InsufficientStringBufferDeclaration`: Unclear if we prefer a MagicNumber
 	protected String toPerfLog(TableQueryV4 tableQuery) {
 		// isPerfectV3() is the shared flag: JooqTableQueryFactory currently ignores it and always uses
 		// asCoveringV3() (GROUPING SETS), but the log reflects what the strategy should ideally be.
@@ -567,7 +566,6 @@ public class TableQueryEngine implements ITableQueryEngine {
 		return tableQuery.streamV3().map(this::toPerfLog).collect(Collectors.joining(" UNION ALL "));
 	}
 
-	@SuppressWarnings("PMD.InsufficientStringBufferDeclaration")
 	protected String toPerfLog(TableQueryV3 tableQuery) {
 		String measures = tableQuery.getAggregators().stream().map(this::toPerfLog).collect(Collectors.joining(", "));
 

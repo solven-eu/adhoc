@@ -172,7 +172,7 @@ public class TabularRecordOverMaps implements ITabularRecord {
 		groupBy.forEachGroupBy(action);
 	}
 
-	@SuppressWarnings({ "PMD.InsufficientStringBufferDeclaration", "PMD.ConsecutiveAppendsShouldReuse" })
+	@SuppressWarnings({ "PMD.ConsecutiveAppendsShouldReuse" })
 	public static String toString(ITabularRecord tabularRecord) {
 		StringBuilder sb = new StringBuilder();
 

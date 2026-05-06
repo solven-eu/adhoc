@@ -90,6 +90,8 @@ public class TranscodingTabularRecordStream implements ITabularRecordStream {
 				.filter(withCalculated -> columnsManager.filterCalculatedColumns(postFilterer, withCalculated))
 				// Project to the original groupBy keyset so `TabularRecordStreamReducer.columnsToMarker` matches
 				// exactly: keeps user-groupBy'd calculated columns, drops underlyings hoisted by `transcodeQuery`.
+				// BEWARE This may do a first `.retainAll` useful to later pick the proper groupingSet, and before a
+				// final `.retainAll` in `TabularRecordStreamReducer.reduce`
 				.map(withCalculated -> transcodedQuery.project(withCalculated, calculatedColumnNames))
 				.forEach(consumer);
 	}

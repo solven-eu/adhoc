@@ -30,6 +30,7 @@ import org.junit.jupiter.api.Test;
 
 import com.google.common.collect.ImmutableSet;
 
+import eu.solven.adhoc.measure.sum.SumCombination;
 import eu.solven.adhoc.model.measure.Combinator;
 import eu.solven.adhoc.model.measure.Partitionor;
 import eu.solven.adhoc.model.query.groupby.GroupByColumns;
@@ -68,6 +69,33 @@ public class TestCombinator {
 		Assertions.assertThat(measure.withTags(ImmutableSet.of("tag2"))).satisfies(edited -> {
 			Assertions.assertThat(edited.getTags()).containsExactly("tag2");
 		});
+	}
+
+	@Test
+	public void testToString_minimal() {
+		Combinator measure = Combinator.builder().name("m").underlying("u1").build();
+
+		// Empty tags and empty combinationOptions are skipped — keeps EXPLAIN traces and exception messages
+		// readable on the common case.
+		Assertions.assertThat(measure)
+				.hasToString("Combinator(name=m, underlyings=[u1], combinationKey=" + SumCombination.KEY + ")");
+	}
+
+	@Test
+	public void testToString_allCustomized() {
+		Combinator measure = Combinator.builder()
+				.name("m")
+				.tag("t1")
+				.tag("t2")
+				.underlying("u1")
+				.underlying("u2")
+				.combinationKey("someKey")
+				.combinationOption("k", "v")
+				.build();
+
+		Assertions.assertThat(measure)
+				.hasToString(
+						"Combinator(name=m, tags=[t1, t2], underlyings=[u1, u2], combinationKey=someKey, combinationOptions={k=v})");
 	}
 
 	@Test

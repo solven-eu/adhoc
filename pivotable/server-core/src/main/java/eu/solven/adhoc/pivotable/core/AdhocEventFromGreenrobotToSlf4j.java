@@ -33,6 +33,8 @@ import eu.solven.adhoc.eventbus.IAdhocEvent;
  * 
  * @author Benoit Lacelle
  */
+@Deprecated(forRemoval = true,
+		since = "Writes in SLF4J which is done by default in UnsafeAdhocEventBusHelpers.logForkEventBus")
 public class AdhocEventFromGreenrobotToSlf4j {
 	// Will be propagated
 	final AdhocEventsFromGuavaEventBusToSfl4j underlying = new AdhocEventsFromGuavaEventBusToSfl4j();

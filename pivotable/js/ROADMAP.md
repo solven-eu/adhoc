@@ -103,3 +103,142 @@ Open questions:
   cost meaningfully — defer until phase 2 lands.
 - UX placement: integrate into the existing cross-column search bar with a
   "match coordinates" toggle, or a dedicated "find a value" entry point?
+
+### Ctrl+F application-level search modal
+
+The SlickGrid view is **lazy** — only the rows currently in the viewport are
+rendered to the DOM. The browser's native Ctrl+F search box therefore only
+finds matches in the visible window: scroll a row off-screen and it stops
+being findable, scroll back and it appears again. From the user's point of
+view, "Ctrl+F can't find a value I know is in the table" is a confusing
+silent miss.
+
+We do **not** want to disable the browser's native search — for visible cells
+it works fine, and stripping it would be hostile. The plan is to *augment*
+it: pressing Ctrl+F triggers both the native search **and** opens a small
+modal that performs an application-level search across the full result set
+(not just the rendered rows). The modal must visibly catch the user's
+attention so they understand "this is the search you want when the native
+one comes up empty".
+
+Implementation notes:
+
+- Hook a `keydown` listener for Ctrl+F / Cmd+F at the grid container level.
+  Do **not** call `preventDefault()` — let the browser's native find bar
+  open as well.
+- Modal contents: a single text input plus a result list. Each result row
+  shows the matched cell's column, value, and a "scroll to" button that
+  pages the grid to that row and highlights the cell briefly.
+- Search scope: rows the SPA already has client-side (the materialized
+  `TabularView`). For server-paged or windowed results, surface a "search on
+  the server" affordance — this is where the feature meets the [coordinate
+  search](#search-columns-by-coordinate-value) work above. The modal is the
+  natural UX entry point for both: client-side hits first (instant), then
+  optional server fan-out for deeper matches.
+- Dismissal: Esc closes the modal; the native find bar's lifecycle is
+  unaffected.
+
+Open questions:
+
+- Should the modal also match against measure values (numbers), or only
+  string coordinates? Numeric matching probably needs a comparator (`>`,
+  `<`, range), which is a bigger UX surface — start with strings only.
+- How to highlight the navigated-to cell after "scroll to"? A short flash
+  (e.g. 800ms background pulse) is the minimum; persistent highlight until
+  the next search / dismiss is more discoverable but louder.
+
+## Grid interaction
+
+### Excel-style cell copy (Ctrl+C from a clicked cell)
+
+Today, copying a value out of the grid is unreliable: depending on where the
+user clicks and what (if anything) the browser considers selected, Ctrl+C may
+copy nothing, copy a stray bit of surrounding chrome, or work only after the
+user has manually drag-selected the cell's text. Users coming from Excel
+expect "click a cell, Ctrl+C, paste it elsewhere" to just work — the cell's
+displayed value should land in the clipboard with no extra ceremony.
+
+Desired behaviour:
+
+- **Click selects a cell.** A single click on a grid cell marks it as the
+  active cell (a visible focus ring or border). SlickGrid's cell-selection
+  model should already provide the hook — we just need to wire the visual
+  affordance.
+- **Ctrl+C on the active cell copies its displayed value** to the
+  clipboard, even if no native text selection exists. Use the async
+  Clipboard API (`navigator.clipboard.writeText`) so we are not bound to
+  the document's text selection at all.
+- **Honour partial text selections** when they exist. If the user has
+  drag-selected a portion of the cell's text (or text spanning multiple
+  cells, if SlickGrid permits it), Ctrl+C should copy *that* selection,
+  not the active cell. Detect via `window.getSelection().toString()` —
+  if non-empty, fall through to the browser's default behaviour; if
+  empty, take over and copy the active cell.
+- **Multi-cell selection** (later): rectangular range selection with the
+  mouse, then Ctrl+C produces a TSV blob (Excel-pasteable). Out of scope
+  for the first iteration; the single-cell case is the high-value win.
+
+Open questions:
+
+- Which value to copy: the *displayed* string (post-formatter — e.g.
+  `1,234.50` for a number), or the *raw* underlying value (`1234.5`)? The
+  Excel mental model says "what I see is what I copy", so default to
+  displayed; offer Ctrl+Shift+C for the raw value if the need arises.
+- Does the copy-on-empty-selection rule conflict with the [Ctrl+F app
+  modal](#ctrlf-application-level-search-modal) plan? No — different
+  shortcut, different state, but worth keeping the two specs reviewed
+  together so we don't accidentally swallow each other's keystrokes.
+- Visual feedback: a brief toast / cell-flash on copy makes "did anything
+  happen?" answerable without leaving the grid.
+
+### Augment right-click with cell actions (filter, drillthrough, …)
+
+The cell-level actions Pivotable already exposes — filter on this cell's
+coordinate, drillthrough this cell's slice, etc. — currently live behind a
+**double-click modal**. Discoverability is poor: users don't know the modal
+exists until somebody points them at it, and even after they know, the
+double-click → modal → click round-trip is heavier than it needs to be for
+"give me the rows behind this cell".
+
+The native right-click context menu is the conventional home for "what can
+I do with this thing?". Browsers ship a default menu (Copy, Inspect, …) that
+we should not strip out — power users rely on it. Augment, don't replace:
+add a small Pivotable-branded section with the cell-context actions on top
+of (or alongside) the browser default.
+
+Two implementation routes:
+
+- **Custom menu, native fallback.** Suppress the browser default with
+  `event.preventDefault()` on `contextmenu` and render our own menu that
+  *includes* the relevant browser actions plus the Pivotable ones.
+  Pro: full control of layout, keyboard support, theming. Con: re-implementing
+  Copy / Paste / Inspect / Save image is a rabbit hole — and we'll never
+  match every browser's full default menu.
+- **Browser-default + side panel.** Let the browser show its own menu, and
+  surface the Pivotable actions through a sticky in-grid affordance (a small
+  toolbar that fades in over the active cell, or a left-rail panel that
+  updates with the active cell). Pro: zero conflict with the OS / browser.
+  Con: less discoverable than a right-click menu — defeats the goal.
+
+Recommendation: start with route 1 (custom menu via `preventDefault`) but
+keep the menu **short and Pivotable-specific** — Filter on this cell,
+Drillthrough this slice, Copy value (folds in the [Ctrl+C
+work](#excel-style-cell-copy-ctrlc-from-a-clicked-cell)) — and add an
+"Open browser menu" entry that re-fires a synthetic `contextmenu` without
+our handler if a user really needs the browser default. Most users will
+never need it.
+
+Open questions:
+
+- Which actions belong in the right-click vs. only in the (existing)
+  double-click modal? Likely: right-click = the 2–3 most common actions
+  the user wanted *now*; modal = the long tail (column metadata, share,
+  configure formatter, etc.). Keep them in sync — adding an action to the
+  modal is the moment to ask "does this also belong in right-click?".
+- Coordinate selection model: when a user right-clicks a cell, is the
+  active cell that cell, or whatever they had selected before? Excel and
+  most spreadsheets switch the active cell on right-click — match that.
+- Mobile / touch: long-press is the conventional analogue. SlickGrid's
+  touch story is its own roadmap item; flag this as a dependency rather
+  than blocking on it.
+

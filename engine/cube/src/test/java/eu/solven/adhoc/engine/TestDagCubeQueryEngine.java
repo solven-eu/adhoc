@@ -30,8 +30,6 @@ import org.assertj.core.util.Throwables;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
-import com.google.common.collect.ImmutableMap;
-
 import eu.solven.adhoc.ATestDagInMemory;
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.column.ColumnsManager;
@@ -51,7 +49,6 @@ import eu.solven.adhoc.measure.ThrowingCombination;
 import eu.solven.adhoc.measure.ThrowingCombination.ThrowingCombinationException;
 import eu.solven.adhoc.measure.aggregation.comparable.MaxAggregation;
 import eu.solven.adhoc.measure.combination.CoalesceCombination;
-import eu.solven.adhoc.measure.combination.EvaluatedExpressionCombination;
 import eu.solven.adhoc.measure.forest.MeasureForest;
 import eu.solven.adhoc.measure.transformator.step.IMeasureQueryStep;
 import eu.solven.adhoc.model.measure.Aggregator;
@@ -76,33 +73,44 @@ public class TestDagCubeQueryEngine extends ATestDagInMemory implements IAdhocTe
 
 	@Test
 	public void testCycleBetweenQuerySteps() {
+		AdhocUnsafe.resetDeterministicQueryIds();
+
 		String measureA = "m_A";
 		String measureB = "m_B";
 
-		Combinator mAIsMbTimed2 = Combinator.builder()
-				.name(measureA)
-				.underlying(measureB)
-				.combinationKey(EvaluatedExpressionCombination.KEY)
-				.combinationOptions(ImmutableMap.<String, Object>builder()
-						.put("expression", "IF(m_B == null, null, m_B * 2)")
-						.build())
-				.build();
+		Combinator mAIsMbTimed2 = Combinator.builder().name(measureA).underlying(measureB).build();
 
-		Combinator mBIsMaDividedBy2 = Combinator.builder()
-				.name(measureB)
-				.underlying(measureA)
-				.combinationKey(EvaluatedExpressionCombination.KEY)
-				.combinationOptions(ImmutableMap.<String, Object>builder()
-						.put("expression", "IF(m_A == null, null, m_A / 2)")
-						.build())
-				.build();
+		Combinator mBIsMaDividedBy2 = Combinator.builder().name(measureB).underlying(measureA).build();
 
 		forest.addMeasure(mAIsMbTimed2);
 		forest.addMeasure(mBIsMaDividedBy2);
 
 		Assertions.assertThatThrownBy(() -> cube().execute(CubeQuery.builder().measure(measureA).build()))
 				.isInstanceOf(IllegalStateException.class)
-				.hasStackTraceContaining("in cycle=");
+				.hasStackTraceContaining("Adding edge "
+						+ "`CubeQueryStep{id=2, measure=Combinator(name=m_B, underlyings=[m_A], combinationKey=SUM)}`"
+						+ "->"
+						+ "`CubeQueryStep{id=4, measure=Combinator(name=m_A, underlyings=[m_B], combinationKey=SUM)}`"
+						+ " would create a cycle: ["
+						+ "CubeQueryStep{id=2, measure=Combinator(name=m_B, underlyings=[m_A], combinationKey=SUM)}, "
+						+ "CubeQueryStep{id=4, measure=Combinator(name=m_A, underlyings=[m_B], combinationKey=SUM)}, "
+						+ "CubeQueryStep{id=2, measure=Combinator(name=m_B, underlyings=[m_A], combinationKey=SUM)}]");
+	}
+
+	@Test
+	public void testCycleBetweenQuerySteps_referItself() {
+		AdhocUnsafe.resetDeterministicQueryIds();
+		String measureA = "m_A";
+
+		Combinator mAIsMbTimed2 = Combinator.builder().name(measureA).underlying(measureA).build();
+
+		forest.addMeasure(mAIsMbTimed2);
+
+		Assertions.assertThatThrownBy(() -> cube().execute(CubeQuery.builder().measure(measureA).build()))
+				.isInstanceOf(IllegalStateException.class)
+				.hasRootCauseMessage("loops not allowed")
+				.hasStackTraceContaining("A queryStep can not be its own underlying: "
+						+ "`CubeQueryStep{id=0, measure=Combinator(name=m_A, underlyings=[m_A], combinationKey=SUM)}`");
 	}
 
 	@Test
@@ -177,10 +185,10 @@ public class TestDagCubeQueryEngine extends ATestDagInMemory implements IAdhocTe
 								    (measures) m=m_D given [count(*)]
 								    (steps) step=m=m_D filter=matchAll groupBy=grandTotal custom=null given [m=count(*) filter=matchAll groupBy=grandTotal custom=null]
 								Path from root:
-								\\-CubeQueryStep{id=0, measure=Combinator(name=m_A, tags=[], underlyings=[m_B], combinationKey=COALESCE, combinationOptions={})}
-									\\-CubeQueryStep{id=2, measure=Combinator(name=m_B, tags=[], underlyings=[m_C], combinationKey=COALESCE, combinationOptions={})}
-										\\-CubeQueryStep{id=4, measure=Combinator(name=m_C, tags=[], underlyings=[m_D], combinationKey=COALESCE, combinationOptions={})}
-											\\-CubeQueryStep{id=6, measure=Combinator(name=m_D, tags=[], underlyings=[count(*)], combinationKey=eu.solven.adhoc.measure.ThrowingCombination, combinationOptions={})}""");
+								\\-CubeQueryStep{id=0, measure=Combinator(name=m_A, underlyings=[m_B], combinationKey=COALESCE)}
+									\\-CubeQueryStep{id=2, measure=Combinator(name=m_B, underlyings=[m_C], combinationKey=COALESCE)}
+										\\-CubeQueryStep{id=4, measure=Combinator(name=m_C, underlyings=[m_D], combinationKey=COALESCE)}
+											\\-CubeQueryStep{id=6, measure=Combinator(name=m_D, underlyings=[count(*)], combinationKey=eu.solven.adhoc.measure.ThrowingCombination)}""");
 	}
 
 	// Check the API to customize the TableQueryEngine and especially the TableQueryEngineOptimizer is actually valid.
