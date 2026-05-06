@@ -81,4 +81,47 @@ public class TestJooqColumnsHelpers {
 
 		Assertions.assertThat(fields).extracting(Field::getName).containsExactly("only_col");
 	}
+
+	// ── escapeEOL ────────────────────────────────────────────────────────────
+	// Goal: turn real CR/LF characters into the visible two-character escape sequence (`\r`, `\n`) so a
+	// SQL string can be logged on a single line. Each expected value is built character-by-character with
+	// `'\\'` so the assertion's intent is explicit and resists future copy-paste damage.
+
+	@Test
+	public void testEscapeEOL_noEol_unchanged() {
+		Assertions.assertThat(JooqColumnsHelpers.escapeEOL("SELECT * FROM t")).isEqualTo("SELECT * FROM t");
+	}
+
+	@Test
+	public void testEscapeEOL_emptyString() {
+		Assertions.assertThat(JooqColumnsHelpers.escapeEOL("")).isEqualTo("");
+	}
+
+	@Test
+	public void testEscapeEOL_singleLF() {
+		// Input: real LF between `a` and `b`. Expected: backslash + 'n' between them (4 chars total).
+		Assertions.assertThat(JooqColumnsHelpers.escapeEOL("a\nb")).isEqualTo("a" + '\\' + "nb");
+	}
+
+	@Test
+	public void testEscapeEOL_singleCR() {
+		Assertions.assertThat(JooqColumnsHelpers.escapeEOL("a\rb")).isEqualTo("a" + '\\' + "rb");
+	}
+
+	@Test
+	public void testEscapeEOL_crlf() {
+		Assertions.assertThat(JooqColumnsHelpers.escapeEOL("a\r\nb")).isEqualTo("a" + '\\' + "r" + '\\' + "nb");
+	}
+
+	@Test
+	public void testEscapeEOL_multipleEol() {
+		Assertions.assertThat(JooqColumnsHelpers.escapeEOL("a\nb\nc\rd"))
+				.isEqualTo("a" + '\\' + "nb" + '\\' + "nc" + '\\' + "rd");
+	}
+
+	@Test
+	public void testEscapeEOL_leavesPreExistingBackslashAlone() {
+		// A literal backslash in the input must not be touched — escapeEOL only handles CR/LF.
+		Assertions.assertThat(JooqColumnsHelpers.escapeEOL("path\\to\\file")).isEqualTo("path\\to\\file");
+	}
 }
