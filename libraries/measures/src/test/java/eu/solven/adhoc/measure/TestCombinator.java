@@ -29,19 +29,19 @@ import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Map;
 
-import eu.solven.adhoc.engine.step.ISliceWithStep;
-import eu.solven.adhoc.measure.lambda.LambdaCombination;
-import eu.solven.pepper.unittest.PepperJackson3TestHelper;
-import lombok.extern.slf4j.Slf4j;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import com.google.common.collect.ImmutableSet;
 
+import eu.solven.adhoc.engine.step.ISliceWithStep;
+import eu.solven.adhoc.measure.lambda.LambdaCombination;
 import eu.solven.adhoc.measure.sum.SumCombination;
 import eu.solven.adhoc.model.measure.Combinator;
 import eu.solven.adhoc.model.measure.Partitionor;
 import eu.solven.adhoc.model.query.groupby.GroupByColumns;
+import eu.solven.pepper.unittest.PepperJackson3TestHelper;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class TestCombinator {
@@ -134,8 +134,8 @@ public class TestCombinator {
 
 	@Test
 	public void testLambda_Serializable_static() {
-			ILambdaCombinationS lambdaCombinationS = TestCombinator::lambdaAsMethod;
-			Assertions.assertThat(lambdaToString(lambdaCombinationS)).isEqualTo("TestCombinator::lambdaCombinationS");
+		ILambdaCombinationS lambdaCombinationS = TestCombinator::lambdaAsMethod;
+		Assertions.assertThat(lambdaToString(lambdaCombinationS)).isEqualTo("TestCombinator::lambdaCombinationS");
 
 	}
 
@@ -151,10 +151,7 @@ public class TestCombinator {
 		ILambdaCombinationS lambdaCombinationS2 = (slice, values) -> "outputValue";
 		Assertions.assertThat(lambdaToString(lambdaCombinationS2)).isEqualTo("outputValue");
 
-		Combinator measure = Combinator.builder()
-				.name("measureName")
-				.lambda(lambdaCombinationS2)
-				.build();
+		Combinator measure = Combinator.builder().name("measureName").lambda(lambdaCombinationS2).build();
 
 		String asString = PepperJackson3TestHelper.verifyJackson(measure);
 		Assertions.assertThat(asString).isEqualTo("""
@@ -167,21 +164,21 @@ public class TestCombinator {
 	}
 
 	public static <L extends Serializable> String lambdaToString(L lambda) {
-        try {
-            Method writeReplace = lambda.getClass().getDeclaredMethod("writeReplace");
-            writeReplace.setAccessible(true);
-            SerializedLambda serializedLambda = (SerializedLambda) writeReplace.invoke(lambda);
+		try {
+			Method writeReplace = lambda.getClass().getDeclaredMethod("writeReplace");
+			writeReplace.setAccessible(true);
+			SerializedLambda serializedLambda = (SerializedLambda) writeReplace.invoke(lambda);
 
-            return serializedLambda.getCapturingClass() + "::" + serializedLambda.getImplMethodName();
-        } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
-//            throw new RuntimeException(e);
-            log.warn("Issue with SerializedLambda", e);
-        return "TODO lambdaToString";
-        }
-//
-//        ((SerializedLambda) binaryOperator).getImplMethodName();
-//
-//        binaryOperator.toString()
+			return serializedLambda.getCapturingClass() + "::" + serializedLambda.getImplMethodName();
+		} catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+			// throw new RuntimeException(e);
+			log.warn("Issue with SerializedLambda", e);
+			return "TODO lambdaToString";
+		}
+		//
+		// ((SerializedLambda) binaryOperator).getImplMethodName();
+		//
+		// binaryOperator.toString()
 
-    }
+	}
 }

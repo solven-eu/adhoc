@@ -127,6 +127,7 @@ Architectural trade-off on *when* denormalization happens:
 6. Atoti defines concepts of `ILocation`, `ISubeCubeProperties` and `ICubeFilter`. Adhoc has `groupBy` (equivalent do `ILocation` wildcards) and filters.
 7. Atoti can not easily do `OR` operations between levels during aggregation queries. Adhoc handles most filters as long as they are handled by the `IAdhocTableWrapper`.
 8. Atoti offers querying through MDX. Adhoc does not speak MDX.
+9. Atoti's schema is restricted to a single-parent star/snowflake tree (every store declares exactly one parent). Adhoc is a thin layer over jOOQ/SQL and supports the full SQL join expressiveness — diamond joins, asOf joins, window-function joins, multi-key composite ON-clauses, etc. — without modelling the join graph beyond what SQL itself requires.
 
 # Querying
 

@@ -34,6 +34,7 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.ExecutionException;
+import java.util.function.Predicate;
 
 import org.jooq.Field;
 import org.jooq.Record;
@@ -233,6 +234,7 @@ public class PrunedJoinsJooqTableSupplier implements IJooqTableSupplier, IHasCac
 				}
 				continue;
 			}
+			// the columns seems to be an expression instead of a column reference: we need to analyze it
 			Set<String> extracted = expressionColumnExtractor.extractColumns(originalColumn, index.keySet());
 			boolean anyHit = false;
 			for (String inner : extracted) {
@@ -254,13 +256,13 @@ public class PrunedJoinsJooqTableSupplier implements IJooqTableSupplier, IHasCac
 		}
 
 		// 2. Non-prunable joins are always needed.
-		for (JoinNode node : joinNodes) {
-			if (!node.isPrunable()) {
-				needed.add(node.getAlias());
-			}
-		}
+		joinNodes.stream().filter(Predicate.not(JoinNode::isPrunable)).map(JoinNode::getAlias).forEach(needed::add);
 
-		// 3. Transitive closure up the parent chain.
+		// 3. Transitive closure up the parent chain. In addition to the declared `parentAlias`, follow every
+		// alias the ON-clause references — this captures diamond joins where the ON-clause depends on more
+		// than one parent (e.g. `c.region = a.region AND c.segment = b.segment`: declared parent `a`, but `b`
+		// is also required). Without this widening, `b` would be pruned out and the SQL would reference a
+		// dropped alias.
 		Map<String, JoinNode> byAlias = byAlias();
 		Deque<String> worklist = new ArrayDeque<>(needed);
 		while (!worklist.isEmpty()) {
@@ -271,6 +273,11 @@ public class PrunedJoinsJooqTableSupplier implements IJooqTableSupplier, IHasCac
 			String parent = node.getParentAlias();
 			if (parent != null && !parent.equals(baseAlias) && needed.add(parent)) {
 				worklist.push(parent);
+			}
+			for (String referenced : node.getReferencedAliases()) {
+				if (!referenced.equals(node.getAlias()) && !referenced.equals(baseAlias) && needed.add(referenced)) {
+					worklist.push(referenced);
+				}
 			}
 		}
 

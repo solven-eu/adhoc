@@ -148,6 +148,17 @@ public class PrunedJoinsJooqTableSupplierBuilder extends JooqTableSupplierBuilde
 		 */
 		@Default
 		Set<String> columnsOverride = null;
+
+		/**
+		 * Aliases referenced by the ON-clause beyond {@link #parentAlias}. Captures the diamond-join case where the
+		 * ON-clause names columns from multiple parent tables (e.g.
+		 * {@code c.region = a.region AND c.segment = b.segment} — declared parent {@code a}, additional reference
+		 * {@code b}). Populated at parse time from the qualified parts of each ON-clause Name; consumed by
+		 * {@link PrunedJoinsJooqTableSupplier#computeNeededAliases} to widen the prune-time dependency closure so
+		 * neither parent gets dropped.
+		 */
+		@Default
+		Set<String> referencedAliases = ImmutableSet.of();
 	}
 
 	@Builder(builderMethodName = "prunedBuilder", builderClassName = "PrunedJoinsJooqTableSupplierBuilderBuilder")
@@ -213,9 +224,14 @@ public class PrunedJoinsJooqTableSupplierBuilder extends JooqTableSupplierBuilde
 			List<Map.Entry<String, String>> on) {
 		// Same side-effects as the parent (aliaser registration + latestJoin tracking), but we do NOT accumulate
 		// snowflakeTable — the FROM clause is rebuilt per-query by the supplier via `materialise(...)`.
+		ImmutableSet.Builder<String> referencedAliases = ImmutableSet.builder();
 		List<Condition> onConditions = on.stream().map(e -> {
 			Name leftName = parseOnName(leftTableAlias, e.getKey());
 			Name rightName = parseOnName(joinName, e.getValue());
+			// Harvest the alias prefix of every fully-qualified Name. parseOnName auto-prefixes unqualified
+			// columns with the declared left/joined alias, so any 2+-part Name carries the alias as parts()[0].
+			collectAlias(leftName, referencedAliases);
+			collectAlias(rightName, referencedAliases);
 			registerInAliaser(leftName, rightName);
 			return DSL.field(leftName).eq(DSL.field(rightName));
 		}).toList();
@@ -227,10 +243,24 @@ public class PrunedJoinsJooqTableSupplierBuilder extends JooqTableSupplierBuilde
 				.parentAlias(leftTableAlias)
 				.joinedTable(joinedTable)
 				.onConditions(onConditions)
+				.referencedAliases(referencedAliases.build())
 				.prunable(true)
 				.build());
 
 		return this;
+	}
+
+	/**
+	 * Adds the alias prefix of {@code name} to {@code sink}, if the {@code Name} is qualified (2+ parts). Used to
+	 * harvest the set of aliases an ON-clause depends on, so the prune-time closure can keep every referenced parent
+	 * alive even when it isn't the one declared via {@code parentAlias}.
+	 */
+	private static void collectAlias(Name name, ImmutableSet.Builder<String> sink) {
+		Name[] parts = name.parts();
+		if (parts.length >= 2) {
+			// TODO Beware `[0]` may be a database name instead of a table name
+			sink.add(parts[0].last());
+		}
 	}
 
 	/**
