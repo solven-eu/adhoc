@@ -62,3 +62,44 @@ keyed by the query hash, skipping the backend round-trip entirely. Tradeoff: the
 cached data may be stale if the underlying dataset has changed since, so surface
 a "reload" affordance and default to "stale is fine for navigation" on small
 cubes. Large cubes may want a cache TTL.
+
+## Column discovery
+
+### Search columns by coordinate value
+
+Today the only column-discovery affordance is the recent "search across all
+columns at once" feature (a single text query that the backend resolves into a
+union of `getCoordinate` calls). Users still cannot ask "which column has a
+coordinate equal to / matching `<value>`" — they must guess which column to
+groupBy on, then scroll its coordinates.
+
+Desired feature: a search box that takes a coordinate value (and optionally a
+matcher: `==`, `like`, `regex`) and returns the list of `{column, coordinate}`
+hits. Implementation-wise it relies on the existing `getCoordinate` endpoint
+but with a per-column filter on the requested value, fanned out across columns.
+
+This is a powerful feature but **CPU-expensive** on the backend — every column
+becomes a candidate and the search has no natural prefilter. Two-phase rollout
+to keep the cost manageable:
+
+1. **Phase 1 — local cache of known matches.** As the user groups-by columns
+   over a session, Pivotable already learns each column's coordinate set.
+   Cache it client-side (Pinia + `localStorage`, keyed by cube + column).
+   When the user types a value, first answer from the cache: "you previously
+   saw `<value>` in column `<X>`, restore the groupBy on `<X>`". This is the
+   restore-previously-seen-groupBy variant — zero backend cost, instant.
+2. **Phase 2 — opt-in cross-column search.** A secondary action (e.g. a
+   "search everywhere" button shown alongside the cached hits) triggers the
+   full backend fan-out. Surface the cost in the UI ("this scans N columns,
+   may take a few seconds") so the user opts in deliberately. Server-side
+   may want a cap on N or a cancellation hook.
+
+Open questions:
+
+- Cache key: just `(cube, column)` or also a coordinate-set hash? The latter
+  invalidates correctly when the cube's data changes; the former is simpler
+  but stale.
+- Matcher choice: start with `==` only? `like` and `regex` multiply backend
+  cost meaningfully — defer until phase 2 lands.
+- UX placement: integrate into the existing cross-column search bar with a
+  "match coordinates" toggle, or a dedicated "find a value" entry point?

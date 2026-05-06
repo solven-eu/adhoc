@@ -38,6 +38,9 @@ import eu.solven.adhoc.dataframe.tabular.ITabularView;
 import eu.solven.adhoc.dataframe.tabular.MapBasedTabularView;
 import eu.solven.adhoc.engine.query.CubeQuery;
 import eu.solven.adhoc.engine.tabular.optimizer.CubeWrapperEditor;
+import eu.solven.adhoc.filter.ColumnFilter;
+import eu.solven.adhoc.filter.FilterHelpers;
+import eu.solven.adhoc.filter.value.IValueMatcher;
 import eu.solven.adhoc.measure.aggregation.comparable.MaxAggregation;
 import eu.solven.adhoc.measure.aggregation.comparable.MinAggregation;
 import eu.solven.adhoc.measure.ratio.AdhocExplainerTestHelper;
@@ -352,5 +355,92 @@ public class TestDagTableQuery_DuckDb_ExpressionColumn extends ATestDagDuckDb im
 				.hasSize(1)
 				.containsEntry(Map.of(),
 						Map.of(k1Sum.getName(), 0L + 123 + 234, "k1.SUM.maxByColor", 234L, "k1.SUM.minByWord", 123L));
+	}
+
+	/**
+	 * Multi-Partitionor + non-empty user groupBy on a real column ({@code color}) + filter on a calculated column. The
+	 * Partitionor on {@code (color)} is inducible from the user groupBy and collapses; the Partitionor on
+	 * {@code (word)} is not, so the grouping-set reducer still has multiple keysets to track on top of a non-trivial
+	 * user groupBy. The leftover {@code word} column hoisted by {@code JooqTableQueryFactory} now mixes with a
+	 * non-empty user keyset — {@code columnsToMarker} sees keysets like {@code {color, word}} that are neither the user
+	 * groupBy nor any Partitionor's declared keyset.
+	 */
+	@Test
+	public void testMultiGroupBy_partitionor_userGroupBy_filterOnFunctionCalculatedColumn() {
+		forest.addMeasure(Partitionor.builder()
+				.name("k1.SUM.maxByColor")
+				.underlying(k1Sum.getName())
+				.aggregationKey(MaxAggregation.KEY)
+				.groupBy(GroupByColumns.named("color"))
+				.build());
+		forest.addMeasure(Partitionor.builder()
+				.name("k1.SUM.minByWord")
+				.underlying(k1Sum.getName())
+				.aggregationKey(MinAggregation.KEY)
+				.groupBy(GroupByColumns.named("word"))
+				.build());
+
+		ICubeWrapper cube = CubeWrapperEditor.edit(cube())
+				.addCalculatedColumn(FunctionCalculatedColumn.builder().name("first_letter").recordToCoordinate(r -> {
+					Object word = r.getGroupBy("word");
+					if (word == null) {
+						return null;
+					} else {
+						return word.toString().substring(0, 1);
+					}
+				}).build())
+				.build();
+
+		ITabularView result = cube.execute(CubeQuery.builder()
+				.measure(k1Sum.getName(), "k1.SUM.maxByColor", "k1.SUM.minByWord")
+				.groupByAlso("color")
+				.andFilter("first_letter", "a")
+				.build());
+		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
+
+		// Only `azerty` (color=blue, k1=123) survives. At slice color=blue: max-by-color of [123]=123,
+		// min-by-word of [123]=123.
+		Assertions.assertThat(mapBased.getCoordinatesToValues())
+				.hasSize(1)
+				.containsEntry(Map.of("color", "blue"),
+						Map.of(k1Sum.getName(), 123L, "k1.SUM.maxByColor", 123L, "k1.SUM.minByWord", 123L));
+	}
+
+	/**
+	 * Multi-Partitionor + custom {@link IValueMatcher} on a real column ({@code word}). No calculated column is
+	 * involved — the leftover originates entirely from the SQL non-pushdown path: the matcher cannot be translated by
+	 * jOOQ ({@code SliceToJooqCondition.onCustomCondition} returns {@code null}), so {@code word} is hoisted into the
+	 * SQL GROUP BY exactly as it would be for a calc-col filter. This isolates the grouping-set + leftover interaction
+	 * from the calculated-column machinery, so a regression in either layer surfaces independently.
+	 */
+	@Test
+	public void testMultiGroupBy_partitionor_customValueMatcher() {
+		forest.addMeasure(Partitionor.builder()
+				.name("k1.SUM.maxByColor")
+				.underlying(k1Sum.getName())
+				.aggregationKey(MaxAggregation.KEY)
+				.groupBy(GroupByColumns.named("color"))
+				.build());
+		forest.addMeasure(Partitionor.builder()
+				.name("k1.SUM.minByWord")
+				.underlying(k1Sum.getName())
+				.aggregationKey(MinAggregation.KEY)
+				.groupBy(GroupByColumns.named("word"))
+				.build());
+
+		// Predicate the SQL layer cannot translate: matches words that contain a 'z'. Only `azerty` qualifies.
+		IValueMatcher containsZ = FilterHelpers
+				.wrapWithToString(value -> value instanceof String s && s.indexOf('z') >= 0, () -> "containsZ");
+
+		ITabularView result = cube().execute(CubeQuery.builder()
+				.measure(k1Sum.getName(), "k1.SUM.maxByColor", "k1.SUM.minByWord")
+				.filter(ColumnFilter.builder().column("word").valueMatcher(containsZ).build())
+				.build());
+		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
+
+		Assertions.assertThat(mapBased.getCoordinatesToValues())
+				.hasSize(1)
+				.containsEntry(Map.of(),
+						Map.of(k1Sum.getName(), 123L, "k1.SUM.maxByColor", 123L, "k1.SUM.minByWord", 123L));
 	}
 }

@@ -32,6 +32,7 @@ import java.util.function.Supplier;
 import java.util.stream.IntStream;
 
 import com.google.common.collect.Multimaps;
+import com.google.common.collect.Sets;
 
 import eu.solven.adhoc.cuboid.slice.ISlice;
 import eu.solven.adhoc.dataframe.aggregating.AggregatingColumns;
@@ -141,15 +142,36 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 						return new GroupByMarker(gb, sequencedKeyset);
 					}));
 
+			// Columns the table layer may have hoisted into each SQL grouping set so a non-pushdown filter
+			// has per-row values to evaluate against (see `JooqTableQueryFactory.makeGroupingFields`). Records
+			// from such a hoisted grouping carry `originalGroupBy ∪ hoistedColumns`; to recover the original
+			// groupBy we accept extras drawn from this set. Pessimistic over-approximation: any filter-
+			// referenced column (shared or per-aggregator) is treated as potentially hoisted — extras here
+			// only widen what the slow path tolerates.
+			Set<String> hoistableColumns = TableQueryV4.getFilteredColumns(tableQuery);
+
 			return r -> {
 				Set<String> recordColumnsKeySet = r.asSlice().columnsKeySet();
 				GroupByMarker marker = columnsToMarker.get(recordColumnsKeySet);
+				if (marker == null && !hoistableColumns.isEmpty()) {
+					// Slow path: find marker M such that M ⊆ recordKeySet and (recordKeySet \ M) ⊆ hoistable.
+					for (GroupByMarker candidate : columnsToMarker.values()) {
+						Set<String> candidateColumns = candidate.keySet().sortedSet();
+						if (recordColumnsKeySet.containsAll(candidateColumns) && hoistableColumns
+								.containsAll(Sets.difference(recordColumnsKeySet, candidateColumns))) {
+							marker = candidate;
+							break;
+						}
+					}
+				}
 				if (marker == null) {
 					throw new IllegalStateException(
 							"each scanned record must match a registered groupBy." + " record.columnsKeySet="
 									+ recordColumnsKeySet
 									+ " registeredGroupBys="
 									+ columnsToMarker.keySet()
+									+ " hoistableColumns="
+									+ hoistableColumns
 									+ " record="
 									+ r);
 				}
