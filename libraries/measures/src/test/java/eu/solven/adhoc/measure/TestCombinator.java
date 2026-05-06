@@ -22,9 +22,17 @@
  */
 package eu.solven.adhoc.measure;
 
+import java.io.Serializable;
+import java.lang.invoke.SerializedLambda;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Map;
 
+import eu.solven.adhoc.engine.step.ISliceWithStep;
+import eu.solven.adhoc.measure.lambda.LambdaCombination;
+import eu.solven.pepper.unittest.PepperJackson3TestHelper;
+import lombok.extern.slf4j.Slf4j;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -35,6 +43,7 @@ import eu.solven.adhoc.model.measure.Combinator;
 import eu.solven.adhoc.model.measure.Partitionor;
 import eu.solven.adhoc.model.query.groupby.GroupByColumns;
 
+@Slf4j
 public class TestCombinator {
 	@Test
 	public void testOptions_bucketor() {
@@ -112,4 +121,67 @@ public class TestCombinator {
 		Assertions.assertThat(measure.getCombinationOptions()).isEqualTo(Map.of("k", "v"));
 		Assertions.assertThat(moreOptions.getCombinationOptions()).isEqualTo(Map.of("k", "v", "k2", "v2"));
 	}
+
+	public static Object lambdaAsMethod(ISliceWithStep slice, List<?> values) {
+		return "outputValue";
+	}
+
+	public static class NestedClass {
+		public static Object lambdaAsMethodInNested(ISliceWithStep slice, List<?> values) {
+			return "outputValue";
+		}
+	}
+
+	@Test
+	public void testLambda_Serializable_static() {
+			ILambdaCombinationS lambdaCombinationS = TestCombinator::lambdaAsMethod;
+			Assertions.assertThat(lambdaToString(lambdaCombinationS)).isEqualTo("TestCombinator::lambdaCombinationS");
+
+	}
+
+	@Test
+	public void testLambda_Serializable_Nested() {
+		ILambdaCombinationS lambdaCombinationSNested = NestedClass::lambdaAsMethodInNested;
+		Assertions.assertThat(lambdaToString(lambdaCombinationSNested)).isEqualTo("TestCombinator::lambdaCombinationS");
+
+	}
+
+	@Test
+	public void testLambda_Serializable_anonymous() {
+		ILambdaCombinationS lambdaCombinationS2 = (slice, values) -> "outputValue";
+		Assertions.assertThat(lambdaToString(lambdaCombinationS2)).isEqualTo("outputValue");
+
+		Combinator measure = Combinator.builder()
+				.name("measureName")
+				.lambda(lambdaCombinationS2)
+				.build();
+
+		String asString = PepperJackson3TestHelper.verifyJackson(measure);
+		Assertions.assertThat(asString).isEqualTo("""
+				""");
+	}
+
+	@FunctionalInterface
+	public interface ILambdaCombinationS extends LambdaCombination.ILambdaCombination, Serializable {
+
+	}
+
+	public static <L extends Serializable> String lambdaToString(L lambda) {
+        try {
+            Method writeReplace = lambda.getClass().getDeclaredMethod("writeReplace");
+            writeReplace.setAccessible(true);
+            SerializedLambda serializedLambda = (SerializedLambda) writeReplace.invoke(lambda);
+
+            return serializedLambda.getCapturingClass() + "::" + serializedLambda.getImplMethodName();
+        } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+//            throw new RuntimeException(e);
+            log.warn("Issue with SerializedLambda", e);
+        return "TODO lambdaToString";
+        }
+//
+//        ((SerializedLambda) binaryOperator).getImplMethodName();
+//
+//        binaryOperator.toString()
+
+    }
 }
