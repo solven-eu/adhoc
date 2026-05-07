@@ -50,8 +50,8 @@ import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.Util;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 import eu.solven.adhoc.engine.query.CubeQuery;
 
@@ -111,7 +111,7 @@ public class MongoToEnumerableConverter extends ConverterImpl implements Enumera
 		String queryAsString;
 		try {
 			queryAsString = new ObjectMapper().writeValueAsString(adhocQuery);
-		} catch (JsonProcessingException e) {
+		} catch (JacksonException e) {
 			throw new UncheckedIOException(e);
 		}
 

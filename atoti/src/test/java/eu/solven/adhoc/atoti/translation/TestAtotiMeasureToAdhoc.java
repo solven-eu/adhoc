@@ -44,8 +44,8 @@ import com.activeviam.copper.pivot.pp.LevelFilteringPostProcessor;
 import com.activeviam.copper.pivot.pp.ShiftPostProcessor;
 import com.activeviam.copper.pivot.pp.StoreLookupPostProcessor;
 import com.activeviam.pivot.postprocessing.impl.ADynamicAggregationPostProcessorV2;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 import com.qfs.agg.impl.SingleValueFunction;
 import com.quartetfs.biz.pivot.definitions.IActivePivotInstanceDescription;
@@ -112,7 +112,7 @@ public class TestAtotiMeasureToAdhoc {
 	}
 
 	@Test
-	public void testPropertiesToOptions() throws JsonProcessingException {
+	public void testPropertiesToOptions() throws JacksonException {
 		Properties properties = new Properties();
 
 		properties.put("stringK", "stringV");

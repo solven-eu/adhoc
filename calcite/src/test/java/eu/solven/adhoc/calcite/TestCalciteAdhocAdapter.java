@@ -44,8 +44,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 import com.google.common.eventbus.EventBus;
 
 import eu.solven.adhoc.calcite.csv.AdhocCalciteSchemaFactory;
@@ -96,7 +96,7 @@ public class TestCalciteAdhocAdapter {
 				try {
 					Map<String, ?> asMap = om.readValue(row, Map.class);
 					zips.add(asMap);
-				} catch (JsonProcessingException e) {
+				} catch (JacksonException e) {
 					throw new IllegalStateException("Issue processing %s from %s".formatted(row, "zips-mini.json"), e);
 				}
 			});

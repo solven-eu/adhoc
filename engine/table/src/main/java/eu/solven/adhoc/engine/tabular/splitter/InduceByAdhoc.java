@@ -77,9 +77,8 @@ public class InduceByAdhoc extends AInduceByAdhocParent {
 	protected ITableStepsSplitterFactory inferenceEdgesAdderFactory = InduceByAdhocComplete.makeFactory();
 
 	// Holds the policy allowing to merge inducers into a different set of inducers (typically smaller in number).
-	@NonNull
 	@Default
-	protected IMergeInducers.IMergeInducersFactory mergeInducersFactory = MergeInducersStrictGroupBy.makeFactory();
+	protected IMergeInducers.@NonNull IMergeInducersFactory mergeInducersFactory = MergeInducersStrictGroupBy.makeFactory();
 
 	// Holds the policy allowing to add nodes in the middle of the DAG, in order to share some computations
 	@NonNull

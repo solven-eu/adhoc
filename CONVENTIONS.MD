@@ -202,7 +202,7 @@ class TranscodingTabularRecordStream implements ITabularRecordStream {
 
   This rule applies equally to annotations (`@org.jspecify.annotations.Nullable` → import `org.jspecify.annotations.Nullable`, write `@Nullable`), method calls (`java.util.Objects.requireNonNull(x)` → import + use the simple form), and exception throws.
 
-- **One simple name → one FQCN, project-wide**: each Java simple class name (e.g. `Date`, `Field`, `Builder`) should resolve to a **single** fully-qualified class name across the entire project. When two distinct types share a simple name (e.g. `java.sql.Date` vs `java.util.Date`, `org.jooq.Field` vs `java.lang.reflect.Field`), pick the **dominant** one — the one used most often, or the one that's most natural in this codebase — and import only that one everywhere. The other type must always be referenced via its fully-qualified name inline; never imported.
+- **One simple name → one FQCN, project-wide** — extends the in-file disambiguation rule above to the whole repository. Each Java simple class name (e.g. `Date`, `Field`, `Builder`) resolves to a **single** fully-qualified class name across the entire project. When two distinct types share a simple name (e.g. `java.sql.Date` vs `java.util.Date`, `org.jooq.Field` vs `java.lang.reflect.Field`), pick the **dominant** FQCN by majority usage in the codebase and import only that one everywhere; the other type must always be referenced via its fully-qualified name inline, never imported.
 
   Why: a reader scanning a file should know what `Date` means without hunting through the imports. Reading two files in the same review and seeing `Date` mean different things is a real source of bugs (we've had subtle `java.util.Date` ↔ `java.sql.Date` confusion in date-handling code). Pinning each simple name to a single FQCN project-wide makes the meaning of every unqualified type reference unambiguous at a glance.
 
@@ -210,7 +210,11 @@ class TranscodingTabularRecordStream implements ITabularRecordStream {
   - `java.util.Date` is the dominant calendar type → import `java.util.Date`, write `Date`.
   - `java.sql.Date` is rare (only on JDBC paths) → never `import java.sql.Date;`, always write `java.sql.Date` inline.
 
-  **Quick scan**: `perl scripts/check-convention-import-uniqueness.pl` — walks every `*.java` under `.`, groups imports by simple name, and reports any simple name with two or more distinct FQCNs along with the files using each. Run after any change that introduces a new import.
+  **Canonical picks** are recorded in [`scripts/import-uniqueness.allow`](scripts/import-uniqueness.allow) — one row per pinned simple name with its dominant FQCN. Add a row when introducing a new conflict, after deciding which FQCN dominates. Conflicts not yet listed there continue to surface in the report so they're visible.
+
+  **Remediation** for a flagged file: delete the `import` line for the non-dominant FQCN and replace each usage in the body with the fully-qualified name inline.
+
+  **Quick scan**: `perl scripts/check-convention-import-uniqueness.pl` — walks every `*.java` under `.`, groups imports by simple name, applies the waiver list, and reports non-dominant imports (waived simple names) plus unpinned conflicts (others). Informational — does not fail CI today.
 
 - **Always qualify nested class references**: refer to a nested class as `Outer.Nested`, never as a bare `Nested` import. The qualified form makes it immediately obvious that the type is nested (and where it lives) and avoids ambiguity when several outer classes expose a nested type with the same name. Applies in code, parameter types, return types, and Javadoc `{@link}` references.
   ```java
