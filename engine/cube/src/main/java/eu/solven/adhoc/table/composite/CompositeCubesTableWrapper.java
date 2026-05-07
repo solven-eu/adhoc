@@ -94,6 +94,7 @@ import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.TableWrapperHelpers;
 import eu.solven.adhoc.table.composite.CompositeCubeHelper.CompatibleMeasures;
 import eu.solven.adhoc.table.composite.SubMeasureAsAggregator.SubMeasureAsAggregatorBuilder;
+import eu.solven.adhoc.util.IHasCache;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.Getter;
@@ -112,7 +113,7 @@ import lombok.extern.slf4j.Slf4j;
 // GodClass: large class kept whole because the methods coordinate composite-cube dispatch and splitting them would
 // require leaking many private invariants. Refactor tracked separately.
 @SuppressWarnings({ "PMD.GodClass", "PMD.CouplingBetweenObjects" })
-public class CompositeCubesTableWrapper implements ITableWrapper, IHasHealthDetails {
+public class CompositeCubesTableWrapper implements ITableWrapper, IHasHealthDetails, IHasCache {
 
 	/**
 	 * Default name for the virtual column (see {@link #optCubeSlicer}) exposed by the composite cube to let a user
@@ -758,6 +759,20 @@ public class CompositeCubesTableWrapper implements ITableWrapper, IHasHealthDeta
 		});
 
 		return details;
+	}
+
+	/**
+	 * Fans out the invalidation to every sub-cube that is itself an {@link IHasCache} (typically a {@link CubeWrapper},
+	 * whose own {@link CubeWrapper#invalidateAll()} also propagates to the underlying {@link ITableWrapper}). Sub-cubes
+	 * that do not opt into {@link IHasCache} are left untouched.
+	 */
+	@Override
+	public void invalidateAll() {
+		cubes.forEach(cube -> {
+			if (cube instanceof IHasCache cubeCache) {
+				cubeCache.invalidateAll();
+			}
+		});
 	}
 
 }

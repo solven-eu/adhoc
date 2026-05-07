@@ -22,6 +22,7 @@
  */
 package eu.solven.adhoc.table.composite;
 
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -67,6 +68,7 @@ import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.InMemoryTable;
 import eu.solven.adhoc.table.composite.CompositeCubeHelper.CompatibleMeasures;
 import eu.solven.adhoc.table.transcoder.MapTableAliaser;
+import eu.solven.adhoc.util.IHasCache;
 
 public class TestDagCompositeCubesTableWrapper extends ATestDagRaw implements IAdhocTestConstants {
 
@@ -1046,6 +1048,39 @@ public class TestDagCompositeCubesTableWrapper extends ATestDagRaw implements IA
 		// materialized cube2's slices.
 		Assertions.assertThat(mapBased.getCoordinatesToValues().keySet())
 				.containsExactlyInAnyOrder(Map.of("a", "a1"), Map.of("a", "a2"), Map.of("a", "a3"));
+	}
+
+	// CompositeCubesTableWrapper.invalidateAll() must fan out to every sub-cube that is IHasCache so a downstream
+	// schema change (or stale alias warning) is cleared without callers having to walk the cube graph manually.
+	@Test
+	public void testInvalidateAll_propagatesToEverySubCube() {
+		InMemoryTable table1 = InMemoryTable.builder().name("t1").build();
+		table1.add(Map.of("k1", 1));
+
+		InMemoryTable table2 = InMemoryTable.builder().name("t2").build();
+		table2.add(Map.of("k1", 2));
+
+		UnsafeMeasureForest forest1 = UnsafeMeasureForest.builder().name("t1").build();
+		forest1.addMeasure(k1Sum);
+		CubeWrapper cube1 = wrapInCube(forest1, table1);
+
+		UnsafeMeasureForest forest2 = UnsafeMeasureForest.builder().name("t2").build();
+		forest2.addMeasure(k1Sum);
+		CubeWrapper cube2 = wrapInCube(forest2, table2);
+
+		CompositeCubesTableWrapper composite = CompositeCubesTableWrapper.builder().cube(cube1).cube(cube2).build();
+
+		// Prime each sub-cube's cache.
+		Collection<ColumnMetadata> cube1Before = cube1.getColumns();
+		Collection<ColumnMetadata> cube2Before = cube2.getColumns();
+
+		Assertions.assertThat(composite).isInstanceOf(IHasCache.class);
+
+		// Composite-level invalidation must drop every sub-cube's cache.
+		composite.invalidateAll();
+
+		Assertions.assertThat(cube1.getColumns()).isNotSameAs(cube1Before);
+		Assertions.assertThat(cube2.getColumns()).isNotSameAs(cube2Before);
 	}
 
 	@Test

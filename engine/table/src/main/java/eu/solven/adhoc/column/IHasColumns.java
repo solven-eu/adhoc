@@ -23,11 +23,9 @@
 package eu.solven.adhoc.column;
 
 import java.util.Collection;
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import eu.solven.adhoc.model.column.IHasColumnTypes;
 import eu.solven.adhoc.util.Blocking;
@@ -56,9 +54,8 @@ public interface IHasColumns extends IHasColumnsKeySet, IHasColumnTypes {
 	Collection<ColumnMetadata> getColumns();
 
 	default Map<String, ColumnMetadata> getColumnsAsMap() {
-		return getColumns().stream().collect(Collectors.toMap(ColumnMetadata::getName, Function.identity(), (a, b) -> {
-			throw new IllegalStateException("Duplicate key");
-		}, LinkedHashMap::new));
+		return getColumns().stream()
+				.collect(PepperStreamHelper.toLinkedMap(ColumnMetadata::getName, Function.identity()));
 	}
 
 	@Override
