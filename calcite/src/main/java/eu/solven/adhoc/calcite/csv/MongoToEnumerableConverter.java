@@ -22,7 +22,6 @@
  */
 package eu.solven.adhoc.calcite.csv;
 
-import java.io.UncheckedIOException;
 import java.util.AbstractList;
 import java.util.Arrays;
 import java.util.List;
@@ -51,7 +50,6 @@ import org.apache.calcite.util.Util;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import eu.solven.adhoc.engine.query.CubeQuery;
-import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
 
 /**

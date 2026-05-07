@@ -423,10 +423,13 @@ public class CompositeCubesTableWrapper implements ITableWrapper, IHasHealthDeta
 				.stream()
 				// subCube does not know about `measure=k1`
 				.filter(a -> !cubeMeasures.contains(a.getAggregator().getColumnName()))
-				// But the subCube has a `column=k1` and we want to aggregate over `k1`
-				// So we propagate the provided definition to the subCube
+				// EmptyAggregation needs no underlying column — it only materializes slices, so it must reach every
+				// subCube unconditionally (even those that do not declare any matching measure or column).
+				// Otherwise: the subCube has a `column=k1` and we want to aggregate over `k1`,
+				// so we propagate the provided definition to the subCube.
 				// TODO Could we also add some transformators?
-				.filter(a -> isColumnAvailable(isSubColumn, a.getAggregator().getColumnName()))
+				.filter(a -> EmptyAggregation.isEmpty(a.getAggregator())
+						|| isColumnAvailable(isSubColumn, a.getAggregator().getColumnName()))
 				.collect(Collectors.toCollection(LinkedHashSet::new));
 
 		return CompatibleMeasures.builder()
