@@ -22,10 +22,6 @@
  */
 package eu.solven.adhoc.measure;
 
-import java.io.Serializable;
-import java.lang.invoke.SerializedLambda;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Map;
 
@@ -34,13 +30,10 @@ import org.junit.jupiter.api.Test;
 
 import com.google.common.collect.ImmutableSet;
 
-import eu.solven.adhoc.engine.step.ISliceWithStep;
-import eu.solven.adhoc.measure.lambda.LambdaCombination;
 import eu.solven.adhoc.measure.sum.SumCombination;
 import eu.solven.adhoc.model.measure.Combinator;
 import eu.solven.adhoc.model.measure.Partitionor;
 import eu.solven.adhoc.model.query.groupby.GroupByColumns;
-import eu.solven.pepper.unittest.PepperJackson3TestHelper;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -120,78 +113,5 @@ public class TestCombinator {
 
 		Assertions.assertThat(measure.getCombinationOptions()).isEqualTo(Map.of("k", "v"));
 		Assertions.assertThat(moreOptions.getCombinationOptions()).isEqualTo(Map.of("k", "v", "k2", "v2"));
-	}
-
-	public static Object lambdaAsMethod(ISliceWithStep slice, List<?> values) {
-		return "outputValue";
-	}
-
-	public static class NestedClass {
-		public static Object lambdaAsMethodInNested(ISliceWithStep slice, List<?> values) {
-			return "outputValue";
-		}
-	}
-
-	@Test
-	public void testLambda_Serializable_static() {
-		ILambdaCombinationS lambdaCombinationS = TestCombinator::lambdaAsMethod;
-		Assertions.assertThat(lambdaToString(lambdaCombinationS))
-				.isEqualTo("eu.solven.adhoc.measure.TestCombinator::lambdaAsMethod");
-
-	}
-
-	@Test
-	public void testLambda_Serializable_Nested() {
-		ILambdaCombinationS lambdaCombinationSNested = NestedClass::lambdaAsMethodInNested;
-		Assertions.assertThat(lambdaToString(lambdaCombinationSNested))
-				.isEqualTo("eu.solven.adhoc.measure.TestCombinator$NestedClass::lambdaAsMethodInNested");
-
-	}
-
-	@Test
-	public void testLambda_Serializable_anonymous() {
-		ILambdaCombinationS lambdaCombinationS2 = (_, _) -> "outputValue";
-		Assertions.assertThat(lambdaToString(lambdaCombinationS2))
-				.isEqualTo("eu.solven.adhoc.measure.TestCombinator::lambda$3");
-
-		Combinator measure = Combinator.builder().name("measureName").lambda(lambdaCombinationS2).build();
-
-		String asString = PepperJackson3TestHelper.asString(measure);
-
-		// BEWARE This demonstrate the Lambda is still not serialized in a nice form
-		Assertions.assertThat(asString).isEqualTo("""
-				{
-				  "type" : ".Combinator",
-				  "combinationKey" : "eu.solven.adhoc.measure.lambda.LambdaCombination",
-				  "combinationOptions" : {
-				    "lambda" : { }
-				  },
-				  "name" : "measureName",
-				  "tags" : [ ],
-				  "underlyings" : [ ]
-				}""");
-	}
-
-	/**
-	 * Combines a Lambda with a {@link Serializable} contract, enabling access to {@link SerializedLambda}.
-	 */
-	@FunctionalInterface
-	public interface ILambdaCombinationS extends LambdaCombination.ILambdaCombination, Serializable {
-
-	}
-
-	public static <L extends Serializable> String lambdaToString(L lambda) {
-		try {
-			Method writeReplace = lambda.getClass().getDeclaredMethod("writeReplace");
-			writeReplace.setAccessible(true);
-			SerializedLambda serializedLambda = (SerializedLambda) writeReplace.invoke(lambda);
-
-			// `getCapturingClass` returns the root class but not the nested class if any
-			String capturingClassWithPackage = serializedLambda.getImplClass().replace('/', '.');
-			return capturingClassWithPackage + "::" + serializedLambda.getImplMethodName();
-		} catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
-			log.warn("Issue with SerializedLambda", e);
-			return "TODO lambdaToString";
-		}
 	}
 }

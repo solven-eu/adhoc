@@ -53,6 +53,7 @@ import com.google.common.util.concurrent.ListeningExecutorService;
 import eu.solven.adhoc.factories.AdhocFactoriesUnsafe;
 import eu.solven.adhoc.query.ICountMeasuresConstants;
 import eu.solven.adhoc.query.table.TableQueryV4;
+import eu.solven.adhoc.table.sql.AdhocJooqHelper;
 import eu.solven.adhoc.table.sql.IJooqColumnsResolver;
 import eu.solven.adhoc.table.sql.IJooqTableSupplier;
 import eu.solven.adhoc.table.sql.JooqColumnsHelpers;
@@ -180,6 +181,18 @@ public class PrunedJoinsJooqTableSupplier implements IJooqTableSupplier, IHasCac
 			fullTableCache = schema.getSnowflakeTable();
 		}
 		return fullTableCache;
+	}
+
+	@Override
+	public Map<String, String> getAliasToOriginal() {
+		return schema.getAliasToOriginal();
+	}
+
+	@Override
+	public Map<String, String> getColumnToJoinAlias() {
+		// Same data the snapshot helper exposes for tests/debugging — promoted to the public API so callers can
+		// resolve which join provides a given column.
+		return getColumnToAliasSnapshot();
 	}
 
 	/**
@@ -326,17 +339,15 @@ public class PrunedJoinsJooqTableSupplier implements IJooqTableSupplier, IHasCac
 				JoinNode node = joinNodes.get(i);
 				Set<String> columns = futures.get(i).join();
 				String alias = node.getAlias();
-				boolean dotFreeAlias = alias.indexOf('.') < 0;
 				for (String column : columns) {
 					// Unqualified form: first-declared wins on collisions (matches `registerInAliaser` /
 					// `putIfAbsent` semantics).
 					idx.putIfAbsent(column, alias);
-					// Bare dotted form `alias.column` — the convention cube callers use today (e.g.
-					// `groupBy("p.productName")`). Skipped when alias OR column already contains a dot, since the
-					// resulting key would be ambiguous (e.g. `cust.a.b` could mean `cust` × `a.b` or `cust.a` × `b`).
-					if (dotFreeAlias && column.indexOf('.') < 0) {
-						idx.putIfAbsent(alias + "." + column, alias);
-					}
+					// Bare-dotted form (`alias.column`) when both parts are dot-free — the convention cube
+					// callers use today (e.g. `groupBy("p.productName")`). When either part contains a dot,
+					// `qualifiedColumnName` falls back to the JOOQ-escaped two-part form which is then equal
+					// to the next entry; the duplicate `putIfAbsent` is harmless.
+					idx.putIfAbsent(AdhocJooqHelper.qualifiedColumnName(alias, column), alias);
 					// Escaped form via JOOQ's two-part `Name.toString()` — quotes each segment so dots inside the
 					// alias or the column stay inside their segment. Same escaping convention as
 					// `registerInAliaser` and `withAliases` (both store `Name.toString()` in `aliasToOriginal`),
@@ -347,13 +358,10 @@ public class PrunedJoinsJooqTableSupplier implements IJooqTableSupplier, IHasCac
 			// Register base-table columns last so joins win on collisions for naturally-shared key columns —
 			// matches `aliasToOriginal`'s "left/parent wins" convention and the existing per-join `putIfAbsent`
 			// semantics.
-			boolean dotFreeBase = baseAlias.indexOf('.') < 0;
 			Set<String> baseColumns = baseFuture.join();
 			for (String column : baseColumns) {
 				idx.putIfAbsent(column, baseAlias);
-				if (dotFreeBase && column.indexOf('.') < 0) {
-					idx.putIfAbsent(baseAlias + "." + column, baseAlias);
-				}
+				idx.putIfAbsent(AdhocJooqHelper.qualifiedColumnName(baseAlias, column), baseAlias);
 				// Might be redundant with JooqTableSupplierBuilder.registerInAliaser(Name, Name)
 				idx.putIfAbsent(DSL.name(baseAlias, column).toString(), baseAlias);
 			}
@@ -397,7 +405,9 @@ public class PrunedJoinsJooqTableSupplier implements IJooqTableSupplier, IHasCac
 	 * {@link #invalidateAll()} cycle (important when the resolver performs a DB round-trip).
 	 */
 	protected Set<String> resolveColumns(JoinNode node) {
-		if (node.getColumnsOverride() != null) {
+		// Empty `columnsOverride` is the "not declared" sentinel — fall back to the resolver. Non-empty bypasses
+		// the resolver entirely.
+		if (!node.getColumnsOverride().isEmpty()) {
 			return node.getColumnsOverride();
 		}
 		return resolvedColumnsByAlias.computeIfAbsent(node.getAlias(), alias -> {

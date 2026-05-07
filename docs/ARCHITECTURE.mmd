@@ -82,6 +82,9 @@ classDiagram
     }
     class InMemoryTable {
     }
+    class JooqTableColumnsWrapper {
+        JooqTableWrapperParameters tableParameters
+    }
     class JooqTableWrapper {
         JooqTableWrapperParameters tableParameters
     }
@@ -191,6 +194,7 @@ classDiagram
     AdhocFactories *-- ISliceFactoryFactory : sliceFactoryFactory
     AdhocFactories *-- IStopwatchFactory : stopwatchFactory
     JooqTableWrapper *-- JooqTableWrapperParameters : tableParameters
+    JooqTableColumnsWrapper *-- JooqTableWrapperParameters : tableParameters
     CubeQueryEngine *-- ITableQueryEngineFactory : tableQueryEngine
     JooqTableWrapperParameters *-- IJooqTableSupplier : tableSupplier
     CubeWrapper *-- ITableWrapper : table

@@ -22,6 +22,8 @@
  */
 package eu.solven.adhoc.table.sql;
 
+import java.util.Map;
+
 import org.jooq.TableLike;
 
 import eu.solven.adhoc.query.table.TableQueryV4;
@@ -52,6 +54,31 @@ public interface IJooqTableSupplier {
 	 *         supplier, it equals the table returned by {@link #tableFor(TableQueryV4)}.
 	 */
 	TableLike<?> getSchemaTable();
+
+	/**
+	 * Column-alias map: caller-facing name → qualified original column. Default is empty (no aliasing). Suppliers built
+	 * from {@link PrunedJoinsJooqTableSupplierBuilder} (or any subclass of {@code JooqTableSupplierBuilder}) surface
+	 * the schema's {@code aliasToOriginal} so {@link JooqTableWrapper#getColumns()} can attach the aliases to the
+	 * underlying {@code ColumnMetadata}.
+	 *
+	 * @return alias → qualified-original mapping; empty when the supplier has no aliasing knowledge
+	 */
+	default Map<String, String> getAliasToOriginal() {
+		return Map.of();
+	}
+
+	/**
+	 * Column → owning join-alias index: lets consumers (e.g. {@link JooqTableWrapper#getColumns()}) figure out which
+	 * join provides a given column name. Used to disambiguate when a caller-facing alias claims a bare name that's
+	 * already owned by a different join — the shadowed column is then re-exposed under its qualified form.
+	 *
+	 * @return column-name → owning-join-alias mapping; empty when the supplier has no provenance knowledge.
+	 *         Implementations may include both bare names and qualified forms; consumers should look up by bare name
+	 *         only.
+	 */
+	default Map<String, String> getColumnToJoinAlias() {
+		return Map.of();
+	}
 
 	/**
 	 * Wraps a constant table as an {@link IJooqTableSupplier} that ignores the query.

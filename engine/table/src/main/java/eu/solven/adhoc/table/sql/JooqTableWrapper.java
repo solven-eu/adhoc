@@ -26,7 +26,6 @@ import java.sql.Connection;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -44,14 +43,9 @@ import org.jooq.Record;
 import org.jooq.ResultQuery;
 import org.jooq.SQLDialect;
 import org.jooq.conf.ParamType;
-import org.jooq.exception.DataAccessException;
 
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
-import com.google.common.cache.RemovalCause;
-import com.google.common.cache.RemovalListener;
-import com.google.common.cache.RemovalNotification;
+import com.google.common.base.Supplier;
+import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableMap;
 
 import eu.solven.adhoc.beta.schema.CoordinatesSample;
@@ -81,7 +75,6 @@ import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapperParameters.JooqTableWrapperParametersBuilder;
 import eu.solven.adhoc.table.sql.duckdb.AdhocDuckDBUnsafe;
 import eu.solven.adhoc.table.sql.duckdb.DuckDBHelper;
-import eu.solven.adhoc.util.AdhocUnsafe;
 import eu.solven.adhoc.util.IHasCache;
 import eu.solven.adhoc.util.map.AdhocMapPathGet;
 import lombok.AllArgsConstructor;
@@ -100,7 +93,7 @@ import lombok.extern.slf4j.Slf4j;
 @AllArgsConstructor
 @Slf4j
 @ToString(of = "name")
-@SuppressWarnings("PMD.GodClass")
+// @SuppressWarnings("PMD.GodClass")
 public class JooqTableWrapper implements ITableWrapper, IHasCache, IHasHealthDetails {
 
 	@NonNull
@@ -110,19 +103,17 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache, IHasHealthDet
 	@Getter
 	final JooqTableWrapperParameters tableParameters;
 
-	final LoadingCache<Object, List<Field<?>>> fieldsCache = CacheBuilder.newBuilder()
-			// https://github.com/google/guava/wiki/cachesexplained#refresh
-			.refreshAfterWrite(Duration.ofMinutes(1))
-			.removalListener(new RemovalListener<Object, List<Field<?>>>() {
+	// Lazy / memoised: `JooqTableColumns` reads `tableParameters` on construction, which is only populated by
+	// the @AllArgsConstructor body — i.e. AFTER field initializers run. `Suppliers.memoize` defers the build
+	// until first call, by which point `tableParameters` is set.
+	final Supplier<JooqTableColumnsWrapper> columns = Suppliers.memoize(this::makeColumnsWrapper);
 
-				@Override
-				public void onRemoval(RemovalNotification<Object, List<Field<?>>> notification) {
-					RemovalCause cause = notification.getCause();
-					List<Field<?>> removedFields = notification.getValue();
-					log.debug("Removing fields for {} due to {} (were {})", getName(), cause, removedFields);
-				}
-			})
-			.build(CacheLoader.asyncReloading(CacheLoader.from(this::noCacheGetFields), AdhocUnsafe.maintenancePool));
+	protected JooqTableColumnsWrapper makeColumnsWrapper() {
+		// Read parameters / name through their Lombok-generated getters so javac's definite-assignment analyzer
+		// does NOT flag the lambda-captured read of `tableParameters` / `name` (the lambda runs after the
+		// constructor body, but the analyzer can't prove it from the field-initializer site).
+		return new JooqTableColumnsWrapper(getTableParameters(), this::getFieldType, getName());
+	}
 
 	@Override
 	public String getName() {
@@ -135,43 +126,12 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache, IHasHealthDet
 
 	@Override
 	public void invalidateAll() {
-		fieldsCache.invalidateAll();
+		columns.get().invalidateAll();
 	}
 
 	@Override
 	public Collection<ColumnMetadata> getColumns() {
-		List<Field<?>> fields = getFields();
-
-		// https://duckdb.org/docs/sql/expressions/star.html
-		Map<String, ColumnMetadata> columnToType = new LinkedHashMap<>();
-
-		// TODO Qualify columns with table
-		// https://duckdbsnippets.com/snippets/204/label-columns-based-on-source-table
-		// SELECT
-		// COLUMNS(t1.*) AS 't1_\0',
-		// COLUMNS(t2.*) AS 't2_\0'
-		// FROM range(10) t1
-		// JOIN range(10) t2 ON t1.range = t2.range
-
-		fields.forEach(field -> {
-			String fieldName = field.getName();
-
-			Class<?> fieldType = getFieldType(field);
-			ColumnMetadata previousColumn =
-					columnToType.put(fieldName, ColumnMetadata.builder().name(fieldName).type(fieldType).build());
-			if (previousColumn != null) {
-				log.debug("Multiple columns with same name. Typically happens on a JOIN");
-				if (!Objects.equals(fieldType, previousColumn.getType())) {
-					log.warn("Multiple columns with same name (table={} column={}), and different types: {} != {}",
-							getName(),
-							fieldName,
-							previousColumn,
-							fieldType);
-				}
-			}
-		});
-
-		return columnToType.values();
+		return columns.get().getColumns();
 	}
 
 	protected Class<?> getFieldType(Field<?> field) {
@@ -184,45 +144,6 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache, IHasHealthDet
 			return LocalDate.class;
 		} else {
 			return rawFieldType;
-		}
-	}
-
-	protected List<Field<?>> getFields() {
-		List<Field<?>> fields = fieldsCache.getUnchecked(Boolean.TRUE);
-
-		if (fields.isEmpty()) {
-			// Fields is typically empty if we were missing some files: let's retry
-			fieldsCache.invalidateAll();
-			fields = fieldsCache.getUnchecked(Boolean.TRUE);
-		}
-
-		return fields;
-	}
-
-	protected List<Field<?>> noCacheGetFields() {
-		// Single source of truth: the parameters' columnsResolver (guaranteed non-null via the custom getter, which
-		// defaults to `JooqColumnsHelpers.dbProbe(dslSupplier)` when the builder did not configure one).
-		try {
-			List<Field<?>> fields = tableParameters.getColumnsResolver()
-					.columnsOf(tableParameters.getDslSupplier(), tableParameters.getTableSupplier().getSchemaTable());
-			if (fields == null) {
-				return Collections.emptyList();
-			} else {
-				return List.copyOf(fields);
-			}
-		} catch (DataAccessException e) {
-			if (Objects.requireNonNullElse(e.getMessage(), "")
-					.contains("IO Error: No files found that match the pattern")) {
-				if (log.isDebugEnabled()) {
-					log.warn("No column for table=`{}` due to missing files", getName(), e);
-				} else {
-					// The failure may be missing anywhere in the SQL (e.g. the main `FROM`, or any `JOIN`)
-					log.warn("No column for table=`{}` due to missing files. sqlMsg={}", getName(), e.getMessage());
-				}
-				return Collections.emptyList();
-			} else {
-				throw e;
-			}
 		}
 	}
 
@@ -346,7 +267,7 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache, IHasHealthDet
 					semaphore.release();
 				}
 			};
-			return tableStream.peek(__ -> releaseSemaphore.run()).onClose(releaseSemaphore);
+			return tableStream.peek(_ -> releaseSemaphore.run()).onClose(releaseSemaphore);
 		});
 	}
 

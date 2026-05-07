@@ -147,10 +147,12 @@ public class CubeWrapper implements ICubeWrapper, IHasHealthDetails {
 	public Collection<ColumnMetadata> getColumns() {
 		Map<String, ColumnMetadata> columnToType = getColumnsWithoutAliases();
 
+		AliasingContext transcodingContext = getColumnsManager().openTranscodingContext();
+
 		// Register aliases in the `alias` field of metadata
 		// TODO This does not handle recursive aliases
 		getColumnsManager().getColumnAliases().forEach(columnAlias -> {
-			String tableName = getColumnsManager().openTranscodingContext().underlying(columnAlias);
+			String tableName = transcodingContext.underlying(columnAlias);
 
 			ColumnMetadata originalMetadata = columnToType.get(tableName);
 
@@ -167,11 +169,15 @@ public class CubeWrapper implements ICubeWrapper, IHasHealthDetails {
 			if (originalMetadata == null && tableName != null) {
 				// Third-try: a JooqTableSupplierBuilder-style aliaser declares `aliasedColor -> b.color`, but the
 				// table only knows the unqualified `color` (see JooqTableWrapper.getColumns: SQL backends return
-				// column names without their table-qualifier when listing columns). When `tableName` carries a dot,
-				// strip the qualifier and retry with the bare column name as a best-guess of the actual column.
-				int lastDot = tableName.lastIndexOf('.');
-				if (lastDot >= 0 && lastDot < tableName.length() - 1) {
-					String unqualified = tableName.substring(lastDot + 1);
+				// column names without their table-qualifier when listing columns). Strip the qualifier and the
+				// surrounding jOOQ quotes (e.g. `"b"."color"` → `color`) so the bare lookup matches the table's
+				// column names. CubeWrapper sits above the SQL layer and does not own a {@code Parser}, hence
+				// this string-level handling rather than the dialect-aware
+				// {@code AdhocJooqHelper.unqualifiedColumnName(...)}; consequence: column names that contain
+				// unquoted dots are NOT supported here. Such cases need a parser-aware path (likely surfacing
+				// the original as a structured {@code Name} from the supplier rather than a String).
+				String unqualified = stripQualifierAndQuotes(tableName);
+				if (!unqualified.equals(tableName)) {
 					originalMetadata = columnToType.get(unqualified);
 				}
 			}
@@ -179,7 +185,10 @@ public class CubeWrapper implements ICubeWrapper, IHasHealthDetails {
 			if (originalMetadata == null) {
 				// Discard: a shared ColumnsManager may carry aliases relevant only to a subset of cubes, so an alias
 				// with no underlying column on this cube is not necessarily a bug — but still worth warning about.
-				log.warn("Discarding alias={} as it has no underlying column on cube={}", columnAlias, getName());
+				log.warn("Discarding alias={} (tablename={}) as it has no underlying column on cube={}",
+						columnAlias,
+						tableName,
+						getName());
 			} else {
 				columnToType.put(originalMetadata.getName(), originalMetadata.toBuilder().alias(columnAlias).build());
 			}
@@ -196,6 +205,28 @@ public class CubeWrapper implements ICubeWrapper, IHasHealthDetails {
 		columnToType.putAll(aliasToColumn);
 
 		return columnToType.values();
+	}
+
+	/**
+	 * String-level qualifier stripper used by {@link #getColumns()}. Removes the segment before the last unquoted dot,
+	 * then unwraps surrounding double-quotes — covers the two shapes the supplier can hand us: bare-dotted
+	 * ({@code b.color}) and jOOQ-escaped two-part ({@code "b"."color with space"}). Does NOT support column names
+	 * containing unquoted dots, since this layer has no parser; for that, plumb a dialect-aware path instead (see the
+	 * call site comment).
+	 */
+	private static String stripQualifierAndQuotes(String qualifiedName) {
+		int lastDot = qualifiedName.lastIndexOf('.');
+		String unqualified;
+		if (lastDot >= 0 && lastDot < qualifiedName.length() - 1) {
+			unqualified = qualifiedName.substring(lastDot + 1);
+		} else {
+			unqualified = qualifiedName;
+		}
+		if (unqualified.length() >= 2 && unqualified.charAt(0) == '"'
+				&& unqualified.charAt(unqualified.length() - 1) == '"') {
+			unqualified = unqualified.substring(1, unqualified.length() - 1);
+		}
+		return unqualified;
 	}
 
 	protected Map<String, ColumnMetadata> getColumnsWithoutAliases() {

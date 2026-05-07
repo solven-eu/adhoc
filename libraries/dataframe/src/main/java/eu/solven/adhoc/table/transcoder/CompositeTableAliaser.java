@@ -43,7 +43,7 @@ import lombok.Singular;
 @Builder
 public class CompositeTableAliaser implements ITableAliaser, IHasAliasedColumns {
 	/**
-	 * Different modes when iterating through the available transcoders.
+	 * Different modes when iterating through the available aliasers.
 	 * 
 	 * @author Benoit Lacelle
 	 */
@@ -55,7 +55,7 @@ public class CompositeTableAliaser implements ITableAliaser, IHasAliasedColumns 
 		FirstNotNull,
 
 		/**
-		 * All transcoders, as a chain of transcoders
+		 * All aliasers, as a chain of aliasers
 		 */
 		ApplyAll
 	}

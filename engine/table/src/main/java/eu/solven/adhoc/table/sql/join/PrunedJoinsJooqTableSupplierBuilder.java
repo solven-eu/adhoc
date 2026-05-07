@@ -35,7 +35,6 @@ import org.jooq.Name;
 import org.jooq.Record;
 import org.jooq.Table;
 import org.jooq.impl.DSL;
-import org.jspecify.annotations.Nullable;
 
 import com.google.common.collect.ImmutableSet;
 
@@ -43,6 +42,7 @@ import eu.solven.adhoc.table.sql.IDSLSupplier;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 
@@ -144,11 +144,18 @@ public class PrunedJoinsJooqTableSupplierBuilder extends JooqTableSupplierBuilde
 		boolean prunable;
 
 		/**
-		 * Explicit list of columns this join provides. When {@code null}, {@link PrunedJoinsJooqTableSupplier} asks its
-		 * {@code columnsResolver} to derive the column set from the {@code joinedTable}.
+		 * Explicit list of columns this join provides. {@link ImmutableSet#of() Empty} means "not declared":
+		 * {@link PrunedJoinsJooqTableSupplier} then asks its {@code columnsResolver} to derive the column set from the
+		 * {@code joinedTable}. A non-empty value bypasses the resolver and uses these columns verbatim.
+		 *
+		 * <p>
+		 * "Declared empty" is collapsed with "not declared" because a join that genuinely provides zero columns is
+		 * non-sensical (it would never be referenced and would always be pruned), so distinguishing the two adds no
+		 * semantic value while forcing every consumer to handle a {@code @Nullable} field.
 		 */
 		@Default
-		Set<String> columnsOverride = null;
+		@NonNull
+		Set<String> columnsOverride = ImmutableSet.of();
 
 		/**
 		 * Aliases referenced by the ON-clause beyond {@link #parentAlias}. Captures the diamond-join case where the
@@ -199,7 +206,7 @@ public class PrunedJoinsJooqTableSupplierBuilder extends JooqTableSupplierBuilde
 		Set<String> provided = joinBuilder.getProvidedColumns();
 		Set<String> columnsOverride;
 		if (provided == null) {
-			columnsOverride = null;
+			columnsOverride = ImmutableSet.of();
 		} else {
 			columnsOverride = ImmutableSet.copyOf(provided);
 		}
@@ -223,7 +230,7 @@ public class PrunedJoinsJooqTableSupplierBuilder extends JooqTableSupplierBuilde
 			Table<?> joinedTable,
 			String joinName,
 			List<Map.Entry<String, String>> on) {
-		recordJoin(leftTableAlias, joinedTable, joinName, on, true, null);
+		recordJoin(leftTableAlias, joinedTable, joinName, on, true, ImmutableSet.of());
 		return this;
 	}
 
@@ -234,15 +241,15 @@ public class PrunedJoinsJooqTableSupplierBuilder extends JooqTableSupplierBuilde
 	 * built right the first time.
 	 *
 	 * @param columnsOverride
-	 *            explicit list of columns this join provides, or {@code null} to defer to the supplier's
-	 *            {@code columnsResolver}.
+	 *            explicit list of columns this join provides; pass {@link ImmutableSet#of()} (empty) to defer to the
+	 *            supplier's {@code columnsResolver}.
 	 */
 	protected void recordJoin(String leftTableAlias,
 			Table<?> joinedTable,
 			String joinName,
 			List<Map.Entry<String, String>> on,
 			boolean prunable,
-			@Nullable Set<String> columnsOverride) {
+			Set<String> columnsOverride) {
 		// Same side-effects as the parent (aliaser registration + latestJoin tracking), but we do NOT accumulate
 		// snowflakeTable — the FROM clause is rebuilt per-query by the supplier via `materialise(...)`.
 		ImmutableSet.Builder<String> referencedAliases = ImmutableSet.builder();
