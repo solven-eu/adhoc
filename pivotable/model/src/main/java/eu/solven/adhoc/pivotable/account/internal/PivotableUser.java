@@ -24,11 +24,12 @@ package eu.solven.adhoc.pivotable.account.internal;
 
 import java.util.UUID;
 
+import org.jspecify.annotations.NonNull;
+
 import eu.solven.adhoc.pivotable.account.PivotableUserDetails;
 import eu.solven.adhoc.pivotable.account.PivotableUserRawRaw;
 import lombok.Builder;
 import lombok.Builder.Default;
-import lombok.NonNull;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
 import lombok.extern.slf4j.Slf4j;

@@ -24,6 +24,8 @@ package eu.solven.adhoc.factories;
 
 import java.util.function.Supplier;
 
+import org.jspecify.annotations.NonNull;
+
 import com.google.common.base.Suppliers;
 import com.google.common.util.concurrent.ListeningExecutorService;
 
@@ -41,7 +43,6 @@ import eu.solven.adhoc.util.AdhocUnsafe;
 import eu.solven.adhoc.util.IStopwatchFactory;
 import lombok.Builder;
 import lombok.Builder.Default;
-import lombok.NonNull;
 import lombok.Value;
 
 /**

@@ -30,6 +30,7 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
+import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 
 import eu.solven.adhoc.cuboid.slice.ISlice;
@@ -47,7 +48,6 @@ import eu.solven.adhoc.table.transcoder.value.IColumnValueTranscoder;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
-import lombok.NonNull;
 import lombok.Singular;
 import lombok.With;
 

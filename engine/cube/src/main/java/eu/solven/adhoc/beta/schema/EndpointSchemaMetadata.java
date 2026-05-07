@@ -25,6 +25,8 @@ package eu.solven.adhoc.beta.schema;
 import java.util.List;
 import java.util.NavigableMap;
 
+import org.jspecify.annotations.NonNull;
+
 import eu.solven.adhoc.cube.ICubeWrapper;
 import eu.solven.adhoc.engine.query.CubeQuery;
 import eu.solven.adhoc.engine.step.ICubeQuery;
@@ -32,7 +34,6 @@ import eu.solven.adhoc.measure.forest.IMeasureForest;
 import eu.solven.adhoc.model.measure.IMeasure;
 import eu.solven.adhoc.table.ITableWrapper;
 import lombok.Builder;
-import lombok.NonNull;
 import lombok.Singular;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;

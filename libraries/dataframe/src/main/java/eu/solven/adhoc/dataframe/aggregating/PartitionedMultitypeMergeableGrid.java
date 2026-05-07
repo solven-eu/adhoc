@@ -25,6 +25,8 @@ package eu.solven.adhoc.dataframe.aggregating;
 import java.util.List;
 import java.util.Set;
 
+import org.jspecify.annotations.NonNull;
+
 import com.google.common.base.MoreObjects;
 import com.google.common.base.MoreObjects.ToStringHelper;
 import com.google.common.collect.ImmutableList;
@@ -41,7 +43,6 @@ import eu.solven.adhoc.factories.IAdhocFactories;
 import eu.solven.adhoc.measure.model.IAliasedAggregator;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import lombok.Builder.Default;
-import lombok.NonNull;
 import lombok.Singular;
 import lombok.experimental.SuperBuilder;
 

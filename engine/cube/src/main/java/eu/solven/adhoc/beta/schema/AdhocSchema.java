@@ -35,6 +35,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import org.jspecify.annotations.NonNull;
 import org.springframework.core.env.Environment;
 
 import com.google.common.cache.CacheBuilder;
@@ -70,7 +71,6 @@ import eu.solven.adhoc.table.transcoder.value.ICustomTypeManagerSimple;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import eu.solven.adhoc.util.IHasName;
 import lombok.Builder;
-import lombok.NonNull;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 

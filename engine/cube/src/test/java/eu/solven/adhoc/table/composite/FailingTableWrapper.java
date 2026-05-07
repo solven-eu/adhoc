@@ -25,6 +25,8 @@ package eu.solven.adhoc.table.composite;
 import java.util.Collection;
 import java.util.Collections;
 
+import org.jspecify.annotations.NonNull;
+
 import eu.solven.adhoc.column.ColumnMetadata;
 import eu.solven.adhoc.dataframe.row.ITabularRecordStream;
 import eu.solven.adhoc.query.table.TableQueryV4;
@@ -32,7 +34,6 @@ import eu.solven.adhoc.table.IQueryPod;
 import eu.solven.adhoc.table.ITableWrapper;
 import lombok.Builder;
 import lombok.Builder.Default;
-import lombok.NonNull;
 
 @Builder
 public class FailingTableWrapper implements ITableWrapper {

@@ -26,11 +26,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 
+import org.jspecify.annotations.NonNull;
+
 import com.google.common.base.Ticker;
 
 import lombok.Builder;
 import lombok.Builder.Default;
-import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 
 /**

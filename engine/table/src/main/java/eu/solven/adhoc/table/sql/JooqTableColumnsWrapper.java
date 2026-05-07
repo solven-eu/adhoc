@@ -33,6 +33,7 @@ import java.util.function.Function;
 
 import org.jooq.Field;
 import org.jooq.exception.DataAccessException;
+import org.jspecify.annotations.NonNull;
 
 import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
@@ -45,7 +46,6 @@ import com.google.common.cache.RemovalNotification;
 
 import eu.solven.adhoc.column.ColumnMetadata;
 import eu.solven.adhoc.util.AdhocUnsafe;
-import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 

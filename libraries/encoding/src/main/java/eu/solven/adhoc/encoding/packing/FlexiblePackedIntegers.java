@@ -25,9 +25,10 @@ package eu.solven.adhoc.encoding.packing;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import org.jspecify.annotations.NonNull;
+
 import eu.solven.adhoc.encoding.IIntArray;
 import lombok.Builder;
-import lombok.NonNull;
 
 /**
  * Used to compress an `int[]` when all ints are known to be relatively small. `bits` represent the number of expressed

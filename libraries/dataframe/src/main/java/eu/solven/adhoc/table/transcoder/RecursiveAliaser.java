@@ -28,12 +28,12 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
 
+import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 
 import com.google.common.collect.ImmutableSet;
 
 import lombok.Builder;
-import lombok.NonNull;
 
 /**
  * A decorating {@link ITableAliaser} , which applies the aliasing logic recursively

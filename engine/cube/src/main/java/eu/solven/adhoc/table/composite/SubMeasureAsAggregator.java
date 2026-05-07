@@ -24,6 +24,8 @@ package eu.solven.adhoc.table.composite;
 
 import java.util.Map;
 
+import org.jspecify.annotations.NonNull;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
@@ -33,7 +35,6 @@ import eu.solven.adhoc.measure.transformator.IHasAggregationKey;
 import eu.solven.adhoc.model.measure.Aggregator;
 import lombok.Builder;
 import lombok.Builder.Default;
-import lombok.NonNull;
 import lombok.Singular;
 import lombok.Value;
 import lombok.With;

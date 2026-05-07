@@ -43,6 +43,7 @@ import org.jooq.Record;
 import org.jooq.ResultQuery;
 import org.jooq.SQLDialect;
 import org.jooq.conf.ParamType;
+import org.jspecify.annotations.NonNull;
 
 import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
@@ -80,7 +81,6 @@ import eu.solven.adhoc.util.map.AdhocMapPathGet;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
-import lombok.NonNull;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 

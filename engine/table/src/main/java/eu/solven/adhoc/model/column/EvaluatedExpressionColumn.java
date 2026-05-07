@@ -25,6 +25,8 @@ package eu.solven.adhoc.model.column;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import org.jspecify.annotations.NonNull;
+
 import com.ezylang.evalex.EvaluationException;
 import com.ezylang.evalex.Expression;
 import com.ezylang.evalex.data.EvaluationValue;
@@ -35,7 +37,6 @@ import eu.solven.adhoc.cuboid.tabular.ITabularGroupByRecord;
 import eu.solven.adhoc.table.ITableWrapper;
 import lombok.Builder;
 import lombok.Builder.Default;
-import lombok.NonNull;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
 

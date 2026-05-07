@@ -40,6 +40,7 @@ import org.jgrapht.GraphPath;
 import org.jgrapht.alg.shortestpath.DijkstraShortestPath;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.DirectedMultigraph;
+import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 
 import com.google.common.collect.ImmutableList;
@@ -74,7 +75,6 @@ import eu.solven.adhoc.model.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.MeasurelessQuery;
 import eu.solven.adhoc.table.IQueryPod;
 import eu.solven.pepper.core.PepperLogHelper;
-import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 
 /**

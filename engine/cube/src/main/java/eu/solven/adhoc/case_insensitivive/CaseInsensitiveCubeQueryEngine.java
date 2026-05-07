@@ -22,6 +22,8 @@
  */
 package eu.solven.adhoc.case_insensitivive;
 
+import org.jspecify.annotations.NonNull;
+
 import eu.solven.adhoc.dataframe.filter.MoreFilterHelpers;
 import eu.solven.adhoc.dataframe.tabular.ITabularView;
 import eu.solven.adhoc.engine.ICubeQueryEngine;
@@ -35,7 +37,6 @@ import eu.solven.adhoc.table.transcoder.ITableAliaser;
 import eu.solven.adhoc.table.transcoder.value.ICustomTypeManagerSimple;
 import eu.solven.adhoc.table.transcoder.value.StandardCustomTypeManager;
 import lombok.Builder;
-import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 
 /**

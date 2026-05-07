@@ -25,7 +25,8 @@ package eu.solven.adhoc.stream;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
-import lombok.NonNull;
+import org.jspecify.annotations.NonNull;
+
 import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
 

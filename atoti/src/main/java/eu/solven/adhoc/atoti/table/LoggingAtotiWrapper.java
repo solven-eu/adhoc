@@ -33,7 +33,7 @@ import com.quartetfs.fwk.query.IQuery;
 import com.quartetfs.fwk.query.IQueryable;
 
 import lombok.Getter;
-import lombok.NonNull;
+import org.jspecify.annotations.NonNull;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
 

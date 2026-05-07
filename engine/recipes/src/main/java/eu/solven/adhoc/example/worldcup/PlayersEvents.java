@@ -25,13 +25,14 @@ package eu.solven.adhoc.example.worldcup;
 import java.util.Map;
 import java.util.TreeMap;
 
+import org.jspecify.annotations.NonNull;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.AtomicLongMap;
 
 import lombok.Builder;
-import lombok.NonNull;
 import lombok.Singular;
 import lombok.Value;
 

@@ -28,6 +28,8 @@ import java.util.Map;
 import java.util.NavigableSet;
 import java.util.function.Supplier;
 
+import org.jspecify.annotations.NonNull;
+
 import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
 
@@ -65,7 +67,6 @@ import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.util.AdhocDebug;
 import lombok.AccessLevel;
 import lombok.Getter;
-import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 

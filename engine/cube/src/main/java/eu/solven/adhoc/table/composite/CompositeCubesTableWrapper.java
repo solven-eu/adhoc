@@ -40,6 +40,8 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.jspecify.annotations.NonNull;
+
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.MultimapBuilder.SetMultimapBuilder;
 import com.google.common.collect.SetMultimap;
@@ -95,7 +97,6 @@ import eu.solven.adhoc.table.composite.SubMeasureAsAggregator.SubMeasureAsAggreg
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.Getter;
-import lombok.NonNull;
 import lombok.Singular;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;

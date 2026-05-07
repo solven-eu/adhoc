@@ -31,6 +31,8 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.function.Supplier;
 
+import org.jspecify.annotations.NonNull;
+
 import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
 
@@ -39,7 +41,6 @@ import eu.solven.adhoc.model.measure.IMeasure;
 import eu.solven.adhoc.model.measure.IReferencedMeasure;
 import lombok.Builder;
 import lombok.Getter;
-import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.Singular;
 import lombok.ToString;

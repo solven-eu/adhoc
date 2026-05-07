@@ -24,6 +24,7 @@ package eu.solven.adhoc.query;
 
 import java.util.Set;
 
+import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 
 import eu.solven.adhoc.engine.step.ICubeQuery;
@@ -32,7 +33,6 @@ import eu.solven.adhoc.model.measure.IMeasure;
 import eu.solven.adhoc.model.query.IGroupBy;
 import eu.solven.adhoc.options.IQueryOption;
 import lombok.Builder;
-import lombok.NonNull;
 import lombok.Value;
 
 /**

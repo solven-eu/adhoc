@@ -22,6 +22,8 @@
  */
 package eu.solven.adhoc.dataframe.column.partitioned;
 
+import org.jspecify.annotations.NonNull;
+
 import eu.solven.adhoc.cuboid.SliceAndMeasure;
 import eu.solven.adhoc.dataframe.column.IMultitypeMergeableColumn;
 import eu.solven.adhoc.dataframe.column.hash.MultitypeHashMergeableColumn;
@@ -30,7 +32,6 @@ import eu.solven.adhoc.primitive.IValueReceiver;
 import eu.solven.adhoc.stream.IConsumingStream;
 import eu.solven.adhoc.util.NotYetImplementedException;
 import lombok.Getter;
-import lombok.NonNull;
 import lombok.experimental.SuperBuilder;
 
 /**

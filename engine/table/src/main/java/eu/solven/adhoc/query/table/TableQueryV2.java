@@ -25,6 +25,7 @@ package eu.solven.adhoc.query.table;
 import java.util.Set;
 import java.util.stream.Stream;
 
+import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 
 import com.google.common.collect.ImmutableSet;
@@ -41,7 +42,6 @@ import eu.solven.adhoc.query.top.AdhocTopClause;
 import eu.solven.adhoc.table.ITableWrapper;
 import lombok.Builder;
 import lombok.Builder.Default;
-import lombok.NonNull;
 import lombok.Singular;
 import lombok.Value;
 

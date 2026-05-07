@@ -28,12 +28,12 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.ToIntFunction;
 
 import org.agrona.collections.Object2IntHashMap;
+import org.jspecify.annotations.NonNull;
 
 import com.google.errorprone.annotations.ThreadSafe;
 
 import lombok.Builder;
 import lombok.Builder.Default;
-import lombok.NonNull;
 
 /**
  * Simple {@link IDictionarizer} based on an {@link Map}.

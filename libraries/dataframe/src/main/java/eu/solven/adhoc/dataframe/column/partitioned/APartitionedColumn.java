@@ -25,6 +25,8 @@ package eu.solven.adhoc.dataframe.column.partitioned;
 import java.util.List;
 import java.util.stream.Stream;
 
+import org.jspecify.annotations.NonNull;
+
 import com.google.common.base.MoreObjects;
 import com.google.common.base.MoreObjects.ToStringHelper;
 import com.google.common.collect.ImmutableList;
@@ -39,7 +41,6 @@ import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.primitive.IValueReceiver;
 import eu.solven.adhoc.stream.IConsumingStream;
 import eu.solven.adhoc.util.AdhocUnsafe;
-import lombok.NonNull;
 import lombok.Singular;
 import lombok.experimental.SuperBuilder;
 

@@ -24,6 +24,8 @@ package eu.solven.adhoc.dataframe.row;
 
 import java.util.function.Supplier;
 
+import org.jspecify.annotations.NonNull;
+
 import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -32,7 +34,6 @@ import com.google.common.collect.Iterables;
 import eu.solven.adhoc.encoding.perfect_hashing.PerfectHashKeyset;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
-import lombok.NonNull;
 import lombok.Singular;
 import lombok.ToString;
 import lombok.Value;

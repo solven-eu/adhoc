@@ -37,6 +37,7 @@ import org.duckdb.DuckDBConnection;
 import org.jooq.Name;
 import org.jooq.SQLDialect;
 import org.jooq.impl.DSL;
+import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 
 import com.google.common.collect.ImmutableList;
@@ -59,7 +60,6 @@ import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
 import eu.solven.adhoc.table.sql.StandardDSLSupplier;
 import eu.solven.adhoc.util.NotYetImplementedException;
 import eu.solven.pepper.core.PepperLogHelper;
-import lombok.NonNull;
 import lombok.experimental.UtilityClass;
 
 /**

@@ -27,6 +27,7 @@ import java.util.NavigableSet;
 import java.util.Set;
 import java.util.function.Supplier;
 
+import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 
 import com.google.common.base.Suppliers;
@@ -40,7 +41,6 @@ import eu.solven.adhoc.encoding.perfect_hashing.IHasIndexOf;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
-import lombok.NonNull;
 
 /**
  * Enable fast iteration and hashCode/equals.

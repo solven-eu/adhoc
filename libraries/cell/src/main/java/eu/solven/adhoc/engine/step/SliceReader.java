@@ -28,6 +28,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
 
+import org.jspecify.annotations.NonNull;
+
 import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableSet;
 
@@ -38,7 +40,6 @@ import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.filter.value.IValueMatcher;
 import lombok.Builder;
 import lombok.Getter;
-import lombok.NonNull;
 import lombok.ToString;
 
 /**

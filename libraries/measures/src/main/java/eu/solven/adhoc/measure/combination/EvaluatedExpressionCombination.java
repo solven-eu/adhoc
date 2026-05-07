@@ -27,6 +27,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 
 import com.ezylang.evalex.EvaluationException;
@@ -39,7 +40,6 @@ import eu.solven.adhoc.measure.transformator.IHasCombinationKey;
 import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.primitive.ValueProviderHelpers;
 import eu.solven.adhoc.util.map.AdhocMapPathGet;
-import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 

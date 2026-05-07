@@ -24,6 +24,8 @@ package eu.solven.adhoc.engine.tabular.splitter.merger;
 
 import java.util.Set;
 
+import org.jspecify.annotations.NonNull;
+
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.Multimaps;
@@ -41,7 +43,6 @@ import eu.solven.adhoc.filter.optimizer.IFilterOptimizer;
 import eu.solven.adhoc.model.query.IGroupBy;
 import lombok.Builder;
 import lombok.Builder.Default;
-import lombok.NonNull;
 
 /**
  * Will generate a minimal number of {@link TableQueryStep} while not merging any `GROUP BY`. Typically, `GROUP BY

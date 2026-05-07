@@ -25,13 +25,13 @@ package eu.solven.adhoc.filter.value;
 import java.util.Comparator;
 import java.util.Objects;
 
+import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 
 import eu.solven.adhoc.collection.ComparableElseClassComparator;
 import eu.solven.adhoc.filter.ColumnFilter;
 import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
 import lombok.Builder;
-import lombok.NonNull;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
 

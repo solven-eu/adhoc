@@ -25,6 +25,8 @@ package eu.solven.adhoc.engine.cache;
 import java.util.Map;
 import java.util.Optional;
 
+import org.jspecify.annotations.NonNull;
+
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.primitives.Ints;
@@ -32,7 +34,6 @@ import com.google.common.primitives.Ints;
 import eu.solven.adhoc.cuboid.ICuboid;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import lombok.Builder;
-import lombok.NonNull;
 
 /**
  * A {@link IQueryStepCache} based on Guava {@link Cache}.

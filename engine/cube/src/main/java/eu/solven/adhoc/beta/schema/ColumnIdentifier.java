@@ -22,9 +22,10 @@
  */
 package eu.solven.adhoc.beta.schema;
 
+import org.jspecify.annotations.NonNull;
+
 import lombok.Builder;
 import lombok.Builder.Default;
-import lombok.NonNull;
 import lombok.Value;
 
 /**

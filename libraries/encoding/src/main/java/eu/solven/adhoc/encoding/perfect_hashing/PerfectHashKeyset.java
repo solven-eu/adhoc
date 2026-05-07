@@ -32,13 +32,14 @@ import java.util.Set;
 import java.util.Spliterator;
 import java.util.function.Consumer;
 
+import org.jspecify.annotations.NonNull;
+
 import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.ThreadSafe;
 
 import eu.solven.adhoc.util.immutable.IImmutable;
 import eu.solven.adhoc.util.immutable.UnsupportedAsImmutableException;
 import lombok.Getter;
-import lombok.NonNull;
 
 /**
  * Immutable, ordered set of {@link String} keys with O(1) {@code indexOf} via a precomputed {@link IHasIndexOf}

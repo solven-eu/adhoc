@@ -25,6 +25,7 @@ package eu.solven.adhoc.table.transcoder;
 import java.util.Set;
 import java.util.stream.Stream;
 
+import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 
 import com.google.common.collect.ImmutableList;
@@ -32,7 +33,6 @@ import com.google.common.collect.ImmutableSet;
 
 import lombok.Builder;
 import lombok.Builder.Default;
-import lombok.NonNull;
 import lombok.Singular;
 
 /**

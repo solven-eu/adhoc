@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 
 import com.google.common.collect.ImmutableList;
@@ -36,7 +37,6 @@ import eu.solven.adhoc.map.AbstractAdhocMap;
 import eu.solven.adhoc.map.IAdhocMap;
 import eu.solven.adhoc.map.keyset.SequencedSetLikeList;
 import lombok.Builder;
-import lombok.NonNull;
 
 /**
  * A {@link Map} based on {@link SequencedSetLikeList} and values as a {@link List}.

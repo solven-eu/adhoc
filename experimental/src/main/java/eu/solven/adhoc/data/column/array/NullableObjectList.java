@@ -24,6 +24,7 @@ package eu.solven.adhoc.data.column.array;
 
 import java.util.stream.IntStream;
 
+import org.jspecify.annotations.NonNull;
 import org.roaringbitmap.RoaringBitmap;
 
 import eu.solven.adhoc.dataframe.tabular.primitives.Int2ObjectBiConsumer;
@@ -35,7 +36,6 @@ import it.unimi.dsi.fastutil.objects.ObjectLists;
 import it.unimi.dsi.fastutil.objects.ObjectSpliterator;
 import lombok.Builder;
 import lombok.Builder.Default;
-import lombok.NonNull;
 
 /**
  * Standard {@link INullableObjectList}.

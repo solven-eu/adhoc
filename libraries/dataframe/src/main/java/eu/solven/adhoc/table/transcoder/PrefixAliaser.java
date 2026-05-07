@@ -24,11 +24,12 @@ package eu.solven.adhoc.table.transcoder;
 
 import java.util.Set;
 
+import org.jspecify.annotations.NonNull;
+
 import com.google.common.collect.ImmutableSet;
 
 import lombok.Builder;
 import lombok.Builder.Default;
-import lombok.NonNull;
 
 /**
  * An aliaser useful when it is known that all columns has a redundant prefix (e.g. a database in an SQL schema).

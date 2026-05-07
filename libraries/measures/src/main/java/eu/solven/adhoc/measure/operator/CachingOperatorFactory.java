@@ -25,6 +25,8 @@ package eu.solven.adhoc.measure.operator;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
+import org.jspecify.annotations.NonNull;
+
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableMap;
@@ -36,7 +38,6 @@ import eu.solven.adhoc.measure.decomposition.IDecomposition;
 import eu.solven.adhoc.util.IHasCache;
 import lombok.Builder;
 import lombok.Builder.Default;
-import lombok.NonNull;
 import lombok.Singular;
 import lombok.Value;
 

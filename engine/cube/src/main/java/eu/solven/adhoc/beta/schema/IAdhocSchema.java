@@ -25,6 +25,8 @@ package eu.solven.adhoc.beta.schema;
 import java.util.Collection;
 import java.util.Optional;
 
+import org.jspecify.annotations.NonNull;
+
 import com.google.common.util.concurrent.ListenableFuture;
 
 import eu.solven.adhoc.cube.ICubeWrapper;
@@ -34,7 +36,6 @@ import eu.solven.adhoc.filter.value.IValueMatcher;
 import eu.solven.adhoc.measure.forest.IMeasureForest;
 import eu.solven.adhoc.table.ITableWrapper;
 import lombok.Builder;
-import lombok.NonNull;
 import lombok.Value;
 
 /**

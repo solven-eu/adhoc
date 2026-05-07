@@ -25,6 +25,8 @@ package eu.solven.adhoc.model.measure;
 import java.util.List;
 import java.util.Optional;
 
+import org.jspecify.annotations.NonNull;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -42,7 +44,6 @@ import eu.solven.adhoc.measure.transformator.IHasDecompositionKey;
 import eu.solven.adhoc.measure.transformator.IHasUnderlyingMeasures;
 import lombok.Builder;
 import lombok.Builder.Default;
-import lombok.NonNull;
 import lombok.Singular;
 import lombok.Value;
 import lombok.With;

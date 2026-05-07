@@ -27,6 +27,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
+import org.jspecify.annotations.NonNull;
 import org.springframework.util.ClassUtils;
 
 import com.google.common.collect.ImmutableSet;
@@ -37,7 +38,6 @@ import eu.solven.adhoc.model.measure.IHasTags;
 import eu.solven.adhoc.util.IHasName;
 import lombok.Builder;
 import lombok.Builder.Default;
-import lombok.NonNull;
 import lombok.Singular;
 import lombok.Value;
 

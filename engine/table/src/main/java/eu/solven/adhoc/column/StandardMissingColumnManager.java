@@ -22,13 +22,14 @@
  */
 package eu.solven.adhoc.column;
 
+import org.jspecify.annotations.NonNull;
+
 import eu.solven.adhoc.filter.value.NullMatcher;
 import eu.solven.adhoc.map.ICoordinateNormalizer;
 import eu.solven.adhoc.map.StandardCoordinateNormalizer;
 import eu.solven.adhoc.util.IHasName;
 import lombok.Builder;
 import lombok.Builder.Default;
-import lombok.NonNull;
 
 /**
  * A simple implementation for {@link IMissingColumnManager}. You can use it as starting-point for your projects needs.

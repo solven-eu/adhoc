@@ -42,10 +42,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
+import lombok.extern.slf4j.Slf4j;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
-
-import lombok.extern.slf4j.Slf4j;
 
 @ExtendWith(SpringExtension.class)
 @Import(PivotableSpaRouter.class)

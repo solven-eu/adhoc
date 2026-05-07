@@ -30,6 +30,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.jgrapht.Graphs;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.DirectedMultigraph;
+import org.jspecify.annotations.NonNull;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -44,7 +45,6 @@ import eu.solven.adhoc.model.measure.ReferencedMeasure;
 import eu.solven.pepper.core.PepperLogHelper;
 import lombok.Builder;
 import lombok.Builder.Default;
-import lombok.NonNull;
 import lombok.Singular;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;

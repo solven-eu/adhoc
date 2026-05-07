@@ -30,6 +30,8 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
+import org.jspecify.annotations.NonNull;
+
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableMap;
@@ -39,7 +41,6 @@ import eu.solven.adhoc.filter.value.IValueMatcher;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import lombok.AccessLevel;
 import lombok.Builder;
-import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.Singular;
 import lombok.Value;

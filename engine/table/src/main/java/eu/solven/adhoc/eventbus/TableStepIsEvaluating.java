@@ -22,11 +22,12 @@
  */
 package eu.solven.adhoc.eventbus;
 
+import org.jspecify.annotations.NonNull;
+
 import eu.solven.adhoc.dataframe.column.Cuboid;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.query.table.TableQueryV4;
 import lombok.Builder;
-import lombok.NonNull;
 import lombok.Value;
 import lombok.With;
 

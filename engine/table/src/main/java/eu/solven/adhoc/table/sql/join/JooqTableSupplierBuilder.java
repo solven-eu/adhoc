@@ -36,6 +36,7 @@ import org.jooq.Parser;
 import org.jooq.Record;
 import org.jooq.Table;
 import org.jooq.impl.DSL;
+import org.jspecify.annotations.NonNull;
 
 import com.google.common.collect.Lists;
 
@@ -47,7 +48,6 @@ import eu.solven.adhoc.table.transcoder.ITableAliaser;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
-import lombok.NonNull;
 
 /**
  * This class helps building a star/snowflake schema, around some baseStore and various LEFT JOINs to provide additional

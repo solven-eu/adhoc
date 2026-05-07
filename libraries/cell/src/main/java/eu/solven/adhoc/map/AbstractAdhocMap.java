@@ -39,6 +39,8 @@ import java.util.function.IntFunction;
 import java.util.function.IntSupplier;
 import java.util.stream.IntStream;
 
+import org.jspecify.annotations.NonNull;
+
 import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -54,7 +56,6 @@ import eu.solven.adhoc.util.cache.LastLookupCache;
 import eu.solven.adhoc.util.immutable.UnsupportedAsImmutableException;
 import lombok.Builder;
 import lombok.Getter;
-import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.Value;
 

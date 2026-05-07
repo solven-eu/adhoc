@@ -29,6 +29,7 @@ import org.jooq.Name;
 import org.jooq.Table;
 import org.jooq.TableLike;
 import org.jooq.impl.DSL;
+import org.jspecify.annotations.NonNull;
 
 import eu.solven.adhoc.filter.optimizer.IFilterOptimizerFactory;
 import eu.solven.adhoc.measure.operator.IOperatorFactory;
@@ -36,7 +37,6 @@ import eu.solven.adhoc.measure.operator.StandardOperatorFactory;
 import eu.solven.adhoc.table.sql.join.PrunedJoinsJooqTableSupplierBuilder;
 import lombok.Builder;
 import lombok.Builder.Default;
-import lombok.NonNull;
 import lombok.Value;
 
 /**

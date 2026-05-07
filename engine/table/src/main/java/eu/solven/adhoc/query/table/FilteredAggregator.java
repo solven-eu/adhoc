@@ -22,12 +22,13 @@
  */
 package eu.solven.adhoc.query.table;
 
+import org.jspecify.annotations.NonNull;
+
 import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.measure.model.IAliasedAggregator;
 import eu.solven.adhoc.model.measure.Aggregator;
 import lombok.Builder;
 import lombok.Builder.Default;
-import lombok.NonNull;
 import lombok.Value;
 import lombok.With;
 

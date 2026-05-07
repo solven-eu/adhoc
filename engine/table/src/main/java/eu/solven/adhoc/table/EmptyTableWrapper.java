@@ -24,6 +24,8 @@ package eu.solven.adhoc.table;
 
 import java.util.List;
 
+import org.jspecify.annotations.NonNull;
+
 import com.google.common.collect.ImmutableList;
 
 import eu.solven.adhoc.column.ColumnMetadata;
@@ -33,7 +35,6 @@ import eu.solven.adhoc.query.table.TableQueryV4;
 import eu.solven.adhoc.stream.IConsumingStream;
 import lombok.Builder;
 import lombok.Getter;
-import lombok.NonNull;
 
 /**
  * {@link ITableWrapper} which is always empty. Useful when the {@link ITableWrapper} to use is not yet known (e.g. when

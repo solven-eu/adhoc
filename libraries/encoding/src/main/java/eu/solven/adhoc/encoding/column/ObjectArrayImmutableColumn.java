@@ -25,6 +25,7 @@ package eu.solven.adhoc.encoding.column;
 import java.util.Collections;
 import java.util.List;
 
+import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 
 import com.google.common.collect.ImmutableList;
@@ -33,7 +34,6 @@ import eu.solven.adhoc.encoding.column.freezer.IFreezingStrategy;
 import eu.solven.adhoc.util.immutable.UnsupportedAsImmutableException;
 import lombok.Builder;
 import lombok.Builder.Default;
-import lombok.NonNull;
 
 /**
  * {@link IAppendableColumn} over a List.

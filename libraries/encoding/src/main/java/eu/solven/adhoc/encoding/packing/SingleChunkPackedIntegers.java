@@ -22,9 +22,10 @@
  */
 package eu.solven.adhoc.encoding.packing;
 
+import org.jspecify.annotations.NonNull;
+
 import eu.solven.adhoc.encoding.IIntArray;
 import lombok.Builder;
-import lombok.NonNull;
 
 /**
  * Like {@link FlexiblePackedIntegers} but specialized when we know an int is encoded into a single chunk.

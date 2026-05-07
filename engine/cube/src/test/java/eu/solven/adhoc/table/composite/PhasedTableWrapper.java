@@ -31,6 +31,8 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.jspecify.annotations.NonNull;
+
 import eu.solven.adhoc.column.ColumnMetadata;
 import eu.solven.adhoc.cuboid.slice.SliceHelpers;
 import eu.solven.adhoc.dataframe.row.ITabularRecord;
@@ -47,7 +49,6 @@ import eu.solven.adhoc.table.TableWrapperHelpers;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.Getter;
-import lombok.NonNull;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 

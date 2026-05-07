@@ -25,13 +25,13 @@ package eu.solven.adhoc.table.google.bigquery;
 import org.jooq.Name;
 import org.jooq.SQLDialect;
 import org.jooq.impl.DSL;
+import org.jspecify.annotations.NonNull;
 
 import com.google.cloud.bigquery.BigQueryOptions;
 
 import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
 import lombok.Builder;
 import lombok.Builder.Default;
-import lombok.NonNull;
 import lombok.Value;
 
 /**

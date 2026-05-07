@@ -31,6 +31,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import org.assertj.core.api.Assertions;
+import org.jspecify.annotations.NonNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -55,7 +56,6 @@ import eu.solven.adhoc.measure.operator.IOperatorFactory;
 import eu.solven.adhoc.measure.operator.StandardOperatorFactory;
 import eu.solven.adhoc.model.measure.Dispatchor;
 import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
-import lombok.NonNull;
 
 /**
  * These unitTests are dedicated to check ManyToMany performances in case of large problems. We can encounter millions

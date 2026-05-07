@@ -22,8 +22,9 @@
  */
 package eu.solven.adhoc.encoding.column;
 
+import org.jspecify.annotations.NonNull;
+
 import lombok.Builder;
-import lombok.NonNull;
 
 /**
  * {@link IReadableColumn} over an long[].

@@ -31,6 +31,8 @@ import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 import java.util.stream.IntStream;
 
+import org.jspecify.annotations.NonNull;
+
 import com.google.common.collect.Multimaps;
 import com.google.common.collect.Sets;
 
@@ -68,7 +70,6 @@ import eu.solven.adhoc.table.IQueryPod;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import eu.solven.pepper.core.PepperStreamHelper;
 import lombok.Builder;
-import lombok.NonNull;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 

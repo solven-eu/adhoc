@@ -30,6 +30,8 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 
+import org.jspecify.annotations.NonNull;
+
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.ForwardingListenableFuture.SimpleForwardingListenableFuture;
@@ -66,7 +68,6 @@ import eu.solven.adhoc.util.AdhocUnsafe;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.Getter;
-import lombok.NonNull;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 

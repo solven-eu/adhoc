@@ -25,6 +25,8 @@ package eu.solven.adhoc.query.groupby;
 import java.util.Map;
 import java.util.Set;
 
+import org.jspecify.annotations.NonNull;
+
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
@@ -35,7 +37,6 @@ import eu.solven.adhoc.dataframe.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.model.column.IAdhocColumn;
 import eu.solven.adhoc.model.query.IGroupBy;
 import eu.solven.adhoc.model.query.groupby.GroupByColumns;
-import lombok.NonNull;
 import lombok.experimental.UtilityClass;
 
 /**

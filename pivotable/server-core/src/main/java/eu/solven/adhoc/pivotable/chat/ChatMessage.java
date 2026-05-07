@@ -22,8 +22,9 @@
  */
 package eu.solven.adhoc.pivotable.chat;
 
+import org.jspecify.annotations.NonNull;
+
 import lombok.Builder;
-import lombok.NonNull;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
 

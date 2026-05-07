@@ -36,6 +36,7 @@ import org.jooq.Field;
 import org.jooq.Name;
 import org.jooq.True;
 import org.jooq.impl.DSL;
+import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 
 import eu.solven.adhoc.filter.AdhocFilterUnsafe;
@@ -65,7 +66,6 @@ import eu.solven.adhoc.util.NotYetImplementedException;
 import eu.solven.pepper.core.PepperLogHelper;
 import lombok.Builder;
 import lombok.Builder.Default;
-import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 
 /**

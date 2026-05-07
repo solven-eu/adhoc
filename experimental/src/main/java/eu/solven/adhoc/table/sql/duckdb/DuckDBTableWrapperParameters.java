@@ -25,11 +25,11 @@ package eu.solven.adhoc.table.sql.duckdb;
 import org.jooq.Name;
 import org.jooq.SQLDialect;
 import org.jooq.impl.DSL;
+import org.jspecify.annotations.NonNull;
 
 import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
 import lombok.Builder;
 import lombok.Builder.Default;
-import lombok.NonNull;
 import lombok.Value;
 
 /**

@@ -22,13 +22,14 @@
  */
 package eu.solven.adhoc.table.sql.clickhouse;
 
+import org.jspecify.annotations.NonNull;
+
 import com.clickhouse.client.api.Client;
 
 import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import lombok.Builder;
 import lombok.Builder.Default;
-import lombok.NonNull;
 import lombok.Value;
 
 /**

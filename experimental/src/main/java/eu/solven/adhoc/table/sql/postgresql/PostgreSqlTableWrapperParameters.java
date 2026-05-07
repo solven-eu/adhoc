@@ -22,9 +22,10 @@
  */
 package eu.solven.adhoc.table.sql.postgresql;
 
+import org.jspecify.annotations.NonNull;
+
 import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
 import lombok.Builder;
-import lombok.NonNull;
 import lombok.Value;
 
 /**

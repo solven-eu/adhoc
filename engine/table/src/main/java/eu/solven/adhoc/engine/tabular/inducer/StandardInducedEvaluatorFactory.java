@@ -22,10 +22,11 @@
  */
 package eu.solven.adhoc.engine.tabular.inducer;
 
+import org.jspecify.annotations.NonNull;
+
 import eu.solven.adhoc.factories.IAdhocFactories;
 import eu.solven.adhoc.filter.optimizer.IFilterOptimizer;
 import lombok.Builder;
-import lombok.NonNull;
 
 /**
  * Default {@link IInducedEvaluatorFactory} that produces a {@link ChainedInducedEvaluator} which tries

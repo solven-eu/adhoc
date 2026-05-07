@@ -30,7 +30,7 @@ import com.quartetfs.fwk.query.IQueryable;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.pepper.mappath.MapPathGet;
 import lombok.Getter;
-import lombok.NonNull;
+import org.jspecify.annotations.NonNull;
 import lombok.experimental.SuperBuilder;
 
 /**

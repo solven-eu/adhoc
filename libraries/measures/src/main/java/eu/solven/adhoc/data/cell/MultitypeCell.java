@@ -22,6 +22,7 @@
  */
 package eu.solven.adhoc.data.cell;
 
+import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 
 import eu.solven.adhoc.measure.aggregation.IAggregation;
@@ -32,7 +33,6 @@ import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.primitive.IValueReceiver;
 import lombok.Builder;
 import lombok.Builder.Default;
-import lombok.NonNull;
 
 /**
  * Default implementation of {@link IMultitypeCell}.

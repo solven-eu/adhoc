@@ -41,6 +41,7 @@ import org.jooq.Record;
 import org.jooq.Table;
 import org.jooq.TableLike;
 import org.jooq.impl.DSL;
+import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -63,7 +64,6 @@ import eu.solven.adhoc.util.IHasCache;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.Getter;
-import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 
 /**

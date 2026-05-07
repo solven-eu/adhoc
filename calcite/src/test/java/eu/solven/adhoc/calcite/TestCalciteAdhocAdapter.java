@@ -44,8 +44,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 
-import tools.jackson.core.JacksonException;
-import tools.jackson.databind.ObjectMapper;
 import com.google.common.eventbus.EventBus;
 
 import eu.solven.adhoc.calcite.csv.AdhocCalciteSchemaFactory;
@@ -56,6 +54,8 @@ import eu.solven.adhoc.measure.forest.MeasureForest;
 import eu.solven.adhoc.query.table.TableQueryV2;
 import eu.solven.adhoc.table.InMemoryTable;
 import eu.solven.pepper.spring.PepperResourceHelper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Testing mongo adapter functionality. By default, runs with Mongo Java Server unless {@code IT} maven profile is

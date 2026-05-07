@@ -25,13 +25,14 @@ package eu.solven.adhoc.filter.optimizer;
 import java.util.Set;
 import java.util.function.Function;
 
+import org.jspecify.annotations.NonNull;
+
 import eu.solven.adhoc.filter.AdhocFilterUnsafe;
 import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.filter.stripper.IFilterStripper;
 import eu.solven.adhoc.filter.stripper.IFilterStripperFactory;
 import lombok.Builder.Default;
 import lombok.Getter;
-import lombok.NonNull;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
 

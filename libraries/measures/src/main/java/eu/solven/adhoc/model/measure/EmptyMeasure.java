@@ -24,13 +24,14 @@ package eu.solven.adhoc.model.measure;
 
 import java.util.List;
 
+import org.jspecify.annotations.NonNull;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.measure.transformator.IHasUnderlyingMeasures;
 import lombok.Builder;
 import lombok.Builder.Default;
-import lombok.NonNull;
 import lombok.Value;
 import lombok.With;
 import lombok.extern.jackson.Jacksonized;

@@ -35,6 +35,7 @@ import org.jooq.Name;
 import org.jooq.Record;
 import org.jooq.Table;
 import org.jooq.impl.DSL;
+import org.jspecify.annotations.NonNull;
 
 import com.google.common.collect.ImmutableSet;
 
@@ -42,7 +43,6 @@ import eu.solven.adhoc.table.sql.IDSLSupplier;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.Getter;
-import lombok.NonNull;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 

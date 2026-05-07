@@ -25,9 +25,10 @@ package eu.solven.adhoc.encoding.perfect_hashing;
 import java.util.Collection;
 import java.util.HashMap;
 
+import org.jspecify.annotations.NonNull;
+
 import lombok.Builder;
 import lombok.Getter;
-import lombok.NonNull;
 
 /**
  * Standard implementation of {@link IHasIndexOf}.

@@ -24,8 +24,9 @@ package eu.solven.adhoc.query.foreignexchange;
 
 import java.time.LocalDate;
 
+import org.jspecify.annotations.NonNull;
+
 import lombok.Builder;
-import lombok.NonNull;
 import lombok.Value;
 
 /**

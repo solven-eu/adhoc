@@ -24,13 +24,14 @@ package eu.solven.adhoc.measure.aggregation;
 
 import java.util.Map;
 
+import org.jspecify.annotations.NonNull;
+
 import eu.solven.adhoc.filter.editor.IFilterEditor;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.decomposition.IDecomposition;
 import eu.solven.adhoc.measure.operator.IOperatorFactory;
 import eu.solven.adhoc.measure.operator.StandardOperatorFactory;
 import lombok.Builder;
-import lombok.NonNull;
 import lombok.Value;
 
 /**
