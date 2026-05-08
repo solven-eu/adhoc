@@ -327,7 +327,7 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 			queriedMeasures = ImmutableSet.of(defaultMeasure);
 		} else {
 			queriedMeasures = measures.stream().peek(m -> {
-				if (emptyMeasureName.equals(m.getName())) {
+				if (emptyMeasureName.equals(m.getName()) && !EmptyAggregation.isEmpty(m)) {
 					throw new IllegalArgumentException("The defaultEmptyMeasure can not be requested explicitly");
 				}
 			}).collect(ImmutableSet.toImmutableSet());

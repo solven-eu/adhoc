@@ -36,6 +36,7 @@ import eu.solven.adhoc.pivotable.app.persistence.InMemoryPivotableConfiguration;
 import eu.solven.adhoc.pivotable.cube.AdhocCubesRegistry;
 import eu.solven.adhoc.pivotable.endpoint.PivotableEndpointsRegistry;
 import eu.solven.adhoc.pivotable.endpoint.PivotableSchemaRegistry;
+import eu.solven.adhoc.pivotable.eventbus.AdhocEventFromGreenrobotToSlf4j;
 import eu.solven.adhoc.pivotable.eventbus.EventBusLogger;
 import eu.solven.adhoc.tools.PivotableRandomConfiguration;
 import eu.solven.adhoc.util.ThrowableAsStackSerializer;
@@ -73,11 +74,12 @@ import tools.jackson.databind.module.SimpleModule;
 @Slf4j
 public class PivotableComponentsConfiguration {
 
-	private Logger makeLogger() {
+	protected Logger makeLogger() {
 		return new EventBusLogger();
 	}
 
 	// BEWARE Is it legit for Pivotable to prefer Greenrobot?
+	// TODO In AdhocAutoConfiguration, we already make suchan instance
 	@Bean
 	public EventBus eventBus() {
 		EventBus eventBus = EventBus.builder()
@@ -105,7 +107,7 @@ public class PivotableComponentsConfiguration {
 	@Bean
 	public JsonMapperBuilderCustomizer jsonCustomizer() {
 		// https://www.baeldung.com/spring-boot-customize-jackson-objectmapper
-		return builder -> {
+		return _ -> {
 			SimpleModule module = new SimpleModule();
 			module.addSerializer(new ThrowableAsStackSerializer());
 

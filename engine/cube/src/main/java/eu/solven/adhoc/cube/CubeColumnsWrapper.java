@@ -88,9 +88,9 @@ public class CubeColumnsWrapper implements IHasCache {
 	@NonNull
 	private final String cubeName;
 
-	// volatile: invalidateAll() may be called concurrently with getColumns(); the swap publishes a fresh memo.
-	// Suppliers.memoize is itself thread-safe, so concurrent first-callers will compute once.
-	@SuppressWarnings("PMD.AvoidUsingVolatile")
+	// Single-key Guava LoadingCache: thread-safe lazy memo with explicit invalidateAll() support. The cache is loaded
+	// once (key=Boolean.TRUE) and reused across calls; invalidation drops the entry so the next getColumns()
+	// recomputes.
 	private final LoadingCache<Boolean, Collection<ColumnMetadata>> cached =
 			CacheBuilder.newBuilder().build(CacheLoader.from(this::computeColumns));
 

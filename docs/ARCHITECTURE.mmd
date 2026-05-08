@@ -7,6 +7,10 @@ classDiagram
     }
     class IColumnGenerator {
     }
+    class IColumnsManager {
+    }
+    class ICubeQueryEngine {
+    }
     class IDSLSupplier {
     }
     class IFilterOptimizerFactory {
@@ -52,6 +56,9 @@ classDiagram
     class CachingTableWrapper {
         ITableWrapper decorated
     }
+    class CaseInsensitiveCubeQueryEngine {
+        ICubeQueryEngine delegate
+    }
     class ColumnsManager {
         ITableAliaser aliaser
         IColumnGenerator columnGenerator
@@ -61,6 +68,12 @@ classDiagram
     }
     class CompositeCubesTableWrapper {
         IColumnsManager columnsManager
+    }
+    class CubeColumnsWrapper {
+        IColumnsManager columnsManager
+        ICubeQueryEngine engine
+        IMeasureForest forest
+        ITableWrapper table
     }
     class CubeQueryEngine {
         IAdhocEventBus eventBus
@@ -143,10 +156,12 @@ classDiagram
     }
 
     %% ─── Implements / Extends ──────────────────────────────────────
+    ICubeQueryEngine <|.. CubeQueryEngine
     ITableQueryEngineFactory <|.. TableQueryEngineFactory
     ITableWrapper <|.. AAtotiWrapper
     ITableWrapper <|.. CachingTableWrapper
     ITableWrapper <|.. CompositeCubesTableWrapper
+    IColumnsManager <|.. ColumnsManager
     ITableWrapper <|.. EmptyTableWrapper
     ITableWrapper <|.. InMemoryTable
     ITableWrapper <|.. JooqTableWrapper
@@ -154,6 +169,7 @@ classDiagram
     IJooqTableSupplier <|.. PrunedJoinsJooqTableSupplier
     IMeasureForest <|.. MeasureForest
     IMeasureForest <|.. UnsafeMeasureForest
+    ICubeQueryEngine <|.. CaseInsensitiveCubeQueryEngine
 
     %% ─── Composition ───────────────────────────────────────────────
     AAtotiWrapper *-- AtotiAliaser : aliaser
@@ -163,13 +179,16 @@ classDiagram
     ColumnsManager *-- IColumnGenerator : columnGenerator
     CubeWrapper *-- ColumnsManager : columnsManager
     CompositeCubesTableWrapper *-- ColumnsManager : columnsManager
+    CubeColumnsWrapper *-- IColumnsManager : columnsManager
     JooqTableWrapperParameters *-- IJooqColumnsResolver : columnsResolver
     PrunedJoinsJooqTableSupplier *-- IJooqColumnsResolver : columnsResolver
     StandardMissingColumnManager *-- StandardCoordinateNormalizer : coordinateNormalizer
     ColumnsManager *-- StandardCustomTypeManager : customTypeManager
     CachingTableWrapper *-- ITableWrapper : decorated
+    CaseInsensitiveCubeQueryEngine *-- ICubeQueryEngine : delegate
     JooqTableWrapperParameters *-- IDSLSupplier : dslSupplier
     CubeWrapper *-- CubeQueryEngine : engine
+    CubeColumnsWrapper *-- ICubeQueryEngine : engine
     CubeQueryEngine *-- IAdhocEventBus : eventBus
     TableQueryEngineFactory *-- IAdhocEventBus : eventBus
     ColumnsManager *-- IAdhocEventBus : eventBus
@@ -181,6 +200,7 @@ classDiagram
     JooqTableWrapperParameters *-- IFilterOptimizerFactory : filterOptimizerFactory
     AdhocFactories *-- AdhocFilterUnsafe : filterStripperFactory
     CubeWrapper *-- IMeasureForest : forest
+    CubeColumnsWrapper *-- IMeasureForest : forest
     StandardQueryPreparator *-- IImplicitFilter : implicitFilter
     StandardQueryPreparator *-- IImplicitOptions : implicitOptions
     TableQueryEngineFactory *-- TableQueryInducerFactory : inducerFactory
@@ -198,3 +218,4 @@ classDiagram
     CubeQueryEngine *-- ITableQueryEngineFactory : tableQueryEngine
     JooqTableWrapperParameters *-- IJooqTableSupplier : tableSupplier
     CubeWrapper *-- ITableWrapper : table
+    CubeColumnsWrapper *-- ITableWrapper : table

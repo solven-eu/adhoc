@@ -136,7 +136,7 @@ public abstract class AbstractAdhocMap implements IAdhocMap {
 	 * @return the value at given index, considering keys in original order.
 	 */
 	// null would be represented by NullMatcher.NULL_HOLDER
-	@org.jspecify.annotations.NonNull
+	@NonNull
 	protected abstract Object getSequencedValueRaw(int index);
 
 	protected @org.jspecify.annotations.Nullable Object getSequencedValue(int index) {

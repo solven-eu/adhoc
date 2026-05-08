@@ -38,6 +38,7 @@ import eu.solven.adhoc.cuboid.ICuboid;
 import eu.solven.adhoc.dataframe.column.Cuboid;
 import eu.solven.adhoc.dataframe.tabular.ITabularView;
 import eu.solven.adhoc.engine.cache.GuavaQueryStepCache;
+import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.engine.context.StandardQueryPreparator;
 import eu.solven.adhoc.engine.measure.IMeasureQueryStepFactory.IMeasureQueryStepOwnFactory;
 import eu.solven.adhoc.engine.query.CubeQuery;
@@ -218,6 +219,40 @@ public class TestDagCubeQueryEngine extends ATestDagInMemory implements IAdhocTe
 				.build();
 
 		Assertions.assertThat(cubeWrapper.getTable()).isNotNull();
+	}
+
+	// Requesting a bare Aggregator.empty() — no other measure — must succeed: getRootMeasures returns the empty
+	// aggregator unchanged. The engine's `defaultEmptyMeasure` synthetic name (`$ADHOC$empty-<engineId>`) is
+	// distinct from `Aggregator.empty().getName()` (`empty`), so the explicit-empty guard does not trip.
+	@Test
+	public void testGetRootMeasures_onlyEmptyAggregator() {
+		CubeQueryEngine engine = CubeQueryEngine.builder().build();
+
+		Aggregator empty = Aggregator.empty();
+
+		QueryPod queryPod = QueryPod.builder()
+				.query(CubeQuery.builder().measure(empty).build())
+				.forest(forest)
+				.table(table())
+				.build();
+
+		Assertions.assertThat(engine.getRootMeasures(queryPod)).containsExactly(empty);
+	}
+
+	// Mixing Aggregator.empty() with a real measure must also succeed — both make it through getRootMeasures.
+	@Test
+	public void testGetRootMeasures_emptyAggregatorAndRealMeasure() {
+		CubeQueryEngine engine = CubeQueryEngine.builder().build();
+
+		Aggregator empty = Aggregator.empty();
+
+		QueryPod queryPod = QueryPod.builder()
+				.query(CubeQuery.builder().measure(k1Sum, empty).build())
+				.forest(forest)
+				.table(table())
+				.build();
+
+		Assertions.assertThat(engine.getRootMeasures(queryPod)).containsExactlyInAnyOrder(k1Sum, empty);
 	}
 
 	@Test
