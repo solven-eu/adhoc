@@ -112,24 +112,4 @@ public class AdhocJooqHelper {
 		return DSL.name(joinAlias, columnName).toString();
 	}
 
-	/**
-	 * Returns the unqualified column name for a possibly-qualified, possibly-quoted input. Handles
-	 * {@code "join"."col with space"} (jOOQ-escaped 2-part), {@code join.col} (bare-dotted), and {@code col} (no
-	 * qualifier) — replaces the fragile {@code lastIndexOf('.') + substring} pattern that breaks on quoted identifiers
-	 * (the leading quote bleeds into the substring).
-	 *
-	 * <p>
-	 * Takes a parser supplier so the caller controls the dialect-aware quoting strategy. Pass the supplier from
-	 * {@link JooqTableWrapperParameters#getDslSupplier()} or equivalent — using a default parser would risk
-	 * misinterpreting identifiers under non-default dialects.
-	 *
-	 * @param qualifiedName
-	 *            possibly-qualified, possibly-quoted name as produced by jOOQ's {@code Name.toString()}
-	 * @param parserSupplier
-	 *            dialect-aware parser supplier — same shape as {@link #name(String, Supplier)}
-	 * @return the last segment as a clean unquoted string
-	 */
-	public static String unqualifiedColumnName(String qualifiedName, Supplier<Parser> parserSupplier) {
-		return name(qualifiedName, parserSupplier).last();
-	}
 }
