@@ -24,6 +24,7 @@ package eu.solven.adhoc.data.column.array;
 
 import java.util.stream.IntStream;
 
+import org.jspecify.annotations.NonNull;
 import org.roaringbitmap.RoaringBitmap;
 
 import eu.solven.adhoc.collection.ICompactable;
@@ -36,7 +37,6 @@ import it.unimi.dsi.fastutil.doubles.DoubleLists;
 import it.unimi.dsi.fastutil.doubles.DoubleSpliterator;
 import lombok.Builder;
 import lombok.Builder.Default;
-import lombok.NonNull;
 
 /**
  * Adds `null` capabilities to a {@link DoubleList}.

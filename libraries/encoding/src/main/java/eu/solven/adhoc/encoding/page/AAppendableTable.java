@@ -24,6 +24,8 @@ package eu.solven.adhoc.encoding.page;
 
 import java.util.List;
 
+import org.jspecify.annotations.NonNull;
+
 import eu.solven.adhoc.collection.ILikeList;
 import eu.solven.adhoc.encoding.column.AdhocColumnUnsafe;
 import eu.solven.adhoc.encoding.column.IAppendableColumnFactory;
@@ -31,7 +33,6 @@ import eu.solven.adhoc.encoding.column.ObjectArrayColumnsFactory;
 import eu.solven.adhoc.encoding.column.freezer.IFreezingStrategy;
 import eu.solven.adhoc.encoding.column.freezer.SynchronousFreezingStrategy;
 import lombok.Builder.Default;
-import lombok.NonNull;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
 

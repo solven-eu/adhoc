@@ -30,17 +30,21 @@ import org.springframework.context.annotation.Bean;
 import eu.solven.adhoc.engine.CubeQueryEngine;
 import eu.solven.adhoc.engine.ICubeQueryEngine;
 import eu.solven.adhoc.eventbus.IAdhocEventBus;
+import eu.solven.adhoc.eventbus.UnsafeAdhocEventBusHelpers;
 import eu.solven.adhoc.factories.AdhocFactories;
 import eu.solven.adhoc.factories.AdhocFactoriesUnsafe;
 import eu.solven.adhoc.factories.IAdhocFactories;
 import eu.solven.adhoc.factories.IColumnFactory;
 import eu.solven.adhoc.factories.StandardColumnFactory;
+import eu.solven.adhoc.filter.optimizer.IFilterOptimizerFactory;
+import eu.solven.adhoc.filter.stripper.IFilterStripperFactory;
 import eu.solven.adhoc.map.factory.ISliceFactory;
 import eu.solven.adhoc.map.factory.ISliceFactoryFactory;
 import eu.solven.adhoc.map.factory.RowSliceFactory;
 import eu.solven.adhoc.measure.operator.IOperatorFactory;
 import eu.solven.adhoc.measure.operator.StandardOperatorFactory;
 import eu.solven.adhoc.util.IStopwatchFactory;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * The beans needed to instantiate Adhoc components
@@ -48,28 +52,32 @@ import eu.solven.adhoc.util.IStopwatchFactory;
  * @author Benoit Lacelle
  */
 @AutoConfiguration
+@Slf4j
 public class AdhocAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean({ IAdhocEventBus.class,
 			com.google.common.eventbus.EventBus.class,
 			org.greenrobot.eventbus.EventBus.class })
-	public IAdhocEventBus adhocEventBus() {
-		return new com.google.common.eventbus.EventBus("Adhoc")::post;
+	public com.google.common.eventbus.EventBus adhocEventBus() {
+		log.info("Autoconfigured: {}", com.google.common.eventbus.EventBus.class.getName());
+		return new com.google.common.eventbus.EventBus("Adhoc");
 	}
 
 	@Bean
 	@ConditionalOnMissingBean(IAdhocEventBus.class)
 	@ConditionalOnBean(com.google.common.eventbus.EventBus.class)
 	public IAdhocEventBus adhocEventBusFromGuava(com.google.common.eventbus.EventBus eventBus) {
-		return eventBus::post;
+		log.info("Autoconfigured: IAdhocEventBus over {}", eventBus.getClass().getName());
+		return UnsafeAdhocEventBusHelpers.safeWrapper(eventBus::post);
 	}
 
 	@Bean
 	@ConditionalOnMissingBean(IAdhocEventBus.class)
 	@ConditionalOnBean(org.greenrobot.eventbus.EventBus.class)
 	public IAdhocEventBus adhocEventBusFromGreenRobot(org.greenrobot.eventbus.EventBus eventBus) {
-		return eventBus::post;
+		log.info("Autoconfigured: IAdhocEventBus over {}", eventBus.getClass().getName());
+		return UnsafeAdhocEventBusHelpers.safeWrapper(eventBus::post);
 	}
 
 	@Bean
@@ -84,7 +92,7 @@ public class AdhocAutoConfiguration {
 		return StandardColumnFactory.builder().build();
 	}
 
-	// BEWARE As this is a shared ISliceFactory, it may not keep memory in the long-run (e.g. through dictionaries)
+	// BEWARE As this is a shared ISliceFactory, it must not keep memory in the long-run (e.g. through dictionaries)
 	@Bean
 	@ConditionalOnMissingBean(ISliceFactory.class)
 	public ISliceFactory sliceFactory() {
@@ -104,16 +112,34 @@ public class AdhocAutoConfiguration {
 	}
 
 	@Bean
+	@ConditionalOnMissingBean(IFilterOptimizerFactory.class)
+	public IFilterOptimizerFactory filterOptimizerFactory() {
+		return IFilterOptimizerFactory.standard();
+	}
+
+	@Bean
+	@ConditionalOnMissingBean(IFilterStripperFactory.class)
+	public IFilterStripperFactory filterStripperFactory() {
+		// TODO Should we rely on Unsafe?
+		return IFilterStripperFactory.noCache();
+	}
+
+	@Bean
 	@ConditionalOnMissingBean(IAdhocFactories.class)
 	public IAdhocFactories adhocFactories(IOperatorFactory operatorFactory,
+			IFilterOptimizerFactory filterOptimizerFactory,
+			IFilterStripperFactory filterStripperFactory,
 			IColumnFactory columnsFactory,
 			ISliceFactoryFactory sliceFactoryFactory,
 			IStopwatchFactory stopwatchFactory) {
+		// TODO Should we rely on Unsafe?
 		return AdhocFactories.builder()
-				.operatorFactory(operatorFactory)
 				.columnFactory(columnsFactory)
-				.stopwatchFactory(stopwatchFactory)
+				.filterOptimizerFactory(filterOptimizerFactory)
+				.filterStripperFactory(filterStripperFactory)
+				.operatorFactory(operatorFactory)
 				.sliceFactoryFactory(sliceFactoryFactory)
+				.stopwatchFactory(stopwatchFactory)
 				.build();
 	}
 

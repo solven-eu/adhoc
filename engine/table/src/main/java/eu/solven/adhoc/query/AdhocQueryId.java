@@ -24,10 +24,11 @@ package eu.solven.adhoc.query;
 
 import java.util.UUID;
 
+import org.jspecify.annotations.NonNull;
+
 import eu.solven.adhoc.util.AdhocUnsafe;
 import lombok.Builder;
 import lombok.Builder.Default;
-import lombok.NonNull;
 import lombok.Value;
 
 /**

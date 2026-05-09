@@ -22,13 +22,13 @@
  */
 package eu.solven.adhoc.filter.value;
 
+import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 
 import eu.solven.adhoc.filter.ColumnFilter;
 import eu.solven.adhoc.resource.HasWrappedSerializer;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
-import lombok.NonNull;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
 import tools.jackson.databind.annotation.JsonSerialize;

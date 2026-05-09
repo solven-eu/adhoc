@@ -24,6 +24,7 @@ package eu.solven.adhoc.dataframe.column.navigable_else_hash;
 
 import java.util.Optional;
 
+import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 
 import eu.solven.adhoc.cuboid.StreamStrategy;
@@ -38,7 +39,6 @@ import eu.solven.adhoc.primitive.IValueReceiver;
 import lombok.AccessLevel;
 import lombok.Builder.Default;
 import lombok.Getter;
-import lombok.NonNull;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;

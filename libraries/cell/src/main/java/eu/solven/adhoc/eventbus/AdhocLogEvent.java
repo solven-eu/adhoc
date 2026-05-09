@@ -25,6 +25,7 @@ package eu.solven.adhoc.eventbus;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.jspecify.annotations.NonNull;
 import org.slf4j.event.Level;
 
 import com.google.common.collect.ImmutableSet;
@@ -33,7 +34,6 @@ import eu.solven.adhoc.options.IIsDebugable;
 import eu.solven.adhoc.options.IIsExplainable;
 import lombok.Builder;
 import lombok.Builder.Default;
-import lombok.NonNull;
 import lombok.Singular;
 import lombok.Value;
 import lombok.With;

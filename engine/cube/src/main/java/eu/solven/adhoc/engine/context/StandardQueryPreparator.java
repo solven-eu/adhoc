@@ -25,6 +25,8 @@ package eu.solven.adhoc.engine.context;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
+import org.jspecify.annotations.NonNull;
+
 import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
@@ -57,7 +59,6 @@ import eu.solven.adhoc.query.AdhocSubQuery;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import lombok.Builder.Default;
-import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.SuperBuilder;
 

@@ -30,6 +30,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.IntUnaryOperator;
 
+import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 
 import eu.solven.adhoc.encoding.IIntArray;
@@ -39,7 +40,6 @@ import eu.solven.adhoc.encoding.column.freezer.AdhocFreezingUnsafe;
 import eu.solven.adhoc.encoding.column.freezer.IFreezingWithContext;
 import eu.solven.adhoc.encoding.packing.PackedIntegers;
 import lombok.Builder;
-import lombok.NonNull;
 
 /**
  * An {@link IReadableColumn} based on a dictionary.

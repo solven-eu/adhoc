@@ -25,6 +25,8 @@ package eu.solven.adhoc.engine.step;
 import java.util.Map;
 import java.util.function.Supplier;
 
+import org.jspecify.annotations.NonNull;
+
 import com.google.common.base.Suppliers;
 
 import eu.solven.adhoc.cuboid.slice.ISlice;
@@ -32,7 +34,6 @@ import eu.solven.adhoc.filter.FilterBuilder;
 import eu.solven.adhoc.filter.ISliceFilter;
 import lombok.Builder;
 import lombok.Getter;
-import lombok.NonNull;
 import lombok.ToString;
 
 /**

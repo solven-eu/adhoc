@@ -43,12 +43,12 @@ import lombok.RequiredArgsConstructor;
  * @author Benoit Lacelle
  */
 @RequiredArgsConstructor
-class TranscodingTabularRecordStream implements ITabularRecordStream {
-	private final ColumnsManager columnsManager;
-	private final AliasingContext transcodingContext;
-	private final ITabularRecordStream delegate;
-	private final ISliceFilter postFilter;
-	private final TranscodedResult transcodedQuery;
+public class TranscodingTabularRecordStream implements ITabularRecordStream {
+	protected final ColumnsManager columnsManager;
+	protected final AliasingContext transcodingContext;
+	protected final ITabularRecordStream delegate;
+	protected final ISliceFilter postFilter;
+	protected final TranscodedResult transcodedQuery;
 
 	@Override
 	public boolean isDistinctSlices() {
@@ -81,22 +81,19 @@ class TranscodingTabularRecordStream implements ITabularRecordStream {
 		// also groupBy'd by them.
 		Set<String> calculatedColumnNames = transcodingContext.getNameToCalculated().keySet();
 
-		delegate.records().forEach(rawRecord -> {
-			ITabularRecord typeTranscoded = columnsManager.transcodeTypes(valueTranscoder, rawRecord);
-
-			// TODO Should we transcode type before or after columnNames?
-			ITabularRecord valueTranscoded = typeTranscoded.transcode(columnTranscoder);
-
-			// calculate columns after transcoding, as these expression are generally table-independent
-			ITabularRecord withCalculated = columnsManager.evaluateCalculated(transcodingContext, valueTranscoded);
-
-			if (columnsManager.filterCalculatedColumns(postFilterer, withCalculated)) {
+		delegate.records()
+				.map(rawRecord -> columnsManager.transcodeTypes(valueTranscoder, rawRecord))
+				// TODO Should we transcode type before or after columnNames?
+				.map(typeTranscoded -> typeTranscoded.transcode(columnTranscoder))
+				// calculate columns after transcoding, as these expression are generally table-independent
+				.map(valueTranscoded -> columnsManager.evaluateCalculated(transcodingContext, valueTranscoded))
+				.filter(withCalculated -> columnsManager.filterCalculatedColumns(postFilterer, withCalculated))
 				// Project to the original groupBy keyset so `TabularRecordStreamReducer.columnsToMarker` matches
 				// exactly: keeps user-groupBy'd calculated columns, drops underlyings hoisted by `transcodeQuery`.
-				ITabularRecord projected = transcodedQuery.project(withCalculated, calculatedColumnNames);
-				consumer.accept(projected);
-			}
-		});
+				// BEWARE This may do a first `.retainAll` useful to later pick the proper groupingSet, and before a
+				// final `.retainAll` in `TabularRecordStreamReducer.reduce`
+				.map(withCalculated -> transcodedQuery.project(withCalculated, calculatedColumnNames))
+				.forEach(consumer);
 	}
 
 	@Override

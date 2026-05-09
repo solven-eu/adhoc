@@ -29,6 +29,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.jgrapht.Graphs;
+import org.jspecify.annotations.NonNull;
 
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.util.concurrent.Futures;
@@ -47,7 +48,6 @@ import eu.solven.adhoc.options.IHasOptionsAndExecutorService;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.Getter;
-import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 

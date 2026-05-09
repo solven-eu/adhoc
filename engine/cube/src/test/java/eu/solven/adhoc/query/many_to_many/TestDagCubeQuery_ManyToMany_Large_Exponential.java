@@ -30,6 +30,7 @@ import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 
 import org.assertj.core.api.Assertions;
+import org.jspecify.annotations.NonNull;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -55,7 +56,6 @@ import eu.solven.adhoc.measure.operator.StandardOperatorFactory;
 import eu.solven.adhoc.model.measure.Dispatchor;
 import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
 import eu.solven.adhoc.util.AdhocBenchmark;
-import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 
 /**

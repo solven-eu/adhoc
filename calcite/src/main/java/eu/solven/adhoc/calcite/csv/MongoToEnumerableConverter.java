@@ -22,7 +22,6 @@
  */
 package eu.solven.adhoc.calcite.csv;
 
-import java.io.UncheckedIOException;
 import java.util.AbstractList;
 import java.util.Arrays;
 import java.util.List;
@@ -50,10 +49,8 @@ import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.Util;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import eu.solven.adhoc.engine.query.CubeQuery;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Relational expression representing a scan of a table in a Mongo data source.
@@ -108,12 +105,7 @@ public class MongoToEnumerableConverter extends ConverterImpl implements Enumera
 				list.append("table", adhocImplementor.table.getExpression(AdhocCalciteTable.MongoQueryable.class));
 		// List<String> opList = mongoImplementor.list.rightList();
 		CubeQuery adhocQuery = adhocImplementor.cubeQueryBuilder.build();
-		String queryAsString;
-		try {
-			queryAsString = new ObjectMapper().writeValueAsString(adhocQuery);
-		} catch (JsonProcessingException e) {
-			throw new UncheckedIOException(e);
-		}
+		String queryAsString = new ObjectMapper().writeValueAsString(adhocQuery);
 
 		final Expression ops = list.append("ops", constantArrayList(Arrays.asList(queryAsString), Object.class));
 

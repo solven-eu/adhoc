@@ -22,9 +22,10 @@
  */
 package eu.solven.adhoc.pivotable.account;
 
+import org.jspecify.annotations.NonNull;
+
 import eu.solven.adhoc.pivotable.account.internal.PivotableUser;
 import lombok.Builder;
-import lombok.NonNull;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
 

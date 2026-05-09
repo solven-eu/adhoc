@@ -24,6 +24,8 @@ package eu.solven.adhoc.dataframe.column.navigable_else_hash;
 
 import java.util.Optional;
 
+import org.jspecify.annotations.NonNull;
+
 import eu.solven.adhoc.dataframe.column.IAppendOnlyMultitypeColumn;
 import eu.solven.adhoc.dataframe.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.dataframe.column.IMultitypeColumnFastGetSorted;
@@ -34,7 +36,6 @@ import eu.solven.adhoc.primitive.IValueReceiver;
 import lombok.AccessLevel;
 import lombok.Builder.Default;
 import lombok.Getter;
-import lombok.NonNull;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;

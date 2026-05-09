@@ -61,7 +61,6 @@ import lombok.extern.slf4j.Slf4j;
 public class ForestAsMermaidDag {
 
 	// Typical rendered output is a few hundred chars; seed the buffer to avoid the first grow cycles.
-	// (PMD's InsufficientStringBufferDeclaration also flags the default-size 16 as too small.)
 	private static final int INITIAL_BUFFER_SIZE = 512;
 
 	// IMPORTANT — keep in sync with the GraphViz sibling and the Pivotable frontend:

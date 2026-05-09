@@ -26,6 +26,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.regex.Pattern;
 
+import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -43,7 +44,6 @@ import eu.solven.adhoc.filter.value.NotMatcher;
 import eu.solven.adhoc.filter.value.NullMatcher;
 import eu.solven.adhoc.filter.value.RegexMatcher;
 import lombok.Builder;
-import lombok.NonNull;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
 

@@ -48,6 +48,7 @@ import org.jooq.SortField;
 import org.jooq.TableLike;
 import org.jooq.True;
 import org.jooq.impl.DSL;
+import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 
 import com.google.common.collect.ImmutableSet;
@@ -86,7 +87,6 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.Getter;
-import lombok.NonNull;
 import lombok.Value;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;

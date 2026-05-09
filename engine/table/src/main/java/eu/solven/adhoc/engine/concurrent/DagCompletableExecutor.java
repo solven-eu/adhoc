@@ -34,6 +34,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
 import org.jgrapht.graph.DefaultEdge;
+import org.jspecify.annotations.NonNull;
 
 import com.google.common.base.MoreObjects;
 
@@ -41,7 +42,6 @@ import eu.solven.adhoc.engine.dag.IAdhocDag;
 import eu.solven.adhoc.options.IHasQueryOptions;
 import lombok.Builder;
 import lombok.Builder.Default;
-import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 
 /**

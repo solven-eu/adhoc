@@ -161,6 +161,10 @@
 		<!-- TODO Investigate if you could remove this rule -->
 		<exclude name="AvoidInstantiatingObjectsInLoops" />
 		<exclude name="RedundantFieldInitializer" />
+		<!-- StringBuilder/StringBuffer initial-capacity tuning is irrelevant outside tight loops, which we
+		     don't have. Default capacity is fine; the rule generates noise on toString builders, log lines,
+		     etc. -->
+		<exclude name="InsufficientStringBufferDeclaration" />
 	</rule>
 	<rule ref="category/java/security.xml" />
 

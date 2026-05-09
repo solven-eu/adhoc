@@ -22,11 +22,12 @@
  */
 package eu.solven.adhoc.eventbus;
 
+import org.jspecify.annotations.NonNull;
+
 import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.table.IQueryPod;
 import lombok.Builder;
-import lombok.NonNull;
 import lombok.Singular;
 import lombok.Value;
 import lombok.With;

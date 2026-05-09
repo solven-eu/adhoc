@@ -25,6 +25,8 @@ package eu.solven.adhoc.measure.operator;
 import java.util.Map;
 import java.util.Optional;
 
+import org.jspecify.annotations.NonNull;
+
 import com.google.common.collect.ImmutableList;
 
 import eu.solven.adhoc.filter.editor.IFilterEditor;
@@ -32,7 +34,6 @@ import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.decomposition.IDecomposition;
 import lombok.Builder;
-import lombok.NonNull;
 import lombok.Singular;
 import lombok.extern.slf4j.Slf4j;
 

@@ -31,6 +31,8 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
+import org.jspecify.annotations.NonNull;
+
 import eu.solven.adhoc.column.calculated.ICalculatedColumn;
 import eu.solven.adhoc.cuboid.slice.Slice;
 import eu.solven.adhoc.cuboid.tabular.ITabularGroupByRecord;
@@ -45,7 +47,6 @@ import eu.solven.pepper.core.PepperStreamHelper;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.Getter;
-import lombok.NonNull;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
 
@@ -176,13 +177,13 @@ public class FunctionCalculatedColumn implements ICalculatedColumn {
 
 	}
 
-	public static Collection<ReferencedColumn> getUnderlyingColumns(FunctionCalculatedColumn calculatedColumn) {
+	public static Collection<ReferencedColumn> getUnderlyingColumns(ICalculatedColumn calculatedColumn) {
 		RecordingRecord recording = new RecordingRecord();
 
 		// Invoke solely for its side-effect on `recording`; the computed coordinate is
 		// irrelevant. Assigning to the unnamed variable `_` makes the discard explicit
 		// and satisfies Error Prone's ReturnValueIgnored check.
-		var _ = calculatedColumn.getRecordToCoordinate().apply(recording);
+		var _ = calculatedColumn.computeCoordinate(recording);
 		return recording.getUsedColumn().stream().map(ReferencedColumn::ref).toList();
 	}
 

@@ -27,6 +27,7 @@ import java.util.Set;
 import java.util.function.Function;
 
 import org.jgrapht.Graphs;
+import org.jspecify.annotations.NonNull;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableSet;
@@ -49,7 +50,6 @@ import eu.solven.adhoc.filter.IFilterQueryBundle;
 import eu.solven.adhoc.options.IHasOptionsAndExecutorService;
 import lombok.Builder;
 import lombok.Builder.Default;
-import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -77,14 +77,13 @@ public class InduceByAdhoc extends AInduceByAdhocParent {
 	protected ITableStepsSplitterFactory inferenceEdgesAdderFactory = InduceByAdhocComplete.makeFactory();
 
 	// Holds the policy allowing to merge inducers into a different set of inducers (typically smaller in number).
-	@NonNull
 	@Default
-	protected IMergeInducers.IMergeInducersFactory mergeInducersFactory = MergeInducersStrictGroupBy.makeFactory();
+	protected IMergeInducers.@NonNull IMergeInducersFactory mergeInducersFactory =
+			MergeInducersStrictGroupBy.makeFactory();
 
 	// Holds the policy allowing to add nodes in the middle of the DAG, in order to share some computations
-	@NonNull
 	@Default
-	protected IAddSharedNodes.IAddSharedNodesFactory sharedNodesAdderFactory = AddSharedNodes.makeFactory();
+	protected IAddSharedNodes.@NonNull IAddSharedNodesFactory sharedNodesAdderFactory = AddSharedNodes.makeFactory();
 
 	@SuppressWarnings("PMD.CloseResource")
 	@Override

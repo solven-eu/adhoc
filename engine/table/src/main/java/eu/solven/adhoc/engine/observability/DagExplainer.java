@@ -30,6 +30,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.jspecify.annotations.NonNull;
+
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
@@ -48,7 +50,6 @@ import eu.solven.adhoc.model.measure.Aggregator;
 import eu.solven.adhoc.model.measure.ReferencedMeasure;
 import eu.solven.adhoc.model.query.IGroupBy;
 import eu.solven.adhoc.query.AdhocQueryId;
-import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.Value;
 import lombok.experimental.SuperBuilder;
@@ -240,7 +241,7 @@ public class DagExplainer implements IDagExplainer {
 		}
 	}
 
-	@SuppressWarnings({ "PMD.InsufficientStringBufferDeclaration", "PMD.ConsecutiveLiteralAppends" })
+	@SuppressWarnings({ "PMD.ConsecutiveLiteralAppends" })
 	protected String toString2(DagExplainerState dagState, ICubeQueryStep step) {
 		if (step == FAKE_ROOT) {
 			AdhocQueryId queryId = dagState.getQueryId();

@@ -22,6 +22,8 @@
  */
 package eu.solven.adhoc.options;
 
+import org.jspecify.annotations.NonNull;
+
 import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
@@ -29,7 +31,6 @@ import com.google.common.util.concurrent.MoreExecutors;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.Getter;
-import lombok.NonNull;
 import lombok.Singular;
 
 /**

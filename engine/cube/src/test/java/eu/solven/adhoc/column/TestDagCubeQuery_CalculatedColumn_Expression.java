@@ -20,30 +20,20 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.pivotable.core;
+package eu.solven.adhoc.column;
 
-import org.greenrobot.eventbus.EventBus;
-import org.greenrobot.eventbus.Subscribe;
+import eu.solven.adhoc.column.calculated.ICalculatedColumn;
+import eu.solven.adhoc.model.column.EvaluatedExpressionColumn;
 
-import eu.solven.adhoc.eventbus.AdhocEventsFromGuavaEventBusToSfl4j;
-import eu.solven.adhoc.eventbus.IAdhocEvent;
+public class TestDagCubeQuery_CalculatedColumn_Expression extends TestDagCubeQuery_CalculatedColumn_Function {
 
-/**
- * Like {@link AdhocEventsFromGuavaEventBusToSfl4j} but subscribed on events from a Greenrobot {@link EventBus}
- * 
- * @author Benoit Lacelle
- */
-public class AdhocEventFromGreenrobotToSlf4j {
-	// Will be propagated
-	final AdhocEventsFromGuavaEventBusToSfl4j underlying = new AdhocEventsFromGuavaEventBusToSfl4j();
+	@Override
+	protected ICalculatedColumn functionColumn() {
+		return EvaluatedExpressionColumn.builder().name("custom").expression("a + \"-\" + b").build();
+	}
 
-	/**
-	 * Catch all {@link IAdhocEvent} and lets the underlying event managing them
-	 * 
-	 * @param event
-	 */
-	@Subscribe
-	public void onAdhocEvent(IAdhocEvent event) {
-		underlying.onAdhocEvent(event);
+	@Override
+	protected ICalculatedColumn functionColumn_aliased() {
+		return EvaluatedExpressionColumn.builder().name("custom").expression("proxy_a + \"-\" + proxy_b").build();
 	}
 }

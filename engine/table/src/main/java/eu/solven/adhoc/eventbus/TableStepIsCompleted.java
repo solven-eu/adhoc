@@ -24,9 +24,10 @@ package eu.solven.adhoc.eventbus;
 
 import java.time.Duration;
 
+import org.jspecify.annotations.NonNull;
+
 import eu.solven.adhoc.query.table.TableQueryV4;
 import lombok.Builder;
-import lombok.NonNull;
 import lombok.Value;
 import lombok.With;
 

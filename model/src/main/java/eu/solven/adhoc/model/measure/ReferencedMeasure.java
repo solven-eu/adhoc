@@ -24,13 +24,14 @@ package eu.solven.adhoc.model.measure;
 
 import java.util.Set;
 
+import org.jspecify.annotations.NonNull;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.resource.HasWrappedSerializer;
 import eu.solven.adhoc.util.IHasWrapped;
 import lombok.Builder;
-import lombok.NonNull;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
 import lombok.extern.slf4j.Slf4j;

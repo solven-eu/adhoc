@@ -30,13 +30,14 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.jspecify.annotations.NonNull;
+
 import eu.solven.adhoc.measure.transformator.IHasUnderlyingMeasures;
 import eu.solven.adhoc.model.measure.IMeasure;
 import eu.solven.adhoc.model.measure.IReferencedMeasure;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.Getter;
-import lombok.NonNull;
 import lombok.Singular;
 import lombok.extern.slf4j.Slf4j;
 

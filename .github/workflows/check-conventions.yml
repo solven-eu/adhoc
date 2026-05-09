@@ -51,6 +51,11 @@ jobs:
           readarray -t dirs < <(find . -type d \( -path '*/src/main/java' -o -path '*/src/test/java' \) | sort)
           perl scripts/check-convention-map-builder.pl "${dirs[@]}" || true
 
+      - name: Run Import-uniqueness checker
+        # One simple name → one FQCN, project-wide — see CONVENTIONS.MD
+        # Walks every *.java in the repo (script does its own pruning of target/, build/, .claude/, …)
+        run: perl scripts/check-convention-import-uniqueness.pl . || true
+
       - name: Report low-coverage classes (SonarCloud)
         # Queries the public SonarCloud API — no local build needed.
         # Full view: https://sonarcloud.io/component_measures?metric=uncovered_lines&view=list&id=adhoc

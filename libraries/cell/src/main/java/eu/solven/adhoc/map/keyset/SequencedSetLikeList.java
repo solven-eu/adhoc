@@ -34,6 +34,7 @@ import java.util.SequencedSet;
 import java.util.Set;
 import java.util.stream.IntStream;
 
+import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 
 import com.google.common.collect.ForwardingSet;
@@ -49,7 +50,6 @@ import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectList;
 import lombok.Builder;
-import lombok.NonNull;
 
 /**
  * A {@link SequencedSet} with information to build the order in the original {@link Set}.

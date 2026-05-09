@@ -84,4 +84,32 @@ public class AdhocJooqHelper {
 			return DSL.quotedName(name.split("\\."));
 		}
 	}
+
+	/**
+	 * Builds a qualified column name {@code <joinAlias>.<columnName>} suitable for use as a lookup key in a
+	 * {@code Map<String, ?>} keyed on column references. When neither part contains a dot, the bare-dotted form
+	 * {@code joinAlias + "." + columnName} is returned — the natural shape a query string typically uses (e.g.
+	 * {@code groupByAlso("b.country")}). When either part contains a dot (column names like {@code "a.b"}, alias names
+	 * like {@code "cust.x"}), the bare-dotted concatenation is ambiguous (does {@code "cust.x.a.b"} mean
+	 * {@code "cust"."x.a.b"} or {@code "cust.x"."a.b"}?), so we fall back to the JOOQ-escaped two-part
+	 * {@code Name.toString()} form which keeps each segment quoted independently.
+	 *
+	 * <p>
+	 * Centralises the rule shared by callers that build qualified keys (e.g.
+	 * {@code PrunedJoinsJooqTableSupplier.columnToAlias} and {@code JooqTableWrapper.getColumns} when renaming a
+	 * shadowed column to its qualified form) so the dot-in-name edge case is handled in one place.
+	 *
+	 * @param joinAlias
+	 *            the owning join's alias (the LHS of the qualifier)
+	 * @param columnName
+	 *            the column's bare name (the RHS)
+	 * @return bare-dotted form when both parts are dot-free; JOOQ-escaped two-part name otherwise
+	 */
+	public static String qualifiedColumnName(String joinAlias, String columnName) {
+		if (joinAlias.indexOf('.') < 0 && columnName.indexOf('.') < 0) {
+			return joinAlias + "." + columnName;
+		}
+		return DSL.name(joinAlias, columnName).toString();
+	}
+
 }

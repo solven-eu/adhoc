@@ -24,13 +24,14 @@ package eu.solven.adhoc.dataframe.column.navigable_else_hash;
 
 import java.util.Optional;
 
+import org.jspecify.annotations.NonNull;
+
 import eu.solven.adhoc.dataframe.column.IMultitypeMergeableColumn;
 import eu.solven.adhoc.dataframe.column.hash.MultitypeHashMergeableColumn;
 import eu.solven.adhoc.dataframe.column.navigable.MultitypeNavigableMergeableColumn;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.primitive.IValueReceiver;
 import lombok.Getter;
-import lombok.NonNull;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
 

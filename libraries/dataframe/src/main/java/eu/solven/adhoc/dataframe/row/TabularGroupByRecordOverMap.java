@@ -29,6 +29,7 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
+import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 
 import eu.solven.adhoc.cuboid.slice.ISlice;
@@ -37,7 +38,6 @@ import eu.solven.adhoc.map.IAdhocMap;
 import eu.solven.adhoc.model.query.IGroupBy;
 import lombok.Builder;
 import lombok.Getter;
-import lombok.NonNull;
 import lombok.With;
 
 /**

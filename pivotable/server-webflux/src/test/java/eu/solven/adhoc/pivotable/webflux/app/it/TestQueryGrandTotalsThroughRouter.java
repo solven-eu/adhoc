@@ -51,6 +51,7 @@ import eu.solven.adhoc.pivotable.webflux.app.PivotableServerWebfluxApplication;
 import eu.solven.adhoc.pivotable.webflux.client.IPivotableReactiveServer;
 import eu.solven.adhoc.pivotable.webflux.client.PivotableWebclientServer;
 import eu.solven.adhoc.pivotable.webmvc.client.PivotableWebclientServerProperties;
+import eu.solven.adhoc.table.sql.AdhocJooqHelper;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Flux;
 
@@ -71,6 +72,9 @@ import reactor.core.publisher.Flux;
 		PivotableWebclientServerProperties.KEY_PLAYER_CONTESTBASEURL + "=http://localhost:LocalServerPort" })
 @Slf4j
 public class TestQueryGrandTotalsThroughRouter {
+	static {
+		AdhocJooqHelper.disableBanners();
+	}
 
 	// https://stackoverflow.com/questions/30312058/spring-boot-how-to-get-the-running-port
 	@LocalServerPort

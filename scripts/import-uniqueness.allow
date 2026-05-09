@@ -1,0 +1,67 @@
+# Waiver list for `scripts/check-convention-import-uniqueness.pl`.
+#
+# Each row pins the dominant FQCN for a Java simple class name. The dominant
+# FQCN is the one that *should* be imported anywhere it's needed; any other
+# FQCN sharing the same simple name must be referenced via its fully-qualified
+# name inline (never imported).
+#
+# Format:  <SimpleName>  <whitespace>  <dominant.FQCN>
+# Comments start with `#` and run to end of line. Blank lines are ignored.
+#
+# When a row is present here, the checker:
+#  - suppresses the dominant-FQCN side of the conflict from the report (those
+#    imports are correct);
+#  - flags only the non-dominant FQCN imports, with their file paths, so the
+#    report is focused on actionable cleanup.
+#
+# Special FQCN value `*` means "intentionally polysemous, accept any number
+# of FQCNs for this simple name". Use sparingly — only for names that
+# legitimately mean different things across modules with no chance of
+# conflation (e.g. `Field` from java.lang.reflect vs org.jooq vs Apache Arrow:
+# different domains, different files, no risk of confusion).
+#
+# When a simple name is NOT in this list and has 2+ distinct FQCNs in the
+# repo, every variant is reported (no canonical pick has been declared yet).
+#
+# To add a new pin: pick the dominant FQCN by majority usage today, declare it
+# below, run the checker, and clean up the non-dominant imports it lists.
+
+Builder        lombok.Builder
+Configuration  org.springframework.context.annotation.Configuration
+ImmutableMap   com.google.common.collect.ImmutableMap
+Logger         org.slf4j.Logger
+Mode           org.openjdk.jmh.annotations.Mode
+Nullable       org.jspecify.annotations.Nullable
+Supplier       java.util.function.Supplier
+Suppliers      com.google.common.base.Suppliers
+Table          org.jooq.Table
+Throwables     com.google.common.base.Throwables
+Value          lombok.Value
+
+# Intentionally polysemous — distinct domains, no risk of conflation.
+# Cross-library names where each FQCN means a fundamentally different concept:
+Document       *
+EventBus       *
+Expression     *
+Field          *
+Level          *
+Param          *
+ParseException *
+Schema         *
+Subscribe      *
+Util           *
+
+# `NonNull` serves two distinct purposes that should both stay reachable:
+#  - `lombok.NonNull` adds a runtime null-check in Lombok-generated code (constructor, builder,
+#    setter), with the exception type configured by `lombok.config:lombok.nonNull.exceptionType`.
+#  - `org.jspecify.annotations.NonNull` is compile-only nullness for static analysis (NullAway,
+#    IDE highlights, NullMarked package semantics).
+# Per <https://github.com/projectlombok/lombok/issues/3865>, jspecify is intentionally compile-only
+# and should not be treated as a synonym for `@lombok.NonNull` at the runtime layer. Each codebase
+# position picks the form that matches its intent (runtime guard vs static-analysis hint).
+NonNull        *
+
+# Webflux vs webmvc framework split — both modules legitimately need their own framework's class:
+CsrfToken                   *
+ResourceHandlerRegistration *
+ResourceHandlerRegistry     *

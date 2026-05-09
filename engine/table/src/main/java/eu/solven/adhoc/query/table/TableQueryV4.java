@@ -32,6 +32,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
+import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 
 import com.google.common.collect.ImmutableSet;
@@ -53,7 +54,6 @@ import eu.solven.adhoc.query.top.AdhocTopClause;
 import eu.solven.adhoc.table.ITableWrapper;
 import lombok.Builder;
 import lombok.Builder.Default;
-import lombok.NonNull;
 import lombok.Singular;
 import lombok.Value;
 
@@ -311,11 +311,29 @@ public class TableQueryV4 implements ITableQuery {
 				.collect(ImmutableSet.toImmutableSet());
 	}
 
+	/**
+	 * Union of every column referenced by a filter on the query — both the shared {@link #getFilter()} and each
+	 * {@link FilteredAggregator#getFilter()}. Useful to identify columns the table layer may need to read in order to
+	 * evaluate filters (and, for non-pushdown matchers, may have hoisted into a SQL grouping set).
+	 *
+	 * @param tableQuery
+	 *            the query whose filters to inspect
+	 * @return immutable set of filter-referenced column names
+	 */
+	public static Set<String> getFilteredColumns(TableQueryV4 tableQuery) {
+		ImmutableSet.Builder<String> columns = ImmutableSet.builder();
+		columns.addAll(FilterHelpers.getFilteredColumns(tableQuery.getFilter()));
+		for (FilteredAggregator fa : tableQuery.getAggregators()) {
+			columns.addAll(FilterHelpers.getFilteredColumns(fa.getFilter()));
+		}
+		return columns.build();
+	}
+
 	public static Set<String> getColumns(TableQueryV4 tableQuery) {
 		ImmutableSet.Builder<String> columns = ImmutableSet.builder();
 
 		columns.addAll(tableQuery.getGroupedByColumns());
-		columns.addAll(FilterHelpers.getFilteredColumns(tableQuery.getFilter()));
+		columns.addAll(getFilteredColumns(tableQuery));
 
 		for (FilteredAggregator fa : tableQuery.getAggregators()) {
 			// Skip empty aggregators — they never read from the table; their `columnName` defaults to the
@@ -324,7 +342,6 @@ public class TableQueryV4 implements ITableQuery {
 			if (!EmptyAggregation.isEmpty(fa.getAggregator())) {
 				columns.add(fa.getAggregator().getColumnName());
 			}
-			columns.addAll(FilterHelpers.getFilteredColumns(fa.getFilter()));
 		}
 
 		return columns.build();

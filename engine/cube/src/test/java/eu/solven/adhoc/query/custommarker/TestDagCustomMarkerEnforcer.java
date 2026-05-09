@@ -32,6 +32,7 @@ import java.util.Optional;
 import java.util.Set;
 
 import org.assertj.core.api.Assertions;
+import org.jspecify.annotations.NonNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -51,7 +52,6 @@ import eu.solven.adhoc.query.foreignexchange.ForeignExchangeCombination;
 import eu.solven.adhoc.query.foreignexchange.ForeignExchangeStorage;
 import eu.solven.adhoc.query.foreignexchange.IForeignExchangeStorage;
 import eu.solven.pepper.core.PepperLogHelper;
-import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 
 /**

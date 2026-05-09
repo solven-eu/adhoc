@@ -101,8 +101,7 @@ public class PivotableChatHandler {
 		});
 	}
 
-	@SuppressWarnings({ "PMD.InsufficientStringBufferDeclaration",
-			"PMD.ConsecutiveAppendsShouldReuse",
+	@SuppressWarnings({ "PMD.ConsecutiveAppendsShouldReuse",
 			"PMD.ConsecutiveLiteralAppends",
 			"PMD.AppendCharacterWithChar" })
 	protected String buildSystemPrompt(String cube, EndpointSchemaMetadata metadata) {

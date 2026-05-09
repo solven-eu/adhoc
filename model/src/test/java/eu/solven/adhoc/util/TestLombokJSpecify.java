@@ -31,26 +31,33 @@ import lombok.Value;
 import lombok.experimental.SuperBuilder;
 
 /**
- * Project-wide pinning tests for the interaction between JSpecify (package-level {@code @NullMarked}) and Lombok's code
- * generators. Lives in {@code adhoc-model} so any module can rely on the conclusions: the rules pinned here are "do
- * {@code @lombok.NonNull} and what you can drop" decisions that apply across the whole codebase.
+ * Project-wide pinning tests for the interaction between JSpecify and Lombok's code generators. Lives in
+ * {@code adhoc-model} so any module can rely on the conclusions.
  *
  * <p>
- * Bottom line for callers: until <a href="https://github.com/projectlombok/lombok/issues/3861">lombok#3861</a> is
- * fixed, package-level {@code @NullMarked} buys static-analysis nullness (NullAway, IDE highlights) but nothing at
- * runtime — Lombok's {@code @Builder} and {@code @SuperBuilder} only generate runtime null checks for fields explicitly
- * annotated with {@code @lombok.NonNull}. {@code CONVENTIONS.MD} cites this test as the empirical evidence for keeping
- * {@code @lombok.NonNull} on required builder fields.
+ * Bottom line for callers:
+ * <ul>
+ * <li><b>Package-level {@code @NullMarked} alone</b> is static-analysis only (NullAway, IDE highlights) — Lombok's
+ * {@code @Builder} and {@code @SuperBuilder} do <b>not</b> generate a runtime null-check from package-level marking.
+ * <a href="https://github.com/projectlombok/lombok/issues/3861">lombok#3861</a> tracks lifting this gap.</li>
+ * <li><b>Field-level {@code @org.jspecify.annotations.NonNull}</b> <em>is</em> honoured by Lombok at runtime —
+ * {@code .build()} throws {@code IllegalArgumentException} on null, exactly the same shape as {@code @lombok.NonNull}.
+ * This is the empirical justification for picking {@code org.jspecify.annotations.NonNull} as the dominant
+ * {@code NonNull} simple-name in {@code scripts/import-uniqueness.allow}: existing {@code @lombok.NonNull} usages can
+ * be migrated to JSpecify with no behavioural change.</li>
+ * <li><b>Field-level {@code @lombok.NonNull}</b> still works (legacy code path). Migration is opportunistic; new code
+ * should use JSpecify.</li>
+ * </ul>
  *
  * <p>
- * If any of these tests start failing — i.e. {@code .build()} starts throwing where it currently returns null — Lombok
- * has gained {@code @NullMarked} support at runtime. At that point reinstate the "drop {@code @NonNull}" line in
- * {@code CONVENTIONS.MD} and keep this class as the regression guard.
+ * If the package-level tests start failing (i.e. {@code .build()} throws where it currently returns null), Lombok has
+ * finally lifted the package-level gap and we can drop the field-level annotation entirely on classes whose package is
+ * {@code @NullMarked}.
  *
  * <p>
  * The fixtures intentionally live in {@code eu.solven.adhoc.util} (which is {@code @NullMarked} via the production
- * {@code package-info.java} — src/main and src/test share the same package). No {@code @lombok.NonNull} on the field is
- * the load-bearing detail; everything else is boilerplate.
+ * {@code package-info.java} — src/main and src/test share the same package). The presence/absence of the field-level
+ * annotation is the load-bearing detail; everything else is boilerplate.
  */
 public class TestLombokJSpecify {
 
@@ -96,6 +103,30 @@ public class TestLombokJSpecify {
 				.isInstanceOf(IllegalArgumentException.class);
 	}
 
+	/**
+	 * @Builder + explicit {@link org.jspecify.annotations.NonNull}: build() throws — same runtime contract as
+	 *          {@code @lombok.NonNull}. This is the load-bearing test for the project-wide migration plan: the
+	 *          {@code NonNull} simple-name canonical pick in {@code scripts/import-uniqueness.allow} is
+	 *          {@code org.jspecify.annotations.NonNull}, and this test proves the swap is behaviour-preserving on
+	 *          required builder fields.
+	 */
+	@Test
+	public void testBuilder_jspecifyNonNull_doesEnforceAtRuntime() {
+		Assertions.assertThatThrownBy(() -> BuilderWithJSpecifyNonNullFixture.builder().build())
+				.isInstanceOf(IllegalArgumentException.class);
+	}
+
+	/**
+	 * @SuperBuilder counterpart of {@link #testBuilder_jspecifyNonNull_doesEnforceAtRuntime()}. Pinned separately
+	 *               because @SuperBuilder is a different code generator and could in principle drop JSpecify support
+	 *               independently.
+	 */
+	@Test
+	public void testSuperBuilder_jspecifyNonNull_doesEnforceAtRuntime() {
+		Assertions.assertThatThrownBy(() -> SuperBuilderWithJSpecifyNonNullFixture.builder().build())
+				.isInstanceOf(IllegalArgumentException.class);
+	}
+
 	// ── Fixtures ─────────────────────────────────────────────────────────────
 
 	@Value
@@ -112,6 +143,13 @@ public class TestLombokJSpecify {
 	}
 
 	@Value
+	@Builder
+	public static class BuilderWithJSpecifyNonNullFixture {
+		@org.jspecify.annotations.NonNull
+		String name;
+	}
+
+	@Value
 	@SuperBuilder
 	public static class SuperBuilderFixture {
 		String name;
@@ -121,6 +159,13 @@ public class TestLombokJSpecify {
 	@SuperBuilder
 	public static class SuperBuilderWithLombokNonNullFixture {
 		@NonNull
+		String name;
+	}
+
+	@Value
+	@SuperBuilder
+	public static class SuperBuilderWithJSpecifyNonNullFixture {
+		@org.jspecify.annotations.NonNull
 		String name;
 	}
 }

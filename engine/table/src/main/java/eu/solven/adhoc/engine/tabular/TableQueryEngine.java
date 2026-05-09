@@ -40,6 +40,8 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.jspecify.annotations.NonNull;
+
 import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -120,7 +122,6 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.Getter;
-import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -556,7 +557,6 @@ public class TableQueryEngine implements ITableQueryEngine {
 		return nameToColumns.asMap().values().stream().allMatch(c -> c.size() == 1);
 	}
 
-	// `InsufficientStringBufferDeclaration`: Unclear if we prefer a MagicNumber
 	protected String toPerfLog(TableQueryV4 tableQuery) {
 		// isPerfectV3() is the shared flag: JooqTableQueryFactory currently ignores it and always uses
 		// asCoveringV3() (GROUPING SETS), but the log reflects what the strategy should ideally be.
@@ -567,7 +567,6 @@ public class TableQueryEngine implements ITableQueryEngine {
 		return tableQuery.streamV3().map(this::toPerfLog).collect(Collectors.joining(" UNION ALL "));
 	}
 
-	@SuppressWarnings("PMD.InsufficientStringBufferDeclaration")
 	protected String toPerfLog(TableQueryV3 tableQuery) {
 		String measures = tableQuery.getAggregators().stream().map(this::toPerfLog).collect(Collectors.joining(", "));
 

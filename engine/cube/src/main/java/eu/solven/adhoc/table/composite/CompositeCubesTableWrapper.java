@@ -40,6 +40,8 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.jspecify.annotations.NonNull;
+
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.MultimapBuilder.SetMultimapBuilder;
 import com.google.common.collect.SetMultimap;
@@ -92,10 +94,10 @@ import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.TableWrapperHelpers;
 import eu.solven.adhoc.table.composite.CompositeCubeHelper.CompatibleMeasures;
 import eu.solven.adhoc.table.composite.SubMeasureAsAggregator.SubMeasureAsAggregatorBuilder;
+import eu.solven.adhoc.util.IHasCache;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.Getter;
-import lombok.NonNull;
 import lombok.Singular;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
@@ -111,7 +113,7 @@ import lombok.extern.slf4j.Slf4j;
 // GodClass: large class kept whole because the methods coordinate composite-cube dispatch and splitting them would
 // require leaking many private invariants. Refactor tracked separately.
 @SuppressWarnings({ "PMD.GodClass", "PMD.CouplingBetweenObjects" })
-public class CompositeCubesTableWrapper implements ITableWrapper, IHasHealthDetails {
+public class CompositeCubesTableWrapper implements ITableWrapper, IHasHealthDetails, IHasCache {
 
 	/**
 	 * Default name for the virtual column (see {@link #optCubeSlicer}) exposed by the composite cube to let a user
@@ -422,10 +424,13 @@ public class CompositeCubesTableWrapper implements ITableWrapper, IHasHealthDeta
 				.stream()
 				// subCube does not know about `measure=k1`
 				.filter(a -> !cubeMeasures.contains(a.getAggregator().getColumnName()))
-				// But the subCube has a `column=k1` and we want to aggregate over `k1`
-				// So we propagate the provided definition to the subCube
+				// EmptyAggregation needs no underlying column — it only materializes slices, so it must reach every
+				// subCube unconditionally (even those that do not declare any matching measure or column).
+				// Otherwise: the subCube has a `column=k1` and we want to aggregate over `k1`,
+				// so we propagate the provided definition to the subCube.
 				// TODO Could we also add some transformators?
-				.filter(a -> isColumnAvailable(isSubColumn, a.getAggregator().getColumnName()))
+				.filter(a -> EmptyAggregation.isEmpty(a.getAggregator())
+						|| isColumnAvailable(isSubColumn, a.getAggregator().getColumnName()))
 				.collect(Collectors.toCollection(LinkedHashSet::new));
 
 		return CompatibleMeasures.builder()
@@ -754,6 +759,20 @@ public class CompositeCubesTableWrapper implements ITableWrapper, IHasHealthDeta
 		});
 
 		return details;
+	}
+
+	/**
+	 * Fans out the invalidation to every sub-cube that is itself an {@link IHasCache} (typically a {@link CubeWrapper},
+	 * whose own {@link CubeWrapper#invalidateAll()} also propagates to the underlying {@link ITableWrapper}). Sub-cubes
+	 * that do not opt into {@link IHasCache} are left untouched.
+	 */
+	@Override
+	public void invalidateAll() {
+		cubes.forEach(cube -> {
+			if (cube instanceof IHasCache cubeCache) {
+				cubeCache.invalidateAll();
+			}
+		});
 	}
 
 }

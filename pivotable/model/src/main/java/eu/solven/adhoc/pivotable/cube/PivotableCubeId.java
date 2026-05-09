@@ -24,8 +24,9 @@ package eu.solven.adhoc.pivotable.cube;
 
 import java.util.UUID;
 
+import org.jspecify.annotations.NonNull;
+
 import lombok.Builder;
-import lombok.NonNull;
 import lombok.Value;
 
 /**

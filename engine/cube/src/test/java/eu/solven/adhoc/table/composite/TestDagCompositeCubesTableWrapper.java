@@ -22,6 +22,7 @@
  */
 package eu.solven.adhoc.table.composite;
 
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -67,6 +68,7 @@ import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.InMemoryTable;
 import eu.solven.adhoc.table.composite.CompositeCubeHelper.CompatibleMeasures;
 import eu.solven.adhoc.table.transcoder.MapTableAliaser;
+import eu.solven.adhoc.util.IHasCache;
 
 public class TestDagCompositeCubesTableWrapper extends ATestDagRaw implements IAdhocTestConstants {
 
@@ -941,6 +943,144 @@ public class TestDagCompositeCubesTableWrapper extends ATestDagRaw implements IA
 												.build())
 								.build())
 				.hasSize(2);
+	}
+
+	// Querying Aggregator.empty() against a composite cube whose subCubes do NOT explicitly declare an empty measure.
+	// The expected behaviour is to forward an empty aggregator to every subCube so the composite query materializes the
+	// distinct slices across all subCubes (analogous to `SELECT NULL AS x` UNION ALL across subCubes). At present this
+	// fails because makeSubQuery produces a measure-less subQuery for each subCube.
+	@Test
+	public void testEmptyAggregator_forwardedToSubCubesWithoutExplicitEmptyMeasure() {
+		String tableName1 = "someTableName1";
+		InMemoryTable table1 = InMemoryTable.builder().name(tableName1).build();
+
+		String tableName2 = "someTableName2";
+		InMemoryTable table2 = InMemoryTable.builder().name(tableName2).build();
+
+		CubeWrapper cube1;
+		{
+			UnsafeMeasureForest measureBag = UnsafeMeasureForest.builder().name(tableName1).build();
+			measureBag.addMeasure(k1Sum);
+			cube1 = wrapInCube(measureBag, table1);
+		}
+		CubeWrapper cube2;
+		{
+			UnsafeMeasureForest measureBag = UnsafeMeasureForest.builder().name(tableName2).build();
+			measureBag.addMeasure(k1Sum);
+			cube2 = wrapInCube(measureBag, table2);
+		}
+
+		// Composite forest does NOT declare any empty measure.
+		UnsafeMeasureForest compositeForest = UnsafeMeasureForest.builder().name("composite").build();
+
+		CompositeCubesTableWrapper compositeCubesTable =
+				CompositeCubesTableWrapper.builder().cube(cube1).cube(cube2).build();
+
+		IMeasureForest withUnderlyings = compositeCubesTable.injectUnderlyingMeasures(compositeForest);
+
+		// Distinct coordinates across the two subCubes
+		table1.add(Map.of("k1", 123, "a", "a1"));
+		table1.add(Map.of("k1", 234, "a", "a2"));
+
+		table2.add(Map.of("k1", 345, "a", "a2"));
+		table2.add(Map.of("k1", 456, "a", "a3"));
+
+		CubeWrapper compositeCube = makeComposite(compositeCubesTable, withUnderlyings);
+
+		// Querying Aggregator.empty() with groupBy:a — expected to return one row per distinct `a` across subCubes.
+		Aggregator empty = Aggregator.empty();
+		ITabularView view = compositeCube.execute(CubeQuery.builder().measure(empty).groupByAlso("a").build());
+		MapBasedTabularView mapBased = MapBasedTabularView.load(view);
+
+		Assertions.assertThat(mapBased.getCoordinatesToValues().keySet())
+				.containsExactlyInAnyOrder(Map.of("a", "a1"), Map.of("a", "a2"), Map.of("a", "a3"));
+	}
+
+	// Mixed query: a real measure (k1) AND an empty aggregator. The real measure is only known by ONE subCube (cube1).
+	// The empty aggregator should still be forwarded to cube2 so its slices contribute to the result. Currently this
+	// drops cube2's slices because isEligible returns false for cube2 (it has neither `k1` nor a column named `empty`)
+	// and the EmptyAggregation.isEmpty(...) short-circuit only triggers when ALL aggregators are empty.
+	@Test
+	public void testEmptyAggregator_mixedWithRealMeasure_forwardedToAllSubCubes() {
+		String tableName1 = "someTableName1";
+		InMemoryTable table1 = InMemoryTable.builder().name(tableName1).build();
+
+		String tableName2 = "someTableName2";
+		InMemoryTable table2 = InMemoryTable.builder().name(tableName2).build();
+
+		CubeWrapper cube1;
+		{
+			UnsafeMeasureForest measureBag = UnsafeMeasureForest.builder().name(tableName1).build();
+			measureBag.addMeasure(k1Sum);
+			cube1 = wrapInCube(measureBag, table1);
+		}
+		// cube2 has NO `k1` measure (only `k2`) — yet its slices on column `a` should still appear via the empty
+		// aggregator's slice-materialization role.
+		CubeWrapper cube2;
+		{
+			UnsafeMeasureForest measureBag = UnsafeMeasureForest.builder().name(tableName2).build();
+			measureBag.addMeasure(k2Sum);
+			cube2 = wrapInCube(measureBag, table2);
+		}
+
+		UnsafeMeasureForest compositeForest = UnsafeMeasureForest.builder().name("composite").build();
+
+		CompositeCubesTableWrapper compositeCubesTable =
+				CompositeCubesTableWrapper.builder().cube(cube1).cube(cube2).build();
+
+		IMeasureForest withUnderlyings = compositeCubesTable.injectUnderlyingMeasures(compositeForest);
+
+		table1.add(Map.of("k1", 123, "a", "a1"));
+		table1.add(Map.of("k1", 234, "a", "a2"));
+
+		// cube2 introduces a fresh slice `a3` that only exists on cube2.
+		table2.add(Map.of("k2", 345, "a", "a2"));
+		table2.add(Map.of("k2", 456, "a", "a3"));
+
+		CubeWrapper compositeCube = makeComposite(compositeCubesTable, withUnderlyings);
+
+		Aggregator empty = Aggregator.empty();
+		ITabularView view = compositeCube
+				.execute(CubeQuery.builder().measure(k1Sum.getName()).measure(empty).groupByAlso("a").build());
+		MapBasedTabularView mapBased = MapBasedTabularView.load(view);
+
+		// We expect the slice `a3` (only present on cube2) to appear because the empty aggregator should have
+		// materialized cube2's slices.
+		Assertions.assertThat(mapBased.getCoordinatesToValues().keySet())
+				.containsExactlyInAnyOrder(Map.of("a", "a1"), Map.of("a", "a2"), Map.of("a", "a3"));
+	}
+
+	// CompositeCubesTableWrapper.invalidateAll() must fan out to every sub-cube that is IHasCache so a downstream
+	// schema change (or stale alias warning) is cleared without callers having to walk the cube graph manually.
+	@Test
+	public void testInvalidateAll_propagatesToEverySubCube() {
+		InMemoryTable table1 = InMemoryTable.builder().name("t1").build();
+		table1.add(Map.of("k1", 1));
+
+		InMemoryTable table2 = InMemoryTable.builder().name("t2").build();
+		table2.add(Map.of("k1", 2));
+
+		UnsafeMeasureForest forest1 = UnsafeMeasureForest.builder().name("t1").build();
+		forest1.addMeasure(k1Sum);
+		CubeWrapper cube1 = wrapInCube(forest1, table1);
+
+		UnsafeMeasureForest forest2 = UnsafeMeasureForest.builder().name("t2").build();
+		forest2.addMeasure(k1Sum);
+		CubeWrapper cube2 = wrapInCube(forest2, table2);
+
+		CompositeCubesTableWrapper composite = CompositeCubesTableWrapper.builder().cube(cube1).cube(cube2).build();
+
+		// Prime each sub-cube's cache.
+		Collection<ColumnMetadata> cube1Before = cube1.getColumns();
+		Collection<ColumnMetadata> cube2Before = cube2.getColumns();
+
+		Assertions.assertThat(composite).isInstanceOf(IHasCache.class);
+
+		// Composite-level invalidation must drop every sub-cube's cache.
+		composite.invalidateAll();
+
+		Assertions.assertThat(cube1.getColumns()).isNotSameAs(cube1Before);
+		Assertions.assertThat(cube2.getColumns()).isNotSameAs(cube2Before);
 	}
 
 	@Test

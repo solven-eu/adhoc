@@ -24,10 +24,11 @@ package eu.solven.adhoc.beta.schema;
 
 import java.util.UUID;
 
+import org.jspecify.annotations.NonNull;
+
 import eu.solven.adhoc.engine.query.CubeQuery;
 import eu.solven.adhoc.options.IQueryOption;
 import lombok.Builder;
-import lombok.NonNull;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
 

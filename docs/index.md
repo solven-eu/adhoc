@@ -19,6 +19,7 @@ Pivotable is a referential implementation of a web application wrapping Adhoc ca
 ### Working with data
 
 - [Tables](tables.md) — table query DAG, SQL/JooQ integration, null handling
+- [Complex SQL with JooQ](sql-jooq.md) — `JooqTableSupplierBuilder`, snowflake & diamond joins, join pruning, column aliases (and how to combine them with custom `ColumnsManager` aliasers)
 - [Filtering](filtering.md) — `ISliceFilter`, `IValueMatcher`, custom operators, and performance notes
 - [Type Inference](type-inference.md) — int→long and float→double promotion rules
 

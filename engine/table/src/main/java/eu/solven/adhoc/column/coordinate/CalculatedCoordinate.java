@@ -22,10 +22,11 @@
  */
 package eu.solven.adhoc.column.coordinate;
 
+import org.jspecify.annotations.NonNull;
+
 import eu.solven.adhoc.filter.ISliceFilter;
 import lombok.Builder;
 import lombok.Builder.Default;
-import lombok.NonNull;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
 

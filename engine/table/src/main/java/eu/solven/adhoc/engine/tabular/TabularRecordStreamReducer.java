@@ -24,7 +24,6 @@ package eu.solven.adhoc.engine.tabular;
 
 import java.util.Map;
 import java.util.NavigableSet;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.Executor;
@@ -32,7 +31,10 @@ import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 import java.util.stream.IntStream;
 
+import org.jspecify.annotations.NonNull;
+
 import com.google.common.collect.Multimaps;
+import com.google.common.collect.Sets;
 
 import eu.solven.adhoc.cuboid.slice.ISlice;
 import eu.solven.adhoc.dataframe.aggregating.AggregatingColumns;
@@ -68,7 +70,6 @@ import eu.solven.adhoc.table.IQueryPod;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import eu.solven.pepper.core.PepperStreamHelper;
 import lombok.Builder;
-import lombok.NonNull;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 
@@ -142,8 +143,41 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 						return new GroupByMarker(gb, sequencedKeyset);
 					}));
 
-			return r -> Objects.requireNonNull(columnsToMarker.get(r.asSlice().columnsKeySet()),
-					"each scanned record must match a registered groupBy");
+			// Columns the table layer may have hoisted into each SQL grouping set so a non-pushdown filter
+			// has per-row values to evaluate against (see `JooqTableQueryFactory.makeGroupingFields`). Records
+			// from such a hoisted grouping carry `originalGroupBy ∪ hoistedColumns`; to recover the original
+			// groupBy we accept extras drawn from this set. Pessimistic over-approximation: any filter-
+			// referenced column (shared or per-aggregator) is treated as potentially hoisted — extras here
+			// only widen what the slow path tolerates.
+			Set<String> hoistableColumns = TableQueryV4.getFilteredColumns(tableQuery);
+
+			return r -> {
+				Set<String> recordColumnsKeySet = r.asSlice().columnsKeySet();
+				GroupByMarker marker = columnsToMarker.get(recordColumnsKeySet);
+				if (marker == null && !hoistableColumns.isEmpty()) {
+					// Slow path: find marker M such that M ⊆ recordKeySet and (recordKeySet \ M) ⊆ hoistable.
+					for (GroupByMarker candidate : columnsToMarker.values()) {
+						Set<String> candidateColumns = candidate.keySet().sortedSet();
+						if (recordColumnsKeySet.containsAll(candidateColumns) && hoistableColumns
+								.containsAll(Sets.difference(recordColumnsKeySet, candidateColumns))) {
+							marker = candidate;
+							break;
+						}
+					}
+				}
+				if (marker == null) {
+					throw new IllegalStateException(
+							"each scanned record must match a registered groupBy." + " record.columnsKeySet="
+									+ recordColumnsKeySet
+									+ " registeredGroupBys="
+									+ columnsToMarker.keySet()
+									+ " hoistableColumns="
+									+ hoistableColumns
+									+ " record="
+									+ r);
+				}
+				return marker;
+			};
 		}
 	}
 

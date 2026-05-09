@@ -24,6 +24,8 @@ package eu.solven.adhoc.engine.tabular;
 
 import java.util.Map;
 
+import org.jspecify.annotations.NonNull;
+
 import eu.solven.adhoc.cuboid.ICuboid;
 import eu.solven.adhoc.dataframe.tabular.ITabularView;
 import eu.solven.adhoc.engine.QueryStepsDag;
@@ -44,7 +46,6 @@ import eu.solven.adhoc.table.IQueryPod;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.Getter;
-import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 
 /**

@@ -22,6 +22,7 @@
  */
 package eu.solven.adhoc.query;
 
+import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 
 import com.google.common.collect.ImmutableSet;
@@ -34,7 +35,6 @@ import eu.solven.adhoc.model.query.IHasCustomMarker;
 import eu.solven.adhoc.options.IHasQueryOptions;
 import eu.solven.adhoc.options.IQueryOption;
 import lombok.Builder;
-import lombok.NonNull;
 import lombok.Singular;
 import lombok.Value;
 

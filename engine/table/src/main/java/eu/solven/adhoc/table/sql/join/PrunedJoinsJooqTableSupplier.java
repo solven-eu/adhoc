@@ -34,12 +34,14 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.ExecutionException;
+import java.util.function.Predicate;
 
 import org.jooq.Field;
 import org.jooq.Record;
 import org.jooq.Table;
 import org.jooq.TableLike;
 import org.jooq.impl.DSL;
+import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -52,6 +54,7 @@ import com.google.common.util.concurrent.ListeningExecutorService;
 import eu.solven.adhoc.factories.AdhocFactoriesUnsafe;
 import eu.solven.adhoc.query.ICountMeasuresConstants;
 import eu.solven.adhoc.query.table.TableQueryV4;
+import eu.solven.adhoc.table.sql.AdhocJooqHelper;
 import eu.solven.adhoc.table.sql.IJooqColumnsResolver;
 import eu.solven.adhoc.table.sql.IJooqTableSupplier;
 import eu.solven.adhoc.table.sql.JooqColumnsHelpers;
@@ -61,7 +64,6 @@ import eu.solven.adhoc.util.IHasCache;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.Getter;
-import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -181,6 +183,18 @@ public class PrunedJoinsJooqTableSupplier implements IJooqTableSupplier, IHasCac
 		return fullTableCache;
 	}
 
+	@Override
+	public Map<String, String> getAliasToOriginal() {
+		return schema.getAliasToOriginal();
+	}
+
+	@Override
+	public Map<String, String> getColumnToJoinAlias() {
+		// Same data the snapshot helper exposes for tests/debugging — promoted to the public API so callers can
+		// resolve which join provides a given column.
+		return getColumnToAliasSnapshot();
+	}
+
 	/**
 	 * Drops the column→alias index, the per-query needed-alias cache, and the per-alias resolver cache. Call this after
 	 * a late {@code leftJoin} on the underlying schema, after swapping {@link #columnsResolver}, or after the joined
@@ -233,6 +247,7 @@ public class PrunedJoinsJooqTableSupplier implements IJooqTableSupplier, IHasCac
 				}
 				continue;
 			}
+			// the columns seems to be an expression instead of a column reference: we need to analyze it
 			Set<String> extracted = expressionColumnExtractor.extractColumns(originalColumn, index.keySet());
 			boolean anyHit = false;
 			for (String inner : extracted) {
@@ -254,13 +269,13 @@ public class PrunedJoinsJooqTableSupplier implements IJooqTableSupplier, IHasCac
 		}
 
 		// 2. Non-prunable joins are always needed.
-		for (JoinNode node : joinNodes) {
-			if (!node.isPrunable()) {
-				needed.add(node.getAlias());
-			}
-		}
+		joinNodes.stream().filter(Predicate.not(JoinNode::isPrunable)).map(JoinNode::getAlias).forEach(needed::add);
 
-		// 3. Transitive closure up the parent chain.
+		// 3. Transitive closure up the parent chain. In addition to the declared `parentAlias`, follow every
+		// alias the ON-clause references — this captures diamond joins where the ON-clause depends on more
+		// than one parent (e.g. `c.region = a.region AND c.segment = b.segment`: declared parent `a`, but `b`
+		// is also required). Without this widening, `b` would be pruned out and the SQL would reference a
+		// dropped alias.
 		Map<String, JoinNode> byAlias = byAlias();
 		Deque<String> worklist = new ArrayDeque<>(needed);
 		while (!worklist.isEmpty()) {
@@ -271,6 +286,11 @@ public class PrunedJoinsJooqTableSupplier implements IJooqTableSupplier, IHasCac
 			String parent = node.getParentAlias();
 			if (parent != null && !parent.equals(baseAlias) && needed.add(parent)) {
 				worklist.push(parent);
+			}
+			for (String referenced : node.getReferencedAliases()) {
+				if (!referenced.equals(node.getAlias()) && !referenced.equals(baseAlias) && needed.add(referenced)) {
+					worklist.push(referenced);
+				}
 			}
 		}
 
@@ -319,17 +339,15 @@ public class PrunedJoinsJooqTableSupplier implements IJooqTableSupplier, IHasCac
 				JoinNode node = joinNodes.get(i);
 				Set<String> columns = futures.get(i).join();
 				String alias = node.getAlias();
-				boolean dotFreeAlias = alias.indexOf('.') < 0;
 				for (String column : columns) {
 					// Unqualified form: first-declared wins on collisions (matches `registerInAliaser` /
 					// `putIfAbsent` semantics).
 					idx.putIfAbsent(column, alias);
-					// Bare dotted form `alias.column` — the convention cube callers use today (e.g.
-					// `groupBy("p.productName")`). Skipped when alias OR column already contains a dot, since the
-					// resulting key would be ambiguous (e.g. `cust.a.b` could mean `cust` × `a.b` or `cust.a` × `b`).
-					if (dotFreeAlias && column.indexOf('.') < 0) {
-						idx.putIfAbsent(alias + "." + column, alias);
-					}
+					// Bare-dotted form (`alias.column`) when both parts are dot-free — the convention cube
+					// callers use today (e.g. `groupBy("p.productName")`). When either part contains a dot,
+					// `qualifiedColumnName` falls back to the JOOQ-escaped two-part form which is then equal
+					// to the next entry; the duplicate `putIfAbsent` is harmless.
+					idx.putIfAbsent(AdhocJooqHelper.qualifiedColumnName(alias, column), alias);
 					// Escaped form via JOOQ's two-part `Name.toString()` — quotes each segment so dots inside the
 					// alias or the column stay inside their segment. Same escaping convention as
 					// `registerInAliaser` and `withAliases` (both store `Name.toString()` in `aliasToOriginal`),
@@ -340,13 +358,10 @@ public class PrunedJoinsJooqTableSupplier implements IJooqTableSupplier, IHasCac
 			// Register base-table columns last so joins win on collisions for naturally-shared key columns —
 			// matches `aliasToOriginal`'s "left/parent wins" convention and the existing per-join `putIfAbsent`
 			// semantics.
-			boolean dotFreeBase = baseAlias.indexOf('.') < 0;
 			Set<String> baseColumns = baseFuture.join();
 			for (String column : baseColumns) {
 				idx.putIfAbsent(column, baseAlias);
-				if (dotFreeBase && column.indexOf('.') < 0) {
-					idx.putIfAbsent(baseAlias + "." + column, baseAlias);
-				}
+				idx.putIfAbsent(AdhocJooqHelper.qualifiedColumnName(baseAlias, column), baseAlias);
 				// Might be redundant with JooqTableSupplierBuilder.registerInAliaser(Name, Name)
 				idx.putIfAbsent(DSL.name(baseAlias, column).toString(), baseAlias);
 			}
@@ -390,7 +405,9 @@ public class PrunedJoinsJooqTableSupplier implements IJooqTableSupplier, IHasCac
 	 * {@link #invalidateAll()} cycle (important when the resolver performs a DB round-trip).
 	 */
 	protected Set<String> resolveColumns(JoinNode node) {
-		if (node.getColumnsOverride() != null) {
+		// Empty `columnsOverride` is the "not declared" sentinel — fall back to the resolver. Non-empty bypasses
+		// the resolver entirely.
+		if (!node.getColumnsOverride().isEmpty()) {
 			return node.getColumnsOverride();
 		}
 		return resolvedColumnsByAlias.computeIfAbsent(node.getAlias(), alias -> {

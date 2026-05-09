@@ -24,10 +24,11 @@ package eu.solven.adhoc.pivotable.chat;
 
 import java.util.UUID;
 
+import org.jspecify.annotations.NonNull;
+
 import com.google.common.collect.ImmutableList;
 
 import lombok.Builder;
-import lombok.NonNull;
 import lombok.Singular;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;

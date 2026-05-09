@@ -30,7 +30,7 @@ import com.quartetfs.biz.pivot.definitions.IActivePivotManagerDescription;
 import eu.solven.adhoc.measure.forest.IMeasureForest;
 import eu.solven.adhoc.resource.MeasureForests;
 import lombok.Builder;
-import lombok.NonNull;
+import org.jspecify.annotations.NonNull;
 import lombok.experimental.SuperBuilder;
 
 /**

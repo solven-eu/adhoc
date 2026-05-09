@@ -27,13 +27,14 @@ import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
+import org.jspecify.annotations.NonNull;
+
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 
 import eu.solven.adhoc.filter.optimizer.IFilterOptimizer;
 import lombok.Builder;
 import lombok.Builder.Default;
-import lombok.NonNull;
 
 /**
  * Like {@link FilterHelpers} but enabling a custom {@link IFilterOptimizer}.

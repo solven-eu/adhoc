@@ -22,13 +22,14 @@
  */
 package eu.solven.adhoc.model.column;
 
+import org.jspecify.annotations.NonNull;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.ImmutableList;
 
 import eu.solven.adhoc.column.coordinate.ICalculatedCoordinate;
 import eu.solven.adhoc.column.coordinate.IHasCalculatedCoordinates;
 import lombok.Builder;
-import lombok.NonNull;
 import lombok.Singular;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;

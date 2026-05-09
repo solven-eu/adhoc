@@ -158,6 +158,40 @@ public class TestPrunedJoinsJooqTableSupplierBuilder {
 		Assertions.assertThat(pruned.toString()).contains("dim_a", "dim_a_sub", "\"a\"", "\"asub\"");
 	}
 
+	// ── 2bis. Diamond join: ON-clause references a non-declared parent ──────
+
+	@Test
+	public void testDiamond_secondParentReferencedByOnClause_isNotPruned() {
+		// Schema: orders (base) -> customers (b) on customer_id; (orders, customers) -> pricing_rules (c)
+		// keyed by (region_id, segment). c's ON-clause depends on BOTH `fact` (declared parent via .from(...))
+		// and `b` (referenced via the fully-qualified `b.segment` token). A query that asks only for c.discount
+		// must keep `b` in the FROM, otherwise c's ON-clause would dangle.
+		PrunedJoinsJooqTableSupplierBuilder builder = PrunedJoinsJooqTableSupplierBuilder.prunedBuilder()
+				.dslSupplier(DuckDBHelper.inMemoryDSLSupplier())
+				.baseTable(DSL.table("orders"))
+				.baseTableAlias("fact")
+				.build()
+				.baseProvidedColumns(Set.of("amount", "region_id", "customer_id"));
+		builder.leftJoin(j -> j.table(DSL.table("customers"))
+				.alias("b")
+				.on("customer_id", "id")
+				.providedColumns(Set.of("id", "segment")))
+				// `c.region_id = fact.region_id AND c.segment = b.segment` — the second pair fully-qualifies
+				// the LEFT side as `b.segment`, so the harvest discovers `b` even though `parentAlias=fact`.
+				.leftJoin(j -> j.table(DSL.table("pricing_rules"))
+						.alias("c")
+						.on("region_id", "region_id")
+						.on("b.segment", "segment")
+						.providedColumns(Set.of("region_id", "segment", "discount_pct")));
+
+		TableQueryV4 q = queryGroupBy("discount_pct", "amount");
+
+		TableLike<?> pruned = supplier(builder).tableFor(q);
+
+		String sql = pruned.toString();
+		Assertions.assertThat(sql).contains("pricing_rules", "customers", "\"b\"", "\"c\"");
+	}
+
 	// ── 3. Two independent arms pruned independently ─────────────────────────
 
 	@Test

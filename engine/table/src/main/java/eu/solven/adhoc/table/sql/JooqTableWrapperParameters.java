@@ -22,12 +22,14 @@
  */
 package eu.solven.adhoc.table.sql;
 
+import java.time.Duration;
 import java.util.concurrent.Semaphore;
 
 import org.jooq.Name;
 import org.jooq.Table;
 import org.jooq.TableLike;
 import org.jooq.impl.DSL;
+import org.jspecify.annotations.NonNull;
 
 import eu.solven.adhoc.filter.optimizer.IFilterOptimizerFactory;
 import eu.solven.adhoc.measure.operator.IOperatorFactory;
@@ -35,7 +37,6 @@ import eu.solven.adhoc.measure.operator.StandardOperatorFactory;
 import eu.solven.adhoc.table.sql.join.PrunedJoinsJooqTableSupplierBuilder;
 import lombok.Builder;
 import lombok.Builder.Default;
-import lombok.NonNull;
 import lombok.Value;
 
 /**
@@ -59,9 +60,6 @@ public class JooqTableWrapperParameters {
 
 	@NonNull
 	IDSLSupplier dslSupplier;
-
-	// @NonNull
-	// final TableLike<?> table;
 
 	/**
 	 * Optional per-query {@link TableLike} provider. When set, {@link JooqTableWrapper#streamSlices} substitutes the
@@ -102,6 +100,16 @@ public class JooqTableWrapperParameters {
 	@Default
 	@NonNull
 	Semaphore querySemaphore = new Semaphore(Integer.MAX_VALUE);
+
+	/**
+	 * TTL after which {@link JooqTableWrapper}'s fields cache asynchronously refreshes its single entry by re-probing
+	 * the underlying table. Default: 1 minute — balances "fresh enough for evolving schemas" against "don't hammer the
+	 * DB on hot read paths". Bump up (e.g. {@code Duration.ofHours(1)}) for static schemas; lower (e.g. seconds) for
+	 * tests or fast-changing dev environments.
+	 */
+	@Default
+	@NonNull
+	Duration fieldsCacheRefreshAfterWrite = Duration.ofMinutes(1);
 
 	/**
 	 * Lombok @Builder

@@ -35,10 +35,12 @@ import org.jooq.Name;
 import org.jooq.Record;
 import org.jooq.Table;
 import org.jooq.impl.DSL;
+import org.jspecify.annotations.NonNull;
 
 import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.table.sql.IDSLSupplier;
+import eu.solven.adhoc.util.NotYetImplementedException;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.Getter;
@@ -143,11 +145,29 @@ public class PrunedJoinsJooqTableSupplierBuilder extends JooqTableSupplierBuilde
 		boolean prunable;
 
 		/**
-		 * Explicit list of columns this join provides. When {@code null}, {@link PrunedJoinsJooqTableSupplier} asks its
-		 * {@code columnsResolver} to derive the column set from the {@code joinedTable}.
+		 * Explicit list of columns this join provides. {@link ImmutableSet#of() Empty} means "not declared":
+		 * {@link PrunedJoinsJooqTableSupplier} then asks its {@code columnsResolver} to derive the column set from the
+		 * {@code joinedTable}. A non-empty value bypasses the resolver and uses these columns verbatim.
+		 *
+		 * <p>
+		 * "Declared empty" is collapsed with "not declared" because a join that genuinely provides zero columns is
+		 * non-sensical (it would never be referenced and would always be pruned), so distinguishing the two adds no
+		 * semantic value while forcing every consumer to handle a {@code @Nullable} field.
 		 */
 		@Default
-		Set<String> columnsOverride = null;
+		@NonNull
+		Set<String> columnsOverride = ImmutableSet.of();
+
+		/**
+		 * Aliases referenced by the ON-clause beyond {@link #parentAlias}. Captures the diamond-join case where the
+		 * ON-clause names columns from multiple parent tables (e.g.
+		 * {@code c.region = a.region AND c.segment = b.segment} — declared parent {@code a}, additional reference
+		 * {@code b}). Populated at parse time from the qualified parts of each ON-clause Name; consumed by
+		 * {@link PrunedJoinsJooqTableSupplier#computeNeededAliases} to widen the prune-time dependency closure so
+		 * neither parent gets dropped.
+		 */
+		@Default
+		Set<String> referencedAliases = ImmutableSet.of();
 	}
 
 	@Builder(builderMethodName = "prunedBuilder", builderClassName = "PrunedJoinsJooqTableSupplierBuilderBuilder")
@@ -185,20 +205,20 @@ public class PrunedJoinsJooqTableSupplierBuilder extends JooqTableSupplierBuilde
 		// the most-recent join. Star pattern is dominant; snowflake legs opt-in via `.from(prevJoin)`.
 		String fromAlias = Optional.ofNullable(joinBuilder.getFrom()).orElse(baseTableAlias);
 		Set<String> provided = joinBuilder.getProvidedColumns();
-		if (provided != null) {
-			leftJoin(fromAlias, joinBuilder.getTable(), joinBuilder.getAlias(), joinBuilder.getOn(), provided);
+		Set<String> columnsOverride;
+		if (provided == null) {
+			columnsOverride = ImmutableSet.of();
 		} else {
-			leftJoin(fromAlias, joinBuilder.getTable(), joinBuilder.getAlias(), joinBuilder.getOn());
+			columnsOverride = ImmutableSet.copyOf(provided);
 		}
-		// Honour an explicit `prunable(false)` opt-out by patching the just-appended JoinNode. Same post-patch
-		// pattern as `providedColumns` on the deprecated 5-arg overload: the underlying leftJoin(...) machinery
-		// always records prunable=true, then we flip the flag here when the consumer requested otherwise.
-		Boolean explicitPrunable = joinBuilder.getPrunable();
-		if (explicitPrunable != null && !explicitPrunable) {
-			int lastIdx = joinNodes.size() - 1;
-			JoinNode last = joinNodes.get(lastIdx);
-			joinNodes.set(lastIdx, last.toBuilder().prunable(false).build());
-		}
+
+		recordJoin(fromAlias,
+				joinBuilder.getTable(),
+				joinBuilder.getAlias(),
+				joinBuilder.getOn(),
+				joinBuilder.isPrunable(),
+				columnsOverride);
+
 		if (!joinBuilder.getColumnAliases().isEmpty()) {
 			withAliases(joinBuilder.getColumnAliases());
 		}
@@ -211,11 +231,36 @@ public class PrunedJoinsJooqTableSupplierBuilder extends JooqTableSupplierBuilde
 			Table<?> joinedTable,
 			String joinName,
 			List<Map.Entry<String, String>> on) {
+		recordJoin(leftTableAlias, joinedTable, joinName, on, true, ImmutableSet.of());
+		return this;
+	}
+
+	/**
+	 * Single point of {@link JoinNode} construction: parses the ON-clause, registers it in the aliaser, harvests
+	 * referenced aliases, and appends a fully-formed node to {@link #joinNodes}. Replaces the previous
+	 * "append-then-patch-the-last-element" idiom: every caller passes the values it actually wants, and the node is
+	 * built right the first time.
+	 *
+	 * @param columnsOverride
+	 *            explicit list of columns this join provides; pass {@link ImmutableSet#of()} (empty) to defer to the
+	 *            supplier's {@code columnsResolver}.
+	 */
+	protected void recordJoin(String leftTableAlias,
+			Table<?> joinedTable,
+			String joinName,
+			List<Map.Entry<String, String>> on,
+			boolean prunable,
+			Set<String> columnsOverride) {
 		// Same side-effects as the parent (aliaser registration + latestJoin tracking), but we do NOT accumulate
 		// snowflakeTable — the FROM clause is rebuilt per-query by the supplier via `materialise(...)`.
+		ImmutableSet.Builder<String> referencedAliases = ImmutableSet.builder();
 		List<Condition> onConditions = on.stream().map(e -> {
 			Name leftName = parseOnName(leftTableAlias, e.getKey());
 			Name rightName = parseOnName(joinName, e.getValue());
+			// Harvest the alias prefix of every fully-qualified Name. parseOnName auto-prefixes unqualified
+			// columns with the declared left/joined alias, so any 2+-part Name carries the alias as parts()[0].
+			collectAlias(leftName, referencedAliases);
+			collectAlias(rightName, referencedAliases);
 			registerInAliaser(leftName, rightName);
 			return DSL.field(leftName).eq(DSL.field(rightName));
 		}).toList();
@@ -227,10 +272,27 @@ public class PrunedJoinsJooqTableSupplierBuilder extends JooqTableSupplierBuilde
 				.parentAlias(leftTableAlias)
 				.joinedTable(joinedTable)
 				.onConditions(onConditions)
-				.prunable(true)
+				.referencedAliases(referencedAliases.build())
+				.prunable(prunable)
+				.columnsOverride(columnsOverride)
 				.build());
+	}
 
-		return this;
+	/**
+	 * Adds the alias prefix of {@code name} to {@code sink}, if the {@code Name} is qualified (2+ parts). Used to
+	 * harvest the set of aliases an ON-clause depends on, so the prune-time closure can keep every referenced parent
+	 * alive even when it isn't the one declared via {@code parentAlias}.
+	 */
+	private static void collectAlias(Name name, ImmutableSet.Builder<String> sink) {
+		Name[] parts = name.parts();
+		if (parts.length >= 2) {
+			// TODO Beware `[0]` may be a database name instead of a table name
+			String lastPart = parts[0].last();
+			if (lastPart == null) {
+				throw new NotYetImplementedException("last part is null in %s".formatted(name));
+			}
+			sink.add(lastPart);
+		}
 	}
 
 	/**
@@ -246,11 +308,7 @@ public class PrunedJoinsJooqTableSupplierBuilder extends JooqTableSupplierBuilde
 			String joinName,
 			List<Map.Entry<String, String>> on,
 			Set<String> providedColumns) {
-		leftJoin(leftTableAlias, joinedTable, joinName, on);
-		// Patch the just-appended node with the explicit columns override.
-		int lastIdx = joinNodes.size() - 1;
-		JoinNode last = joinNodes.get(lastIdx);
-		joinNodes.set(lastIdx, last.toBuilder().columnsOverride(ImmutableSet.copyOf(providedColumns)).build());
+		recordJoin(leftTableAlias, joinedTable, joinName, on, true, ImmutableSet.copyOf(providedColumns));
 		return this;
 	}
 

@@ -32,6 +32,7 @@ import eu.solven.adhoc.measure.aggregation.ILongAggregation;
 import eu.solven.adhoc.measure.model.IAliasedAggregator;
 import eu.solven.adhoc.model.measure.Aggregator;
 import eu.solven.adhoc.model.measure.EmptyMeasure;
+import eu.solven.adhoc.model.measure.IMeasure;
 
 /**
  * Relates with {@link EmptyMeasure}. Useful to materialize an {@link IAggregation} to force the DAG not to be empty
@@ -106,6 +107,15 @@ public class EmptyAggregation implements IAggregation, ILongAggregation, IDouble
 	 */
 	public static boolean isEmpty(Aggregator aggregator) {
 		return isEmpty(aggregator.getAggregationKey());
+	}
+
+	public static boolean isEmpty(IMeasure measure) {
+		if (measure instanceof Aggregator a) {
+			// TODO What if it is a ReferencedMeasure?
+			return isEmpty(a);
+		} else {
+			return false;
+		}
 	}
 
 	/**

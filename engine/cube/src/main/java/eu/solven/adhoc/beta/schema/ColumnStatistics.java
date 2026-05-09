@@ -25,11 +25,12 @@ package eu.solven.adhoc.beta.schema;
 import java.util.Set;
 import java.util.UUID;
 
+import org.jspecify.annotations.NonNull;
+
 import com.google.common.collect.ImmutableSet;
 
 import lombok.Builder;
 import lombok.Builder.Default;
-import lombok.NonNull;
 import lombok.Singular;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;

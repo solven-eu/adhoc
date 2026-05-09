@@ -25,6 +25,7 @@ package eu.solven.adhoc.table.transcoder;
 import java.util.Set;
 import java.util.stream.Stream;
 
+import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 
 import com.google.common.collect.ImmutableList;
@@ -32,7 +33,6 @@ import com.google.common.collect.ImmutableSet;
 
 import lombok.Builder;
 import lombok.Builder.Default;
-import lombok.NonNull;
 import lombok.Singular;
 
 /**
@@ -43,7 +43,7 @@ import lombok.Singular;
 @Builder
 public class CompositeTableAliaser implements ITableAliaser, IHasAliasedColumns {
 	/**
-	 * Different modes when iterating through the available transcoders.
+	 * Different modes when iterating through the available aliasers.
 	 * 
 	 * @author Benoit Lacelle
 	 */
@@ -55,7 +55,7 @@ public class CompositeTableAliaser implements ITableAliaser, IHasAliasedColumns 
 		FirstNotNull,
 
 		/**
-		 * All transcoders, as a chain of transcoders
+		 * All aliasers, as a chain of aliasers
 		 */
 		ApplyAll
 	}

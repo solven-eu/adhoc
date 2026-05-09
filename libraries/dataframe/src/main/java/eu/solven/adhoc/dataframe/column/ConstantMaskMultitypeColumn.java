@@ -25,6 +25,8 @@ package eu.solven.adhoc.dataframe.column;
 import java.util.Set;
 import java.util.stream.Stream;
 
+import org.jspecify.annotations.NonNull;
+
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 
@@ -42,7 +44,6 @@ import eu.solven.adhoc.stream.IConsumingStream;
 import eu.solven.adhoc.util.NotYetImplementedException;
 import lombok.Builder;
 import lombok.Builder.Default;
-import lombok.NonNull;
 import lombok.Singular;
 import lombok.Value;
 

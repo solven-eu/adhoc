@@ -30,6 +30,10 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 
+import org.jspecify.annotations.NonNull;
+
+import com.google.common.base.Supplier;
+import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.ForwardingListenableFuture.SimpleForwardingListenableFuture;
@@ -62,11 +66,11 @@ import eu.solven.adhoc.model.measure.IMeasure;
 import eu.solven.adhoc.options.StandardQueryOptions;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.transcoder.AliasingContext;
-import eu.solven.adhoc.util.AdhocUnsafe;
+import eu.solven.adhoc.util.IHasCache;
+import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.Getter;
-import lombok.NonNull;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 
@@ -79,7 +83,7 @@ import lombok.extern.slf4j.Slf4j;
 @Value
 @Builder(toBuilder = true)
 @Slf4j
-public class CubeWrapper implements ICubeWrapper, IHasHealthDetails {
+public class CubeWrapper implements ICubeWrapper, IHasHealthDetails, IHasCache {
 	@NonNull
 	@Builder.Default
 	@Getter
@@ -103,6 +107,16 @@ public class CubeWrapper implements ICubeWrapper, IHasHealthDetails {
 	@NonNull
 	@Default
 	final IQueryPreparator queryPreparator = StandardQueryPreparator.builder().build();
+
+	// Lazy / memoised column-resolution subsystem. Caching the result dedupes log warnings about discarded aliases
+	// (one warning per cube lifetime instead of per call) and avoids recomputing on large cubes. The reference is
+	// final; invalidation is handled by `CubeColumnsWrapper.invalidateAll()` which swaps its internal memo.
+	@Getter(AccessLevel.NONE)
+	final Supplier<CubeColumnsWrapper> columns = Suppliers.memoize(this::makeColumnsWrapper);
+
+	protected CubeColumnsWrapper makeColumnsWrapper() {
+		return new CubeColumnsWrapper(table, columnsManager, forest, engine, name);
+	}
 
 	@Override
 	public Map<String, IMeasure> getNameToMeasure() {
@@ -145,100 +159,20 @@ public class CubeWrapper implements ICubeWrapper, IHasHealthDetails {
 
 	@Override
 	public Collection<ColumnMetadata> getColumns() {
-		Map<String, ColumnMetadata> columnToType = getColumnsWithoutAliases();
-
-		// Register aliases in the `alias` field of metadata
-		// TODO This does not handle recursive aliases
-		getColumnsManager().getColumnAliases().forEach(columnAlias -> {
-			String tableName = getColumnsManager().openTranscodingContext().underlying(columnAlias);
-
-			ColumnMetadata originalMetadata = columnToType.get(tableName);
-
-			if (originalMetadata == null) {
-				// Typically happens on JOINs
-				// SQL engines generally returns unqualified columnName
-				// Hence, `joinA.columnC` is returned as `columnC` by SQL.
-				// But `columnC` is an alias for `joinA.columnC` according to the aliaser.
-				// In most situations, we prefer to fallback on the alias, as the project alias is often the same as the
-				// SQL alias (i.e. unqualified columnName).
-				originalMetadata = columnToType.get(columnAlias);
-			}
-
-			if (originalMetadata == null && tableName != null) {
-				// Third-try: a JooqTableSupplierBuilder-style aliaser declares `aliasedColor -> b.color`, but the
-				// table only knows the unqualified `color` (see JooqTableWrapper.getColumns: SQL backends return
-				// column names without their table-qualifier when listing columns). When `tableName` carries a dot,
-				// strip the qualifier and retry with the bare column name as a best-guess of the actual column.
-				int lastDot = tableName.lastIndexOf('.');
-				if (lastDot >= 0 && lastDot < tableName.length() - 1) {
-					String unqualified = tableName.substring(lastDot + 1);
-					originalMetadata = columnToType.get(unqualified);
-				}
-			}
-
-			if (originalMetadata == null) {
-				// Discard: a shared ColumnsManager may carry aliases relevant only to a subset of cubes, so an alias
-				// with no underlying column on this cube is not necessarily a bug — but still worth warning about.
-				log.warn("Discarding alias={} as it has no underlying column on cube={}", columnAlias, getName());
-			} else {
-				columnToType.put(originalMetadata.getName(), originalMetadata.toBuilder().alias(columnAlias).build());
-			}
-		});
-
-		// Duplicate each column given its alias
-		Map<String, ColumnMetadata> aliasToColumn = new LinkedHashMap<>();
-		columnToType.forEach((column, metadata) -> {
-			metadata.getAliases().forEach(alias -> {
-				aliasToColumn.put(alias, metadata.toBuilder().name(alias).alias(column).build());
-			});
-		});
-
-		columnToType.putAll(aliasToColumn);
-
-		return columnToType.values();
+		return columns.get().getColumns();
 	}
 
-	protected Map<String, ColumnMetadata> getColumnsWithoutAliases() {
-		Map<String, ColumnMetadata> columnToType = new LinkedHashMap<>();
-
-		// First, register table columns
-		table.getColumns().forEach((table) -> {
-			columnToType.put(table.getName(), table);
-		});
-
-		// Then, register calculated columns (e.g. based on an expression)
-		getColumnsManager().getColumnTypes().forEach((columnName, type) -> {
-			columnToType.put(columnName,
-					ColumnMetadata.builder().name(columnName).tag("calculated").type(type).build());
-		});
-
-		IOperatorFactory operatorFactory = IHasOperatorFactory.getOperatorsFactory(engine);
-		forest.getMeasures().forEach(measure -> {
-			try {
-				ColumnGeneratorHelpers
-						.getColumnGenerators(operatorFactory, ImmutableSet.of(measure), IValueMatcher.MATCH_ALL)
-						.forEach(columnGenerator -> {
-							// TODO How conflicts should be handled? `ColumnMetadata.merge`?
-							columnGenerator.getColumnTypes().forEach((columnName, type) -> {
-								columnToType.put(columnName,
-										ColumnMetadata.builder().name(columnName).tag("generated").type(type).build());
-							});
-						});
-			} catch (RuntimeException e) {
-				if (AdhocUnsafe.isFailFast()) {
-					String msg = "Issue looking for an %s in m=%s c=%s"
-							.formatted(IColumnGenerator.class.getSimpleName(), measure, this.getName());
-					throw new IllegalStateException(msg, e);
-				} else {
-					log.warn("Issue looking for an {} in m={} c={}",
-							IColumnGenerator.class.getSimpleName(),
-							measure,
-							this.getName(),
-							e);
-				}
-			}
-		});
-		return columnToType;
+	/**
+	 * Drops the cached column metadata so the next {@link #getColumns()} re-computes. Also propagates to the underlying
+	 * {@link ITableWrapper} when it is itself an {@link IHasCache}, so a downstream schema change is picked up without
+	 * callers having to invalidate every layer manually.
+	 */
+	@Override
+	public void invalidateAll() {
+		columns.get().invalidateAll();
+		if (table instanceof IHasCache tableCache) {
+			tableCache.invalidateAll();
+		}
 	}
 
 	/**

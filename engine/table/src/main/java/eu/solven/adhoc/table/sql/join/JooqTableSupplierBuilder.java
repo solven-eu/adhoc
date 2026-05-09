@@ -36,6 +36,7 @@ import org.jooq.Parser;
 import org.jooq.Record;
 import org.jooq.Table;
 import org.jooq.impl.DSL;
+import org.jspecify.annotations.NonNull;
 
 import com.google.common.collect.Lists;
 
@@ -43,17 +44,17 @@ import eu.solven.adhoc.table.sql.AdhocJooqHelper;
 import eu.solven.adhoc.table.sql.IDSLSupplier;
 import eu.solven.adhoc.table.sql.IJooqTableSupplier;
 import eu.solven.adhoc.table.sql.join.PrunedJoinsJooqTableSupplierBuilder.PrunedJoinsJooqTableSupplierBuilderBuilder;
+import eu.solven.adhoc.table.transcoder.ITableAliaser;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
-import lombok.NonNull;
 
 /**
  * This class helps building a star/snowflake schema, around some baseStore and various LEFT JOINs to provide additional
  * columns.
  * <p>
- * This also facilitate the registration of proper transcoder. This implementation give priority to the first encounter
- * of a field, giving priority to the LEFT table over the RIGHT table.
+ * This also facilitate the registration of proper {@link ITableAliaser}. This implementation gives priority to the
+ * first encounter of a field, giving priority to the LEFT table over the RIGHT table.
  * 
  * @author Benoit Lacelle
  */

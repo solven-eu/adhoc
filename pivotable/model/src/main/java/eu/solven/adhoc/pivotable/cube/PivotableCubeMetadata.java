@@ -24,11 +24,12 @@ package eu.solven.adhoc.pivotable.cube;
 
 import java.util.Set;
 
+import org.jspecify.annotations.NonNull;
+
 import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.pivotable.endpoint.PivotableAdhocEndpointMetadata;
 import lombok.Builder;
-import lombok.NonNull;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
 

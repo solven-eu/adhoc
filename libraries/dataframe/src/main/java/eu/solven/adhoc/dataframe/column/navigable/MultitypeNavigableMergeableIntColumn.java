@@ -22,12 +22,13 @@
  */
 package eu.solven.adhoc.dataframe.column.navigable;
 
+import org.jspecify.annotations.NonNull;
+
 import eu.solven.adhoc.dataframe.column.IMultitypeMergeableIntColumn;
 import eu.solven.adhoc.dataframe.column.merge.MergingNavigableValueReceiver;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.primitive.IValueReceiver;
 import lombok.Getter;
-import lombok.NonNull;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
 

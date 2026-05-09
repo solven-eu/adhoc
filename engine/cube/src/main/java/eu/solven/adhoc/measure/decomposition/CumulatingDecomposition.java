@@ -28,6 +28,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.jspecify.annotations.NonNull;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -48,7 +50,6 @@ import eu.solven.adhoc.query.MeasurelessQuery;
 import eu.solven.adhoc.util.map.AdhocMapPathGet;
 import lombok.AccessLevel;
 import lombok.Getter;
-import lombok.NonNull;
 import lombok.Singular;
 import lombok.experimental.SuperBuilder;
 

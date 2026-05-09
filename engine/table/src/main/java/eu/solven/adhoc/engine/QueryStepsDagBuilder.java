@@ -36,8 +36,11 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+import org.jgrapht.GraphPath;
+import org.jgrapht.alg.shortestpath.DijkstraShortestPath;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.DirectedMultigraph;
+import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 
 import com.google.common.collect.ImmutableList;
@@ -72,7 +75,6 @@ import eu.solven.adhoc.model.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.MeasurelessQuery;
 import eu.solven.adhoc.table.IQueryPod;
 import eu.solven.pepper.core.PepperLogHelper;
-import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -292,11 +294,7 @@ public class QueryStepsDagBuilder implements IQueryStepsDagBuilder, IHasTransver
 		try {
 			dagEdge = dag.addEdge(queriedStep, underlyingStep);
 		} catch (IllegalArgumentException e) {
-			// GraphCycleProhibitedException is a subClass of IllegalArgumentException
-			// But we may receive IllegalArgumentException
-			throw new IllegalStateException(
-					"Issue adding `%s`->`%s` in cycle=`%s`".formatted(queriedStep, underlyingStep, dag),
-					e);
+			throw buildAddEdgeException(queriedStep, underlyingStep, e);
 		}
 		if (dagEdge == null) {
 			log.debug("One step refers multiple times to same underlying (queried={} underlying={})",
@@ -312,6 +310,48 @@ public class QueryStepsDagBuilder implements IQueryStepsDagBuilder, IHasTransver
 							.formatted(queriedStep, underlyingStep));
 		}
 
+	}
+
+	/**
+	 * Translates a raw {@link IllegalArgumentException} from {@code dag.addEdge} into a targeted
+	 * {@link IllegalStateException} whose message identifies the actual problem: a self-loop, a cycle (with the
+	 * offending path), or an unrecognised graph constraint violation.
+	 *
+	 * @param queriedStep
+	 *            the step that was being registered as the parent
+	 * @param underlyingStep
+	 *            the step that was being registered as the child / dependency
+	 * @param cause
+	 *            the raw exception thrown by {@code dag.addEdge}
+	 * @return an {@link IllegalStateException} ready to be thrown by the caller
+	 */
+	protected IllegalStateException buildAddEdgeException(CubeQueryStep queriedStep,
+			CubeQueryStep underlyingStep,
+			IllegalArgumentException cause) {
+		// GraphCycleProhibitedException is a subClass of IllegalArgumentException
+		// But we may receive IllegalArgumentException
+		if (underlyingStep.equals(queriedStep)) {
+			return new IllegalStateException("A queryStep can not be its own underlying: `%s`".formatted(queriedStep),
+					cause);
+		}
+		// If there is already a path from underlyingStep to queriedStep, adding queriedStep→underlyingStep
+		// closes a cycle. Report that faulty path explicitly instead of dumping the full DAG.
+		// Guard containsVertex: if queriedStep was never registered the exception has a different root cause.
+		if (dag.containsVertex(queriedStep)) {
+			GraphPath<CubeQueryStep, DefaultEdge> existingPath =
+					DijkstraShortestPath.findPathBetween(dag, underlyingStep, queriedStep);
+			if (existingPath != null) {
+				List<CubeQueryStep> cycle = new ArrayList<>();
+				cycle.add(queriedStep);
+				cycle.addAll(existingPath.getVertexList());
+				return new IllegalStateException(
+						"Adding edge `%s`->`%s` would create a cycle: %s".formatted(queriedStep, underlyingStep, cycle),
+						cause);
+			}
+		}
+		return new IllegalStateException(
+				"Issue adding `%s`->`%s` in dag=`%s`".formatted(queriedStep, underlyingStep, dag),
+				cause);
 	}
 
 	protected void registerUnderlyings(CubeQueryStep parentStep, List<CubeQueryStep> underlyingSteps) {

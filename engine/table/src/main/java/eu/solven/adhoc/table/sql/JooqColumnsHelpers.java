@@ -138,7 +138,10 @@ public final class JooqColumnsHelpers {
 		}
 	}
 
-	private static String escapeEOL(String string) {
-		return string.replaceAll("\r", "\\r").replaceAll("\n", "\\n");
+	static String escapeEOL(String string) {
+		// `String.replace(CharSequence, CharSequence)` — non-regex, literal substitution. `replaceAll` would
+		// re-interpret the backslash in the replacement as a regex escape character (turning "\\r" into a
+		// literal "r"), which is the bug this method had until 2026-05.
+		return string.replace("\r", "\\r").replace("\n", "\\n");
 	}
 }

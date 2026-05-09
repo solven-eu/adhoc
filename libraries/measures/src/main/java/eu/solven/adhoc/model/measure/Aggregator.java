@@ -22,6 +22,8 @@
  */
 package eu.solven.adhoc.model.measure;
 
+import org.jspecify.annotations.NonNull;
+
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
@@ -36,7 +38,6 @@ import eu.solven.adhoc.measure.transformator.IHasAggregationKey;
 import eu.solven.adhoc.query.ICountMeasuresConstants;
 import lombok.Builder;
 import lombok.Builder.Default;
-import lombok.NonNull;
 import lombok.Singular;
 import lombok.Value;
 import lombok.With;

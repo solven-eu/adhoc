@@ -42,10 +42,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import lombok.extern.slf4j.Slf4j;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 @ExtendWith(SpringExtension.class)
 @Import(PivotableSpaRouter.class)
@@ -140,7 +139,7 @@ public class TestIndexHtml {
 			Map<String, Map<String, String>> asMap;
 			try {
 				asMap = objectMapper.readValue(script, Map.class);
-			} catch (JsonProcessingException e) {
+			} catch (JacksonException e) {
 				throw new IllegalArgumentException("Invalid json: " + script);
 			}
 

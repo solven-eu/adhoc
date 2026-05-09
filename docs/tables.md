@@ -49,7 +49,10 @@ Table<Record> fromClause = DSL.table(DSL.name(factTable))
 		.using(DSL.field("countryId"));
 ```
 
-Such snowflake schema can be build more easily with the help of `JooqTableSupplierBuilder`.
+Such snowflake schema can be built more easily with the help of `JooqTableSupplierBuilder`. See
+[Complex SQL with JooQ](sql-jooq.md) for the dedicated guide — covers snowflake / diamond joins,
+**per-query join pruning**, and the column-alias mechanism (and how the supplier-side aliases
+must be combined with the cube's `ColumnsManager.aliaser` to flow through to SQL emission).
 
 ## Handling null (e.g. from failed JOINs)
 

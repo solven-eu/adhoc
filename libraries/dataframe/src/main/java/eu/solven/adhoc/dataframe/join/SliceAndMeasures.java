@@ -24,6 +24,8 @@ package eu.solven.adhoc.dataframe.join;
 
 import java.util.List;
 
+import org.jspecify.annotations.NonNull;
+
 import eu.solven.adhoc.cuboid.ICuboid;
 import eu.solven.adhoc.cuboid.slice.ISlice;
 import eu.solven.adhoc.data.row.ISlicedRecord;
@@ -34,7 +36,6 @@ import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.engine.step.SliceAsMapWithStep;
 import eu.solven.adhoc.primitive.IValueProvider;
 import lombok.Builder;
-import lombok.NonNull;
 import lombok.Value;
 
 /**

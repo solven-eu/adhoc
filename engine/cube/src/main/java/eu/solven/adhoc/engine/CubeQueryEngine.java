@@ -40,6 +40,7 @@ import org.jgrapht.alg.interfaces.ShortestPathAlgorithm;
 import org.jgrapht.alg.shortestpath.JohnsonShortestPaths;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.DirectedMultigraph;
+import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -107,7 +108,6 @@ import eu.solven.pepper.core.PepperLogHelper;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.Getter;
-import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -327,7 +327,7 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 			queriedMeasures = ImmutableSet.of(defaultMeasure);
 		} else {
 			queriedMeasures = measures.stream().peek(m -> {
-				if (emptyMeasureName.equals(m.getName())) {
+				if (emptyMeasureName.equals(m.getName()) && !EmptyAggregation.isEmpty(m)) {
 					throw new IllegalArgumentException("The defaultEmptyMeasure can not be requested explicitly");
 				}
 			}).collect(ImmutableSet.toImmutableSet());
@@ -643,9 +643,7 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 		}).toList();
 	}
 
-	@SuppressWarnings({ "PMD.InsufficientStringBufferDeclaration",
-			"PMD.ConsecutiveAppendsShouldReuse",
-			"checkstyle:MagicNumber" })
+	@SuppressWarnings({ "PMD.ConsecutiveAppendsShouldReuse", "checkstyle:MagicNumber" })
 	protected IllegalStateException rethrowWithDetails(CubeQueryStep queryStep,
 			QueryStepsDag queryStepsDag,
 			RuntimeException e) {

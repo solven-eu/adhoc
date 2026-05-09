@@ -188,7 +188,7 @@ This verifies the four importmaps stay aligned and every webjars URL embeds a ve
 
 - Do **NOT** modify test files (`src/test/java/**`) to change test assertions or business logic. You **may** fix resource leaks, compilation errors, or other clear bugs in existing test files.
 - Do **NOT** modify `pom.xml` files (no new dependencies, no version bumps).
-- Do **NOT** modify anything under `.cleanthat/` (build-tool configuration managed separately).
+- Do **NOT take the initiative** to modify anything under `.cleanthat/` (build-tool configuration managed separately). When the user **explicitly** asks for a change there (e.g. "disable PMD rule X", "add `<exclude name="…"/>` to the ruleset"), proceed: the user's instruction overrides the default prohibition. The rule is "don't decide on your own that the ruleset needs adjusting", not "never touch these files".
 - **Simple tasks** (Javadoc, comments, coverage tests, formatting): do **NOT** change method/constructor signatures, rename classes/methods/fields/variables, or alter business logic.
 - **Complex tasks** (new features, refactoring requested by the user): signature changes, renames, and logic changes are allowed when they are part of the requested work. Prefer adding new methods/fields over modifying existing signatures; when an existing signature must change, confirm with the user first.
 - Do **NOT** reorder imports (Spotless handles that).

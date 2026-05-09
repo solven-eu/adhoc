@@ -83,7 +83,7 @@ public class JooqJoinBuilder {
 	// by PrunedJoinsJooqTableSupplierBuilder. Useful when a join carries a side-effect that callers may rely on
 	// (e.g. an INNER-JOIN-style filter, or a join to a view whose presence changes row cardinality).
 	@Getter(AccessLevel.PACKAGE)
-	private Boolean prunable;
+	private boolean prunable = true;
 
 	/**
 	 * @param joinedTable
@@ -207,8 +207,7 @@ public class JooqJoinBuilder {
 				&& from == null
 				&& on.isEmpty()
 				&& columnAliases.isEmpty()
-				&& providedColumns == null
-				&& prunable == null;
+				&& providedColumns == null;
 	}
 
 	void validate() {

@@ -25,6 +25,8 @@ package eu.solven.adhoc.factories;
 import java.util.List;
 import java.util.function.Consumer;
 
+import org.jspecify.annotations.NonNull;
+
 import eu.solven.adhoc.cuboid.ICuboid;
 import eu.solven.adhoc.dataframe.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.dataframe.column.IMultitypeIntColumnFastGet;
@@ -37,7 +39,6 @@ import eu.solven.adhoc.factories.IColumnFactory.ColumnParams.ColumnParamsBuilder
 import eu.solven.adhoc.stream.IConsumingStream;
 import lombok.Builder;
 import lombok.Builder.Default;
-import lombok.NonNull;
 
 /**
  * Default implementation for {@link IColumnFactory}.
