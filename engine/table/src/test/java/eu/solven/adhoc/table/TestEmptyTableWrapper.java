@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2026 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,31 +20,41 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.engine.cancel;
-
-import java.util.concurrent.CancellationException;
+package eu.solven.adhoc.table;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
-public class TestCancelledQueryException {
+import eu.solven.adhoc.dataframe.row.ITabularRecordStream;
+import eu.solven.adhoc.query.table.TableQueryV4;
+
+public class TestEmptyTableWrapper {
 
 	@Test
-	public void testIsCancellation() {
-		Assertions.assertThat(CancelledQueryException.class).isAssignableTo(CancellationException.class);
+	public void testGetName() {
+		EmptyTableWrapper table = EmptyTableWrapper.builder().name("emptyT").build();
+
+		Assertions.assertThat(table.getName()).isEqualTo("emptyT");
 	}
 
 	@Test
-	public void testMessage_isPropagated() {
-		CancelledQueryException e = new CancelledQueryException("some reason");
+	public void testGetColumns_isEmpty() {
+		EmptyTableWrapper table = EmptyTableWrapper.builder().name("emptyT").build();
 
-		Assertions.assertThat(e).hasMessage("some reason").isInstanceOf(CancellationException.class);
+		Assertions.assertThat(table.getColumns()).isEmpty();
 	}
 
 	@Test
-	public void testNullMessage_isAccepted() {
-		CancelledQueryException e = new CancelledQueryException(null);
+	public void testStreamSlices_emitsNothing() {
+		EmptyTableWrapper table = EmptyTableWrapper.builder().name("emptyT").build();
 
-		Assertions.assertThat(e.getMessage()).isNull();
+		IQueryPod queryPod = Mockito.mock(IQueryPod.class);
+		TableQueryV4 query = TableQueryV4.builder().build();
+
+		ITabularRecordStream stream = table.streamSlices(queryPod, query);
+
+		Assertions.assertThat(stream.toList()).isEmpty();
 	}
+
 }

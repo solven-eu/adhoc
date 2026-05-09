@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2026 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,31 +20,36 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.engine.cancel;
-
-import java.util.concurrent.CancellationException;
+package eu.solven.adhoc.encoding.page;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-public class TestCancelledQueryException {
+import eu.solven.adhoc.encoding.column.freezer.AsynchronousFreezingStrategy;
+import eu.solven.adhoc.encoding.column.freezer.SynchronousFreezingStrategy;
+import eu.solven.adhoc.options.IHasOptionsAndExecutorService;
+
+public class TestScopedValueAppendableTableFactory {
 
 	@Test
-	public void testIsCancellation() {
-		Assertions.assertThat(CancelledQueryException.class).isAssignableTo(CancellationException.class);
+	public void testMake_synchronous() {
+		ScopedValueAppendableTableFactory factory = new ScopedValueAppendableTableFactory();
+
+		IAppendableTable table = factory.makeTable(IHasOptionsAndExecutorService.noOption());
+
+		Assertions.assertThat(table).isInstanceOfSatisfying(ScopedValueAppendableTable.class, theTable -> {
+			Assertions.assertThat(theTable.freezer).isInstanceOf(SynchronousFreezingStrategy.class);
+		});
 	}
 
 	@Test
-	public void testMessage_isPropagated() {
-		CancelledQueryException e = new CancelledQueryException("some reason");
+	public void testMake_asynchronous() {
+		ScopedValueAppendableTableFactory factory = new ScopedValueAppendableTableFactory();
 
-		Assertions.assertThat(e).hasMessage("some reason").isInstanceOf(CancellationException.class);
-	}
+		IAppendableTable table = factory.makeTable(IHasOptionsAndExecutorService.concurrent());
 
-	@Test
-	public void testNullMessage_isAccepted() {
-		CancelledQueryException e = new CancelledQueryException(null);
-
-		Assertions.assertThat(e.getMessage()).isNull();
+		Assertions.assertThat(table).isInstanceOfSatisfying(ScopedValueAppendableTable.class, theTable -> {
+			Assertions.assertThat(theTable.freezer).isInstanceOf(AsynchronousFreezingStrategy.class);
+		});
 	}
 }
