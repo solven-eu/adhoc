@@ -73,6 +73,21 @@ Note that `-Pfast` on cli applies only to `prepare`, not to `perform`.
 
 [![Codecov](https://codecov.io/gh/solven-eu/adhoc/graphs/tree.svg?token=GFYB51WRFC)](https://codecov.io/gh/solven-eu/adhoc/)
 
+## Local coverage reports
+
+Each module produces a per-module JaCoCo report at `target/site/jacoco/jacoco.xml` during `mvn package` / `mvn verify`. The per-module report only counts coverage from tests that ran **in that same module**, so a class in `engine/table` exercised exclusively by tests in `engine/cube` will show 0% in `engine/table`'s report even though it is well tested.
+
+To get a faithful, project-wide view, build the **aggregate** report — it merges every module's `jacoco.exec` into a single XML / HTML report:
+
+```
+mvn jacoco:report-aggregate -pl :adhoc-aggregate -am
+```
+
+Outputs land at `aggregate/target/site/jacoco-aggregate/jacoco.xml` (machine-readable) and `aggregate/target/site/jacoco-aggregate/index.html` (browseable). The aggregate module is a thin pom-only project (`aggregate/pom.xml`) that lists every source module as a `<dependency>` so JaCoCo can locate the per-module exec files; the `-am` (also-make) flag is required so each dependency module joins the reactor before the aggregate goal runs.
+
+## Triaging under-tested classes
+
+`scripts/check-coverage-low.pl` walks the JaCoCo report and flags every class below 20% instruction coverage. It prefers the aggregate report when present, falling back to per-module reports otherwise (with a notice that the picture may be misleading). The 20% threshold is a single constant at the top of the script — bump it to surface higher-coverage gaps. There is also `scripts/check-coverage-sonar.pl` which fetches the same kind of list directly from SonarCloud (no local build required).
 
 # Paperwork
 

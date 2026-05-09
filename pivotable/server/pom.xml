@@ -12,8 +12,8 @@
 	<name>${project.groupId}:${project.artifactId}</name>
 
 	<properties>
-		<jacoco.branch.ratio>0.05</jacoco.branch.ratio>
-		<jacoco.instruction.ratio>0.43</jacoco.instruction.ratio>
+		<jacoco.branch.ratio>0.20</jacoco.branch.ratio>
+		<jacoco.instruction.ratio>0.51</jacoco.instruction.ratio>
 
 		<springdoc-openapi.version>3.0.2</springdoc-openapi.version>
 		<automatic.module.name>eu.solven.adhoc.pivotable.server</automatic.module.name>
