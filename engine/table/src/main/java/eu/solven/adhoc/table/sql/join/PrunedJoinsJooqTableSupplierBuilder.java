@@ -40,6 +40,7 @@ import org.jspecify.annotations.NonNull;
 import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.table.sql.IDSLSupplier;
+import eu.solven.adhoc.util.NotYetImplementedException;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.Getter;
@@ -286,7 +287,11 @@ public class PrunedJoinsJooqTableSupplierBuilder extends JooqTableSupplierBuilde
 		Name[] parts = name.parts();
 		if (parts.length >= 2) {
 			// TODO Beware `[0]` may be a database name instead of a table name
-			sink.add(parts[0].last());
+			String lastPart = parts[0].last();
+			if (lastPart == null) {
+				throw new NotYetImplementedException("last part is null in %s".formatted(name));
+			}
+			sink.add(lastPart);
 		}
 	}
 
