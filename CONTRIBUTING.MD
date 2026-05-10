@@ -73,6 +73,35 @@ Note that `-Pfast` on cli applies only to `prepare`, not to `perform`.
 
 [![Codecov](https://codecov.io/gh/solven-eu/adhoc/graphs/tree.svg?token=GFYB51WRFC)](https://codecov.io/gh/solven-eu/adhoc/)
 
+For the broader context on how Adhoc is tested (cube-level integration vs module unit tests, JMH benchmarks, Playwright e2e), see [docs/testing.md](docs/testing.md).
+
+## Local coverage reports
+
+Each module produces a per-module JaCoCo report at `target/site/jacoco/jacoco.xml` during `mvn package` / `mvn verify`. The per-module report only counts coverage from tests that ran **in that same module**, so a class in `engine/table` exercised exclusively by tests in `engine/cube` will show 0% in `engine/table`'s report even though it is well tested.
+
+To get a faithful, project-wide view, build the **aggregate** report — it merges every module's `jacoco.exec` into a single XML / HTML report:
+
+```
+mvn jacoco:report-aggregate -pl :adhoc-aggregate -am
+```
+
+Outputs land at `aggregate/target/site/jacoco-aggregate/jacoco.xml` (machine-readable) and `aggregate/target/site/jacoco-aggregate/index.html` (browseable). The aggregate module is a thin pom-only project (`aggregate/pom.xml`) that lists every source module as a `<dependency>` so JaCoCo can locate the per-module exec files; the `-am` (also-make) flag is required so each dependency module joins the reactor before the aggregate goal runs.
+
+## Triaging under-tested classes
+
+`scripts/check-coverage-low.pl` walks the JaCoCo report and flags every class below 20% instruction coverage. It prefers the aggregate report when present, falling back to per-module reports otherwise (with a notice that the picture may be misleading). The 20% threshold is a single constant at the top of the script — bump it to surface higher-coverage gaps. There is also `scripts/check-coverage-sonar.pl` which fetches the same kind of list directly from SonarCloud (no local build required).
+
+### Method-level triage
+
+`scripts/check-coverage-uncovered-methods.pl` reads the project-wide aggregate report and lists every **method** with zero instruction coverage, ordered by LOC (largest first). Useful when class-level triage finds nothing but specific methods inside well-covered classes still slip through:
+
+```
+perl scripts/check-coverage-uncovered-methods.pl              # top 50 across the whole project
+perl scripts/check-coverage-uncovered-methods.pl 100          # top 100
+perl scripts/check-coverage-uncovered-methods.pl 30 'engine/' # top 30 inside engine/* packages
+```
+
+Each row reports `LOC`, `Instr` (uncovered instructions), the **owning Maven module** (cross-referenced from each module's per-module report — quick to spot the `experimental` / `pivotable/*` rows you may want to skip), the fully-qualified class, and the method signature. Lombok-generated methods are filtered automatically (via `@lombok.Generated` + JaCoCo's built-in filter, enabled by `lombok.addLombokGeneratedAnnotation = true` in `lombok.config`). The output points at hand-written code only.
 
 # Paperwork
 

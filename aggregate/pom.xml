@@ -18,8 +18,8 @@
 		<maven.deploy.skip>true</maven.deploy.skip>
 		<skipPublishing>true</skipPublishing>
 
-		<jacoco.branch.ratio>0.69</jacoco.branch.ratio>
-		<jacoco.instruction.ratio>0.65</jacoco.instruction.ratio>
+		<jacoco.branch.ratio>0.78</jacoco.branch.ratio>
+		<jacoco.instruction.ratio>0.84</jacoco.instruction.ratio>
 		<automatic.module.name>eu.solven.adhoc.aggregate</automatic.module.name>
 	</properties>
 
@@ -32,6 +32,11 @@
 
 			The `-am` is required so each dependency module joins the current reactor — without it, JaCoCo cannot
 			locate the per-module `target/jacoco.exec` files and the report comes out empty.
+
+			IMPORTANT: when adding a new source module to the project, add it here too. A missing entry causes the
+			aggregate to silently under-report coverage for classes whose tests live in another module — e.g.
+			`engine/cube` tests covering `engine/table` classes. Listing every module is the difference between
+			"trustworthy 70%" and "misleading 0%" in the merged report.
 		-->
 		<dependency>
 			<groupId>eu.solven.adhoc</groupId>
@@ -55,6 +60,11 @@
 		</dependency>
 		<dependency>
 			<groupId>eu.solven.adhoc</groupId>
+			<artifactId>adhoc-calcite</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>eu.solven.adhoc</groupId>
 			<artifactId>adhoc-filters</artifactId>
 			<version>${project.version}</version>
 		</dependency>
@@ -71,6 +81,11 @@
 		<dependency>
 			<groupId>eu.solven.adhoc</groupId>
 			<artifactId>adhoc-table</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>eu.solven.adhoc</groupId>
+			<artifactId>adhoc-cube</artifactId>
 			<version>${project.version}</version>
 		</dependency>
 		<dependency>

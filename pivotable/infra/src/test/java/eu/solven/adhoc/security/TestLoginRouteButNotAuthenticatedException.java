@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2026 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,31 +20,17 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.engine.cancel;
-
-import java.util.concurrent.CancellationException;
+package eu.solven.adhoc.security;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-public class TestCancelledQueryException {
-
-	@Test
-	public void testIsCancellation() {
-		Assertions.assertThat(CancelledQueryException.class).isAssignableTo(CancellationException.class);
-	}
+public class TestLoginRouteButNotAuthenticatedException {
 
 	@Test
 	public void testMessage_isPropagated() {
-		CancelledQueryException e = new CancelledQueryException("some reason");
+		LoginRouteButNotAuthenticatedException e = new LoginRouteButNotAuthenticatedException("not logged in");
 
-		Assertions.assertThat(e).hasMessage("some reason").isInstanceOf(CancellationException.class);
-	}
-
-	@Test
-	public void testNullMessage_isAccepted() {
-		CancelledQueryException e = new CancelledQueryException(null);
-
-		Assertions.assertThat(e.getMessage()).isNull();
+		Assertions.assertThat(e).hasMessage("not logged in").isInstanceOf(RuntimeException.class);
 	}
 }

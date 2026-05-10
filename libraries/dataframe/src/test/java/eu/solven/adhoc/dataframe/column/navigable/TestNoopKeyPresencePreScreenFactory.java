@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2026 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,31 +20,38 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.engine.cancel;
-
-import java.util.concurrent.CancellationException;
+package eu.solven.adhoc.dataframe.column.navigable;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-public class TestCancelledQueryException {
+public class TestNoopKeyPresencePreScreenFactory {
 
 	@Test
-	public void testIsCancellation() {
-		Assertions.assertThat(CancelledQueryException.class).isAssignableTo(CancellationException.class);
+	public void testInstance_isSingleton() {
+		Assertions.assertThat(NoopKeyPresencePreScreenFactory.INSTANCE)
+				.isSameAs(NoopKeyPresencePreScreenFactory.INSTANCE);
 	}
 
 	@Test
-	public void testMessage_isPropagated() {
-		CancelledQueryException e = new CancelledQueryException("some reason");
+	public void testCreate_returnsNoopInstance_independentOfCapacity() {
+		IKeyPresencePreScreen<String> small = NoopKeyPresencePreScreenFactory.INSTANCE.create(0);
+		IKeyPresencePreScreen<String> large = NoopKeyPresencePreScreenFactory.INSTANCE.create(1_000_000);
 
-		Assertions.assertThat(e).hasMessage("some reason").isInstanceOf(CancellationException.class);
+		// Capacity is ignored — both calls hand back the same shared, stateless Noop singleton.
+		Assertions.assertThat(small).isSameAs(large);
 	}
 
 	@Test
-	public void testNullMessage_isAccepted() {
-		CancelledQueryException e = new CancelledQueryException(null);
+	public void testCreate_returnedScreen_alwaysMightContain() {
+		IKeyPresencePreScreen<Integer> screen = NoopKeyPresencePreScreenFactory.INSTANCE.create(8);
 
-		Assertions.assertThat(e.getMessage()).isNull();
+		Assertions.assertThat(screen.mightContain(42)).isTrue();
+		Assertions.assertThat(screen.mightContain(-1)).isTrue();
+
+		// add() is a no-op; the post-add answer is unchanged.
+		screen.add(42);
+		Assertions.assertThat(screen.mightContain(42)).isTrue();
+		Assertions.assertThat(screen.mightContain(99)).isTrue();
 	}
 }

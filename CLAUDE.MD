@@ -105,10 +105,13 @@ Improve test coverage for production classes that are critically under-tested (b
 
 **Workflow:**
 
-1. Run the SonarCloud coverage script to get the current list of critical classes:
+1. Get the list of under-tested classes — two interchangeable sources:
    ```bash
-   perl scripts/check-coverage-sonar.pl
+   perl scripts/check-coverage-sonar.pl                                # remote (SonarCloud), no build required
+   mvn jacoco:report-aggregate -pl :adhoc-aggregate -am                # build the project-wide aggregate report
+   perl scripts/check-coverage-low.pl                                  # then read the aggregate (preferred)
    ```
+   The aggregate report is the authoritative local source — it merges every module's `jacoco.exec`, so cross-module coverage (e.g. `engine/cube` tests covering `engine/table` classes) does NOT show as 0%. The script prefers the aggregate when present and warns when falling back to per-module reports. See `CONTRIBUTING.MD` § Coverage for the full rationale.
 2. Filter out pure interfaces and Lombok-generated-only classes (they require no tests).
 3. For each remaining class, read the source and write a `Test<ClassName>` in the same module under `src/test/java/`, in the same package. Cover at least: nominal path, null/empty inputs, and the most likely edge cases.
 4. After all edits run `mvn spotless:apply --file pom.xml --batch-mode` then verify with `mvn test -Pnostyle --file pom.xml --batch-mode`.
@@ -132,7 +135,7 @@ New executor jobs are proposed monthly by the Discovery Agent (see `.claude/disc
   4. Re-run the test — confirm it now passes.
   5. Run the affected module's full test suite to catch regressions.
   This applies even when the fix is a one-liner. Skipping the reproducer is acceptable only for *exploratory* spikes (e.g. "let me try this and see what breaks") — and even then the spike should end with a real reproducer once the issue is understood.
-- **Tests**: Every new class or significant behaviour change must be accompanied by a unit test. Cover at least the nominal path plus the most likely edge cases (null values, empty input, mixed types, etc.). Target ≥ 80 % instruction coverage for new files; classes below 20 % are critically under-tested — check with `perl scripts/check-coverage-sonar.pl` (offline) or `perl scripts/check-coverage-low.pl` (local JaCoCo). Test files live in the same module under `src/test/java/`.
+- **Tests**: Every new class or significant behaviour change must be accompanied by a unit test. Cover at least the nominal path plus the most likely edge cases (null values, empty input, mixed types, etc.). Target ≥ 80 % instruction coverage for new files; classes below 20 % are critically under-tested — check with `perl scripts/check-coverage-sonar.pl` (offline, queries SonarCloud) or `perl scripts/check-coverage-low.pl` (local JaCoCo; reads the project-wide aggregate report at `aggregate/target/site/jacoco-aggregate/jacoco.xml` when available, generated via `mvn jacoco:report-aggregate -pl :adhoc-aggregate -am`). Per-module JaCoCo reports under-report cross-module coverage — always prefer the aggregate. Test files live in the same module under `src/test/java/`. For the broader testing philosophy (when to write a cube-level integration test vs a localized module unit test, JMH benchmarks, Playwright e2e), see `docs/testing.md`.
 - **CHANGES.MD**: Add a one-liner under the current `[0.0.x]` section (under `### Added`, `### Changed`, or `### Fixed` as appropriate) for every user-visible addition or change. Do **not** record coverage-only test additions — they carry no functional value for API users.
 - **Final pass**: Before declaring work done, run through this checklist — do not skip any item even if the task felt simple:
   1. For every **new production class** introduced, confirm a `Test<ClassName>` exists in the same module. If it does not, write it now before responding to the user.

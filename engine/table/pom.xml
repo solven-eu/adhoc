@@ -15,8 +15,8 @@
 	<properties>
 		<!-- Lowered after the v19 split: many tests still live in the engine/adhoc module above. Restore once
 		     tests covering the table-only logic have moved here. -->
-		<jacoco.branch.ratio>0.50</jacoco.branch.ratio>
-		<jacoco.instruction.ratio>0.55</jacoco.instruction.ratio>
+		<jacoco.branch.ratio>0.58</jacoco.branch.ratio>
+		<jacoco.instruction.ratio>0.64</jacoco.instruction.ratio>
 
 		<testJarPhase>package</testJarPhase>
 		<automatic.module.name>eu.solven.adhoc.table</automatic.module.name>
@@ -151,6 +151,13 @@
 			<!-- JdbcClient for inserting arrays -->
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-jdbc</artifactId>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<!-- In-memory SQL backend for `JooqTableWrapper` non-DuckDB integration tests -->
+			<groupId>com.h2database</groupId>
+			<artifactId>h2</artifactId>
 			<scope>test</scope>
 		</dependency>
 
