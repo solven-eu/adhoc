@@ -168,7 +168,7 @@ public class JooqTableSupplierBuilder {
 	 * @deprecated Prefer {@link #leftJoin(Consumer)} — chainable, easier to read with multiple JOINs, and easier to
 	 *             skip dynamically.
 	 */
-	@Deprecated(since = "Prefer leftJoin(Consumer)")
+	@Deprecated(since = "Prefer leftJoin(Consumer)", forRemoval = true)
 	public JooqTableSupplierBuilder leftJoin(Table<?> joinedTable,
 			String joinName,
 			List<Map.Entry<String, String>> on) {
@@ -205,7 +205,7 @@ public class JooqTableSupplierBuilder {
 	 * @deprecated Prefer {@link #leftJoin(Consumer)} — chainable, easier to read with multiple JOINs, and easier to
 	 *             skip dynamically. Used internally to commit a {@link JooqJoinBuilder}.
 	 */
-	@Deprecated(since = "Prefer leftJoin(Consumer)")
+	@Deprecated(since = "Prefer leftJoin(Consumer)", forRemoval = true)
 	public JooqTableSupplierBuilder leftJoin(String leftTableAlias,
 			Table<?> joinedTable,
 			String joinName,
@@ -227,7 +227,7 @@ public class JooqTableSupplierBuilder {
 	/**
 	 * @deprecated Prefer {@link #leftJoin(Consumer)} with {@link JooqJoinBuilder#onSame(String)}.
 	 */
-	@Deprecated(since = "Prefer leftJoin(Consumer) + onSame(...)")
+	@Deprecated(since = "Prefer leftJoin(Consumer) + onSame(...)", forRemoval = true)
 	public JooqTableSupplierBuilder joinHomo(String leftTableAlias,
 			Table<?> joinedTable,
 			String joinName,
@@ -238,7 +238,7 @@ public class JooqTableSupplierBuilder {
 	/**
 	 * @deprecated Prefer {@link #leftJoin(Consumer)} with {@link JooqJoinBuilder#onSame(String)}.
 	 */
-	@Deprecated(since = "Prefer leftJoin(Consumer) + onSame(...)")
+	@Deprecated(since = "Prefer leftJoin(Consumer) + onSame(...)", forRemoval = true)
 	public JooqTableSupplierBuilder joinHomo(String leftTableAlias,
 			Table<?> joinedTable,
 			String joinName,
@@ -258,7 +258,14 @@ public class JooqTableSupplierBuilder {
 		}
 	}
 
-	@Deprecated
+	/**
+	 * 
+	 * @param joinedTable
+	 * @param on
+	 * @return
+	 * @deprecated
+	 */
+	@Deprecated(forRemoval = true)
 	public JooqTableSupplierBuilder leftJoinConditions(Table<?> joinedTable, List<Condition> on) {
 		snowflakeTable = snowflakeTable.leftJoin(joinedTable).on(on.toArray(Condition[]::new));
 

@@ -28,6 +28,7 @@ import org.mockito.Mockito;
 
 import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.model.measure.Aggregator;
+import eu.solven.adhoc.model.measure.Combinator;
 import eu.solven.adhoc.model.query.IGroupBy;
 import eu.solven.adhoc.options.StandardQueryOptions;
 import nl.jqno.equalsverifier.EqualsVerifier;
@@ -64,5 +65,23 @@ public class TestTableQueryStep {
 		// Check Cache is not copied
 		Assertions.assertThat(copy.getCache()).isEmpty();
 		Assertions.assertThat(step.getCache()).hasSize(1);
+	}
+
+	// `TableQueryStep.from(...)` only accepts steps whose measure is an Aggregator: a Combinator (or any other
+	// non-Aggregator IMeasure) means the cube DAG has not yet been resolved down to its leaf aggregator, and
+	// converting it to a TableQueryStep would silently drop the combination logic. Guard the contract.
+	@Test
+	public void testFrom_combinatorMeasure_throwsIllegalArgument() {
+		Combinator combinator = Combinator.builder().name("aPlusB").underlying("a").underlying("b").build();
+		CubeQueryStep step = CubeQueryStep.builder()
+				.measure(combinator)
+				.filter(ISliceFilter.MATCH_ALL)
+				.groupBy(IGroupBy.GRAND_TOTAL)
+				.build();
+
+		Assertions.assertThatThrownBy(() -> TableQueryStep.from(step))
+				.isInstanceOf(IllegalArgumentException.class)
+				.hasMessageContaining("Expected Aggregator")
+				.hasMessageContaining("aPlusB");
 	}
 }
