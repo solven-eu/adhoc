@@ -697,15 +697,7 @@ public class TableQueryEngine implements ITableQueryEngine {
 	 * @return the Set of {@link TableQuery} to be executed.
 	 */
 	protected Set<TableQueryStep> prepareForTable(QueryStepsDag queryStepsDag) {
-		return streamMissingRoots(queryStepsDag).map(step -> {
-			IMeasure measure = step.getMeasure();
-
-			if (measure instanceof Aggregator) {
-				return TableQueryStep.edit(step).build();
-			} else {
-				throw new IllegalStateException("%s is not an Aggregator".formatted(step));
-			}
-		}).collect(ImmutableSet.toImmutableSet());
+		return streamMissingRoots(queryStepsDag).map(TableQueryStep::from).collect(ImmutableSet.toImmutableSet());
 	}
 
 	/**

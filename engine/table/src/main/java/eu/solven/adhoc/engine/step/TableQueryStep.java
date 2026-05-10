@@ -31,6 +31,7 @@ import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.model.measure.Aggregator;
+import eu.solven.adhoc.model.measure.IMeasure;
 import eu.solven.adhoc.model.query.IGroupBy;
 import eu.solven.adhoc.model.query.IHasCustomMarker;
 import eu.solven.adhoc.options.IHasQueryOptions;
@@ -78,19 +79,12 @@ public final class TableQueryStep extends ACubeQueryStep {
 	 * @throws IllegalArgumentException
 	 *             if the step's measure is not an {@link Aggregator}
 	 */
-	public static TableQueryStep from(CubeQueryStep step) {
-		if (!(step.getMeasure() instanceof Aggregator aggregator)) {
-			throw new IllegalArgumentException(
-					"Expected Aggregator but got: %s in %s".formatted(step.getMeasure(), step));
+	public static TableQueryStep from(ICubeQueryStep step) {
+		IMeasure measure = step.getMeasure();
+		if (!(measure instanceof Aggregator)) {
+			throw new IllegalArgumentException("Expected Aggregator but got: %s in %s".formatted(measure, step));
 		}
-		return TableQueryStep.builder()
-				.filter(step.getFilter())
-				.groupBy(step.getGroupBy())
-				.customMarker(step.getCustomMarker())
-				.options(step.getOptions())
-				.cache(step.getCache())
-				.aggregator(aggregator)
-				.build();
+		return edit(step).build();
 	}
 
 	/**
@@ -113,6 +107,7 @@ public final class TableQueryStep extends ACubeQueryStep {
 	public static TableQueryStepBuilder edit(IWhereGroupByQuery step) {
 		TableQueryStepBuilder builder = TableQueryStep.builder().filter(step.getFilter()).groupBy(step.getGroupBy());
 
+		// .cache(step.getCache())
 		if (step instanceof IHasCustomMarker hasCustomMarker) {
 			hasCustomMarker.optCustomMarker().ifPresent(builder::customMarker);
 		}

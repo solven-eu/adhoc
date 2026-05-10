@@ -55,6 +55,7 @@ Pivotable is a referential implementation of a web application wrapping Adhoc ca
 
 - [Module Dependencies](dependencies.md) — inter-module Maven dependency graph
 - [Debug / Investigations](debug.md) — debug/explain query options and automated documentation tools
+- [Testing](testing.md) — test pyramid (cube-level integration vs module unit tests), coverage attribution, JMH benchmarks, Playwright e2e
 - [FAQ](faq.md) — recurrent cases with one or more solutions
 - [Research](research.md) — background reading and algorithmic references
 

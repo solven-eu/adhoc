@@ -43,7 +43,7 @@ import lombok.extern.jackson.Jacksonized;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * An {@link Unfiltrator} is a specialisation of {@link Shiftor} where the {@link IFilterEditor} widens the current
+ * An {@link Unfiltrator} is a specialization of {@link Shiftor} where the {@link IFilterEditor} widens the current
  * filter by replacing constraints on selected columns with {@code matchAll}. Because this pattern (requesting
  * underlying measures at a coarser granularity) is extremely common, {@link Unfiltrator} provides a simpler builder
  * that does not require implementing a full {@link IFilterEditor}.

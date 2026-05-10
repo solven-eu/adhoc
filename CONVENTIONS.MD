@@ -357,7 +357,11 @@ A dedicated workflow (`.github/workflows/infer.yml`) runs on every push/PR to `m
 - **Minimum floor**: classes below 20% are considered critically under-tested and must be addressed as a priority. They are flagged automatically in CI by `scripts/check-coverage-low.pl` (post-test, reads local JaCoCo XML) and by `scripts/check-coverage-sonar.pl` (offline, queries SonarCloud API — no build required).
 - **Full SonarCloud view**: https://sonarcloud.io/component_measures?metric=uncovered_lines&view=list&id=adhoc
 - **What to cover**: at minimum the nominal path and the most likely edge cases (null/empty input, boundary values, mixed types). Pure interfaces and Lombok-generated code (`@Value`, `@Builder`) do not need dedicated tests.
-- **Test placement**: test classes live in the same Maven module under `src/test/java/`, named `Test<ProductionClass>` in the same package.
+- **Test placement**: test classes live in the same Maven module under `src/test/java/`, in the same package as the production class.
+- **Test class naming** — two patterns coexist, deliberately:
+  - **`Test<ProductionClass>`** for **localized unit tests** that exercise a specific production class. One per production class is the default expectation. Lives in the same module and same package as the class under test.
+  - **`TestDag<Scenario>`** for **integration tests** that build a measure forest, feed a table, execute a `CubeQuery`, and assert against the resulting `ITabularView`. Every class extending — directly or indirectly — `ATestDagRaw` (e.g. `ATestDagInMemory`, `ATestDagJooq`, `ATestDagDuckDb`) MUST follow this `TestDag<Scenario>` prefix. The prefix is the structural marker that this is an end-to-end cube-level test rather than a unit test against a single class. Examples: `TestDagCubeQuery_DuckDb_emptyAggregator`, `TestDagTransformator_Filtrator`, `TestDagCompositeCubesTableWrapper`.
+  - The two patterns are not interchangeable. A `Test<X>` is a localized regression net; a `TestDag<Y>` proves the cube-level contract. See [`docs/testing.md`](docs/testing.md) for when to write which.
 
 ## Test Utilities & JPMS
 

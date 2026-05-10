@@ -76,7 +76,10 @@ for my $file ( sort @xml_files ) {
     my $body = do { local $/; <$fh> };
     close($fh);
 
-    while ( $body =~ m{<class\s+name="([^"]+)"[^>]*>(.*?)</class>}gs ) {
+    # Ignore self-closing <class .../> tags (empty classes / interfaces with no methods) — without the
+    # negative lookbehind on '/', the regex would extend past such a tag and attribute the next class's
+    # counters to it.
+    while ( $body =~ m{<class\s+name="([^"]+)"[^>]*(?<!/)>(.*?)</class>}gs ) {
         my ( $current_class, $inner ) = ( $1, $2 );
 
         # Collect every per-counter pair inside the class block; the last one

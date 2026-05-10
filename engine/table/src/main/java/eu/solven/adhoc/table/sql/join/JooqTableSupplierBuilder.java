@@ -258,6 +258,7 @@ public class JooqTableSupplierBuilder {
 		}
 	}
 
+	@Deprecated
 	public JooqTableSupplierBuilder leftJoinConditions(Table<?> joinedTable, List<Condition> on) {
 		snowflakeTable = snowflakeTable.leftJoin(joinedTable).on(on.toArray(Condition[]::new));
 

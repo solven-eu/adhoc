@@ -60,6 +60,11 @@
 		</dependency>
 		<dependency>
 			<groupId>eu.solven.adhoc</groupId>
+			<artifactId>adhoc-calcite</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>eu.solven.adhoc</groupId>
 			<artifactId>adhoc-filters</artifactId>
 			<version>${project.version}</version>
 		</dependency>
