@@ -53,17 +53,38 @@ const copyColumnNameToClipboard = function (name) {
 };
 
 // Rendered in DRILLTHROUGH grids when a row is missing a value for a column. DT responses are intentionally
-// heterogeneous — every source row may carry a different subset of keys — so a blank cell is ambiguous (was
-// the column not present, or did it carry an empty string?). The grey italic placeholder makes the difference
-// obvious. Sanitised inline (no user-controlled content) so it is safe to emit as raw HTML.
+// heterogeneous, so a blank cell is ambiguous (was the column missing, or empty?). Two distinct cases:
+//
+//   - `NULL`        : the column IS in the user's query (a requested measure or groupBy), but the source row
+//                     carries a null/missing value for it. The user asked for this column — they want to see
+//                     that the underlying data is null, not that the column doesn't apply.
+//   - `Out of DT`   : the column is NOT in the user's query — it appeared in the DT response because the
+//                     engine decomposed a higher-level measure (e.g. a Combinator) into its underlying
+//                     aggregator columns, or because a row-inclusion filter column was added to the groupBy.
+//                     The user did not explicitly request this column, so a missing value really means "this
+//                     column is not part of the DT contract for this row".
+//
+// Sanitised inline (no user-controlled content) so it is safe to emit as raw HTML.
+const NULL_DT_HTML = '<span style="color:#888;font-style:italic">NULL</span>';
+const NULL_DT_TOOLTIP = "The source row carries a null value for this requested column.";
 const OUT_OF_DT_HTML = '<span style="color:#888;font-style:italic">Out of DT</span>';
-const OUT_OF_DT_TOOLTIP = "This row does not carry this column in the DrillThrough output.";
+const OUT_OF_DT_TOOLTIP = "This column is not part of the user's DrillThrough query.";
 
 function isMissing(value) {
 	return value === null || typeof value === "undefined";
 }
 
-const formatters = function (formatOptions, measureStats, parentSliceStats, parentColumnNames, isDrillthrough) {
+// `requestedColumns` is the Set of column names (groupBy + measures) the user explicitly asked for. Used by
+// the DT formatters to pick between the two missing-value placeholders. May be undefined outside DT mode —
+// the formatters only consult it when `isDrillthrough` is true.
+function placeholderForMissing(columnId, requestedColumns) {
+	if (requestedColumns && requestedColumns.has(columnId)) {
+		return { html: NULL_DT_HTML, toolTip: NULL_DT_TOOLTIP };
+	}
+	return { html: OUT_OF_DT_HTML, toolTip: OUT_OF_DT_TOOLTIP };
+}
+
+const formatters = function (formatOptions, measureStats, parentSliceStats, parentColumnNames, isDrillthrough, requestedColumns) {
 	if (!formatOptions) {
 		formatOptions = {};
 	}
@@ -148,11 +169,12 @@ const formatters = function (formatOptions, measureStats, parentSliceStats, pare
 	function measureFormatter(row, cell, value, columnDef, dataContext) {
 		var rtn = {};
 
-		// DRILLTHROUGH: a missing key is structurally different from "the cell holds an empty value" — the
-		// source row simply does not carry this column. Surface that explicitly so the user can tell the
-		// two cases apart.
+		// DRILLTHROUGH: distinguish a real NULL on a requested column (rendered as the `NULL` placeholder)
+		// from a column that the user did not even ask for but that appeared in the DT response because the
+		// engine decomposed a higher-level measure (rendered as `Out of DT`). See the comment above the
+		// constants for the full distinction.
 		if (isDrillthrough && isMissing(value)) {
-			return { html: OUT_OF_DT_HTML, toolTip: OUT_OF_DT_TOOLTIP };
+			return placeholderForMissing(columnDef.id, requestedColumns);
 		}
 
 		// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Data_structures
@@ -233,7 +255,7 @@ const formatters = function (formatOptions, measureStats, parentSliceStats, pare
 
 		// Same DT-missing handling as `measureFormatter` — see comment there.
 		if (isDrillthrough && isMissing(value)) {
-			return { html: OUT_OF_DT_HTML, toolTip: OUT_OF_DT_TOOLTIP };
+			return placeholderForMissing(columnDef.id, requestedColumns);
 		}
 
 		// Apply the primary + secondary heatmaps to percent-formatted cells the same way
@@ -349,17 +371,18 @@ export default {
 		}
 	},
 
-	groupByToGridColumns: function (columnNames, queryModel, renderCallback, isDrillthrough) {
+	groupByToGridColumns: function (columnNames, queryModel, renderCallback, isDrillthrough, requestedColumns) {
 		const gridColumns = [];
 
 		// In DRILLTHROUGH mode the row schema is heterogeneous: each source row may carry a different
 		// subset of groupBy keys. A missing key would otherwise render as a blank cell — same shape as
-		// an empty string value — which is misleading. Use the shared placeholder so the difference is
-		// visible. Non-DT queries fall back to SlickGrid's default cell renderer (no formatter set).
+		// an empty string value — which is misleading. Pick between `NULL` (groupBy column the user
+		// requested) and `Out of DT` (groupBy column added by the engine for filter-column visibility).
+		// Non-DT queries fall back to SlickGrid's default cell renderer (no formatter set).
 		const groupByFormatter = isDrillthrough
-			? function (row, cell, value /* columnDef, dataContext */) {
+			? function (row, cell, value, columnDef /* , dataContext */) {
 					if (isMissing(value)) {
-						return { html: OUT_OF_DT_HTML, toolTip: OUT_OF_DT_TOOLTIP };
+						return placeholderForMissing(columnDef.id, requestedColumns);
 					}
 					return { text: value, toolTip: value };
 				}
@@ -431,8 +454,18 @@ export default {
 		return gridColumns;
 	},
 
-	measuresToGridColumns: function (measureNames, queryModel, renderCallback, formatOptions, measureStats, parentSliceStats, parentColumnNames, isDrillthrough) {
-		const measureFormatters = formatters(formatOptions, measureStats, parentSliceStats, parentColumnNames, isDrillthrough);
+	measuresToGridColumns: function (
+		measureNames,
+		queryModel,
+		renderCallback,
+		formatOptions,
+		measureStats,
+		parentSliceStats,
+		parentColumnNames,
+		isDrillthrough,
+		requestedColumns,
+	) {
+		const measureFormatters = formatters(formatOptions, measureStats, parentSliceStats, parentColumnNames, isDrillthrough, requestedColumns);
 
 		const gridColumns = [];
 

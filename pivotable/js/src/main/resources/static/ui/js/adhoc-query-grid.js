@@ -208,6 +208,24 @@ export default {
 				}
 			}
 
+			// In DRILLTHROUGH mode the formatters distinguish two missing-value cases. A column that IS in
+			// the user-submitted query (groupBy or measures) renders missing values as `NULL` — the user
+			// asked for that column, so the placeholder reads as "the data is null". A column that is NOT
+			// in the user query but appeared in the response (because the engine surfaced an underlying
+			// aggregator alias from a Combinator, or because the row-inclusion filter added a column to the
+			// groupBy) renders missing values as `Out of DT` — outside the user's contract.
+			const requestedColumns = new Set();
+			if (isDrillthrough) {
+				for (const c of rawColumnNames) {
+					requestedColumns.add(typeof c === "object" ? c.column : c);
+				}
+				for (const m of props.tabularView.query.measures || []) {
+					// `query.measures` may be an array of strings (`"delta"`) or referenced-measure objects
+					// (`{ ref: "delta" }`) depending on the wizard's edit state.
+					requestedColumns.add(typeof m === "object" ? m.name || m.ref : m);
+				}
+			}
+
 			if (view.coordinates.length === 0) {
 				// TODO Why do we show an empty column? Maybe to force having something to render
 				const column = { id: "empty", name: "empty", field: "empty", sortable: sortable, asyncPostRender: renderCallback };
@@ -224,7 +242,7 @@ export default {
 
 				// https://stackoverflow.com/questions/1232040/how-do-i-empty-an-array-in-javascript
 				console.log(`Rendering columnNames=${columnNames}`);
-				gridColumns.push(...gridHelper.groupByToGridColumns(columnNames, props.queryModel, renderCallback, isDrillthrough));
+				gridColumns.push(...gridHelper.groupByToGridColumns(columnNames, props.queryModel, renderCallback, isDrillthrough, requestedColumns));
 
 				// measureNames may be filled on first row if we requested no measure and received the default measure
 				let measureNames = props.tabularView.query.measures;
@@ -273,6 +291,7 @@ export default {
 						parentSliceStats,
 						parentColumnNames,
 						isDrillthrough,
+						requestedColumns,
 					),
 				);
 

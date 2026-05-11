@@ -9,43 +9,27 @@ test.beforeAll(async ({ request }) => {
 	expect(response.ok()).toBeTruthy();
 });
 
-// Exercises the "Out of DT" placeholder added to the SlickGrid formatters: in DRILLTHROUGH mode, a cell whose
-// value is null/undefined (because the source row does not carry that column) renders as `Out of DT` in grey
-// italic instead of as an empty cell.
+// Exercises the missing-value placeholders the SlickGrid DT formatters render in DRILLTHROUGH mode. The
+// formatter picks between two flavours:
 //
-// Strategy: stub the `with_view=true` GET that delivers the DT result with a synthetic heterogeneous payload.
-// Driving the engine end-to-end to produce a heterogeneous response is brittle (the merger's per-aggregator
-// FILTER handling depends on cube-side rewrites that are not directly exposed through the wizard). Intercepting
-// the response lets us isolate the test to the formatter contract: given a DT view where some rows lack a key
-// in `values`, the grid renders the placeholder for those cells.
+//   - `NULL`      : when the column IS in the user's query (groupBy or measures) and the source row carries
+//                   a null/missing value for it. The user asked for the column — the placeholder reads as
+//                   "the data is null", not "the column doesn't apply".
+//   - `Out of DT` : when the column is NOT in the user's query but appeared in the DT response anyway (e.g.
+//                   because the engine surfaced an underlying aggregator from a Combinator, or because the
+//                   row-inclusion filter added a column to the groupBy). The user did not explicitly request
+//                   the column, so a missing value means it falls outside the DT contract for this row.
+//
+// This test exercises the `NULL` flavour by querying `theta` on the `simple` cube. `theta` IS in the user-
+// submitted measures, but the seed only fills it on ~50% of rows — rows lacking `theta` therefore produce DT
+// entries whose `values` map has no `theta` key, and the grid must render `NULL` (NOT `Out of DT`) in those
+// cells.
 test.setTimeout(60_000);
-test("DRILLTHROUGH grid renders `Out of DT` placeholder for cells missing in heterogeneous response", async ({ page }) => {
-	const isViewResultUrl = (u) => u.includes("/api/v1/cubes/query/result") && u.includes("with_view=true");
-
-	// Stub every `with_view=true` GET (sync polling of the async query result endpoint) with a heterogeneous
-	// DT payload. Three rows: two have `delta_filtered` populated, one does NOT — the grid must render the
-	// missing cell as `Out of DT`.
-	const stubbedView = {
-		query: {
-			filter: "matchAll",
-			groupBy: { columns: ["country"] },
-			measures: ["delta", "delta_filtered"],
-			options: ["DRILLTHROUGH"],
-		},
-		coordinates: [{ country: "France" }, { country: "Spain" }, { country: "France" }],
-		values: [{ delta: 1.5, delta_filtered: 1.5 }, { delta: 2.5 /* no `delta_filtered` for non-France */ }, { delta: 3.5, delta_filtered: 3.5 }],
+test("DRILLTHROUGH grid renders `NULL` placeholder for requested column missing on source row", async ({ page }) => {
+	const isViewResponse = (resp) => {
+		const u = resp.url();
+		return u.includes("/api/v1/cubes/query/result") && u.includes("with_view=true") && resp.ok();
 	};
-	await page.route(
-		(url) => isViewResultUrl(url.toString()),
-		async (route) => {
-			await route.fulfill({
-				contentType: "application/json",
-				body: JSON.stringify({ view: stubbedView }),
-			});
-		},
-	);
-
-	const isViewResponse = (resp) => isViewResultUrl(resp.url()) && resp.ok();
 
 	await page.goto(url);
 	await page.getByRole("link", { name: /You need to login/ }).click();
@@ -59,38 +43,62 @@ test("DRILLTHROUGH grid renders `Out of DT` placeholder for cells missing in het
 		.click();
 	await page.getByRole("link", { name: /Query simple/i }).click();
 
-	// Build a minimal query: column `country` + measure `delta`. The exact selection is mostly irrelevant —
-	// the stubbed view above is what the grid will render — but we still need a real submitted query to
-	// trigger the polling that hits the intercepted endpoint.
+	// Build the query: groupBy `country`, measures `delta` + `theta`. Each step waits for the resulting
+	// `with_view=true` response so the wizard's debounced query state has settled before the next click.
 	await page.getByRole("searchbox", { name: "Search" }).dblclick();
 	await page.getByRole("searchbox", { name: "Search" }).fill("country");
 	await page.getByRole("button", { name: /columns/ }).click();
 	await page.locator('[id="column_country"]').check();
 
+	// Single measure: `theta`. The sparse data column declared in `InjectSimpleExampleCubesConfig` is filled
+	// only on ~50% of source rows. In DT, the rows without `theta` produce entries whose `values` map lacks
+	// the `theta` key — `theta` IS in the user's query so the formatter must render the placeholder as
+	// `NULL`, not `Out of DT`.
 	await page.getByRole("searchbox", { name: "Search" }).dblclick();
-	await page.getByRole("searchbox", { name: "Search" }).fill("delta");
+	await page.getByRole("searchbox", { name: "Search" }).fill("theta");
 	await page.getByRole("switch", { name: "JSON" }).uncheck();
 	await page.getByRole("button", { name: /measures/ }).click();
-	const aggregatedResponsePromise = page.waitForResponse(isViewResponse, { timeout: 30_000 });
-	await page.locator('[id="measure_delta"]').check();
-	await aggregatedResponsePromise;
+	const thetaCheckbox = page.locator("input[id='measure_theta']");
+	await expect(thetaCheckbox).toBeVisible({ timeout: 10_000 });
+	const responsePromise = page.waitForResponse(isViewResponse, { timeout: 30_000 });
+	// `force: true` — the Vue reactive re-renders after the search-box `fill` keep the checkbox attached/
+	// detached for a few moments. Playwright's default stability check times out before the element settles,
+	// even though the eventual state is fine. Forcing the click sidesteps the heuristic; the subsequent
+	// `toBeChecked()` confirms the click actually toggled the input.
+	await thetaCheckbox.check({ force: true });
+	await responsePromise;
+	await expect(thetaCheckbox).toBeChecked();
 
-	// Toggle DRILLTHROUGH on so the grid uses the DT rendering path (heterogeneous-schema discovery + DT
-	// formatter). The stubbed response is returned regardless of the query state, but DT mode is what wires
-	// in the `Out of DT` formatter.
+	await expect(page.locator(".slick-row").first()).toBeVisible();
+
+	// Toggle DRILLTHROUGH on.
 	await page.getByRole("button", { name: /^\d+ options/ }).click();
 	const drillthroughResponsePromise = page.waitForResponse(isViewResponse, { timeout: 30_000 });
 	await page.locator('[id="option_DRILLTHROUGH"]').check();
-	await drillthroughResponsePromise;
+	const drillthroughResponse = await drillthroughResponsePromise;
+	const drillthroughView = (await drillthroughResponse.json()).view;
 
-	// The grid must render at least one cell carrying the `Out of DT` placeholder. SlickGrid emits the
-	// rendered DOM into `.slick-cell` nodes; the DT formatter returns the placeholder via `html`, so the
-	// text lands inside a `<span style="color:#888;font-style:italic">Out of DT</span>` nested in a cell.
-	const placeholderCells = page.locator('.slick-cell:has-text("Out of DT")');
-	await expect(placeholderCells.first()).toBeVisible({ timeout: 10_000 });
+	// Sanity: the DT response carries at least one row whose `values` map lacks `theta` (rows where the
+	// source did not have the column), AND at least one row that DOES carry it — heterogeneity, otherwise the
+	// test setup is broken and the placeholder has nothing to render.
+	const rowsWithTheta = drillthroughView.values.filter((v) => "theta" in v && v.theta != null);
+	const rowsMissingTheta = drillthroughView.values.filter((v) => !("theta" in v) || v.theta == null);
+	expect(rowsWithTheta.length).toBeGreaterThan(0);
+	expect(rowsMissingTheta.length).toBeGreaterThan(0);
+
+	// The grid must have rendered at least one cell carrying the `NULL` placeholder (theta IS in the user
+	// query, so missing values must NOT use the `Out of DT` placeholder).
+	const nullCells = page.locator('.slick-cell:has-text("NULL")');
+	await expect(nullCells.first()).toBeVisible({ timeout: 10_000 });
+
+	// And the wrong placeholder must NOT appear: `theta` is part of the user-submitted query, so it cannot
+	// be classified as "Out of DT". This guards the requestedColumns wiring from regressing back to a
+	// catch-all placeholder.
+	const outOfDtCells = page.locator('.slick-cell:has-text("Out of DT")');
+	await expect(outOfDtCells).toHaveCount(0);
 
 	// The placeholder must carry the grey-italic styling — otherwise the user can't distinguish it from any
 	// other empty-looking content.
-	const placeholderSpan = page.locator('.slick-cell span:has-text("Out of DT")').first();
+	const placeholderSpan = page.locator('.slick-cell span:has-text("NULL")').first();
 	await expect(placeholderSpan).toHaveCSS("font-style", "italic");
 });
