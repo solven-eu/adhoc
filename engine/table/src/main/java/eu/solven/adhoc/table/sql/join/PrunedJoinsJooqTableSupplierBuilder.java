@@ -109,7 +109,7 @@ public class PrunedJoinsJooqTableSupplierBuilder extends JooqTableSupplierBuilde
 	 */
 	@Getter
 	@SuppressWarnings("PMD.AvoidFieldNameMatchingMethodName")
-	private Set<String> baseProvidedColumns = Set.of();
+	private Set<String> baseProvidedColumns = ImmutableSet.of();
 
 	/**
 	 * Declare the columns the base table provides. Subsequent {@code build()} / re-probes will see them. Calling this

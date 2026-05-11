@@ -145,8 +145,8 @@ public class PivotableChatHandler {
 	protected List<Map<String, Object>> buildMessages(ChatRequest chatRequest) {
 		List<Map<String, Object>> messages = new ArrayList<>();
 		chatRequest.getConversations()
-				.forEach(msg -> messages.add(Map.of("role", msg.getRole(), "content", msg.getContent())));
-		messages.add(Map.of("role", "user", "content", chatRequest.getMessage()));
+				.forEach(msg -> messages.add(ImmutableMap.of("role", msg.getRole(), "content", msg.getContent())));
+		messages.add(ImmutableMap.of("role", "user", "content", chatRequest.getMessage()));
 		return messages;
 	}
 
@@ -157,18 +157,17 @@ public class PivotableChatHandler {
 				.put("description",
 						"Select the measures to display in the query result. Replaces any previously selected measures.")
 				.put("input_schema",
-						Map.of("type",
-								"object",
-								"properties",
-								Map.of("measureNames",
-										Map.of("type",
-												"array",
-												"items",
-												Map.of("type", "string"),
-												"description",
-												"Exact measure names from the cube schema")),
-								"required",
-								ImmutableList.of("measureNames")))
+						ImmutableMap.<String, Object>builder()
+								.put("type", "object")
+								.put("properties",
+										ImmutableMap.of("measureNames",
+												ImmutableMap.<String, Object>builder()
+														.put("type", "array")
+														.put("items", ImmutableMap.of("type", "string"))
+														.put("description", "Exact measure names from the cube schema")
+														.build()))
+								.put("required", ImmutableList.of("measureNames"))
+								.build())
 				.build(),
 
 				ImmutableMap.<String, Object>builder()
@@ -176,25 +175,29 @@ public class PivotableChatHandler {
 						.put("description",
 								"Set the groupBy dimensions (columns to aggregate by). Order matters — first column is the primary grouping.")
 						.put("input_schema",
-								Map.of("type",
-										"object",
-										"properties",
-										Map.of("columns",
-												Map.of("type",
-														"array",
-														"items",
-														Map.of("type", "string"),
-														"description",
-														"Exact dimension column names from the cube schema")),
-										"required",
-										ImmutableList.of("columns")))
+								ImmutableMap.<String, Object>builder()
+										.put("type", "object")
+										.put("properties",
+												ImmutableMap.of("columns",
+														ImmutableMap.<String, Object>builder()
+																.put("type", "array")
+																.put("items", ImmutableMap.of("type", "string"))
+																.put("description",
+																		"Exact dimension column names from the cube schema")
+																.build()))
+										.put("required", ImmutableList.of("columns"))
+										.build())
 						.build(),
 
 				ImmutableMap.<String, Object>builder()
 						.put("name", "clear_query")
 						.put("description",
 								"Reset all selections (measures and groupBy columns) to start a fresh query.")
-						.put("input_schema", Map.of("type", "object", "properties", Map.of()))
+						.put("input_schema",
+								ImmutableMap.<String, Object>builder()
+										.put("type", "object")
+										.put("properties", ImmutableMap.of())
+										.build())
 						.build());
 	}
 
@@ -242,7 +245,8 @@ public class PivotableChatHandler {
 						JsonNode delta = node.path("delta");
 						String deltaType = delta.path("type").asString();
 						if ("text_delta".equals(deltaType)) {
-							sink.next(toSseData(Map.of("type", "text", "content", delta.path("text").asString(""))));
+							sink.next(toSseData(
+									ImmutableMap.of("type", "text", "content", delta.path("text").asString(""))));
 						} else if ("input_json_delta".equals(deltaType)) {
 							toolInput.append(delta.path("partial_json").asString(""));
 						}
@@ -252,13 +256,14 @@ public class PivotableChatHandler {
 						if ("tool_use".equals(blockType[0])) {
 							String accumulated = toolInput.toString();
 							JsonNode input = objectMapper.readTree(accumulated.isEmpty() ? "{}" : accumulated);
-							sink.next(toSseData(Map.of("type", "tool_use", "name", toolName[0], "input", input)));
+							sink.next(toSseData(
+									ImmutableMap.of("type", "tool_use", "name", toolName[0], "input", input)));
 						}
 						blockType[0] = "none";
 						break;
 					}
 					case "message_stop": {
-						sink.next(toSseData(Map.of("type", "done")));
+						sink.next(toSseData(ImmutableMap.of("type", "done")));
 						sink.complete();
 						break;
 					}
@@ -271,7 +276,7 @@ public class PivotableChatHandler {
 			}, error -> {
 				log.error("Anthropic stream error", error);
 				try {
-					sink.next(toSseData(Map.of("type", "error", "message", error.getMessage())));
+					sink.next(toSseData(ImmutableMap.of("type", "error", "message", error.getMessage())));
 				} catch (Exception ignored) {
 					// best-effort: emit the error event before failing
 				}
