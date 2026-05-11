@@ -389,7 +389,7 @@ public class PrunedJoinsJooqTableSupplier implements IJooqTableSupplier, IHasCac
 								+ " strict-mode `computeNeededAliases` will reject every referenced column",
 						schema.getBaseTable(),
 						alias);
-				return Set.of();
+				return ImmutableSet.of();
 			}
 			Set<String> probed = new LinkedHashSet<>();
 			for (Field<?> f : fields) {
@@ -417,7 +417,7 @@ public class PrunedJoinsJooqTableSupplier implements IJooqTableSupplier, IHasCac
 						+ " this join will not be prunable unless a columnsOverride is supplied on leftJoin(...)",
 						node.getJoinedTable(),
 						alias);
-				return Set.of();
+				return ImmutableSet.of();
 			}
 			// BEWARE Is this an opportunity to register fully qualified field names?
 			// It is actually done in `columnToAlias`

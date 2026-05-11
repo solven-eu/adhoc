@@ -30,6 +30,8 @@ import org.jooq.Record;
 import org.jooq.SelectLimitPercentStep;
 import org.jooq.TableLike;
 
+import com.google.common.collect.ImmutableList;
+
 import eu.solven.adhoc.table.sql.join.PrunedJoinsJooqTableSupplierBuilder;
 import eu.solven.adhoc.util.Blocking;
 import eu.solven.pepper.core.PepperLogHelper;
@@ -94,7 +96,7 @@ public final class JooqColumnsHelpers {
 
 		@Override
 		public List<Field<?>> columnsOf(IDSLSupplier dslSupplier, TableLike<?> table) {
-			return List.of(table.asTable().fields());
+			return ImmutableList.copyOf(table.asTable().fields());
 		}
 	}
 
@@ -115,7 +117,7 @@ public final class JooqColumnsHelpers {
 
 			log.info("Fetching fields via SQL=`{}`", PepperLogHelper.lazyToString(() -> escapeEOL(query.toString())));
 
-			return List.of(query.fetch().fields());
+			return ImmutableList.copyOf(query.fetch().fields());
 		}
 	}
 
@@ -134,7 +136,7 @@ public final class JooqColumnsHelpers {
 		public List<Field<?>> columnsOf(IDSLSupplier dslSupplier, TableLike<?> table) {
 			String sql = sqlBuilder.apply(table);
 			log.info("Fetching fields via predefined SQL=`{}`", PepperLogHelper.lazyToString(() -> escapeEOL(sql)));
-			return List.of(dslSupplier.getDSLContext().fetch(sql).fields());
+			return ImmutableList.copyOf(dslSupplier.getDSLContext().fetch(sql).fields());
 		}
 	}
 
