@@ -114,7 +114,7 @@ view, "Ctrl+F can't find a value I know is in the table" is a confusing
 silent miss.
 
 We do **not** want to disable the browser's native search — for visible cells
-it works fine, and stripping it would be hostile. The plan is to *augment*
+it works fine, and stripping it would be hostile. The plan is to _augment_
 it: pressing Ctrl+F triggers both the native search **and** opens a small
 modal that performs an application-level search across the full result set
 (not just the rendered rows). The modal must visibly catch the user's
@@ -170,7 +170,7 @@ Desired behaviour:
   the document's text selection at all.
 - **Honour partial text selections** when they exist. If the user has
   drag-selected a portion of the cell's text (or text spanning multiple
-  cells, if SlickGrid permits it), Ctrl+C should copy *that* selection,
+  cells, if SlickGrid permits it), Ctrl+C should copy _that_ selection,
   not the active cell. Detect via `window.getSelection().toString()` —
   if non-empty, fall through to the browser's default behaviour; if
   empty, take over and copy the active cell.
@@ -180,8 +180,8 @@ Desired behaviour:
 
 Open questions:
 
-- Which value to copy: the *displayed* string (post-formatter — e.g.
-  `1,234.50` for a number), or the *raw* underlying value (`1234.5`)? The
+- Which value to copy: the _displayed_ string (post-formatter — e.g.
+  `1,234.50` for a number), or the _raw_ underlying value (`1234.5`)? The
   Excel mental model says "what I see is what I copy", so default to
   displayed; offer Ctrl+Shift+C for the raw value if the need arises.
 - Does the copy-on-empty-selection rule conflict with the [Ctrl+F app
@@ -210,7 +210,7 @@ Two implementation routes:
 
 - **Custom menu, native fallback.** Suppress the browser default with
   `event.preventDefault()` on `contextmenu` and render our own menu that
-  *includes* the relevant browser actions plus the Pivotable ones.
+  _includes_ the relevant browser actions plus the Pivotable ones.
   Pro: full control of layout, keyboard support, theming. Con: re-implementing
   Copy / Paste / Inspect / Save image is a rabbit hole — and we'll never
   match every browser's full default menu.
@@ -232,7 +232,7 @@ Open questions:
 
 - Which actions belong in the right-click vs. only in the (existing)
   double-click modal? Likely: right-click = the 2–3 most common actions
-  the user wanted *now*; modal = the long tail (column metadata, share,
+  the user wanted _now_; modal = the long tail (column metadata, share,
   configure formatter, etc.). Keep them in sync — adding an action to the
   modal is the moment to ask "does this also belong in right-click?".
 - Coordinate selection model: when a user right-clicks a cell, is the
