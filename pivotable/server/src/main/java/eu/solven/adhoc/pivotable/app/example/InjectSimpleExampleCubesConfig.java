@@ -45,12 +45,14 @@ import eu.solven.adhoc.beta.schema.IAdhocSchema;
 import eu.solven.adhoc.beta.schema.IAdhocSchemaRegistrer;
 import eu.solven.adhoc.filter.editor.SimpleFilterEditor;
 import eu.solven.adhoc.filter.value.EqualsMatcher;
+import eu.solven.adhoc.filter.ColumnFilter;
 import eu.solven.adhoc.measure.ThrowingCombination;
 import eu.solven.adhoc.measure.combination.EvaluatedExpressionCombination;
 import eu.solven.adhoc.measure.forest.MeasureForest;
 import eu.solven.adhoc.measure.sum.SumCombination;
 import eu.solven.adhoc.model.measure.Aggregator;
 import eu.solven.adhoc.model.measure.Combinator;
+import eu.solven.adhoc.model.measure.Filtrator;
 import eu.solven.adhoc.model.measure.IMeasure;
 import eu.solven.adhoc.model.measure.Shiftor;
 import eu.solven.adhoc.pivotable.endpoint.PivotableAdhocEndpointMetadata;
@@ -124,6 +126,18 @@ public class InjectSimpleExampleCubesConfig {
 				.underlying("delta")
 				.editorKey(SimpleFilterEditor.KEY)
 				.editorOptions(Map.of(SimpleFilterEditor.P_SHIFTED, Map.of("country", "France")))
+				.tags(Arrays.asList("δ"))
+				.build());
+
+		// `delta.FRANCE.Filter` differs from `delta.FRANCE` (Shiftor) in that it wraps the underlying
+		// aggregator in a per-aggregator FILTER rather than SHIFTING the cube-side filter. Useful for manual
+		// testing of the DRILLTHROUGH path: the Filtrator's FILTER survives into the merged covering query as
+		// a CASE WHEN, so non-France rows return NULL for this alias when both `delta` and this measure are
+		// queried with DRILLTHROUGH enabled — driving the `Out of DT` placeholder in the grid.
+		measures.add(Filtrator.builder()
+				.name("delta.FRANCE.Filter")
+				.underlying("delta")
+				.filter(ColumnFilter.matchEq("country", "France"))
 				.tags(Arrays.asList("δ"))
 				.build());
 

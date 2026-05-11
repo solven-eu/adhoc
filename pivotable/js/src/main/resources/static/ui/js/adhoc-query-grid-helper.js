@@ -52,7 +52,18 @@ const copyColumnNameToClipboard = function (name) {
 	document.body.removeChild(ta);
 };
 
-const formatters = function (formatOptions, measureStats, parentSliceStats, parentColumnNames) {
+// Rendered in DRILLTHROUGH grids when a row is missing a value for a column. DT responses are intentionally
+// heterogeneous — every source row may carry a different subset of keys — so a blank cell is ambiguous (was
+// the column not present, or did it carry an empty string?). The grey italic placeholder makes the difference
+// obvious. Sanitised inline (no user-controlled content) so it is safe to emit as raw HTML.
+const OUT_OF_DT_HTML = '<span style="color:#888;font-style:italic">Out of DT</span>';
+const OUT_OF_DT_TOOLTIP = "This row does not carry this column in the DrillThrough output.";
+
+function isMissing(value) {
+	return value === null || typeof value === "undefined";
+}
+
+const formatters = function (formatOptions, measureStats, parentSliceStats, parentColumnNames, isDrillthrough) {
 	if (!formatOptions) {
 		formatOptions = {};
 	}
@@ -137,6 +148,13 @@ const formatters = function (formatOptions, measureStats, parentSliceStats, pare
 	function measureFormatter(row, cell, value, columnDef, dataContext) {
 		var rtn = {};
 
+		// DRILLTHROUGH: a missing key is structurally different from "the cell holds an empty value" — the
+		// source row simply does not carry this column. Surface that explicitly so the user can tell the
+		// two cases apart.
+		if (isDrillthrough && isMissing(value)) {
+			return { html: OUT_OF_DT_HTML, toolTip: OUT_OF_DT_TOOLTIP };
+		}
+
 		// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Data_structures
 		if (typeof value === "number") {
 			const color = measureStats ? heatmapColor(value, measureStats[columnDef.id]) : null;
@@ -212,6 +230,11 @@ const formatters = function (formatOptions, measureStats, parentSliceStats, pare
 	function percentFormatter(row, cell, value, columnDef, dataContext) {
 		var rtn = {};
 		const percentFormat = getPercentFormat(columnDef.id);
+
+		// Same DT-missing handling as `measureFormatter` — see comment there.
+		if (isDrillthrough && isMissing(value)) {
+			return { html: OUT_OF_DT_HTML, toolTip: OUT_OF_DT_TOOLTIP };
+		}
 
 		// Apply the primary + secondary heatmaps to percent-formatted cells the same way
 		// `measureFormatter` does — they share the same numeric semantics, and any measure whose
@@ -326,8 +349,21 @@ export default {
 		}
 	},
 
-	groupByToGridColumns: function (columnNames, queryModel, renderCallback) {
+	groupByToGridColumns: function (columnNames, queryModel, renderCallback, isDrillthrough) {
 		const gridColumns = [];
+
+		// In DRILLTHROUGH mode the row schema is heterogeneous: each source row may carry a different
+		// subset of groupBy keys. A missing key would otherwise render as a blank cell — same shape as
+		// an empty string value — which is misleading. Use the shared placeholder so the difference is
+		// visible. Non-DT queries fall back to SlickGrid's default cell renderer (no formatter set).
+		const groupByFormatter = isDrillthrough
+			? function (row, cell, value /* columnDef, dataContext */) {
+					if (isMissing(value)) {
+						return { html: OUT_OF_DT_HTML, toolTip: OUT_OF_DT_TOOLTIP };
+					}
+					return { text: value, toolTip: value };
+				}
+			: null;
 
 		for (let columnName of columnNames) {
 			const column = {
@@ -338,6 +374,9 @@ export default {
 				asyncPostRender: renderCallback,
 				// formatter: popoverFormatter,
 			};
+			if (groupByFormatter) {
+				column.formatter = groupByFormatter;
+			}
 
 			if (queryModel) {
 				// queryModel is available: show a button to edit the queryModel from the grid.
@@ -392,8 +431,8 @@ export default {
 		return gridColumns;
 	},
 
-	measuresToGridColumns: function (measureNames, queryModel, renderCallback, formatOptions, measureStats, parentSliceStats, parentColumnNames) {
-		const measureFormatters = formatters(formatOptions, measureStats, parentSliceStats, parentColumnNames);
+	measuresToGridColumns: function (measureNames, queryModel, renderCallback, formatOptions, measureStats, parentSliceStats, parentColumnNames, isDrillthrough) {
+		const measureFormatters = formatters(formatOptions, measureStats, parentSliceStats, parentColumnNames, isDrillthrough);
 
 		const gridColumns = [];
 

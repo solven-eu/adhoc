@@ -73,6 +73,7 @@ import eu.solven.adhoc.model.column.IAdhocColumn;
 import eu.solven.adhoc.model.column.ReferencedColumn;
 import eu.solven.adhoc.model.measure.Aggregator;
 import eu.solven.adhoc.model.query.groupby.IHasSqlExpression;
+import eu.solven.adhoc.query.ICountMeasuresConstants;
 import eu.solven.adhoc.query.table.FilteredAggregator;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.query.table.TableQueryV2;
@@ -394,7 +395,21 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 			if (EmptyAggregation.isEmpty(a.getAggregationKey())) {
 				return;
 			}
-			Field<Object> rawColumn = DSL.field(name(a.getColumnName()));
+			// COUNT(*) carries `*` as its `columnName`. The SLICES path handles that special-case inside
+			// `DSL.count(...)`, but here in ROWS mode we are NOT aggregating — we want one row marker per
+			// matching source row. Selecting `*` directly would (a) expand to every column of the underlying
+			// table and (b) pollute the SELECT clause, causing JOOQ to bind the wildcard's columns to the
+			// alias of COUNT(*) and any subsequent aggregator's alias. Substitute the per-row counter `1`:
+			// `CASE WHEN <filter> THEN 1 END AS <alias>` — emits 1 when the FILTER matches, NULL otherwise,
+			// preserving the COUNT(*) semantics at the row-streaming layer.
+			Field<Object> rawColumn;
+			if (ICountMeasuresConstants.ASTERISK.equals(a.getColumnName())) {
+				@SuppressWarnings("unchecked")
+				Field<Object> one = (Field<Object>) (Field<?>) DSL.value(1);
+				rawColumn = one;
+			} else {
+				rawColumn = DSL.field(name(a.getColumnName()));
+			}
 			ConditionWithFilter faCondition = toCondition.toConditionSplitNonPushdown(filteredAggregator.getFilter());
 			Field<Object> withCase = asCase(faCondition.getCondition(), rawColumn);
 			selectedFields.add(withCase.as(filteredAggregator.getAlias()));

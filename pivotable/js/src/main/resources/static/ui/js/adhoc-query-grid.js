@@ -224,7 +224,7 @@ export default {
 
 				// https://stackoverflow.com/questions/1232040/how-do-i-empty-an-array-in-javascript
 				console.log(`Rendering columnNames=${columnNames}`);
-				gridColumns.push(...gridHelper.groupByToGridColumns(columnNames, props.queryModel, renderCallback));
+				gridColumns.push(...gridHelper.groupByToGridColumns(columnNames, props.queryModel, renderCallback, isDrillthrough));
 
 				// measureNames may be filled on first row if we requested no measure and received the default measure
 				let measureNames = props.tabularView.query.measures;
@@ -264,7 +264,16 @@ export default {
 
 				// TODO Refresh the columns on `formatOptions` changes, else we need to query to see the format changes
 				gridColumns.push(
-					...gridHelper.measuresToGridColumns(measureNames, props.queryModel, renderCallback, formatOptions, measureStats, parentSliceStats, parentColumnNames),
+					...gridHelper.measuresToGridColumns(
+						measureNames,
+						props.queryModel,
+						renderCallback,
+						formatOptions,
+						measureStats,
+						parentSliceStats,
+						parentColumnNames,
+						isDrillthrough,
+					),
 				);
 
 				{
