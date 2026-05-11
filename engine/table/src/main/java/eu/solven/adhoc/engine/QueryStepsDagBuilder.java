@@ -47,6 +47,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 
+import eu.solven.adhoc.column.coordinate.ICalculatedCoordinate;
 import eu.solven.adhoc.cuboid.ICuboid;
 import eu.solven.adhoc.engine.cache.IQueryStepCache;
 import eu.solven.adhoc.engine.cache.TransverseCacheHelper;
@@ -57,6 +58,7 @@ import eu.solven.adhoc.engine.step.IHasTransverseCache;
 import eu.solven.adhoc.engine.step.IWhereGroupByQuery;
 import eu.solven.adhoc.exception.AdhocExceptionHelpers;
 import eu.solven.adhoc.factories.IAdhocFactories;
+import eu.solven.adhoc.filter.ColumnFilter;
 import eu.solven.adhoc.filter.FilterBuilder;
 import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.filter.optimizer.IFilterOptimizer;
@@ -172,8 +174,30 @@ public class QueryStepsDagBuilder implements IQueryStepsDagBuilder, IHasTransver
 			if (column instanceof ColumnWithCalculatedCoordinates hasCalculated) {
 				List<Map.Entry<IAdhocColumn, ISliceFilter>> subColumns = new ArrayList<>();
 
-				// Add the simple columns
-				subColumns.add(Map.entry(hasCalculated.getColumn(), ISliceFilter.MATCH_ALL));
+				// Suppress any natural row whose coordinate value collides with a declared calculated coordinate.
+				// A calculated coordinate carries its own filter (it is a functional rewrite of that slice), so a
+				// row produced by the natural query for the same key would clash on merge — same slice key, same
+				// aggregator name — and `MapBasedTabularView.appendSlice` would crash on the duplicate. Excluding
+				// the colliding values from the natural query makes the calculated coordinate authoritative for
+				// its slice.
+				//
+				// The conventional grand-total marker `*` is filtered out of the suppression set: it is never a
+				// value any real row carries (the natural rows are LocalDate, Integer, etc., not the literal
+				// String "*"), so the filter would always be a no-op semantically — but emitting it as SQL
+				// (`d != cast(? as varchar)` with ? = "*") triggers a type-coercion error on typed columns
+				// (DuckDB: "invalid date field format"). Skipping `*` preserves the legacy grand-total pattern.
+				ImmutableSet<Object> suppressedValues = hasCalculated.getCalculatedCoordinates()
+						.stream()
+						.map(ICalculatedCoordinate::getCoordinate)
+						.filter(coordinate -> !"*".equals(coordinate))
+						.collect(ImmutableSet.toImmutableSet());
+				ISliceFilter naturalFilter;
+				if (suppressedValues.isEmpty()) {
+					naturalFilter = ISliceFilter.MATCH_ALL;
+				} else {
+					naturalFilter = ColumnFilter.notIn(column.getName(), suppressedValues);
+				}
+				subColumns.add(Map.entry(hasCalculated.getColumn(), naturalFilter));
 
 				// Add each additional coordinate
 				List<Map.Entry<IAdhocColumn, ISliceFilter>> list =

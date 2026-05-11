@@ -52,36 +52,63 @@ const copyColumnNameToClipboard = function (name) {
 	document.body.removeChild(ta);
 };
 
-// Rendered in DRILLTHROUGH grids when a row is missing a value for a column. DT responses are intentionally
-// heterogeneous, so a blank cell is ambiguous (was the column missing, or empty?). Two distinct cases:
+// Cell-value placeholders rendered in greyed italic to distinguish "no data" from "blank". Apply to every
+// view (not just DRILLTHROUGH):
 //
-//   - `NULL`        : the column IS in the user's query (a requested measure or groupBy), but the source row
-//                     carries a null/missing value for it. The user asked for this column — they want to see
-//                     that the underlying data is null, not that the column doesn't apply.
-//   - `Out of DT`   : the column is NOT in the user's query — it appeared in the DT response because the
-//                     engine decomposed a higher-level measure (e.g. a Combinator) into its underlying
-//                     aggregator columns, or because a row-inclusion filter column was added to the groupBy.
-//                     The user did not explicitly request this column, so a missing value really means "this
-//                     column is not part of the DT contract for this row".
+//   - `NULL`        : the cell value is null/undefined. A blank cell would be ambiguous with an empty string,
+//                     so we make the null state explicit.
+//   - `empty`       : the cell value is the empty string. Symmetric to `NULL` — makes it clear the source
+//                     data is "" rather than missing.
+//   - `Out of DT`   : DRILLTHROUGH-only. The column is NOT in the user's query — it appeared in the DT
+//                     response because the engine decomposed a higher-level measure (e.g. a Combinator) into
+//                     its underlying aggregator columns, or because a row-inclusion filter column was added
+//                     to the groupBy. The user did not explicitly request this column, so a missing/empty
+//                     value really means "this column is not part of the DT contract for this row".
 //
 // Sanitised inline (no user-controlled content) so it is safe to emit as raw HTML.
-const NULL_DT_HTML = '<span style="color:#888;font-style:italic">NULL</span>';
-const NULL_DT_TOOLTIP = "The source row carries a null value for this requested column.";
+const NULL_HTML = '<span style="color:#888;font-style:italic">NULL</span>';
+const NULL_TOOLTIP = "The cell carries a null value.";
+const EMPTY_HTML = '<span style="color:#888;font-style:italic">empty</span>';
+const EMPTY_TOOLTIP = "The cell carries an empty string.";
 const OUT_OF_DT_HTML = '<span style="color:#888;font-style:italic">Out of DT</span>';
 const OUT_OF_DT_TOOLTIP = "This column is not part of the user's DrillThrough query.";
+
+// `*` is the engine-side marker for a grand-total rollup (CalculatedCoordinate). The query payload keeps
+// `*` as the literal coordinate; only the rendering swaps it for the human-friendly `Total` label so the
+// asterisk is not read as a real coordinate value. Hardcoded for now — could become a pivotable parameter
+// later (Excel uses "Grand Total" for the all-columns rollup). BEWARE: a real data row carrying the literal
+// coordinate `*` is visually indistinguishable from the synthetic grand-total — documented limitation,
+// see query-grid-formatters.spec.js for the pinned behaviour.
+const TOTAL_LABEL = "Total";
+const TOTAL_TOOLTIP = "Grand-total rollup for this coordinate.";
 
 function isMissing(value) {
 	return value === null || typeof value === "undefined";
 }
 
-// `requestedColumns` is the Set of column names (groupBy + measures) the user explicitly asked for. Used by
-// the DT formatters to pick between the two missing-value placeholders. May be undefined outside DT mode —
-// the formatters only consult it when `isDrillthrough` is true.
-function placeholderForMissing(columnId, requestedColumns) {
-	if (requestedColumns && requestedColumns.has(columnId)) {
-		return { html: NULL_DT_HTML, toolTip: NULL_DT_TOOLTIP };
+// Returns a SlickGrid cell descriptor when `value` should be rendered as a special missing/empty marker,
+// else null (caller falls through to its normal formatting). Logic:
+//
+//   - DT mode + column NOT in `requestedColumns` + value missing/empty  → "Out of DT"
+//   - value null/undefined                                              → "NULL"
+//   - value === ""                                                      → "empty"
+//   - otherwise                                                         → null (no placeholder)
+//
+// `requestedColumns` may be undefined outside DT mode; it is consulted only when `isDrillthrough` is true.
+function placeholderForCellValue(columnId, value, requestedColumns, isDrillthrough) {
+	const isMissingValue = isMissing(value);
+	const isEmptyString = value === "";
+	if (!isMissingValue && !isEmptyString) {
+		return null;
 	}
-	return { html: OUT_OF_DT_HTML, toolTip: OUT_OF_DT_TOOLTIP };
+	const isOutOfDT = isDrillthrough && requestedColumns && !requestedColumns.has(columnId);
+	if (isOutOfDT) {
+		return { html: OUT_OF_DT_HTML, toolTip: OUT_OF_DT_TOOLTIP };
+	}
+	if (isMissingValue) {
+		return { html: NULL_HTML, toolTip: NULL_TOOLTIP };
+	}
+	return { html: EMPTY_HTML, toolTip: EMPTY_TOOLTIP };
 }
 
 const formatters = function (formatOptions, measureStats, parentSliceStats, parentColumnNames, isDrillthrough, requestedColumns) {
@@ -169,12 +196,12 @@ const formatters = function (formatOptions, measureStats, parentSliceStats, pare
 	function measureFormatter(row, cell, value, columnDef, dataContext) {
 		var rtn = {};
 
-		// DRILLTHROUGH: distinguish a real NULL on a requested column (rendered as the `NULL` placeholder)
-		// from a column that the user did not even ask for but that appeared in the DT response because the
-		// engine decomposed a higher-level measure (rendered as `Out of DT`). See the comment above the
-		// constants for the full distinction.
-		if (isDrillthrough && isMissing(value)) {
-			return placeholderForMissing(columnDef.id, requestedColumns);
+		// Missing / empty cell rendering: greyed italic `NULL` for null/undefined, `empty` for "". Applies
+		// to every view, not just DT. DT additionally distinguishes columns the user did not request
+		// ("Out of DT") — handled inside placeholderForCellValue.
+		const placeholder = placeholderForCellValue(columnDef.id, value, requestedColumns, isDrillthrough);
+		if (placeholder) {
+			return placeholder;
 		}
 
 		// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Data_structures
@@ -253,9 +280,10 @@ const formatters = function (formatOptions, measureStats, parentSliceStats, pare
 		var rtn = {};
 		const percentFormat = getPercentFormat(columnDef.id);
 
-		// Same DT-missing handling as `measureFormatter` — see comment there.
-		if (isDrillthrough && isMissing(value)) {
-			return placeholderForMissing(columnDef.id, requestedColumns);
+		// Same missing/empty placeholder handling as `measureFormatter` — see comment there.
+		const placeholder = placeholderForCellValue(columnDef.id, value, requestedColumns, isDrillthrough);
+		if (placeholder) {
+			return placeholder;
 		}
 
 		// Apply the primary + secondary heatmaps to percent-formatted cells the same way
@@ -374,19 +402,19 @@ export default {
 	groupByToGridColumns: function (columnNames, queryModel, renderCallback, isDrillthrough, requestedColumns) {
 		const gridColumns = [];
 
-		// In DRILLTHROUGH mode the row schema is heterogeneous: each source row may carry a different
-		// subset of groupBy keys. A missing key would otherwise render as a blank cell — same shape as
-		// an empty string value — which is misleading. Pick between `NULL` (groupBy column the user
-		// requested) and `Out of DT` (groupBy column added by the engine for filter-column visibility).
-		// Non-DT queries fall back to SlickGrid's default cell renderer (no formatter set).
-		const groupByFormatter = isDrillthrough
-			? function (row, cell, value, columnDef /* , dataContext */) {
-					if (isMissing(value)) {
-						return placeholderForMissing(columnDef.id, requestedColumns);
-					}
-					return { text: value, toolTip: value };
-				}
-			: null;
+		// Always-on formatter: renders missing/empty cells as `NULL` / `empty` placeholders, and the
+		// engine-side grand-total marker `*` as the friendlier `Total` label. DRILLTHROUGH additionally
+		// distinguishes columns the user did not request (`Out of DT`) — handled by placeholderForCellValue.
+		const groupByFormatter = function (row, cell, value, columnDef /* , dataContext */) {
+			const placeholder = placeholderForCellValue(columnDef.id, value, requestedColumns, isDrillthrough);
+			if (placeholder) {
+				return placeholder;
+			}
+			if (value === "*") {
+				return { text: TOTAL_LABEL, toolTip: TOTAL_TOOLTIP };
+			}
+			return { text: value, toolTip: value };
+		};
 
 		for (let columnName of columnNames) {
 			const column = {
@@ -395,11 +423,8 @@ export default {
 				field: columnName,
 				sortable: isSortable(),
 				asyncPostRender: renderCallback,
-				// formatter: popoverFormatter,
+				formatter: groupByFormatter,
 			};
-			if (groupByFormatter) {
-				column.formatter = groupByFormatter;
-			}
 
 			if (queryModel) {
 				// queryModel is available: show a button to edit the queryModel from the grid.

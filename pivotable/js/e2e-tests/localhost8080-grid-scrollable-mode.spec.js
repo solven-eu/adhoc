@@ -83,7 +83,10 @@ test("Grid layout toggle: fit ↔ scroll, phantom column appears only in scroll 
 	// The phantom column must have non-zero width (the headroom for resizing the last real column).
 	// We assert via getBoundingClientRect rather than CSS `width` because SlickGrid sets the width
 	// via an inline pixel value.
-	const phantomWidth = await page.locator(".slick-header-phantom").first().evaluate((el) => el.getBoundingClientRect().width);
+	const phantomWidth = await page
+		.locator(".slick-header-phantom")
+		.first()
+		.evaluate((el) => el.getBoundingClientRect().width);
 	expect(phantomWidth).toBeGreaterThan(50);
 
 	// Toggle back: `Scroll` label returns and the phantom column disappears.

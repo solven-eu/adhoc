@@ -142,6 +142,39 @@ public class TestDagCubeQuery_DuckDB_WithCalculatedCoordinate extends ATestDagDu
 				.hasSize(9);
 	}
 
+	/**
+	 * Conflict case: a calculated coordinate named {@code blue} on the {@code color} groupBy whose filter narrows the
+	 * slice to {@code d=today}. The calculated coordinate name collides with a real coordinate present in the
+	 * underlying table (the natural {@code color=blue} row). The engine's collision-resolution rule is to suppress the
+	 * natural row whose value matches a declared calculated-coordinate name — the calculated coordinate becomes
+	 * authoritative for its slice key. With this scenario the calculated value ({@code SUM(k1) WHERE d=today} = blue +
+	 * green = {@code 123 + 345 = 468}) is intentionally different from the natural blue value ({@code 123}) so a
+	 * regression that re-introduces the natural row would surface as a value mismatch rather than a coincidental match.
+	 */
+	@Test
+	public void test_GroupByColor_calculatedCoordinateConflictsWithRealCoordinate() {
+		ITabularView result = cube().execute(CubeQuery.builder()
+				.measure(k1Sum)
+				.groupBy(GroupByColumns.of(ColumnWithCalculatedCoordinates.builder()
+						.column("color")
+						.calculatedCoordinate(CalculatedCoordinate.builder()
+								.coordinate("blue")
+								.filter(ColumnFilter.matchEq("d", today))
+								.build())
+						.build()))
+				.build());
+
+		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
+
+		Assertions.assertThat(mapBased.getCoordinatesToValues())
+				// Calculated `blue` row: sum where d=today => blue(123) + green(345) = 468. Replaces the
+				// natural blue=123 row (suppressed by the engine's NOT IN filter on the natural query).
+				.containsEntry(Map.of("color", "blue"), Map.of(k1Sum.getName(), 0L + 123 + 345))
+				.containsEntry(Map.of("color", "red"), Map.of(k1Sum.getName(), 0L + 234))
+				.containsEntry(Map.of("color", "green"), Map.of(k1Sum.getName(), 0L + 345))
+				.hasSize(3);
+	}
+
 	@Test
 	public void test_GroupByDate_filterSmallDates() {
 		ITabularView result = cube().execute(CubeQuery.builder()
