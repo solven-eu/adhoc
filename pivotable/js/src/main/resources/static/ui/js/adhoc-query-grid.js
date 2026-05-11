@@ -50,6 +50,12 @@ export default {
 		// https://stackoverflow.com/questions/2402953/javascript-data-grid-for-millions-of-rows
 		let dataView;
 
+		// Shared store: read once at setup, consulted from `resyncData` (gridLayout) and from the
+		// `wizardHidden` / `gridLayout` watchers in `onMounted`. Pinia memoises the store so the same
+		// reactive instance is returned across calls — the dedicated `preferencesStoreForResize`
+		// reference inside `onMounted` is the same object as this one.
+		const preferencesStore = usePreferencesStore();
+
 		// Singleton model for the per-measure Statistics modal — provided by `adhoc-query.js`
 		// so the grid header buttons (registered in `adhoc-query-grid-helper.js`) can toggle
 		// it without prop-drilling. Read here so the local AdhocMeasureStatsModal gets the
@@ -336,7 +342,50 @@ export default {
 
 			console.debug("rowSpans: ", metadata);
 
+			// Layout mode: in `scroll` mode, append an invisible "phantom" trailing column to provide
+			// horizontal headroom past the last real column. This lets the user grab the LAST real
+			// column's right resize handle and widen it freely — without the phantom, that handle sits
+			// at the canvas edge and can only shrink the column. The phantom is excluded from every
+			// downstream concern (measureNames, columnNames, footer aggregations, stats) because we
+			// add it to `gridColumns` ONLY, after the helpers have already built their parts.
+			const isScrollLayout = preferencesStore.gridLayout === "scroll";
+			if (isScrollLayout && gridColumns.length > 0) {
+				const containerEl = document.getElementById(props.domId);
+				const viewportWidth = containerEl ? containerEl.clientWidth : 600;
+				// 1/3 of the viewport, capped so it never dwarfs a narrow grid (mobile / small panel).
+				const phantomWidth = Math.max(150, Math.floor(viewportWidth / 3));
+				gridColumns.push({
+					id: "__phantom_trailing",
+					name: "",
+					field: "__phantom_trailing",
+					width: phantomWidth,
+					// minWidth matches width: autosizeColumns() below would otherwise shrink the phantom
+					// to fit its empty content (formatter returns ""), defeating the whole point of the
+					// trailing headroom. minWidth pins the floor.
+					minWidth: phantomWidth,
+					resizable: false,
+					sortable: false,
+					focusable: false,
+					selectable: false,
+					cssClass: "slick-cell-phantom",
+					headerCssClass: "slick-header-phantom",
+					formatter: () => "",
+				});
+			}
+
 			grid.setColumns(gridColumns);
+
+			// `autosizeColumns()` measures column header widths against the canvas font and grows each
+			// column to fit its header. Only meaningful in scroll mode — in `fit` mode the columns are
+			// forced to the viewport regardless. Wrapped in a try/catch because SlickGrid versions
+			// occasionally differ on this method's availability.
+			if (isScrollLayout) {
+				try {
+					grid.autosizeColumns();
+				} catch (e) {
+					console.warn("autosizeColumns() unavailable on this SlickGrid version", e);
+				}
+			}
 
 			gridHelper.updateFooters(grid, columnNames, view.coordinates, view.values, measureStats, formatOptions);
 
@@ -374,8 +423,12 @@ export default {
 			// autosizeColsMode: "?"
 			//			autoHeight: true,
 			fullWidthRows: true,
-			// `forceFitColumns` is legacy, and related with `autosizeColsMode`
-			forceFitColumns: true,
+			// `forceFitColumns` is legacy, and related with `autosizeColsMode`.
+			// Controlled by `preferencesStore.gridLayout`: `fit` (default) sums columns to viewport
+			// width; `scroll` disables the squeeze, exposes a horizontal scrollbar, and lets
+			// `grid.autosizeColumns()` (called per resync in `resyncData`) widen columns to fit
+			// their header text. The watcher below propagates live toggles via `grid.setOptions(...)`.
+			forceFitColumns: preferencesStore.gridLayout !== "scroll",
 			// https://github.com/6pac/SlickGrid/blob/master/examples/example10-async-post-render.html		,
 			enableAsyncPostRender: true,
 			// rowSpan enables showing a single time each value on given column
@@ -431,6 +484,19 @@ export default {
 					if (grid) {
 						grid.resizeCanvas();
 					}
+				},
+			);
+
+			// Layout toggle (fit ↔ scroll): live-apply `forceFitColumns` via `setOptions`, then
+			// re-run `resyncData` so the phantom-column logic adds/removes its trailing column
+			// and `autosizeColumns()` (re)fires under the new mode.
+			watch(
+				() => preferencesStoreForResize.gridLayout,
+				(newLayout) => {
+					if (!grid) return;
+					grid.setOptions({ forceFitColumns: newLayout !== "scroll" });
+					grid.resizeCanvas();
+					resyncData();
 				},
 			);
 

@@ -49,6 +49,7 @@ function buildPayload(state) {
 		wizardHidden: state.wizardHidden,
 		localEndpoints: state.localEndpoints,
 		wizardOpenAccordion: state.wizardOpenAccordion,
+		gridLayout: state.gridLayout,
 	};
 }
 
@@ -133,6 +134,15 @@ const store = defineStore("preferences", {
 		// collapsed. Restored on F5 so the wizard re-opens to the same section the user
 		// was working in. Persisted via the standard `$subscribe` path.
 		wizardOpenAccordion: "",
+
+		// Layout mode of the SlickGrid:
+		//   - "fit"    (default): columns fill the viewport width (`forceFitColumns: true`).
+		//                         Long names truncate with ellipsis; no horizontal scroll.
+		//   - "scroll":           columns auto-size against their headers (`autosizeColumns()`).
+		//                         Horizontal scroll appears once the natural sum of widths exceeds
+		//                         the viewport. A trailing phantom column provides scroll
+		//                         headroom so the user can grab and widen the last real column.
+		gridLayout: "fit",
 	}),
 	getters: {
 		isDraft: (store) => !store.currentQueryId,
@@ -397,6 +407,9 @@ export const usePreferencesStore = function () {
 			}
 			if (typeof migrated.wizardOpenAccordion === "string") {
 				theStore.wizardOpenAccordion = migrated.wizardOpenAccordion;
+			}
+			if (migrated.gridLayout === "fit" || migrated.gridLayout === "scroll") {
+				theStore.gridLayout = migrated.gridLayout;
 			}
 		}
 
