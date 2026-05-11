@@ -25,7 +25,6 @@ package eu.solven.adhoc.filter.optimizer;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -64,6 +63,7 @@ import eu.solven.adhoc.filter.value.EqualsMatcher;
 import eu.solven.adhoc.filter.value.NotMatcher;
 import eu.solven.adhoc.util.AdhocTime;
 import eu.solven.adhoc.util.AdhocUnsafe;
+import eu.solven.pepper.core.PepperStreamHelper;
 import lombok.Builder.Default;
 import lombok.Getter;
 import lombok.experimental.SuperBuilder;
@@ -399,12 +399,8 @@ public class FilterOptimizer implements IFilterOptimizer, IHasFilterStripperFact
 
 		return partitionedClusters.entrySet()
 				.stream()
-				.collect(Collectors.toMap(Map.Entry::getKey,
-						e -> e.getValue().stream().flatMap(ee -> ee.stream()).collect(ImmutableSet.toImmutableSet()),
-						(a, b) -> {
-							throw new IllegalStateException("Duplicate key");
-						},
-						LinkedHashMap::new));
+				.collect(PepperStreamHelper.toLinkedMap(Map.Entry::getKey,
+						e -> e.getValue().stream().flatMap(ee -> ee.stream()).collect(ImmutableSet.toImmutableSet())));
 	}
 
 	@SuppressWarnings("checkstyle:MagicNumber")
