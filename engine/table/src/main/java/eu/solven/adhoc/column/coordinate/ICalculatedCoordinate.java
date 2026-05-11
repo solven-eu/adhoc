@@ -30,10 +30,15 @@ import eu.solven.adhoc.model.column.IAdhocColumn;
 /**
  * A Coordinate is a possible value along an {@link IAdhocColumn}. While most coordinate are defined as distinct values,
  * as would be reported by a `GROUP BY`, some coordinates can be defined programmatically relatively to current column.
- * 
+ *
+ * <p>
+ * Implementations whose filter evaluation needs to vary based on the executing query's {@code customMarker} or options
+ * should read them via {@code CustomMarkerScope#current()} and {@code QueryOptionsScope#current()} respectively, rather
+ * than declaring extra fields on the coordinate itself — the engine binds both on thread scopes for the duration of
+ * execution (planning + row processing).
+ *
  * @author Benoit Lacelle
  */
-// TODO This should enable customization of customMarker
 @JsonTypeInfo(use = JsonTypeInfo.Id.MINIMAL_CLASS,
 		include = JsonTypeInfo.As.PROPERTY,
 		property = "type",
