@@ -48,6 +48,9 @@ public class ChatRequestPlanner {
 	/** Default max_tokens passed to the Anthropic Messages API. */
 	public static final int MAX_TOKENS = 1024;
 
+	/** JSON field name used repeatedly across the tool catalog. Factored out to silence AvoidDuplicateLiterals. */
+	private static final String F_TYPE = "type";
+
 	/**
 	 * Maximum number of measures or columns dumped into the system prompt. Cap so a cube with hundreds of measures
 	 * doesn't (a) blow the prompt budget or (b) leak the full schema to a casual user who only needs the common subset.
@@ -98,7 +101,7 @@ public class ChatRequestPlanner {
 		body.put("messages", buildMessages(request));
 		body.put("tools", buildTools());
 		if (forceToolCall) {
-			body.put("tool_choice", ImmutableMap.of("type", "any"));
+			body.put("tool_choice", ImmutableMap.of(F_TYPE, "any"));
 		}
 		return body;
 	}
@@ -107,9 +110,7 @@ public class ChatRequestPlanner {
 		return buildSystemPrompt(cube, metadata, ChatStyle.defaults());
 	}
 
-	@SuppressWarnings({ "PMD.ConsecutiveAppendsShouldReuse",
-			"PMD.ConsecutiveLiteralAppends",
-			"PMD.AppendCharacterWithChar" })
+	@SuppressWarnings({ "PMD.ConsecutiveAppendsShouldReuse", "PMD.ConsecutiveLiteralAppends" })
 	protected String buildSystemPrompt(String cube, EndpointSchemaMetadata metadata, ChatStyle style) {
 		StringBuilder sb = new StringBuilder();
 		sb.append("You are a helpful data analyst assistant embedded in a query builder UI.\n");
@@ -156,10 +157,18 @@ public class ChatRequestPlanner {
 				%s
 				""".formatted(cube,
 				style.getMaxSentences(),
-				style.getMaxSentences() == 1 ? "" : "s",
+				pluralS(style.getMaxSentences()),
 				ambiguityRule(style.getAmbiguity())));
 
 		return sb.toString();
+	}
+
+	/** @return an empty string when {@code count == 1}, otherwise {@code "s"} — for English plural rendering. */
+	private static String pluralS(int count) {
+		if (count == 1) {
+			return "";
+		}
+		return "s";
 	}
 
 	/** Renders the {@link ChatStyle.Ambiguity} knob into a one-line prompt rule. */
@@ -207,13 +216,13 @@ public class ChatRequestPlanner {
 						"Select the measures to display in the query result. Replaces any previously selected measures.")
 				.put("input_schema",
 						ImmutableMap.<String, Object>builder()
-								.put("type", "object")
+								.put(F_TYPE, "object")
 								.put("additionalProperties", false)
 								.put("properties",
 										ImmutableMap.of("measureNames",
 												ImmutableMap.<String, Object>builder()
-														.put("type", "array")
-														.put("items", ImmutableMap.of("type", "string"))
+														.put(F_TYPE, "array")
+														.put("items", ImmutableMap.of(F_TYPE, "string"))
 														.put("description", "Exact measure names from the cube schema")
 														.build()))
 								.put("required", ImmutableList.of("measureNames"))
@@ -226,12 +235,12 @@ public class ChatRequestPlanner {
 								"Set the groupBy dimensions (columns to aggregate by). Order matters — first column is the primary grouping.")
 						.put("input_schema",
 								ImmutableMap.<String, Object>builder()
-										.put("type", "object")
+										.put(F_TYPE, "object")
 										.put("properties",
 												ImmutableMap.of("columns",
 														ImmutableMap.<String, Object>builder()
-																.put("type", "array")
-																.put("items", ImmutableMap.of("type", "string"))
+																.put(F_TYPE, "array")
+																.put("items", ImmutableMap.of(F_TYPE, "string"))
 																.put("description",
 																		"Exact dimension column names from the cube schema")
 																.build()))
@@ -245,7 +254,7 @@ public class ChatRequestPlanner {
 								"Reset all selections (measures and groupBy columns) to start a fresh query.")
 						.put("input_schema",
 								ImmutableMap.<String, Object>builder()
-										.put("type", "object")
+										.put(F_TYPE, "object")
 										.put("properties", ImmutableMap.of())
 										.build())
 						.build());

@@ -180,6 +180,6 @@ public class TestQueryGrandTotalsThroughController {
 
 		// The last cube in sorted order is `simple` (lowercase sorts after uppercase), matching the reactor version.
 		Assertions.assertThat(lastColumn.getHolder()).isEqualTo("simple");
-		Assertions.assertThat(lastColumn.getColumn()).isEqualTo("rowIndex");
+		Assertions.assertThat(lastColumn.getColumn()).isEqualTo("theta");
 	}
 }

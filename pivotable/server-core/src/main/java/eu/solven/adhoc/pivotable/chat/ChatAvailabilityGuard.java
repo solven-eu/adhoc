@@ -25,6 +25,7 @@ package eu.solven.adhoc.pivotable.chat;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -118,7 +119,7 @@ public class ChatAvailabilityGuard {
 	 * @return {@code true} if the guard was tripped as a result of this call
 	 */
 	public boolean tripIfLongTermFailure(String responseBody) {
-		if (responseBody != null && responseBody.toLowerCase().contains(CREDIT_ERROR_MARKER)) {
+		if (responseBody != null && responseBody.toLowerCase(Locale.ROOT).contains(CREDIT_ERROR_MARKER)) {
 			markUnavailableFor(DEFAULT_COOLDOWN,
 					"Anthropic reported credit-balance-too-low — cooldown to avoid hammering the API");
 			return true;

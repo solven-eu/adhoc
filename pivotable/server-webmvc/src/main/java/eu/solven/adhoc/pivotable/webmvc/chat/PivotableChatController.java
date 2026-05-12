@@ -32,6 +32,7 @@ import java.util.Optional;
 import java.util.stream.Stream;
 
 import org.springframework.core.task.AsyncTaskExecutor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -77,6 +78,14 @@ public class PivotableChatController {
 	/** Idle timeout for the SSE response on the SPA side. 0 means "no timeout" but most browsers/proxies cap. */
 	private static final long SSE_TIMEOUT_MS = 5L * 60L * 1000L;
 
+	/**
+	 * Conversion factor used to turn the JVM's millisecond clock into the {@code Retry-After} header's seconds unit.
+	 */
+	private static final long MILLIS_PER_SECOND = 1000L;
+
+	/** HTTP status family divisor — `status / HTTP_STATUS_FAMILY != 2` flags any non-2xx response. */
+	private static final int HTTP_STATUS_FAMILY = 100;
+
 	final PivotableSchemaRegistry schemasRegistry;
 	final ObjectMapper objectMapper;
 	final HttpClient httpClient;
@@ -92,10 +101,10 @@ public class PivotableChatController {
 	@GetMapping("/enabled")
 	public ResponseEntity<Void> enabled() {
 		return guard.disabledUntil()
-				.map(until -> ResponseEntity.status(503)
+				.map(until -> ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
 						.header("Retry-After",
-								Long.toString(
-										Math.max(0L, until.getEpochSecond() - System.currentTimeMillis() / 1000L)))
+								Long.toString(Math.max(0L,
+										until.getEpochSecond() - System.currentTimeMillis() / MILLIS_PER_SECOND)))
 						.<Void>build())
 				.orElseGet(() -> ResponseEntity.noContent().build());
 	}
@@ -104,14 +113,18 @@ public class PivotableChatController {
 	public ResponseEntity<SseEmitter> chat(@RequestBody ChatRequest chatRequest,
 			jakarta.servlet.http.HttpServletRequest httpRequest) {
 		// Mechanism (3): per-principal rate limit. Falls back to remote IP when no auth principal is plumbed yet.
-		String key = httpRequest.getUserPrincipal() != null ? httpRequest.getUserPrincipal().getName()
-				: httpRequest.getRemoteAddr();
+		String key;
+		if (httpRequest.getUserPrincipal() == null) {
+			key = httpRequest.getRemoteAddr();
+		} else {
+			key = httpRequest.getUserPrincipal().getName();
+		}
 		if (!rateLimiter.tryAcquire(key)) {
 			log.warn("Chat rate limit exceeded for key={} ({} per {})",
 					key,
 					rateLimiter.getMaxPerWindow(),
 					rateLimiter.getWindow());
-			return ResponseEntity.status(429)
+			return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
 					.header("Retry-After", Long.toString(rateLimiter.getWindow().getSeconds()))
 					.build();
 		}
@@ -133,7 +146,6 @@ public class PivotableChatController {
 	 * Synchronously call the Anthropic Messages streaming endpoint and forward translated events to the
 	 * {@link SseEmitter}. Completes (or fails) the emitter exactly once, even on errors.
 	 */
-	@SuppressWarnings({ "PMD.AvoidCatchingGenericException", "PMD.ExceptionAsFlowControl" })
 	protected void pumpAnthropic(Map<String, Object> anthropicBody, SseEmitter emitter) {
 		AnthropicSseTranslator translator = new AnthropicSseTranslator(objectMapper);
 		try {
@@ -153,7 +165,7 @@ public class PivotableChatController {
 			HttpRequest httpRequest = requestBuilder.build();
 
 			HttpResponse<Stream<String>> response = httpClient.send(httpRequest, HttpResponse.BodyHandlers.ofLines());
-			if (response.statusCode() / 100 != 2) {
+			if (response.statusCode() / HTTP_STATUS_FAMILY != 2) {
 				String body;
 				try (Stream<String> lines = response.body()) {
 					body = lines

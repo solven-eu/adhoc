@@ -21,6 +21,8 @@ flowchart LR
     pivotable_infra["pivotable-infra"]
     pivotable_js["pivotable-js"]
     pivotable_mcp["pivotable-mcp"]
+    pivotable_mcp_webflux["pivotable-mcp-webflux"]
+    pivotable_mcp_webmvc["pivotable-mcp-webmvc"]
     pivotable_model["pivotable-model"]
     pivotable_server["pivotable-server"]
     pivotable_server_core["pivotable-server-core"]
@@ -58,6 +60,8 @@ flowchart LR
     adhoc_table --> adhoc_measures
     adhoc_table --> adhoc_model
     pivotable_mcp --> pivotable_server_core
+    pivotable_mcp_webflux --> pivotable_mcp
+    pivotable_mcp_webmvc --> pivotable_mcp
     pivotable_model --> adhoc_filters
     pivotable_server --> pivotable_js
     pivotable_server --> pivotable_server_core
@@ -67,5 +71,7 @@ flowchart LR
     pivotable_server_core --> pivotable_model
     pivotable_server_oauth2 --> pivotable_infra
     pivotable_server_oauth2 --> pivotable_model
+    pivotable_server_webflux --> pivotable_mcp_webflux
     pivotable_server_webflux --> pivotable_server
+    pivotable_server_webmvc --> pivotable_mcp_webmvc
     pivotable_server_webmvc --> pivotable_server

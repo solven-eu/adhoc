@@ -29,6 +29,7 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Sliding-window per-key rate limiter for the chat endpoint. Mechanism (3) of the scoping demonstration — caps how many
@@ -40,7 +41,7 @@ import java.util.Map;
  * swap in a shared store.
  *
  * <p>
- * Thread-safe via coarse {@code synchronized} blocks on a per-instance lock.
+ * Thread-safe via a private {@link ReentrantLock} guarding the per-key deques.
  *
  * @author Benoit Lacelle
  */
@@ -59,6 +60,8 @@ public class ChatRateLimiter {
 	private final Clock clock;
 
 	private final Map<String, Deque<Instant>> hitsByKey = new HashMap<>();
+
+	private final ReentrantLock lock = new ReentrantLock();
 
 	public ChatRateLimiter() {
 		this(DEFAULT_MAX_PER_WINDOW, DEFAULT_WINDOW, Clock.systemUTC());
@@ -79,32 +82,42 @@ public class ChatRateLimiter {
 	 * @return {@code true} when the request is allowed and a permit was consumed, {@code false} when the key is over
 	 *         its window quota and the caller should reject with 429
 	 */
-	public synchronized boolean tryAcquire(String key) {
-		Instant now = clock.instant();
-		Instant cutoff = now.minus(window);
+	public boolean tryAcquire(String key) {
+		lock.lock();
+		try {
+			Instant now = clock.instant();
+			Instant cutoff = now.minus(window);
 
-		Deque<Instant> hits = hitsByKey.computeIfAbsent(key, k -> new ArrayDeque<>());
-		while (!hits.isEmpty() && hits.peekFirst().isBefore(cutoff)) {
-			hits.pollFirst();
+			Deque<Instant> hits = hitsByKey.computeIfAbsent(key, k -> new ArrayDeque<>());
+			while (!hits.isEmpty() && hits.peekFirst().isBefore(cutoff)) {
+				hits.pollFirst();
+			}
+			if (hits.size() >= maxPerWindow) {
+				return false;
+			}
+			hits.offerLast(now);
+			return true;
+		} finally {
+			lock.unlock();
 		}
-		if (hits.size() >= maxPerWindow) {
-			return false;
-		}
-		hits.offerLast(now);
-		return true;
 	}
 
 	/** @return the current number of hits within the window for {@code key} — useful for diagnostic logging. */
-	public synchronized int currentHits(String key) {
-		Deque<Instant> hits = hitsByKey.get(key);
-		if (hits == null) {
-			return 0;
+	public int currentHits(String key) {
+		lock.lock();
+		try {
+			Deque<Instant> hits = hitsByKey.get(key);
+			if (hits == null) {
+				return 0;
+			}
+			Instant cutoff = clock.instant().minus(window);
+			while (!hits.isEmpty() && hits.peekFirst().isBefore(cutoff)) {
+				hits.pollFirst();
+			}
+			return hits.size();
+		} finally {
+			lock.unlock();
 		}
-		Instant cutoff = clock.instant().minus(window);
-		while (!hits.isEmpty() && hits.peekFirst().isBefore(cutoff)) {
-			hits.pollFirst();
-		}
-		return hits.size();
 	}
 
 	public int getMaxPerWindow() {

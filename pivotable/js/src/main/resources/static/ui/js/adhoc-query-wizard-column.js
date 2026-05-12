@@ -44,6 +44,20 @@ export default {
 			type: Object,
 			required: true,
 		},
+		// Optional. When the wizard's search has scored this row below 100% (i.e. it matched via a lower
+		// tier of the waterfall), the score is forwarded so the row can render a small percentage badge.
+		// Defaults to undefined / 100 — no badge in that case.
+		matchScore: {
+			type: Number,
+			default: undefined,
+		},
+		// True when this row was surfaced via the drop-tags fallback: the user's tag filter excluded it,
+		// but no row matched the tag filter, so we relaxed it to give the user something to act on. A
+		// distinct chip is rendered so the user knows tags were ignored to surface this entry.
+		matchTagsBypassed: {
+			type: Boolean,
+			default: false,
+		},
 	},
 	computed: {
 		...mapState(useAdhocStore, ["nbSchemaFetching"]),
@@ -168,6 +182,26 @@ export default {
 				:for="'column_' + column"
 				v-html="mark(column)"
 			></label>
+			<!-- Wizard-search waterfall score badge. Rendered only when an active search produced a sub-100 match
+			     so a clean (or top-tier) listing stays uncluttered. Subtle muted styling — informational, not a
+			     primary action. -->
+			<span
+				v-if="matchScore !== undefined && matchScore < 100"
+				class="badge bg-light text-muted border ms-1"
+				style="font-size: 0.68rem; font-weight: normal;"
+				:title="'Wizard search match score (lower = looser match)'"
+				>{{ matchScore }}%</span
+			>
+			<!-- Tag-bypass chip. Surfaced only on rows that the drop-tags fallback added: the user's tag filter
+			     would normally exclude them, but no row matched the tags so we relaxed them. The warning colour
+			     makes the bypass visible without screaming. -->
+			<span
+				v-if="matchTagsBypassed"
+				class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle ms-1"
+				style="font-size: 0.68rem; font-weight: normal;"
+				title="This row does not match your tag filter — surfaced anyway because no row did. Drop or change your tags to refine."
+				><i class="bi bi-tag-fill"></i> tag-bypass</span
+			>
 			<!--
 				Pause / resume toggle for the column. Same affordance as the filter tree and
 				measure list — the column stays in selectedColumns so the wizard pill is

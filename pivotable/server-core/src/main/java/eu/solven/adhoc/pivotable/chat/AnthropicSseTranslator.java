@@ -47,20 +47,17 @@ import tools.jackson.databind.ObjectMapper;
  * @author Benoit Lacelle
  */
 @Slf4j
+@SuppressWarnings("PMD.AvoidStringBufferField")
+// AvoidStringBufferField targets long-lived owners that could leak the buffer; translator instances are per-stream
+// (created fresh in the chat handler / controller and discarded on stream close), so the lifetime is bounded.
 public class AnthropicSseTranslator {
+
+	/** JSON field name reused across every emitted event payload. Factored out to silence AvoidDuplicateLiterals. */
+	private static final String F_TYPE = "type";
 
 	final ObjectMapper objectMapper;
 
 	final ChatOutputFilter outputFilter;
-
-	public AnthropicSseTranslator(ObjectMapper objectMapper) {
-		this(objectMapper, new ChatOutputFilter());
-	}
-
-	public AnthropicSseTranslator(ObjectMapper objectMapper, ChatOutputFilter outputFilter) {
-		this.objectMapper = objectMapper;
-		this.outputFilter = outputFilter;
-	}
 
 	// Type of the content block currently being assembled ("text", "tool_use", or "none").
 	private String blockType = "none";
@@ -70,6 +67,15 @@ public class AnthropicSseTranslator {
 
 	// Accumulator for the streamed input_json_delta fragments forming the current tool_use input.
 	private final StringBuilder toolInput = new StringBuilder();
+
+	public AnthropicSseTranslator(ObjectMapper objectMapper) {
+		this(objectMapper, new ChatOutputFilter());
+	}
+
+	public AnthropicSseTranslator(ObjectMapper objectMapper, ChatOutputFilter outputFilter) {
+		this.objectMapper = objectMapper;
+		this.outputFilter = outputFilter;
+	}
 
 	/**
 	 * Process one Anthropic SSE data payload (the JSON string after {@code data: }) and emit zero or more simplified
@@ -81,19 +87,18 @@ public class AnthropicSseTranslator {
 	 *            consumer that receives simplified SSE data payloads (each is a JSON string; the caller is responsible
 	 *            for wrapping with {@code data: } / {@code \n\n})
 	 */
-	@SuppressWarnings("checkstyle:AvoidInlineConditionals")
 	public void onAnthropicEvent(String data, Consumer<String> sink) {
 		if (data == null || "[DONE]".equals(data)) {
 			return;
 		}
 		try {
 			JsonNode node = objectMapper.readTree(data);
-			String type = node.path("type").asString();
+			String type = node.path(F_TYPE).asString();
 
 			switch (type) {
 			case "content_block_start": {
 				JsonNode block = node.path("content_block");
-				blockType = block.path("type").asString("none");
+				blockType = block.path(F_TYPE).asString("none");
 				if ("tool_use".equals(blockType)) {
 					toolName = block.path("name").asString();
 					toolInput.setLength(0);
@@ -102,11 +107,11 @@ public class AnthropicSseTranslator {
 			}
 			case "content_block_delta": {
 				JsonNode delta = node.path("delta");
-				String deltaType = delta.path("type").asString();
+				String deltaType = delta.path(F_TYPE).asString();
 				if ("text_delta".equals(deltaType)) {
 					// Mechanism (4): redact secrets / shell hazards before forwarding the text chunk to the SPA.
 					String filtered = outputFilter.filter(delta.path("text").asString(""));
-					sink.accept(toJson(ImmutableMap.of("type", "text", "content", filtered)));
+					sink.accept(toJson(ImmutableMap.of(F_TYPE, "text", "content", filtered)));
 				} else if ("input_json_delta".equals(deltaType)) {
 					toolInput.append(delta.path("partial_json").asString(""));
 				}
@@ -114,15 +119,18 @@ public class AnthropicSseTranslator {
 			}
 			case "content_block_stop": {
 				if ("tool_use".equals(blockType)) {
-					String accumulated = toolInput.toString();
-					JsonNode input = objectMapper.readTree(accumulated.isEmpty() ? "{}" : accumulated);
-					sink.accept(toJson(ImmutableMap.of("type", "tool_use", "name", toolName, "input", input)));
+					String inputJson = toolInput.toString();
+					if (inputJson.isEmpty()) {
+						inputJson = "{}";
+					}
+					JsonNode input = objectMapper.readTree(inputJson);
+					sink.accept(toJson(ImmutableMap.of(F_TYPE, "tool_use", "name", toolName, "input", input)));
 				}
 				blockType = "none";
 				break;
 			}
 			case "message_stop": {
-				sink.accept(toJson(ImmutableMap.of("type", "done")));
+				sink.accept(toJson(ImmutableMap.of(F_TYPE, "done")));
 				break;
 			}
 			default:
@@ -142,7 +150,11 @@ public class AnthropicSseTranslator {
 	 * @return the JSON payload (without {@code data: }/{@code \n\n} framing)
 	 */
 	public String errorEvent(String message) {
-		return toJson(ImmutableMap.of("type", "error", "message", message == null ? "" : message));
+		String safeMessage = message;
+		if (safeMessage == null) {
+			safeMessage = "";
+		}
+		return toJson(ImmutableMap.of(F_TYPE, "error", "message", safeMessage));
 	}
 
 	private String toJson(Object event) {

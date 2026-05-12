@@ -22,10 +22,12 @@
  */
 package eu.solven.adhoc.pivotable.webflux.chat;
 
+import java.security.Principal;
 import java.util.Map;
 import java.util.Optional;
 
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -62,6 +64,11 @@ import tools.jackson.databind.ObjectMapper;
 @Slf4j
 public class PivotableChatHandler {
 
+	/**
+	 * Conversion factor used to turn the JVM's millisecond clock into the {@code Retry-After} header's seconds unit.
+	 */
+	private static final long MILLIS_PER_SECOND = 1000L;
+
 	final PivotableSchemaRegistry schemasRegistry;
 	final ObjectMapper objectMapper;
 	final WebClient anthropicClient;
@@ -78,21 +85,23 @@ public class PivotableChatHandler {
 	 */
 	public Mono<ServerResponse> enabled(ServerRequest request) {
 		return guard.disabledUntil().map(until -> {
-			long retryAfter = Math.max(0L, until.getEpochSecond() - System.currentTimeMillis() / 1000L);
-			return ServerResponse.status(503).header("Retry-After", Long.toString(retryAfter)).build();
+			long retryAfter = Math.max(0L, until.getEpochSecond() - System.currentTimeMillis() / MILLIS_PER_SECOND);
+			return ServerResponse.status(HttpStatus.SERVICE_UNAVAILABLE)
+					.header("Retry-After", Long.toString(retryAfter))
+					.build();
 		}).orElseGet(() -> ServerResponse.noContent().build());
 	}
 
 	public Mono<ServerResponse> chat(ServerRequest request) {
 		// Mechanism (3): per-principal sliding-window rate limit. Falls back to the remote IP when no auth principal is
 		// attached to the exchange. 429 on overflow.
-		return request.principal().map(p -> p.getName()).defaultIfEmpty(remoteIp(request)).flatMap(key -> {
+		return request.principal().map(Principal::getName).defaultIfEmpty(remoteIp(request)).flatMap(key -> {
 			if (!rateLimiter.tryAcquire(key)) {
 				log.warn("Chat rate limit exceeded for key={} ({} per {})",
 						key,
 						rateLimiter.getMaxPerWindow(),
 						rateLimiter.getWindow());
-				return ServerResponse.status(429)
+				return ServerResponse.status(HttpStatus.TOO_MANY_REQUESTS)
 						.header("Retry-After", Long.toString(rateLimiter.getWindow().getSeconds()))
 						.build();
 			}

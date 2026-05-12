@@ -271,7 +271,7 @@ You can swap formats by changing only the env var; no code or config change.
 > Pro/Max subscription's `oat01` token — for chat turns initiated by anyone using the Pivotable UI — effectively
 > means the subscription holder pays for everyone. For personal-laptop dev that is fine; for a shared or hosted
 > Pivotable deployment, read Anthropic's terms of service first.
-
+>
 > **Never commit either credential.** The Pivotable backend forwards it to `api.anthropic.com` on every chat turn —
 > leaked tokens get scraped from public Git history within minutes. If you accidentally commit one, revoke it in
 > the console (or run `claude logout` for an oat01 token, then re-run `setup-token`) and create a new one. For
@@ -337,14 +337,14 @@ configuration class is silently skipped (`@ConditionalOnProperty`) and the SPA's
 
 ```yaml
 adhoc:
-  pivotable:
-    chat:
-      anthropic-api-key: ${ANTHROPIC_API_KEY}  # interpolate from the env so the key never lands in the repo
-      model: claude-haiku-4-5                  # default; override with claude-sonnet-4-6 etc.
-      force-tool-call: false                   # true → Anthropic must end every turn with a tool call
-      style:
-        max-sentences: 2                       # cap on the model's plain-text reply length
-        ambiguity: BEST_GUESS                  # BEST_GUESS (default) or CLARIFY
+pivotable:
+	chat:
+	anthropic-api-key: ${ANTHROPIC_API_KEY}  # interpolate from the env so the key never lands in the repo
+	model: claude-haiku-4-5                  # default; override with claude-sonnet-4-6 etc.
+	force-tool-call: false                   # true → Anthropic must end every turn with a tool call
+	style:
+		max-sentences: 2                       # cap on the model's plain-text reply length
+		ambiguity: BEST_GUESS                  # BEST_GUESS (default) or CLARIFY
 ```
 
 Then export only the secret before starting:
