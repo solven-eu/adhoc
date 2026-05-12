@@ -17,6 +17,7 @@ import { Modal } from "bootstrap";
 
 import { computeMeasureStats, computeParentSliceStats, heatmapColor, secondaryHeatmapFill } from "./adhoc-query-grid-heatmap.js";
 import { headerNameWithCopyIcon, registerCopyNameDelegation } from "./adhoc-query-grid-clipboard.js";
+import { registerHeaderResizeAutoFit } from "./adhoc-query-grid-autofit.js";
 
 // https://github.com/SortableJS/Sortable/issues/1229#issuecomment-521951729
 window.Sortable = Sortable;
@@ -923,5 +924,9 @@ export default {
 			param[cell.row] = columnCss;
 			args.grid.setCellCssStyles("row_highlighter", param);
 		});
+
+		// Excel-like auto-fit on dblclick of a column resize handle. See `adhoc-query-grid-autofit.js` for
+		// the measurement strategy + unit tests.
+		registerHeaderResizeAutoFit(grid, dataView);
 	},
 };
