@@ -28,11 +28,11 @@ const IMPORTMAP_ALIASES = {
 	"@popperjs/core": "/webjars/popperjs__core/2.11.8/dist/esm/index.js",
 	slickgrid: "/webjars/slickgrid/5.18.2/dist/esm/index.mjs",
 	sortablejs: "/webjars/sortablejs/1.15.7/modular/sortable.esm.js",
-	lodashEs: "/webjars/lodash-es/4.17.21/lodash.js",
+	lodashEs: "/webjars/lodash-es/4.18.1/lodash.js",
 	// Prefix-mapping entry mirroring the importmap's `"lodashEs/": "..."` rule: per-function imports
 	// (e.g. `lodashEs/sortBy.js`) resolve under this directory so we don't pull the whole bundle.
-	"lodashEs/": "/webjars/lodash-es/4.17.21/",
-	mermaid: "/webjars/mermaid/11.6.0/dist/mermaid.esm.min.mjs",
+	"lodashEs/": "/webjars/lodash-es/4.18.1/",
+	mermaid: "/webjars/mermaid/11.15.0/dist/mermaid.esm.min.mjs",
 };
 
 /**
