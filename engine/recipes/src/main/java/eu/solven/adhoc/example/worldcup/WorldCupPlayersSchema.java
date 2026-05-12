@@ -58,6 +58,7 @@ import eu.solven.adhoc.measure.decomposition.DuplicatingDecomposition;
 import eu.solven.adhoc.measure.forest.IMeasureForest;
 import eu.solven.adhoc.measure.forest.MeasureForest;
 import eu.solven.adhoc.measure.sum.AvgAggregation;
+import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.model.measure.Aggregator;
 import eu.solven.adhoc.model.measure.Dispatchor;
 import eu.solven.adhoc.model.measure.Filtrator;
@@ -102,6 +103,21 @@ public class WorldCupPlayersSchema {
 				.name("events")
 				.aggregationKey(EventAggregation.class.getName())
 				.columnName("Event")
+				.build());
+
+		// Attendance aggregates from the joined WorldCupMatches table. These are row-level aggregators —
+		// they include the snowflake-join duplication, so a query that does NOT groupBy MatchID will see
+		// each match's attendance multiplied by the number of player rows that match has. To get the
+		// "true" per-match attendance, groupBy MatchID in the query (or pair with `match_count`).
+		measures.add(Aggregator.builder()
+				.name("Attendance.SUM")
+				.columnName("Attendance")
+				.aggregationKey(SumAggregation.KEY)
+				.build());
+		measures.add(Aggregator.builder()
+				.name("Attendance.Mean")
+				.columnName("Attendance")
+				.aggregationKey(AvgAggregation.KEY)
 				.build());
 
 		measures.add(Dispatchor.builder()

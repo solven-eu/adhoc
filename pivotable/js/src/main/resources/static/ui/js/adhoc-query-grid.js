@@ -9,6 +9,7 @@ import AdhocMeasureStatsModal from "./adhoc-query-grid-stats-modal.js";
 import { SlickGrid, SlickDataView } from "slickgrid";
 
 import gridHelper from "./adhoc-query-grid-helper.js";
+import { autoFitColumnWidth } from "./adhoc-query-grid-autofit.js";
 import { isLoading as isLoadingHelper, loadingPercent as loadingPercentHelper, loadingMessage as loadingMessageHelper } from "./adhoc-query-grid-loading.js";
 
 import { usePreferencesStore } from "./store-preferences.js";
@@ -103,6 +104,43 @@ export default {
 		});
 
 		let gridColumns = [];
+
+		// Build the phantom trailing column injected in scroll mode. Extracted so the mode-toggle
+		// watcher can re-inject / remove it without re-running the full data resync (which was the
+		// observed source of the 1-3s lag when switching scroll ↔ fit on a busy grid).
+		function buildPhantomColumn(viewportWidth) {
+			// 1/3 of the viewport, capped so it never dwarfs a narrow grid (mobile / small panel).
+			const phantomWidth = Math.max(150, Math.floor(viewportWidth / 3));
+			return {
+				id: "__phantom_trailing",
+				name: "",
+				field: "__phantom_trailing",
+				width: phantomWidth,
+				// minWidth matches width: autosizeColumns() would otherwise shrink the phantom to fit
+				// its empty content (formatter returns ""), defeating the whole point of the trailing
+				// headroom. minWidth pins the floor.
+				minWidth: phantomWidth,
+				resizable: false,
+				sortable: false,
+				focusable: false,
+				selectable: false,
+				cssClass: "slick-cell-phantom",
+				headerCssClass: "slick-header-phantom",
+				// Stamp a footer class too — SlickGrid's footer row renders one cell per column by
+				// default, so without this the phantom gets a fully-styled (border + background)
+				// footer cell at the right end of the grid which spoils the "invisible trailing
+				// column" effect.
+				footerCssClass: "slick-footer-phantom",
+				formatter: () => "",
+			};
+		}
+
+		// Per-grid memo of column-id → user-visible width. Survives across resyncs (e.g. a Submit
+		// adding a new measure) so existing columns keep whatever width the user manually set, and
+		// only the newly-introduced columns get an automatic size. Without this memo every resync
+		// hit `grid.autosizeColumns()`, which rebalanced every column's width — disorienting when
+		// the user just wanted to append a column.
+		const columnWidthMemo = new Map();
 
 		const rendering = ref(false);
 
@@ -352,39 +390,87 @@ export default {
 			if (isScrollLayout && gridColumns.length > 0) {
 				const containerEl = document.getElementById(props.domId);
 				const viewportWidth = containerEl ? containerEl.clientWidth : 600;
-				// 1/3 of the viewport, capped so it never dwarfs a narrow grid (mobile / small panel).
-				const phantomWidth = Math.max(150, Math.floor(viewportWidth / 3));
-				gridColumns.push({
-					id: "__phantom_trailing",
-					name: "",
-					field: "__phantom_trailing",
-					width: phantomWidth,
-					// minWidth matches width: autosizeColumns() below would otherwise shrink the phantom
-					// to fit its empty content (formatter returns ""), defeating the whole point of the
-					// trailing headroom. minWidth pins the floor.
-					minWidth: phantomWidth,
-					resizable: false,
-					sortable: false,
-					focusable: false,
-					selectable: false,
-					cssClass: "slick-cell-phantom",
-					headerCssClass: "slick-header-phantom",
-					formatter: () => "",
-				});
+				gridColumns.push(buildPhantomColumn(viewportWidth));
+			}
+
+			// `memoWasEmptyBefore` distinguishes the FIRST resync (initial load / F5 — every column
+			// looks "new") from subsequent ones (only the freshly-added column is new). The two
+			// scenarios need different auto-sizing strategies: initial load can't measure the DOM
+			// (it isn't rendered yet, our measureFromDom would return 0 and we'd ship 40-px columns),
+			// so we fall back to SlickGrid's metadata-based `autosizeColumns()` for the whole grid.
+			// Add-column should NEVER touch existing widths — so we do per-column auto-fit of NEW
+			// columns only.
+			const memoWasEmptyBefore = columnWidthMemo.size === 0;
+
+			// Restore the user's previously-set widths for columns that survived the resync. NEW
+			// columns (no memo entry) keep whatever default width came out of the helper builders;
+			// the post-setColumns block sizes them appropriately.
+			const newColumnIds = [];
+			for (const col of gridColumns) {
+				if (columnWidthMemo.has(col.id)) {
+					col.width = columnWidthMemo.get(col.id);
+				} else {
+					newColumnIds.push(col.id);
+				}
 			}
 
 			grid.setColumns(gridColumns);
 
-			// `autosizeColumns()` measures column header widths against the canvas font and grows each
-			// column to fit its header. Only meaningful in scroll mode — in `fit` mode the columns are
-			// forced to the viewport regardless. Wrapped in a try/catch because SlickGrid versions
-			// occasionally differ on this method's availability.
-			if (isScrollLayout) {
-				try {
-					grid.autosizeColumns();
-				} catch (e) {
-					console.warn("autosizeColumns() unavailable on this SlickGrid version", e);
+			if (isScrollLayout && newColumnIds.length > 0) {
+				if (memoWasEmptyBefore) {
+					// Initial load: defer to SlickGrid's header-text-based autosize. It doesn't rely
+					// on rendered cell widths, so it produces sensible columns even before the
+					// canvas has its first paint. Wrapped in a try/catch because SlickGrid versions
+					// occasionally differ on this method's availability.
+					try {
+						grid.autosizeColumns();
+					} catch (e) {
+						console.warn("autosizeColumns() unavailable on this SlickGrid version", e);
+					}
+				} else {
+					// Subsequent resync (e.g. user added a measure or groupBy column). Per-column
+					// auto-fit for the new columns only; existing columns keep their memoed width.
+					// `autosizeColumns()` is intentionally NOT used here because it rebalances every
+					// column — disorienting when the user just wanted to append one.
+					for (const newId of newColumnIds) {
+						const newIdx = gridColumns.findIndex((c) => c.id === newId);
+						if (newIdx < 0) continue;
+						try {
+							const w = autoFitColumnWidth(grid, dataView, gridColumns[newIdx], newIdx);
+							if (w > 0) {
+								gridColumns[newIdx].width = w;
+							}
+						} catch (e) {
+							console.warn("Per-column auto-fit failed for", newId, e);
+						}
+					}
+					// Light update: applyColumnWidths repaints cells without re-rendering every
+					// row, and we patch the new columns' header DOM widths manually so the headers
+					// stay aligned. `setColumns(gridColumns)` would re-render every row and was
+					// observed at 1-3s on a busy grid.
+					if (typeof grid.applyColumnWidths === "function") {
+						grid.applyColumnWidths();
+					}
+					if (typeof grid.getContainerNode === "function") {
+						const root = grid.getContainerNode();
+						if (root) {
+							for (const newId of newColumnIds) {
+								const newIdx = gridColumns.findIndex((c) => c.id === newId);
+								if (newIdx < 0) continue;
+								const headerCell = root.querySelector(`.slick-header-column:nth-child(${newIdx + 1})`);
+								if (headerCell) {
+									headerCell.style.width = gridColumns[newIdx].width + "px";
+								}
+							}
+						}
+					}
 				}
+			}
+
+			// Snapshot every column's current width back into the memo so the next resync restores
+			// even the columns we just auto-sized (instead of resizing them again).
+			for (const col of gridColumns) {
+				columnWidthMemo.set(col.id, col.width);
 			}
 
 			gridHelper.updateFooters(grid, columnNames, view.coordinates, view.values, measureStats, formatOptions);
@@ -462,6 +548,17 @@ export default {
 
 			gridHelper.registerEventSubscribers(grid, dataView, currentSortCol, clickedCell);
 
+			// Keep the columnWidthMemo current with any manual resize (drag handle) or programmatic
+			// resize (dblclick auto-fit). Without this, the next resync would replay the OLD memoed
+			// width and discard the user's manual change.
+			if (grid.onColumnsResized && typeof grid.onColumnsResized.subscribe === "function") {
+				grid.onColumnsResized.subscribe(() => {
+					for (const col of grid.getColumns()) {
+						columnWidthMemo.set(col.id, col.width);
+					}
+				});
+			}
+
 			// Register the watch once the grid is mounted and initialized.
 			//
 			// NOT `{ deep: true }` on purpose. `view` is only ever swapped by reference from
@@ -487,16 +584,29 @@ export default {
 				},
 			);
 
-			// Layout toggle (fit ↔ scroll): live-apply `forceFitColumns` via `setOptions`, then
-			// re-run `resyncData` so the phantom-column logic adds/removes its trailing column
-			// and `autosizeColumns()` (re)fires under the new mode.
+			// Layout toggle (fit ↔ scroll): light path that ONLY flips the option, adds/removes
+			// the phantom trailing column, and re-applies widths. The previous implementation called
+			// `resyncData()` which rebuilds `data.array`, re-feeds the dataView, invalidates every
+			// row and re-renders — observed at 1-3 s on a busy grid. The data is unchanged on a
+			// mode toggle, so a full resync is wasted work.
 			watch(
 				() => preferencesStoreForResize.gridLayout,
 				(newLayout) => {
 					if (!grid) return;
-					grid.setOptions({ forceFitColumns: newLayout !== "scroll" });
+					const wantPhantom = newLayout === "scroll";
+					grid.setOptions({ forceFitColumns: !wantPhantom });
+					const cols = grid.getColumns();
+					const hasPhantom = cols.length > 0 && cols[cols.length - 1].id === "__phantom_trailing";
+					if (wantPhantom && !hasPhantom) {
+						const containerEl = document.getElementById(props.domId);
+						const viewportWidth = containerEl ? containerEl.clientWidth : 600;
+						cols.push(buildPhantomColumn(viewportWidth));
+						grid.setColumns(cols);
+					} else if (!wantPhantom && hasPhantom) {
+						cols.pop();
+						grid.setColumns(cols);
+					}
 					grid.resizeCanvas();
-					resyncData();
 				},
 			);
 

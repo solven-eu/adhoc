@@ -96,6 +96,13 @@ const config = defineConfig({
 		command: "npm run backend",
 		url: "http://127.0.0.1:8080",
 		reuseExistingServer: !process.env.CI,
+		// Forward Spring Boot's stdout/stderr to Playwright's terminal. Default is `"ignore"`, which
+		// swallows the entire backend log — including the stack trace when the JVM fails to start.
+		// On CI this means an "Exit code: 1" without a single line of context. Setting both to "pipe"
+		// makes the backend log show up inline in the Action's "Run Playwright tests" step, where it
+		// can be uploaded as part of the playwright-report artifact and diagnosed after the fact.
+		stdout: "pipe",
+		stderr: "pipe",
 	},
 });
 

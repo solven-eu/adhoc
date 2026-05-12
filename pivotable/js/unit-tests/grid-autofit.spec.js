@@ -6,7 +6,14 @@
 
 import { expect, test, describe, vi, beforeEach, afterEach } from "vitest";
 
-import { stripHtml, autoFitColumnWidth, AUTOFIT_MAX_ROWS_PROBED, AUTOFIT_PADDING_PX, AUTOFIT_MIN_WIDTH_PX } from "@/js/adhoc-query-grid-autofit.js";
+import {
+	stripHtml,
+	autoFitColumnWidth,
+	applyAutoFitWidth,
+	AUTOFIT_MAX_ROWS_PROBED,
+	AUTOFIT_PADDING_PX,
+	AUTOFIT_MIN_WIDTH_PX,
+} from "@/js/adhoc-query-grid-autofit.js";
 
 // ---------------------------------------------------------------------------------------------
 // stripHtml — pure, no DOM. Guards the canvas-measure path from counting markup characters
@@ -140,5 +147,88 @@ describe("autoFitColumnWidth", () => {
 		const w = autoFitColumnWidth(grid, dataView, { name: "v", field: "v" }, 0);
 		// Only "abc" gets measured: 3 chars × 7 + 16 = 37 → floor to 40.
 		expect(w).toBe(AUTOFIT_MIN_WIDTH_PX);
+	});
+});
+
+// ---------------------------------------------------------------------------------------------
+// applyAutoFitWidth — the mutation half of the auto-fit pipeline. Tests cover idempotency,
+// out-of-range column-index guards, the in-place mutation contract, and the setColumns dispatch.
+// ---------------------------------------------------------------------------------------------
+describe("applyAutoFitWidth", () => {
+	// Build a grid mock with the methods applyAutoFitWidth touches. By default both the fast
+	// (`applyColumnWidths`) path and the fallback (`setColumns`) path are available; individual
+	// tests override `applyColumnWidths` to undefined to exercise the fallback.
+	const makeGrid = (cols, overrides = {}) => {
+		const applyCalls = [];
+		const setColumnsCalls = [];
+		const notifyCalls = [];
+		return {
+			getColumns: () => cols,
+			applyColumnWidths: () => applyCalls.push(true),
+			setColumns: (newCols) => setColumnsCalls.push(newCols),
+			getContainerNode: () => null,
+			onColumnsResized: { notify: () => notifyCalls.push(true) },
+			_applyCalls: applyCalls,
+			_setColumnsCalls: setColumnsCalls,
+			_notifyCalls: notifyCalls,
+			...overrides,
+		};
+	};
+
+	test("idempotent: no work when the column already sits at the target width", () => {
+		const cols = [
+			{ id: "a", width: 100 },
+			{ id: "b", width: 50 },
+		];
+		const grid = makeGrid(cols);
+		const result = applyAutoFitWidth(grid, 0, 100);
+		expect(result).toBe(false);
+		expect(grid._applyCalls).toHaveLength(0);
+		expect(grid._setColumnsCalls).toHaveLength(0);
+		expect(grid._notifyCalls).toHaveLength(0);
+		expect(cols[0].width).toBe(100);
+	});
+
+	test("fast path: mutates the target column in place + calls applyColumnWidths (NOT setColumns)", () => {
+		const cols = [
+			{ id: "a", width: 100 },
+			{ id: "b", width: 50 },
+		];
+		const grid = makeGrid(cols);
+		const result = applyAutoFitWidth(grid, 1, 250);
+		expect(result).toBe(true);
+		expect(cols[1].width).toBe(250);
+		// First column untouched — confirms scroll-mode preservation contract.
+		expect(cols[0].width).toBe(100);
+		// Fast path: applyColumnWidths is called, setColumns is NOT. setColumns re-renders
+		// every row and was the source of the 1-3 second dblclick lag.
+		expect(grid._applyCalls).toHaveLength(1);
+		expect(grid._setColumnsCalls).toHaveLength(0);
+		// Notify must fire so the per-grid columnWidthMemo watcher in `adhoc-query-grid.js` picks
+		// up the manual auto-fit and persists it across resyncs.
+		expect(grid._notifyCalls).toHaveLength(1);
+	});
+
+	test("fallback path: setColumns when applyColumnWidths is unavailable", () => {
+		const cols = [{ id: "a", width: 100 }];
+		const grid = makeGrid(cols, { applyColumnWidths: undefined });
+		const result = applyAutoFitWidth(grid, 0, 200);
+		expect(result).toBe(true);
+		expect(cols[0].width).toBe(200);
+		expect(grid._setColumnsCalls).toHaveLength(1);
+	});
+
+	test("returns false when grid is null or missing getColumns", () => {
+		expect(applyAutoFitWidth(null, 0, 100)).toBe(false);
+		expect(applyAutoFitWidth({}, 0, 100)).toBe(false);
+	});
+
+	test("returns false when colIdx is out of range", () => {
+		const cols = [{ id: "a", width: 100 }];
+		const grid = makeGrid(cols);
+		expect(applyAutoFitWidth(grid, -1, 200)).toBe(false);
+		expect(applyAutoFitWidth(grid, 5, 200)).toBe(false);
+		expect(grid._applyCalls).toHaveLength(0);
+		expect(grid._setColumnsCalls).toHaveLength(0);
 	});
 });

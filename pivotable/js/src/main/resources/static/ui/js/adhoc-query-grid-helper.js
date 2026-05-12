@@ -428,47 +428,21 @@ export default {
 			};
 
 			if (queryModel) {
-				// queryModel is available: show a button to edit the queryModel from the grid.
-				// Note: the copy-name affordance lives INLINE in `column.name` (above) so the
-				// icon sits right next to the name rather than at the far end of the header
-				// alongside the other action buttons.
+				// Single 3-dot menu in the header — replaces the previous pair of separate
+				// remove-column / filter-column icons. Stacking destructive icons next to the
+				// column's resize handle was error-prone (one mis-aimed click and the column
+				// disappeared). The menu is populated dynamically in `registerHeaderButtons` by
+				// reading `column.__menuItems`.
+				column.__menuItems = [
+					{ label: "Filter…", icon: "bi-filter-circle", command: "filter-column" },
+					{ label: "Remove from groupBy", icon: "bi-x-circle", command: "remove-column", destructive: true },
+				];
 				column.header = {
 					buttons: [
 						{
-							command: "remove-column",
-							tooltip: "Remove this groupBy",
-							cssClass: "bi bi-x-circle",
-							itemVisibilityOverride: function (args) {
-								// for example don't show the header button on column "E"
-								return args.column.id !== "E";
-							},
-							itemUsabilityOverride: function (args) {
-								// for example the button usable everywhere except on last column "J"
-								return args.column.id !== "J";
-							},
-							action: function (e, args) {
-								// you can use the "action" callback and/or subscribe to the "onCallback" event, they both have the same arguments
-								// do something
-								console.log("Requested removal of groupBy=" + args.column.name);
-							},
-						},
-						{
-							command: "filter-column",
-							tooltip: "Filter over c=" + columnName,
-							cssClass: "bi bi-filter-circle",
-							itemVisibilityOverride: function (args) {
-								// for example don't show the header button on column "E"
-								return args.column.id !== "E";
-							},
-							itemUsabilityOverride: function (args) {
-								// for example the button usable everywhere except on last column "J"
-								return args.column.id !== "J";
-							},
-							action: function (e, args) {
-								// you can use the "action" callback and/or subscribe to the "onCallback" event, they both have the same arguments
-								// do something
-								console.log("Open Filter modal for c=" + args.column.name);
-							},
+							command: "column-menu",
+							tooltip: "Column actions",
+							cssClass: "bi bi-three-dots-vertical",
 						},
 					],
 				};
@@ -517,47 +491,18 @@ export default {
 			}
 
 			if (queryModel) {
-				// queryModel is available: show a button to edit the queryModel from the grid.
-				// Note: the copy-name affordance lives INLINE in `column.name` (above) so the
-				// icon sits right next to the name rather than at the far end of the header.
-				// The Statistics affordance lives in the FOOTER (next to min/max), not here.
+				// Single 3-dot menu — same design as for groupBy columns. The menu is populated
+				// dynamically in `registerHeaderButtons` by reading `column.__menuItems`.
+				column.__menuItems = [
+					{ label: "Show DAG", icon: "bi-question-circle", command: "info-measure" },
+					{ label: "Remove measure", icon: "bi-x-circle", command: "remove-measure", destructive: true },
+				];
 				column.header = {
 					buttons: [
 						{
-							command: "remove-measure",
-							tooltip: "Remove this measure",
-							cssClass: "bi bi-x-circle",
-							itemVisibilityOverride: function (args) {
-								// for example don't show the header button on column "E"
-								return args.column.id !== "E";
-							},
-							itemUsabilityOverride: function (args) {
-								// for example the button usable everywhere except on last column "J"
-								return args.column.id !== "J";
-							},
-							action: function (e, args) {
-								// you can use the "action" callback and/or subscribe to the "onCallback" event, they both have the same arguments
-								// do something
-								console.log("Requested removal of measure=" + args.column.name);
-							},
-						},
-						{
-							command: "info-measure",
-							tooltip: "DAG about m=" + measureName,
-							cssClass: "bi bi-question-circle",
-							itemVisibilityOverride: function (args) {
-								// for example don't show the header button on column "E"
-								return args.column.id !== "E";
-							},
-							itemUsabilityOverride: function (args) {
-								// for example the button usable everywhere except on last column "J"
-								return args.column.id !== "J";
-							},
-							action: function (e, args) {
-								// you can use the "action" callback and/or subscribe to the "onCallback" event, they both have the same arguments
-								// do something
-								console.log("Requested DAG of measure=" + args.column.name);
-							},
+							command: "column-menu",
+							tooltip: "Measure actions",
+							cssClass: "bi bi-three-dots-vertical",
 						},
 					],
 				};
@@ -714,6 +659,71 @@ export default {
 	},
 
 	registerHeaderButtons(grid, queryModel) {
+		// Internal helper used by the per-column 3-dot menu. Builds a small floating dropdown next
+		// to the icon and dispatches each item's command through the caller-provided callback. Pure
+		// DOM (no Bootstrap Dropdown wiring) so we can position it precisely without retrofitting
+		// the SlickGrid header markup with a `data-bs-toggle` parent.
+		// eslint-disable-next-line no-inner-declarations
+		function showColumnHeaderMenu(anchorEl, items, onPick) {
+			// Tear down any prior menu so a second click on a different column's icon does not
+			// leave two menus floating.
+			document.querySelectorAll(".adhoc-column-menu").forEach((el) => el.remove());
+
+			const menu = document.createElement("div");
+			menu.className = "adhoc-column-menu dropdown-menu show shadow-sm";
+			menu.style.position = "absolute";
+			menu.style.zIndex = "1050";
+
+			for (const item of items) {
+				const btn = document.createElement("button");
+				btn.type = "button";
+				btn.className = "dropdown-item d-flex align-items-center" + (item.destructive ? " text-danger" : "");
+				btn.innerHTML = `<i class="bi ${item.icon} me-2"></i><span>${item.label}</span>`;
+				btn.addEventListener("click", function (e) {
+					e.preventDefault();
+					e.stopPropagation();
+					menu.remove();
+					onPick(item.command);
+				});
+				menu.appendChild(btn);
+			}
+
+			document.body.appendChild(menu);
+
+			// Position the menu just under the icon, right-aligned so it doesn't push past the
+			// viewport's right edge.
+			const rect = anchorEl.getBoundingClientRect();
+			const menuWidth = menu.offsetWidth;
+			const top = rect.bottom + window.scrollY + 2;
+			let left = rect.right + window.scrollX - menuWidth;
+			if (left < 8) left = 8;
+			menu.style.top = top + "px";
+			menu.style.left = left + "px";
+
+			// Click anywhere outside the menu → dismiss. Capture phase so we run before any
+			// bubble-phase handler that might also react to the click.
+			const onOutside = function (e) {
+				if (!menu.contains(e.target)) {
+					menu.remove();
+					document.removeEventListener("click", onOutside, true);
+					document.removeEventListener("keydown", onEsc, true);
+				}
+			};
+			const onEsc = function (e) {
+				if (e.key === "Escape") {
+					menu.remove();
+					document.removeEventListener("click", onOutside, true);
+					document.removeEventListener("keydown", onEsc, true);
+				}
+			};
+			// Defer the listener wiring one tick so the click that opened the menu doesn't
+			// immediately close it.
+			setTimeout(() => {
+				document.addEventListener("click", onOutside, true);
+				document.addEventListener("keydown", onEsc, true);
+			}, 0);
+		}
+
 		// https://github.com/6pac/SlickGrid/blob/master/examples/example-plugin-headerbuttons.html
 		var headerButtonsPlugin = new SlickHeaderButtons();
 
@@ -741,35 +751,44 @@ export default {
 		const measureStatsModal = measureStatsEl ? new Modal(measureStatsEl, {}) : null;
 		const measureStatsModel = inject("measureStatsModel", null);
 
+		// Per-column action dispatcher. Shared between the legacy `onCommand` (in case some
+		// pre-existing call site still fires a direct command) and the new 3-dot-menu items.
+		const dispatchColumnCommand = function (command, column) {
+			if (command === "remove-column") {
+				queryModel.selectedColumns[column.id] = false;
+				queryModel.onColumnToggled(column.id);
+			} else if (command === "filter-column") {
+				columnFilterModel.column = column.id;
+				columnFilterModal.show();
+			} else if (command === "remove-measure") {
+				queryModel.selectedMeasures[column.id] = false;
+			} else if (command === "info-measure") {
+				measuresDagModel.main = column.id;
+				measuresDagModal.show();
+			}
+		};
+
 		// All action callbacks read `column.id` rather than `column.name` because
 		// `column.name` now contains the rendered HTML (name + inline copy icon) — see
 		// `headerNameWithCopyIcon`. `column.id` is still the bare identifier the rest of
 		// the model keys off.
 		headerButtonsPlugin.onCommand.subscribe(function (e, args) {
 			var column = args.column;
-			var button = args.button;
 			var command = args.command;
 
-			if (command == "remove-column") {
-				queryModel.selectedColumns[column.id] = false;
-				queryModel.onColumnToggled(column.id);
-
-				// No need to invalidate the grid, as the queryModel change shall trigger a grid/tabularView/data update
-				// grid.invalidate();
-			} else if (command == "filter-column") {
-				columnFilterModel.column = column.id;
-				columnFilterModal.show();
-			} else if (command == "remove-measure") {
-				queryModel.selectedMeasures[column.id] = false;
-
-				// No need to invalidate the grid, as the queryModel change shall trigger a grid/tabularView/data update
-				// grid.invalidate();
-			} else if (command == "info-measure") {
-				console.log("Info measure", column.id);
-
-				measuresDagModel.main = column.id;
-				measuresDagModal.show();
+			if (command === "column-menu") {
+				// The 3-dot icon was clicked. Open a small dropdown anchored to the icon with the
+				// column-specific actions declared on `column.__menuItems`.
+				const items = column.__menuItems || [];
+				const anchor = e && e.target ? e.target.closest(".slick-header-button") || e.target : null;
+				if (anchor && items.length > 0) {
+					showColumnHeaderMenu(anchor, items, (cmd) => dispatchColumnCommand(cmd, column));
+				}
+				return;
 			}
+
+			// Legacy direct-command path — kept so any pre-existing caller still works.
+			dispatchColumnCommand(command, column);
 		});
 
 		// Footer-side click delegation — the Statistics button lives in the per-measure

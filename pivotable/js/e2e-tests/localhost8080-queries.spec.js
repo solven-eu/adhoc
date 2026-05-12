@@ -64,15 +64,18 @@ test("queryPivotable.addDependantFromGraph", async ({ page }) => {
 	await page.goto(url);
 	await queryPivotable.queryPivotable(page);
 
-	// Hover the column header to surface the SlickHeaderButtons icons (they are
-	// hidden until the user mouses over). The accessible name now contains
-	// "Copy name to clipboard" (an inline icon next to the name) on top of
-	// "Header Button", so we substring-match the bare measure name.
+	// Hover the column header to surface the SlickHeaderButtons icon — the per-icon trio was
+	// replaced by a single 3-dot menu (tooltip "Measure actions") to keep destructive actions
+	// away from the column-resize handle. Two clicks now: open the menu, then pick "Show DAG".
 	await page
 		.getByRole("columnheader", { name: /event_count/ })
 		.first()
 		.hover();
-	await page.getByTitle("DAG about m=event_count").click();
+	await page.getByTitle("Measure actions").first().click();
+	await page
+		.locator(".adhoc-column-menu")
+		.getByText(/Show DAG/)
+		.click();
 	await page.locator("a").filter({ hasText: "goal_count" }).click();
 	await page.getByRole("dialog", { name: "Measure Info" }).getByLabel("Close").click();
 
@@ -88,9 +91,12 @@ test("queryPivotable.addDependantFromGraph", async ({ page }) => {
 		// row0
 		await expect(page.locator(".slick-row").nth(0).locator(".slick-cell").nth(2)).toHaveText("558.00");
 		await expect(page.locator(".slick-row").nth(0).locator(".slick-cell").nth(3)).toHaveText("158.00");
-		// row1
+		// row1 — cell[3] holds a null value that is now rendered with the explicit `NULL`
+		// placeholder (per CHANGES.MD: "empty cells are now rendered with explicit greyed-italic
+		// placeholders"). The cell still has `title="The cell carries a null value."` so we anchor
+		// on that attribute instead of the empty-text check the renderer no longer produces.
 		await expect(page.locator(".slick-row").nth(1).locator(".slick-cell").nth(2)).toHaveText("88.00");
-		await expect(page.locator(".slick-row").nth(1).locator(".slick-cell").nth(3)).toBeEmpty();
+		await expect(page.locator(".slick-row").nth(1).locator(".slick-cell").nth(3)).toHaveAttribute("title", "The cell carries a null value.");
 	}
 });
 

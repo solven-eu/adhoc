@@ -201,6 +201,17 @@
 				align-items: center;
 				/* justify-content: center; */
 				/*background-color: lightblue;*/
+				/*
+				 * Enable native text selection inside cells. SlickGrid's default Alpine theme sets
+				 * `user-select: none` on cells to keep its own click handlers from racing with the
+				 * browser's text-selection state — but the cost is that the user cannot drag-select
+				 * a cell's content for Ctrl-C copy. We restore selection here; the cell-modal handler
+				 * (registered via `grid.onDblClick`) still works because mouseup-after-drag is not a
+				 * double-click.
+				 */
+				user-select: text;
+				-webkit-user-select: text;
+				cursor: text;
 			}
 
 			/*
@@ -211,10 +222,12 @@
 			 * occupies layout space — that is the point.
 			 */
 			.slick-header-phantom,
-			.slick-cell-phantom {
+			.slick-cell-phantom,
+			.slick-footer-phantom {
 				background: transparent !important;
 				border: none !important;
 				box-shadow: none !important;
+				color: transparent !important;
 			}
 
 			/*
