@@ -19,7 +19,8 @@ export default {
 	computed: {
 		...mapState(useAdhocStore, {
 			cube(store) {
-				return store.schemas[this.endpointId]?.cubes[this.cubeId] || { error: "not_loaded" };
+				const self = /** @type {any} */ (this);
+				return store.schemas[self.endpointId]?.cubes[self.cubeId] || { error: "not_loaded" };
 			},
 		}),
 	},

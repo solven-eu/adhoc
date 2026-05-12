@@ -109,13 +109,16 @@ export default {
 		...mapState(useAdhocStore, ["nbSchemaFetching", "nbColumnFetching"]),
 		...mapState(useAdhocStore, {
 			endpoint(store) {
-				return store.endpoints[this.endpointId] || { error: "not_loaded" };
+				const self = /** @type {any} */ (this);
+				return store.endpoints[self.endpointId] || { error: "not_loaded" };
 			},
 			schema(store) {
-				return store.schemas[this.endpointId] || { error: "not_loaded" };
+				const self = /** @type {any} */ (this);
+				return store.schemas[self.endpointId] || { error: "not_loaded" };
 			},
 			cube(store) {
-				return store.schemas[this.endpointId]?.cubes[this.cubeId] || { error: "not_loaded" };
+				const self = /** @type {any} */ (this);
+				return store.schemas[self.endpointId]?.cubes[self.cubeId] || { error: "not_loaded" };
 			},
 		}),
 	},

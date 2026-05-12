@@ -47,10 +47,12 @@ export default {
 		...mapState(useAdhocStore, ["nbSchemaFetching", "metadata"]),
 		...mapState(useAdhocStore, {
 			endpoint(store) {
-				return store.endpoints[this.endpointId] || { error: "not_loaded" };
+				const self = /** @type {any} */ (this);
+				return store.endpoints[self.endpointId] || { error: "not_loaded" };
 			},
 			schema(store) {
-				return store.schemas[this.endpointId] || { error: "not_loaded" };
+				const self = /** @type {any} */ (this);
+				return store.schemas[self.endpointId] || { error: "not_loaded" };
 			},
 		}),
 	},

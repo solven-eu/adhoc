@@ -19,9 +19,16 @@ export default {
 	},
 	computed: {
 		...mapState(useUserStore, ["account"]),
+		// TODO Dead getter. The template never references `player`, the `players` key is not part of
+		// the adhoc-store state, and the component's `props` declare `accountId` (not `playerId`). At
+		// runtime this would throw `Cannot read properties of undefined (reading '...')`. Either
+		// delete this getter or rewrite it against `store.accounts[this.accountId]`. The `any` casts
+		// keep `// @ts-check` happy until that decision is made.
 		...mapState(useAdhocStore, {
 			player(store) {
-				return store.players[this.playerId] || { error: "not_loaded" };
+				/** @type {any} */
+				const self = this;
+				return /** @type {any} */ (store).players[self.playerId] || { error: "not_loaded" };
 			},
 		}),
 	},

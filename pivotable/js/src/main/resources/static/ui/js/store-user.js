@@ -22,10 +22,19 @@ class UserNeedsToLoginError extends Error {
 
 const prefix = "/api/v1";
 
+/**
+ * @typedef UserStoreState
+ * @property {{ details: Record<string, any>, error?: Error }} account currently-connected account record; `details` empty until logged-in
+ * @property {Record<string, any>} tokens OAuth2 token bundle (`access_token`, `refresh_token`, `expires_at`, …); empty until login completes
+ * @property {boolean} needsToCheckLogin true on app boot, before the first `fetchLoginStatus` round-trip resolves
+ * @property {boolean} needsToLogin user is mid-operation but signed out (drives the login modal)
+ * @property {number} nbLoginLoading in-flight login round-trips (for spinners)
+ * @property {Promise<any> | null} initializingUserPromise dedupes concurrent calls to `loadUserIfMissing`
+ * @property {Promise<any> | null} initializingUserTokensPromise dedupes concurrent calls to `loadUserTokensIfMissing`
+ */
 export const useUserStore = defineStore("user", {
-	// State widened — see store-adhoc.js for rationale.
 	state: () =>
-		/** @type {Record<string, any>} */ ({
+		/** @type {UserStoreState} */ ({
 			// Currently connected account
 			account: { details: {} },
 			tokens: {},
@@ -56,11 +65,13 @@ export const useUserStore = defineStore("user", {
 		// BEWARE `store.account.details.username` is not null after a session expiry, but `needsToLogin` would turn to true
 		// If false, we need to check `needsToCheckLogin && needsToLogin`
 		isLoggedIn: (store) => !store.needsToLogin && !!store.account.details.username,
-		isLoggedOut: (store) => {
-			if (store.isLoggedIn) {
+		isLoggedOut() {
+			// Reads the sibling getter `isLoggedIn` via `this` — pinia's `store` arg only types STATE,
+			// not getters, so we go through the function-form getter signature instead of an arrow.
+			if (this.isLoggedIn) {
 				// No need to login as we have an account (hence presumably relevant Cookies/tokens)
 				return false;
-			} else if (store.needsToCheckLogin) {
+			} else if (this.needsToCheckLogin) {
 				// We need to check login: we are not clearly logged-out
 				return false;
 			}
@@ -69,12 +80,13 @@ export const useUserStore = defineStore("user", {
 			return true;
 		},
 		// Default headers: we authenticate ourselves
-		apiHeaders: (store) => {
-			if (store.needsToRefreshAccessToken) {
+		apiHeaders() {
+			// Reads the sibling getter `needsToRefreshAccessToken` — see `isLoggedOut` for rationale.
+			if (this.needsToRefreshAccessToken) {
 				// TODO Implement automated access_token refresh through Promise
 				throw new Error("access_token is missing or expired");
 			}
-			return { Authorization: "Bearer " + store.tokens.access_token };
+			return { Authorization: "Bearer " + this.tokens.access_token };
 		},
 		needsToRefreshAccessToken: (store) => {
 			return !store.tokens.access_token || store.tokens.access_token_expired;

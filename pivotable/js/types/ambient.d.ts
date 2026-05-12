@@ -14,12 +14,10 @@ declare module "bootstrap/*";
 // `mermaid` ships its own .d.ts (installed at the same version pinned in the importmap).
 // `slickgrid` ships its own .d.ts (installed at the same version pinned in the importmap).
 // `sortablejs` types come from `@types/sortablejs`.
-// `pinia` ships its own `.d.ts` but we keep it as a wildcard here: enabling the strict types
-// surfaces ~60 errors in `mapState` getter functions where `this` refers to the Vue Options-API
-// component context (props/data) that pinia's types do not know about. Until the stores have
-// explicit state interfaces AND the components migrate to the Composition API, the wildcard
-// declaration is the lower-friction path. Re-enable by deleting this line once those are done.
-declare module "pinia";
+// `pinia` ships its own .d.ts (installed at the same version pinned in the importmap). Strict typing
+// is enabled now that the three stores declare their state via JSDoc `@typedef`; remaining errors
+// at call sites with `mapState` getter functions whose `this` is the Vue Options-API component need
+// a `/** @type {any} */ (this)` cast (or a migration to `storeToRefs` inside `setup()`).
 // `vue-router` ships its own .d.ts (installed at the same version pinned in the importmap).
 
 // `lodashEs` is a package.json alias to `lodash` (the original CommonJS build) — `@types/lodash`

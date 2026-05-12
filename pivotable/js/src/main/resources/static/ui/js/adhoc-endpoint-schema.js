@@ -39,7 +39,8 @@ export default {
 		...mapState(useAdhocStore, ["nbSchemaFetching", "metadata"]),
 		...mapState(useAdhocStore, {
 			schema(store) {
-				return store.schemas[this.endpointId] || { error: "not_loaded" };
+				const self = /** @type {any} */ (this);
+				return store.schemas[self.endpointId] || { error: "not_loaded" };
 			},
 		}),
 	},

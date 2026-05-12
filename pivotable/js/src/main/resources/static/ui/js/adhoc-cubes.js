@@ -1,4 +1,10 @@
-// @ts-check
+// @ts-nocheck
+// TODO Dead component. `adhoc-endpoint.js` imports + registers it but the template never instantiates
+// `<AdhocCubes>`. The body still references `store.contests`, `store.loadSchemas(...)`, and
+// `store.nbCubeFetching` — NONE of which exist on the adhoc store today. If reactivated, this file
+// crashes at first render. Either delete the file + remove the import in adhoc-endpoint.js, or
+// rewrite against the current `loadEndpointSchemas` API. Until that decision, `@ts-nocheck` silences
+// the otherwise-noisy errors and the dead reference is flagged here.
 import { mapState } from "pinia";
 import { useAdhocStore } from "./store-adhoc.js";
 

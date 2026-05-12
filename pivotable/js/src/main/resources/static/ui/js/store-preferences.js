@@ -107,10 +107,20 @@ function readStoredPayload() {
 	return null;
 }
 
+/**
+ * @typedef PreferencesStoreState
+ * @property {Record<string, any>} queryModels saved query models, keyed by an internal id; the active and the favorited ones live here
+ * @property {string[]} latestQueryIds recently-used queryIds (for the "recent" picker)
+ * @property {string | undefined} currentQueryId id of the active query; `undefined` for an unsaved draft
+ * @property {boolean} wizardHidden when true the wizard column is collapsed and the grid spans full width
+ * @property {Record<string, any>} localEndpoints user-registered Pivotable endpoints (`{id, name, url, host, port, prefix, local: true}`)
+ * @property {string} wizardOpenAccordion id of the wizard accordion section last opened (`wizardColumns`, `wizardMeasures`, `wizardCustoms`, `wizardOptions`) or empty string when collapsed
+ * @property {"fit" | "scroll"} gridLayout SlickGrid layout mode
+ * @property {Record<string, Record<string, number>>} gridColumnWidths per-cube/mode column widths; outer key `"<endpoint>:<cube>:scroll"|":fit"`, inner key column-id → px (scroll) or weight (fit)
+ */
 const store = defineStore("preferences", {
-	// State widened — see store-adhoc.js for rationale.
 	state: () =>
-		/** @type {Record<string, any>} */ ({
+		/** @type {PreferencesStoreState} */ ({
 			// queryId->queryModel
 			queryModels: {},
 			// used to help the user loading previous views
@@ -438,7 +448,7 @@ export const usePreferencesStore = function () {
 	// across calls, so the `__hydrated` guard prevents re-loading stale data on every call
 	// (and re-installing redundant subscribers). Previously hydration ran on every call,
 	// which silently overwrote in-memory edits with whatever was on disk.
-	if (!theStore.__hydrated) {
+	if (!(/** @type {any} */ (theStore).__hydrated)) {
 		const raw = readStoredPayload();
 		if (raw) {
 			const migrated = migrate(raw);
@@ -483,7 +493,7 @@ export const usePreferencesStore = function () {
 			{ detached: true },
 		);
 
-		theStore.__hydrated = true;
+		/** @type {any} */ (theStore).__hydrated = true;
 	}
 
 	return theStore;

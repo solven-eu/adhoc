@@ -34,13 +34,16 @@ export default {
 		...mapState(useAdhocStore, ["nbSchemaFetching"]),
 		...mapState(useAdhocStore, {
 			endpoint(store) {
-				return store.endpoints[this.endpointId] || { error: "not_loaded" };
+				const self = /** @type {any} */ (this);
+				return store.endpoints[self.endpointId] || { error: "not_loaded" };
 			},
 			schema(store) {
-				return store.schemas[this.endpointId] || { error: "not_loaded" };
+				const self = /** @type {any} */ (this);
+				return store.schemas[self.endpointId] || { error: "not_loaded" };
 			},
 			cube(store) {
-				const endpoint = store.schemas[this.endpointId];
+				const self = /** @type {any} */ (this);
+				const endpoint = store.schemas[self.endpointId];
 
 				if (!endpoint) {
 					return { error: "endpoint_not_loaded" };
@@ -48,7 +51,7 @@ export default {
 					return { error: "endpoint_error=" + endpoint.error };
 				}
 
-				return endpoint.cubes[this.cubeId] || { error: "not_loaded" };
+				return endpoint.cubes[self.cubeId] || { error: "not_loaded" };
 			},
 		}),
 	},

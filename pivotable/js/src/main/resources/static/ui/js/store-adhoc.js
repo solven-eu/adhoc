@@ -15,13 +15,28 @@ class NetworkError extends Error {
 
 const prefix = "/api/v1";
 
+/**
+ * @typedef AdhocStoreState
+ * @property {Record<string, any>} metadata server-public metadata payload — populated by `loadMetadata`
+ * @property {Record<string, any>} accounts account-id → account record, lazily filled by `loadAccount`
+ * @property {number} nbAccountFetching count of in-flight account loads (for spinners)
+ * @property {Record<string, any>} endpoints endpoint-id → endpoint descriptor; grown by `loadEndpoints` / local-only registrations
+ * @property {Record<string, any>} schemas endpoint-id → schema (cube tree); grown by `loadEndpointSchemas`
+ * @property {number} nbSchemaFetching in-flight schema loads (for spinners)
+ * @property {Record<string, any>} columns column-id → column-details; grown by `loadCubeColumnDetails` / `loadAllCubeColumnsCoordinates`
+ * @property {number} nbColumnFetching in-flight column-detail loads
+ * @property {{ nextQuery: number }} queries query-id counter container
+ * @property {number} nbQueryFetching in-flight query loads
+ *
+ * <p>NOTE: a handful of component files (`adhoc-account-chip.js`, `adhoc-account.js`) reference
+ * {@code store.players[this.playerId]} which is NOT a member of this state and is also not written by any
+ * action — it's a pre-existing dead reference that the runtime evaluates to {@code undefined.players} (NPE)
+ * the moment those components actually mount. Flagged as a separate bug; left out of the typedef so the
+ * type-checker surfaces the issue once the pinia wildcard is dropped in step 2.
+ */
 export const useAdhocStore = defineStore("adhoc", {
-	// State widened to `Record<string, any>` because pinia infers a strict shape from the literal returned
-	// here, and several component files reference dynamic / not-yet-modelled keys (`players`, `endpointId`,
-	// `cubeId`) that the store grows incrementally as it loads them from the server. A future pass can
-	// replace this with a proper TypeScript interface for the store state.
 	state: () =>
-		/** @type {Record<string, any>} */ ({
+		/** @type {AdhocStoreState} */ ({
 			// Various metadata to enrich the UX
 			metadata: {},
 

@@ -2,6 +2,7 @@
 import { ref, computed, watch } from "vue";
 import { mapState } from "pinia";
 import { useAdhocStore } from "./store-adhoc.js";
+import { useUserStore } from "./store-user.js";
 import { usePreferencesStore } from "./store-preferences.js";
 
 import LoginChip from "./login-chip.js";
@@ -14,7 +15,9 @@ export default {
 		AdhocEndpoint,
 	},
 	computed: {
-		...mapState(useAdhocStore, ["needsToCheckLogin", "isLoggedIn", "nbSchemaFetching"]),
+		// `needsToCheckLogin` lives on the user store (not the adhoc store); split accordingly.
+		...mapState(useUserStore, ["needsToCheckLogin"]),
+		...mapState(useAdhocStore, ["isLoggedIn", "nbSchemaFetching"]),
 	},
 	setup() {
 		const store = useAdhocStore();
