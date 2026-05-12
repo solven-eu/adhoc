@@ -32,7 +32,7 @@ const IMPORTMAP_ALIASES = {
 	// Prefix-mapping entry mirroring the importmap's `"lodashEs/": "..."` rule: per-function imports
 	// (e.g. `lodashEs/sortBy.js`) resolve under this directory so we don't pull the whole bundle.
 	"lodashEs/": "/webjars/lodash-es/4.18.1/",
-	mermaid: "/webjars/mermaid/11.15.0/dist/mermaid.esm.min.mjs",
+	mermaid: "/webjars/mermaid/11.14.0/dist/mermaid.esm.min.mjs",
 };
 
 /**

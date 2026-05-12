@@ -65,7 +65,7 @@ test("local-webjars importmap has every library used by the SPA, with a versione
 		"/webjars/slickgrid/5.18.2/dist/esm/index.mjs",
 		"/webjars/sortablejs/1.15.7/modular/sortable.esm.js",
 		"/webjars/lodash-es/4.18.1/lodash.js",
-		"/webjars/mermaid/11.15.0/dist/mermaid.esm.mjs",
+		"/webjars/mermaid/11.14.0/dist/mermaid.esm.mjs",
 		"/webjars/vue-demi/0.14.10/lib/v3/index.mjs",
 		"/webjars/vue__devtools-api/6.6.4/lib/esm/index.js",
 		"/webjars/bootstrap/5.3.8/js/bootstrap.esm.js",
