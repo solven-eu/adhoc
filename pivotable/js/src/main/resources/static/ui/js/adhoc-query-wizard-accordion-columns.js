@@ -154,6 +154,8 @@ export default {
 								:endpointId="endpointId"
 								:cubeId="cubeId"
 								:searchOptions="searchOptions"
+								:matchScore="columnToType._matchScore"
+								:matchTagsBypassed="!!columnToType._matchTagsBypassed"
 							/>
 						</li>
 					</ul>

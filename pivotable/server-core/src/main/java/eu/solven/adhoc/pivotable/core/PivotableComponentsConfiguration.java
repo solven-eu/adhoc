@@ -82,15 +82,12 @@ public class PivotableComponentsConfiguration {
 	// TODO In AdhocAutoConfiguration, we already make suchan instance
 	@Bean
 	public EventBus eventBus() {
-		EventBus eventBus = EventBus.builder()
+		return EventBus.builder()
 				.strictMethodVerification(true)
 				.throwSubscriberException(true)
+				.logNoSubscriberMessages(false)
 				.logger(makeLogger())
 				.build();
-
-		eventBus.register(new EventBusLogger());
-
-		return eventBus;
 	}
 
 	@Deprecated(forRemoval = true,

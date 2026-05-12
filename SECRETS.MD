@@ -1,8 +1,14 @@
 # Secrets management
 
+This file is the canonical reference for credential management in this repository. See also
+[`docs/mcp-integration.md`](docs/mcp-integration.md#obtaining-an-anthropic-credential) for the Pivotable Chat
+assistant's perspective on the same credential — it consumes the very same `ANTHROPIC_API_KEY` /
+`CLAUDE_CODE_OAUTH_TOKEN`, exposed via the property `adhoc.pivotable.chat.anthropic-api-key`.
+
 ## ~`ANTHROPIC_API_KEY`~ `CLAUDE_CODE_OAUTH_TOKEN` Used for Claude Code AI Agents
 
 One can generate a 1-year token, usable as `CLAUDE_CODE_OAUTH_TOKEN` with a local CLI: 
+
 ```
 claude setup-token
 ```

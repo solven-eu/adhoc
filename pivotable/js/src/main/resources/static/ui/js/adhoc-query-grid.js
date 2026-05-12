@@ -9,6 +9,7 @@ import AdhocMeasureStatsModal from "./adhoc-query-grid-stats-modal.js";
 import { SlickGrid, SlickDataView } from "slickgrid";
 
 import gridHelper from "./adhoc-query-grid-helper.js";
+import { autoFitColumnWidth } from "./adhoc-query-grid-autofit.js";
 import { isLoading as isLoadingHelper, loadingPercent as loadingPercentHelper, loadingMessage as loadingMessageHelper } from "./adhoc-query-grid-loading.js";
 
 import { usePreferencesStore } from "./store-preferences.js";
@@ -45,10 +46,26 @@ export default {
 			type: Object,
 			required: true,
 		},
+		// Identifies the cube for per-cube preferences (column widths, …). Both optional to keep
+		// the grid usable without persistence wiring (e.g. in isolated previews).
+		endpointId: {
+			type: String,
+			default: "",
+		},
+		cubeId: {
+			type: String,
+			default: "",
+		},
 	},
 	setup(props) {
 		// https://stackoverflow.com/questions/2402953/javascript-data-grid-for-millions-of-rows
 		let dataView;
+
+		// Shared store: read once at setup, consulted from `resyncData` (gridLayout) and from the
+		// `wizardHidden` / `gridLayout` watchers in `onMounted`. Pinia memoises the store so the same
+		// reactive instance is returned across calls — the dedicated `preferencesStoreForResize`
+		// reference inside `onMounted` is the same object as this one.
+		const preferencesStore = usePreferencesStore();
 
 		// Singleton model for the per-measure Statistics modal — provided by `adhoc-query.js`
 		// so the grid header buttons (registered in `adhoc-query-grid-helper.js`) can toggle
@@ -97,6 +114,65 @@ export default {
 		});
 
 		let gridColumns = [];
+
+		// Build the phantom trailing column injected in scroll mode. Extracted so the mode-toggle
+		// watcher can re-inject / remove it without re-running the full data resync (which was the
+		// observed source of the 1-3s lag when switching scroll ↔ fit on a busy grid).
+		function buildPhantomColumn(viewportWidth) {
+			// 1/3 of the viewport, capped so it never dwarfs a narrow grid (mobile / small panel).
+			const phantomWidth = Math.max(150, Math.floor(viewportWidth / 3));
+			return {
+				id: "__phantom_trailing",
+				name: "",
+				field: "__phantom_trailing",
+				width: phantomWidth,
+				// minWidth matches width: autosizeColumns() would otherwise shrink the phantom to fit
+				// its empty content (formatter returns ""), defeating the whole point of the trailing
+				// headroom. minWidth pins the floor.
+				minWidth: phantomWidth,
+				resizable: false,
+				sortable: false,
+				focusable: false,
+				selectable: false,
+				cssClass: "slick-cell-phantom",
+				headerCssClass: "slick-header-phantom",
+				// Stamp a footer class too — SlickGrid's footer row renders one cell per column by
+				// default, so without this the phantom gets a fully-styled (border + background)
+				// footer cell at the right end of the grid which spoils the "invisible trailing
+				// column" effect.
+				footerCssClass: "slick-footer-phantom",
+				formatter: () => "",
+			};
+		}
+
+		// Per-grid memo of column-id → user-visible width. Survives across resyncs (e.g. a Submit
+		// adding a new measure) so existing columns keep whatever width the user manually set, and
+		// only the newly-introduced columns get an automatic size. Without this memo every resync
+		// hit `grid.autosizeColumns()`, which rebalanced every column's width — disorienting when
+		// the user just wanted to append a column.
+		//
+		// Seeded from `preferencesStore.getCubeColumnWidths(...)` so the user's per-cube widths
+		// survive page reloads. The mode-aware split lives at the preferences layer (different
+		// bucket key per scroll/fit mode):
+		//   - scroll: stored value IS the literal width in px.
+		//   - fit:    stored value is a RELATIVE WEIGHT (default 1, larger = wider). We convert
+		//             back to a working px value here using `WEIGHT_BASE_PX` so SlickGrid's fit-mode
+		//             balancer has something to scale (it preserves ratios → any positive base
+		//             works; we pick 100 because that's the natural mental model "1 unit weight
+		//             = 100 px before viewport-scaling").
+		const WEIGHT_BASE_PX = 100;
+		const columnWidthMemo = new Map();
+		const hydrateColumnWidthMemo = () => {
+			columnWidthMemo.clear();
+			const mode = preferencesStore.gridLayout;
+			const persisted = preferencesStore.getCubeColumnWidths(props.endpointId, props.cubeId, mode);
+			for (const [colId, v] of Object.entries(persisted || {})) {
+				if (typeof v !== "number" || v <= 0) continue;
+				const pxWidth = mode === "fit" ? Math.round(v * WEIGHT_BASE_PX) : v;
+				columnWidthMemo.set(colId, pxWidth);
+			}
+		};
+		hydrateColumnWidthMemo();
 
 		const rendering = ref(false);
 
@@ -208,6 +284,24 @@ export default {
 				}
 			}
 
+			// In DRILLTHROUGH mode the formatters distinguish two missing-value cases. A column that IS in
+			// the user-submitted query (groupBy or measures) renders missing values as `NULL` — the user
+			// asked for that column, so the placeholder reads as "the data is null". A column that is NOT
+			// in the user query but appeared in the response (because the engine surfaced an underlying
+			// aggregator alias from a Combinator, or because the row-inclusion filter added a column to the
+			// groupBy) renders missing values as `Out of DT` — outside the user's contract.
+			const requestedColumns = new Set();
+			if (isDrillthrough) {
+				for (const c of rawColumnNames) {
+					requestedColumns.add(typeof c === "object" ? c.column : c);
+				}
+				for (const m of props.tabularView.query.measures || []) {
+					// `query.measures` may be an array of strings (`"delta"`) or referenced-measure objects
+					// (`{ ref: "delta" }`) depending on the wizard's edit state.
+					requestedColumns.add(typeof m === "object" ? m.name || m.ref : m);
+				}
+			}
+
 			if (view.coordinates.length === 0) {
 				// TODO Why do we show an empty column? Maybe to force having something to render
 				const column = { id: "empty", name: "empty", field: "empty", sortable: sortable, asyncPostRender: renderCallback };
@@ -224,7 +318,7 @@ export default {
 
 				// https://stackoverflow.com/questions/1232040/how-do-i-empty-an-array-in-javascript
 				console.log(`Rendering columnNames=${columnNames}`);
-				gridColumns.push(...gridHelper.groupByToGridColumns(columnNames, props.queryModel, renderCallback));
+				gridColumns.push(...gridHelper.groupByToGridColumns(columnNames, props.queryModel, renderCallback, isDrillthrough, requestedColumns));
 
 				// measureNames may be filled on first row if we requested no measure and received the default measure
 				let measureNames = props.tabularView.query.measures;
@@ -264,7 +358,17 @@ export default {
 
 				// TODO Refresh the columns on `formatOptions` changes, else we need to query to see the format changes
 				gridColumns.push(
-					...gridHelper.measuresToGridColumns(measureNames, props.queryModel, renderCallback, formatOptions, measureStats, parentSliceStats, parentColumnNames),
+					...gridHelper.measuresToGridColumns(
+						measureNames,
+						props.queryModel,
+						renderCallback,
+						formatOptions,
+						measureStats,
+						parentSliceStats,
+						parentColumnNames,
+						isDrillthrough,
+						requestedColumns,
+					),
 				);
 
 				{
@@ -308,7 +412,91 @@ export default {
 
 			console.debug("rowSpans: ", metadata);
 
+			// Layout mode: in `scroll` mode, append an invisible "phantom" trailing column to provide
+			// horizontal headroom past the last real column. This lets the user grab the LAST real
+			// column's right resize handle and widen it freely — without the phantom, that handle sits
+			// at the canvas edge and can only shrink the column. The phantom is excluded from every
+			// downstream concern (measureNames, columnNames, footer aggregations, stats) because we
+			// add it to `gridColumns` ONLY, after the helpers have already built their parts.
+			const isScrollLayout = preferencesStore.gridLayout === "scroll";
+			if (isScrollLayout && gridColumns.length > 0) {
+				const containerEl = document.getElementById(props.domId);
+				const viewportWidth = containerEl ? containerEl.clientWidth : 600;
+				gridColumns.push(buildPhantomColumn(viewportWidth));
+			}
+
+			// `memoWasEmptyBefore` distinguishes the FIRST resync (initial load / F5 — every column
+			// looks "new") from subsequent ones (only the freshly-added column is new). The two
+			// scenarios need different auto-sizing strategies: initial load can't measure the DOM
+			// (it isn't rendered yet, our measureFromDom would return 0 and we'd ship 40-px columns),
+			// so we fall back to SlickGrid's metadata-based `autosizeColumns()` for the whole grid.
+			// Add-column should NEVER touch existing widths — so we do per-column auto-fit of NEW
+			// columns only.
+			const memoWasEmptyBefore = columnWidthMemo.size === 0;
+
+			// Restore the user's previously-set widths for columns that survived the resync. NEW
+			// columns (no memo entry) keep whatever default width came out of the helper builders;
+			// the post-setColumns block sizes them appropriately.
+			const newColumnIds = [];
+			for (const col of gridColumns) {
+				if (columnWidthMemo.has(col.id)) {
+					col.width = columnWidthMemo.get(col.id);
+				} else {
+					newColumnIds.push(col.id);
+				}
+			}
+
 			grid.setColumns(gridColumns);
+
+			if (isScrollLayout && newColumnIds.length > 0) {
+				if (memoWasEmptyBefore) {
+					// Initial load: defer to SlickGrid's header-text-based autosize. It doesn't rely
+					// on rendered cell widths, so it produces sensible columns even before the
+					// canvas has its first paint. Wrapped in a try/catch because SlickGrid versions
+					// occasionally differ on this method's availability.
+					try {
+						grid.autosizeColumns();
+					} catch (e) {
+						console.warn("autosizeColumns() unavailable on this SlickGrid version", e);
+					}
+				} else {
+					// Subsequent resync (e.g. user added a measure or groupBy column). Per-column
+					// auto-fit for the new columns only; existing columns keep their memoed width.
+					// `autosizeColumns()` is intentionally NOT used here because it rebalances every
+					// column — disorienting when the user just wanted to append one.
+					for (const newId of newColumnIds) {
+						const newIdx = gridColumns.findIndex((c) => c.id === newId);
+						if (newIdx < 0) continue;
+						try {
+							const w = autoFitColumnWidth(grid, dataView, gridColumns[newIdx], newIdx);
+							if (w > 0) {
+								gridColumns[newIdx].width = w;
+							}
+						} catch (e) {
+							console.warn("Per-column auto-fit failed for", newId, e);
+						}
+					}
+					// Light update mirroring SlickGrid's internal drag-resize completion path.
+					// `updateCanvasWidth(true)` is the key piece — it recomputes the canvas width
+					// AND re-applies column widths with the fresh dimensions, which is what makes a
+					// column actually shrink visually. Avoids the heavy `setColumns(...)` re-render
+					// (1-3 s on a busy grid). See `applyAutoFitWidth` for the same pattern.
+					if (typeof grid.applyColumnHeaderWidths === "function") {
+						grid.applyColumnHeaderWidths();
+					}
+					if (typeof grid.updateCanvasWidth === "function") {
+						grid.updateCanvasWidth(true);
+					} else if (typeof grid.applyColumnWidths === "function") {
+						grid.applyColumnWidths();
+					}
+				}
+			}
+
+			// Snapshot every column's current width back into the memo so the next resync restores
+			// even the columns we just auto-sized (instead of resizing them again).
+			for (const col of gridColumns) {
+				columnWidthMemo.set(col.id, col.width);
+			}
 
 			gridHelper.updateFooters(grid, columnNames, view.coordinates, view.values, measureStats, formatOptions);
 
@@ -346,8 +534,12 @@ export default {
 			// autosizeColsMode: "?"
 			//			autoHeight: true,
 			fullWidthRows: true,
-			// `forceFitColumns` is legacy, and related with `autosizeColsMode`
-			forceFitColumns: true,
+			// `forceFitColumns` is legacy, and related with `autosizeColsMode`.
+			// Controlled by `preferencesStore.gridLayout`: `fit` (default) sums columns to viewport
+			// width; `scroll` disables the squeeze, exposes a horizontal scrollbar, and lets
+			// `grid.autosizeColumns()` (called per resync in `resyncData`) widen columns to fit
+			// their header text. The watcher below propagates live toggles via `grid.setOptions(...)`.
+			forceFitColumns: preferencesStore.gridLayout !== "scroll",
 			// https://github.com/6pac/SlickGrid/blob/master/examples/example10-async-post-render.html		,
 			enableAsyncPostRender: true,
 			// rowSpan enables showing a single time each value on given column
@@ -381,6 +573,40 @@ export default {
 
 			gridHelper.registerEventSubscribers(grid, dataView, currentSortCol, clickedCell);
 
+			// Keep the columnWidthMemo current with any manual resize (drag handle) or programmatic
+			// resize (dblclick auto-fit). Without this, the next resync would replay the OLD memoed
+			// width and discard the user's manual change. Also persist to the preferences store so
+			// the user's per-cube widths survive page reloads.
+			if (grid.onColumnsResized && typeof grid.onColumnsResized.subscribe === "function") {
+				grid.onColumnsResized.subscribe(() => {
+					const cols = grid.getColumns().filter((c) => c.id !== "__phantom_trailing");
+					if (cols.length === 0) return;
+					const mode = preferencesStore.gridLayout;
+
+					// In FIT mode persist a WEIGHT (each column's width / mean width). Weights are
+					// dimensionless, so reopening the cube on a wider screen scales every column up
+					// proportionally and the user's chosen ratio is preserved. In SCROLL mode
+					// persist the literal px width.
+					const persistedValues = {};
+					if (mode === "fit") {
+						const totalPx = cols.reduce((s, c) => s + (c.width || 0), 0);
+						const meanPx = totalPx / cols.length || 1;
+						for (const col of cols) {
+							columnWidthMemo.set(col.id, col.width);
+							persistedValues[col.id] = (col.width || meanPx) / meanPx;
+						}
+					} else {
+						for (const col of cols) {
+							columnWidthMemo.set(col.id, col.width);
+							persistedValues[col.id] = col.width;
+						}
+					}
+					if (props.endpointId && props.cubeId) {
+						preferencesStore.setCubeColumnWidths(props.endpointId, props.cubeId, mode, persistedValues);
+					}
+				});
+			}
+
 			// Register the watch once the grid is mounted and initialized.
 			//
 			// NOT `{ deep: true }` on purpose. `view` is only ever swapped by reference from
@@ -403,6 +629,50 @@ export default {
 					if (grid) {
 						grid.resizeCanvas();
 					}
+				},
+			);
+
+			// Layout toggle (fit ↔ scroll): light path that ONLY flips the option, adds/removes
+			// the phantom trailing column, and re-applies widths. The previous implementation called
+			// `resyncData()` which rebuilds `data.array`, re-feeds the dataView, invalidates every
+			// row and re-renders — observed at 1-3 s on a busy grid. The data is unchanged on a
+			// mode toggle, so a full resync is wasted work.
+			watch(
+				() => preferencesStoreForResize.gridLayout,
+				(newLayout) => {
+					if (!grid) return;
+					const wantPhantom = newLayout === "scroll";
+					grid.setOptions({ forceFitColumns: !wantPhantom });
+					const cols = grid.getColumns();
+					const hasPhantom = cols.length > 0 && cols[cols.length - 1].id === "__phantom_trailing";
+					if (wantPhantom && !hasPhantom) {
+						const containerEl = document.getElementById(props.domId);
+						const viewportWidth = containerEl ? containerEl.clientWidth : 600;
+						cols.push(buildPhantomColumn(viewportWidth));
+						grid.setColumns(cols);
+					} else if (!wantPhantom && hasPhantom) {
+						cols.pop();
+						grid.setColumns(cols);
+					}
+					// Re-hydrate the memo from the bucket that matches the new mode — scroll-mode
+					// widths and fit-mode widths/weights live in separate per-cube buckets so the
+					// user can have different sizings per mode without one bleeding into the other.
+					hydrateColumnWidthMemo();
+					// Apply the freshly-hydrated widths to the columns currently in the grid.
+					const restored = grid.getColumns();
+					let dirty = false;
+					for (const col of restored) {
+						if (col.id === "__phantom_trailing") continue;
+						const w = columnWidthMemo.get(col.id);
+						if (typeof w === "number" && w > 0 && col.width !== w) {
+							col.width = w;
+							dirty = true;
+						}
+					}
+					if (dirty) {
+						grid.setColumns(restored);
+					}
+					grid.resizeCanvas();
 				},
 			);
 

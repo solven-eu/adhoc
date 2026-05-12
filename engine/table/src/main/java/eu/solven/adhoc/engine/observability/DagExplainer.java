@@ -128,6 +128,14 @@ public class DagExplainer implements IDagExplainer {
 
 	@Override
 	public void explain(AdhocQueryId queryId, IHasDagFromInducedToInducer dag) {
+		shortExplain(queryId, dag);
+
+		DagExplainerState state = newDagExplainerState(queryId, dag);
+
+		printStepAndUnderlyings(state, FAKE_ROOT, Optional.empty(), true);
+	}
+
+	protected void shortExplain(AdhocQueryId queryId, IHasDagFromInducedToInducer dag) {
 		String cubeOrTable = holderType(queryId);
 		// a queried node may be a root, or an intermediate node if it is underlying of another root
 		log.info(
@@ -138,10 +146,6 @@ public class DagExplainer implements IDagExplainer {
 				dag.getInduceds().size(),
 				dag.getRoots().size(),
 				dag.edgeCount());
-
-		DagExplainerState state = newDagExplainerState(queryId, dag);
-
-		printStepAndUnderlyings(state, FAKE_ROOT, Optional.empty(), true);
 	}
 
 	private String holderType(AdhocQueryId queryId) {

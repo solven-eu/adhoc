@@ -58,19 +58,20 @@ test("Grid-header column filter modal resets state when switching columns", asyn
 
 	await expect(page.locator(".slick-row").first()).toBeVisible();
 
-	// Helper: click the `.bi-filter-circle` button under the SlickGrid header matching
-	// `columnName`. SlickGrid renders each column header as `.slick-header-column` with
-	// its `.slick-column-name` text, and `SlickHeaderButtons` injects the filter icon as
-	// a descendant `.slick-header-button.bi-filter-circle`. The column name is now
-	// wrapped in `<span class="adhoc-header-name">{name}</span>` followed by the inline
-	// copy-name icon, so we match the inner span exactly rather than the whole
-	// `.slick-column-name` text (which would include trailing whitespace).
+	// Helper: open the column-filter modal via the header's 3-dot menu. The per-icon row was
+	// consolidated into a single `.bi-three-dots-vertical` button (tooltip "Column actions") to
+	// keep destructive actions away from the column-resize handle; the actual Filter / Remove
+	// items now live in a floating `.adhoc-column-menu` dropdown injected on click.
 	const openHeaderFilter = async (columnName) => {
 		const header = page.locator(".slick-header-column").filter({
 			has: page.locator(".adhoc-header-name", { hasText: new RegExp(`^${columnName}$`) }),
 		});
 		await header.hover();
-		await header.locator(".slick-header-button.bi-filter-circle").click({ force: true });
+		await header.locator(".slick-header-button.bi-three-dots-vertical").click({ force: true });
+		await page
+			.locator(".adhoc-column-menu")
+			.getByText(/^Filter…$/)
+			.click();
 		// The singleton modal is always #columnFilterModal (no column suffix).
 		await expect(page.locator("#columnFilterModal")).toBeVisible();
 	};

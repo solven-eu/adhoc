@@ -35,6 +35,7 @@ import eu.solven.adhoc.pivotable.app.example.InjectPixarExampleCubesConfig;
 import eu.solven.adhoc.pivotable.app.example.InjectSimpleExampleCubesConfig;
 import eu.solven.adhoc.pivotable.app.example.InjectWorldCupExampleCubesConfig;
 import eu.solven.adhoc.pivotable.core.PivotableComponentsConfiguration;
+import eu.solven.adhoc.pivotable.mcp.PivotableMcpConfiguration;
 import eu.solven.adhoc.pivotable.webflux.PivotableWebfluxSpringConfig;
 import eu.solven.adhoc.pivotable.webflux.actuator.AdhocSchemaReactiveHealthIndicator;
 import eu.solven.adhoc.pivotable.webflux.security.PivotableSecurityWebfluxSpringConfig;
@@ -62,7 +63,10 @@ import lombok.extern.slf4j.Slf4j;
 		InjectSimpleExampleCubesConfig.class,
 		InjectAdvancedExamplesCubesConfig.class,
 		InjectPixarExampleCubesConfig.class,
-		InjectWorldCupExampleCubesConfig.class, })
+		InjectWorldCupExampleCubesConfig.class,
+
+		// MCP server — gated on @Profile("pivotable-mcp"), so this import is a no-op unless the profile is active.
+		PivotableMcpConfiguration.class, })
 @Slf4j
 @SuppressWarnings("checkstyle:HideUtilityClassConstructor")
 public class PivotableServerWebfluxApplication {

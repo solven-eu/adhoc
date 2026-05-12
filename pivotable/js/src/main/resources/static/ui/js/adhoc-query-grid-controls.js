@@ -35,6 +35,13 @@ export default {
 		const toggleWizardHidden = function () {
 			preferencesStore.wizardHidden = !preferencesStore.wizardHidden;
 		};
+		// Toggle the grid's layout mode. Default is `fit` (columns sum to the viewport width); `scroll`
+		// lets SlickGrid auto-size columns against their headers and exposes a horizontal scroll bar
+		// when the natural sum exceeds the viewport. Persisted in `store-preferences.js` so the choice
+		// survives reloads. Picked up by `adhoc-query-grid.js` on every resync.
+		const toggleGridLayout = function () {
+			preferencesStore.gridLayout = preferencesStore.gridLayout === "scroll" ? "fit" : "scroll";
+		};
 		// Provided by AdhocQueryExecutor — the Submit trigger + auto-query state + in-flight signal +
 		// "is the in-flight query identical to the displayed one" signal (used to differentiate
 		// Refreshing vs Querying labels). Defaults are no-ops so this component still mounts cleanly in
@@ -43,7 +50,15 @@ export default {
 		const autoQuery = inject("autoQuery", { value: false });
 		const isQueryInFlight = inject("isQueryInFlight", { value: false });
 		const isSameAsLastQuery = inject("isSameAsLastQuery", { value: false });
-		return { preferencesStore, toggleWizardHidden, submitQuery, autoQuery, isQueryInFlight, isSameAsLastQuery };
+		return {
+			preferencesStore,
+			toggleWizardHidden,
+			toggleGridLayout,
+			submitQuery,
+			autoQuery,
+			isQueryInFlight,
+			isSameAsLastQuery,
+		};
 	},
 	template: /* HTML */ `
 		<div class="d-flex flex-wrap gap-2 align-items-center mt-2">
@@ -78,6 +93,24 @@ export default {
 			>
 				<i :class="preferencesStore.wizardHidden ? 'bi bi-arrows-angle-contract me-1' : 'bi bi-arrows-fullscreen me-1'"></i>
 				{{ preferencesStore.wizardHidden ? "Show wizard" : "Hide wizard" }}
+			</button>
+			<!--
+				Layout toggle: 'fit' (default — columns fill viewport, no horizontal scroll) versus
+				'scroll' (columns auto-size against headers, horizontal scroll appears when content
+				overflows). Useful when long column names get truncated under 'fit'.
+			-->
+			<button
+				type="button"
+				class="btn btn-outline-secondary btn-sm"
+				@click="toggleGridLayout"
+				:title="
+					preferencesStore.gridLayout === 'scroll'
+						? 'Fit columns to viewport (no horizontal scroll)'
+						: 'Scroll horizontally with auto-sized columns'
+				"
+			>
+				<i :class="preferencesStore.gridLayout === 'scroll' ? 'bi bi-arrow-bar-left me-1' : 'bi bi-arrows-expand-vertical me-1'"></i>
+				{{ preferencesStore.gridLayout === "scroll" ? "Fit width" : "Scroll" }}
 			</button>
 		</div>
 	`,

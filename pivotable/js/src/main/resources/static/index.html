@@ -201,6 +201,66 @@
 				align-items: center;
 				/* justify-content: center; */
 				/*background-color: lightblue;*/
+				/*
+				 * Enable native text selection inside cells. SlickGrid's default Alpine theme sets
+				 * `user-select: none` on cells to keep its own click handlers from racing with the
+				 * browser's text-selection state — but the cost is that the user cannot drag-select
+				 * a cell's content for Ctrl-C copy. We restore selection here; the cell-modal handler
+				 * (registered via `grid.onDblClick`) still works because mouseup-after-drag is not a
+				 * double-click.
+				 */
+				user-select: text;
+				-webkit-user-select: text;
+				cursor: text;
+			}
+
+			/*
+			 * Make the column-resize handle symmetric around the column boundary so the user can
+			 * grab it from either side — not just by hovering slightly to the left of it. The
+			 * SlickGrid Alpine theme ships the handle at `right: -4px, width: ~8px` (4 px each
+			 * side of the boundary), which is geometrically symmetric BUT the right half is
+			 * clipped — both visually and for hit-testing — by `.slick-header-column { overflow:
+			 * hidden }`. Lifting the parent's overflow restores the right-side hit area without
+			 * needing to widen the handle: keep the strip the SlickGrid default size so it does
+			 * NOT overlap the next column's name. Column-name truncation still works because
+			 * `.slick-column-name` has its own `overflow: hidden + text-overflow: ellipsis`.
+			 *
+			 * `z-index: 10` keeps the handle above sibling header chrome (3-dot menu icon, sort
+			 * indicator) when those overlap the right edge — without it, hovering near the
+			 * boundary lands on the icon instead of the handle.
+			 */
+			.slick-header-column {
+				overflow: visible !important;
+			}
+			.slick-resizable-handle {
+				/* Slightly wider than the SlickGrid default (8 px / 4 px each side) — 10 px / 5 px each
+				 * side keeps the strip comfortably grabbable without bleeding into the next column's
+				 * name area at typical column widths. */
+				width: 10px !important;
+				right: -5px !important;
+				z-index: 10;
+				cursor: col-resize;
+			}
+
+			/*
+			 * Phantom trailing column injected in `scroll` layout mode (see adhoc-query-grid.js).
+			 * Provides horizontal-scroll headroom so the user can grab the last REAL column's
+			 * right resize handle and widen it freely. Visually invisible: no borders, no
+			 * background, no text content (the column has a no-op formatter). The cell still
+			 * occupies layout space — that is the point.
+			 */
+			.slick-header-phantom,
+			.slick-cell-phantom,
+			.slick-footer-phantom {
+				background: transparent !important;
+				border: none !important;
+				box-shadow: none !important;
+				color: transparent !important;
+			}
+			/* The phantom column exists only to provide horizontal-scroll headroom; resizing or
+			 * auto-fitting it makes no sense and the visible handle would just be confusing. */
+			.slick-header-phantom .slick-resizable-handle {
+				display: none !important;
 			}
 
 			/*

@@ -32,6 +32,7 @@ import eu.solven.adhoc.pivotable.webmvc.api.PivotableClearController;
 import eu.solven.adhoc.pivotable.webmvc.api.PivotableEndpointsController;
 import eu.solven.adhoc.pivotable.webmvc.api.PivotableQueryController;
 import eu.solven.adhoc.pivotable.webmvc.api.PivotableSpaController;
+import eu.solven.adhoc.pivotable.webmvc.chat.PivotableChatConfiguration;
 import eu.solven.adhoc.pivotable.webnone.PivotableWebnoneSpringConfig;
 import lombok.extern.slf4j.Slf4j;
 
@@ -55,6 +56,10 @@ import lombok.extern.slf4j.Slf4j;
 
 		// Static resources: long-cache policy for `/webjars/**`.
 		PivotableWebjarsCachingWebmvcConfigurer.class,
+
+		// Chat endpoint — gated on `adhoc.pivotable.chat.anthropic-api-key`, so this import is a no-op when the
+		// property is not set.
+		PivotableChatConfiguration.class,
 
 })
 @Slf4j

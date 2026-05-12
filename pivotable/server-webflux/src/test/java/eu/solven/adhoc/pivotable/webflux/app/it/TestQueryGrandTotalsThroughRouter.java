@@ -193,6 +193,6 @@ public class TestQueryGrandTotalsThroughRouter {
 		// `flatMapSequential` guarantee processing in order, hence the last cube is always `simple` (as lowerCase as
 		// after upperCase)
 		Assertions.assertThat(lastColumn.getHolder()).isEqualTo("simple");
-		Assertions.assertThat(lastColumn.getColumn()).isEqualTo("rowIndex");
+		Assertions.assertThat(lastColumn.getColumn()).isEqualTo("theta");
 	}
 }

@@ -6,6 +6,9 @@
 # itself and no reverse proxy is involved.
 server:
     forward-headers-strategy: framework
+    # Dev only: skip the graceful-shutdown phase so Ctrl-C on `npm run dev_stack` exits in <1s instead of waiting
+    # for long-lived SSE streams (chat assistant, MCP) to drain. Production should keep the default `graceful`.
+    shutdown: immediate
 
 # The constant seed is useful to push contestsIds to be the same on each run
 adhoc.pivotable:

@@ -24,22 +24,29 @@ test("register two locally-defined endpoints (127.0.0.1 + localhost)", async ({ 
 	await queryPivotable.login(page);
 
 	await page.goto(url + "/html/endpoints");
-	await expect(page.getByTestId("register-endpoint-card")).toBeVisible();
+	// The form lives behind a modal now — the trigger button is what's visible by default.
+	const openModal = page.getByTestId("open-register-endpoint-modal");
+	await expect(openModal).toBeVisible();
 
 	// First registration: 127.0.0.1:8080.
+	await openModal.click();
+	await expect(page.getByTestId("register-endpoint-card")).toHaveClass(/show/);
+
 	await page.getByTestId("new-endpoint-host").fill("127.0.0.1");
 	await page.getByTestId("new-endpoint-port").fill("8080");
 	await page.getByTestId("new-endpoint-prefix").fill("");
 	await page.getByTestId("new-endpoint-name").fill("loopback");
 	await page.getByTestId("new-endpoint-submit").click();
 
-	// The form clears (host empty) once the entry is committed. The new row appears in
-	// the list with the user-supplied display name and a "Locally registered" badge.
-	await expect(page.getByTestId("new-endpoint-host")).toHaveValue("");
+	// The modal dismisses on success. The new row appears in the list with the user-supplied
+	// display name and a "Locally registered" badge.
+	await expect(page.getByTestId("register-endpoint-card")).not.toHaveClass(/show/);
 	await expect(page.getByText("Locally registered:")).toHaveCount(1);
 	await expect(page.getByText("http://127.0.0.1:8080")).toBeVisible();
 
-	// Second registration: localhost:8080.
+	// Second registration: localhost:8080 — re-open the modal first.
+	await openModal.click();
+	await expect(page.getByTestId("register-endpoint-card")).toHaveClass(/show/);
 	await page.getByTestId("new-endpoint-host").fill("localhost");
 	await page.getByTestId("new-endpoint-port").fill("8080");
 	await page.getByTestId("new-endpoint-submit").click();

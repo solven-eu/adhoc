@@ -80,8 +80,10 @@ import eu.solven.adhoc.eventbus.QueryStepIsEvaluating;
 import eu.solven.adhoc.eventbus.UnsafeAdhocEventBusHelpers;
 import eu.solven.adhoc.exception.AdhocExceptionHelpers;
 import eu.solven.adhoc.factories.AdhocFactoriesUnsafe;
+import eu.solven.adhoc.factories.CustomMarkerScope;
 import eu.solven.adhoc.factories.IAdhocFactories;
 import eu.solven.adhoc.factories.PodExecutors;
+import eu.solven.adhoc.factories.QueryOptionsScope;
 import eu.solven.adhoc.filter.FilterHelpers;
 import eu.solven.adhoc.filter.value.EqualsMatcher;
 import eu.solven.adhoc.filter.value.IValueMatcher;
@@ -108,6 +110,7 @@ import eu.solven.pepper.core.PepperLogHelper;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -167,6 +170,17 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 
 	@Override
 	public ITabularView execute(QueryPod queryPod) {
+		// Bind the query's customMarker AND options on thread scopes for the WHOLE execute() call — including
+		// planning (makeQueryStepsDag → ICalculatedCoordinate#getFilter) and row processing (executeDag →
+		// ICalculatedColumn#computeCoordinate). Extension points read them via CustomMarkerScope#current /
+		// QueryOptionsScope#current without us threading either through every internal API. Each composite sub-cube
+		// re-enters execute() and rebinds with its own (possibly transcoded) values — nesting works naturally
+		// through ScopedValue.
+		return CustomMarkerScope.runWith(queryPod.getQuery().getCustomMarker(),
+				() -> QueryOptionsScope.runWith(queryPod.getOptions(), () -> executeInScope(queryPod)));
+	}
+
+	protected ITabularView executeInScope(QueryPod queryPod) {
 		IStopwatch stopWatch = factories.getStopwatchFactory().createStarted();
 		boolean postedAboutDone = false;
 		try {
@@ -283,33 +297,31 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 		QueryStepsDag queryDag = queryStepsDagBuilder.getQueryDag();
 
 		if (queryPod.getOptions().contains(StandardQueryOptions.DRILLTHROUGH)) {
-			// IQueryStepsDagBuilder dtQueryStepsDagBuilder = makeQueryStepsDagsBuilder(queryPod);
-			// dtQueryStepsDagBuilder.
-			// return dtQueryStepsDagBuilder.getQueryDag();
-
-			// dag.outgoingEdgesOf(induced).stream().map(dag::getEdgeTarget).toList();
-			// Inducers are tableQueries
-			ImmutableSet<CubeQueryStep> inducers = queryDag.getInducers();
-
-			final IAdhocDag<CubeQueryStep> dag = new AdhocDag<>();
-			final DirectedMultigraph<CubeQueryStep, DefaultEdge> multigraph =
-					new DirectedMultigraph<>(DefaultEdge.class);
-
-			inducers.forEach(s -> {
-				dag.addVertex(s);
-				multigraph.addVertex(s);
-			});
-
-			// Similar to eu.solven.adhoc.engine.IQueryStepsDagBuilder.getQueryDag()
-			return QueryStepsDag.builder()
-					.inducedToInducer(dag)
-					.multigraph(multigraph)
-					.explicits(inducers)
-					.stepToValues(queryDag.getStepToValues())
-					.build();
+			return restrictDagToTableQueries(queryDag);
 		}
 
 		return queryDag;
+	}
+
+	protected QueryStepsDag restrictDagToTableQueries(QueryStepsDag queryDag) {
+		// Inducers are tableQueries
+		ImmutableSet<CubeQueryStep> inducers = queryDag.getInducers();
+
+		final IAdhocDag<CubeQueryStep> dag = new AdhocDag<>();
+		final DirectedMultigraph<CubeQueryStep, DefaultEdge> multigraph = new DirectedMultigraph<>(DefaultEdge.class);
+
+		inducers.forEach(s -> {
+			dag.addVertex(s);
+			multigraph.addVertex(s);
+		});
+
+		// Similar to eu.solven.adhoc.engine.IQueryStepsDagBuilder.getQueryDag()
+		return QueryStepsDag.builder()
+				.inducedToInducer(dag)
+				.multigraph(multigraph)
+				.explicits(inducers)
+				.stepToValues(queryDag.getStepToValues())
+				.build();
 	}
 
 	/**
@@ -753,25 +765,7 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 
 				// `emptyValue` may not empty as we needed to materialize it to get up to here
 				// But now is time to force it to null, while materializing the slice.
-				return new IValueReceiver() {
-
-					// This is useful to prevent boxing emptyValue when long
-					@Override
-					public void onLong(long v) {
-						sliceFeeder.onObject(null);
-					}
-
-					// This is useful to prevent boxing emptyValue when double
-					@Override
-					public void onDouble(double v) {
-						sliceFeeder.onObject(null);
-					}
-
-					@Override
-					public void onObject(@Nullable Object v) {
-						sliceFeeder.onObject(null);
-					}
-				};
+				return new ForwardAsNull(sliceFeeder);
 			};
 		} else if (doClearCarriers) {
 			rowScanner = slice -> {
@@ -808,6 +802,28 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 			rowScanner = baseRowScanner;
 		}
 		return rowScanner;
+	}
+
+	@RequiredArgsConstructor
+	protected static class ForwardAsNull implements IValueReceiver {
+		final IValueReceiver sliceFeeder;
+
+		// This is useful to prevent boxing emptyValue when long
+		@Override
+		public void onLong(long v) {
+			sliceFeeder.onObject(null);
+		}
+
+		// This is useful to prevent boxing emptyValue when double
+		@Override
+		public void onDouble(double v) {
+			sliceFeeder.onObject(null);
+		}
+
+		@Override
+		public void onObject(@Nullable Object v) {
+			sliceFeeder.onObject(null);
+		}
 	}
 
 }

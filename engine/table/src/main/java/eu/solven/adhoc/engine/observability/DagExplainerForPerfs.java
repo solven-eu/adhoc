@@ -26,8 +26,10 @@ import java.util.concurrent.TimeUnit;
 
 import eu.solven.adhoc.engine.step.ICubeQuery;
 import eu.solven.adhoc.engine.step.ICubeQueryStep;
+import eu.solven.adhoc.engine.tabular.optimizer.IHasDagFromInducedToInducer;
 import eu.solven.adhoc.eventbus.AdhocEventsFromGuavaEventBusToSfl4j;
 import eu.solven.adhoc.eventbus.AdhocLogEvent.AdhocLogEventBuilder;
+import eu.solven.adhoc.query.AdhocQueryId;
 import eu.solven.pepper.core.PepperLogHelper;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
@@ -45,6 +47,12 @@ public class DagExplainerForPerfs extends DagExplainer {
 	@Override
 	protected AdhocLogEventBuilder openEventBuilder() {
 		return super.openEventBuilder().performance(true);
+	}
+
+	@Override
+	protected void shortExplain(AdhocQueryId queryId, IHasDagFromInducedToInducer dag) {
+		// Prevent writing twice this log as we call DagExplainer once for `EXPLAIN` and again for `EXPLAIN VERIFY`
+		log.trace("Skip .shortExplain in {}", this.getClass().getName());
 	}
 
 	@Override

@@ -22,60 +22,105 @@
  */
 package eu.solven.adhoc.pivotable.webflux.chat;
 
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
+import java.security.Principal;
 import java.util.Map;
 import java.util.Optional;
 
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-
-import eu.solven.adhoc.beta.schema.CubeSchemaMetadata;
 import eu.solven.adhoc.beta.schema.EndpointSchemaMetadata;
 import eu.solven.adhoc.beta.schema.IAdhocSchema;
+import eu.solven.adhoc.pivotable.chat.AnthropicSseTranslator;
+import eu.solven.adhoc.pivotable.chat.ChatAvailability;
+import eu.solven.adhoc.pivotable.chat.ChatAvailabilityGuard;
+import eu.solven.adhoc.pivotable.chat.ChatRateLimiter;
 import eu.solven.adhoc.pivotable.chat.ChatRequest;
+import eu.solven.adhoc.pivotable.chat.ChatRequestPlanner;
+import eu.solven.adhoc.pivotable.chat.PivotableChatProperties;
 import eu.solven.adhoc.pivotable.endpoint.PivotableSchemaRegistry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
 /**
- * Handles POST {@code /cubes/chat}: proxies user messages to the Anthropic API with the cube schema as context, and
- * streams back simplified SSE events that the Vue chatbot can act on.
+ * Handles GET {@code /cubes/chat/enabled} (always-available availability probe) and POST {@code /cubes/chat} (Anthropic
+ * SSE proxy) for the WebFlux server. Both endpoints are always mounted; the handler consults
+ * {@link ChatAvailability#resolve(String, boolean, ChatAvailabilityGuard)} at every request and short-circuits with a
+ * 503 + {@link ChatAvailability} body when the chat is not currently usable.
  *
  * <p>
- * Simplified SSE event types emitted to the client:
- * <ul>
- * <li>{@code {"type":"text","content":"..."}} — a text fragment to display</li>
- * <li>{@code {"type":"tool_use","name":"...","input":{...}}} — a tool call to apply to the query model</li>
- * <li>{@code {"type":"done"}} — stream finished</li>
- * <li>{@code {"type":"error","message":"..."}} — error</li>
- * </ul>
+ * All non-transport logic (system prompt, message + tools assembly, Anthropic-to-simplified SSE translation) lives in
+ * {@link ChatRequestPlanner} / {@link AnthropicSseTranslator} so it can be shared with the WebMVC controller.
  *
  * @author Benoit Lacelle
  */
 @RequiredArgsConstructor
 @Slf4j
 public class PivotableChatHandler {
-	private static final int MAX_TOKENS = 1024;
 
 	final PivotableSchemaRegistry schemasRegistry;
 	final ObjectMapper objectMapper;
 	final WebClient anthropicClient;
-	final String model;
+	final PivotableChatProperties properties;
+	final ChatAvailabilityGuard guard;
+	final ChatRateLimiter rateLimiter;
+	final ChatRequestPlanner planner = new ChatRequestPlanner();
+
+	/**
+	 * Probe consumed by the SPA's chatbot on mount: always returns 200 with a JSON body describing the current
+	 * availability. The endpoint is stable across all four reachable states (enabled / not configured / disabled by
+	 * config / cooldown) so the SPA does not have to special-case HTTP status codes.
+	 */
+	public Mono<ServerResponse> enabled(ServerRequest request) {
+		return ServerResponse.ok().contentType(MediaType.APPLICATION_JSON).bodyValue(currentAvailability());
+	}
 
 	public Mono<ServerResponse> chat(ServerRequest request) {
+		// First: short-circuit with the same JSON body the probe returns whenever chat is not usable. The SPA already
+		// hides its panel based on the probe, but a stray POST from a script or stale tab should still get a clean
+		// 503 instead of a request that crashes deeper down on a null/blank API key.
+		ChatAvailability availability = currentAvailability();
+		if (!availability.enabled()) {
+			return ServerResponse.status(HttpStatus.SERVICE_UNAVAILABLE)
+					.contentType(MediaType.APPLICATION_JSON)
+					.header("Retry-After", Long.toString(availability.retryAfterSecondsOrZero()))
+					.bodyValue(availability);
+		}
+
+		// Mechanism (3): per-principal sliding-window rate limit. Falls back to the remote IP when no auth principal is
+		// attached to the exchange. 429 on overflow.
+		return request.principal().map(Principal::getName).defaultIfEmpty(remoteIp(request)).flatMap(key -> {
+			if (!rateLimiter.tryAcquire(key)) {
+				log.warn("Chat rate limit exceeded for key={} ({} per {})",
+						key,
+						rateLimiter.getMaxPerWindow(),
+						rateLimiter.getWindow());
+				return ServerResponse.status(HttpStatus.TOO_MANY_REQUESTS)
+						.header("Retry-After", Long.toString(rateLimiter.getWindow().getSeconds()))
+						.build();
+			}
+			return doChat(request);
+		});
+	}
+
+	/**
+	 * Pure read of the current availability — combines config (API key presence + enabled toggle) with the runtime
+	 * guard state. Cheap; no caching needed.
+	 */
+	protected ChatAvailability currentAvailability() {
+		return ChatAvailability.resolve(properties.getAnthropicApiKey(), properties.isEnabled(), guard);
+	}
+
+	private Mono<ServerResponse> doChat(ServerRequest request) {
 		return request.bodyToMono(ChatRequest.class).flatMap(chatRequest -> {
 			IAdhocSchema schema = schemasRegistry.getSchema(chatRequest.getEndpointId());
 
@@ -83,17 +128,11 @@ public class PivotableChatHandler {
 					IAdhocSchema.AdhocSchemaQuery.builder().cube(Optional.of(chatRequest.getCube())).build();
 			EndpointSchemaMetadata metadata = schema.getMetadata(schemaQuery, false);
 
-			String systemPrompt = buildSystemPrompt(chatRequest.getCube(), metadata);
-
-			List<Map<String, Object>> messages = buildMessages(chatRequest);
-
-			Map<String, Object> anthropicBody = new LinkedHashMap<>();
-			anthropicBody.put("model", model);
-			anthropicBody.put("max_tokens", MAX_TOKENS);
-			anthropicBody.put("stream", true);
-			anthropicBody.put("system", systemPrompt);
-			anthropicBody.put("messages", messages);
-			anthropicBody.put("tools", buildTools());
+			Map<String, Object> anthropicBody = planner.buildAnthropicBody(chatRequest,
+					metadata,
+					properties.getModel(),
+					properties.isForceToolCall(),
+					properties.toChatStyle());
 
 			Flux<String> sseFlux = callAnthropic(anthropicBody);
 
@@ -101,104 +140,30 @@ public class PivotableChatHandler {
 		});
 	}
 
-	@SuppressWarnings({ "PMD.ConsecutiveAppendsShouldReuse",
-			"PMD.ConsecutiveLiteralAppends",
-			"PMD.AppendCharacterWithChar" })
-	protected String buildSystemPrompt(String cube, EndpointSchemaMetadata metadata) {
-		StringBuilder sb = new StringBuilder();
-		sb.append("You are a helpful data analyst assistant embedded in a query builder UI.\n");
-		sb.append("The user is building a query against OLAP cube '").append(cube).append("'.\n\n");
+	private static String remoteIp(ServerRequest request) {
+		return extractRemoteIp(request.remoteAddress());
+	}
 
-		CubeSchemaMetadata cubeSchema = metadata.getCubes().get(cube);
-		if (cubeSchema != null) {
-			sb.append("Available measures (use exact names):\n");
-			cubeSchema.getMeasures().keySet().stream().sorted().forEach(m -> sb.append("  - ").append(m).append("\n"));
-
-			if (cubeSchema.getColumns() != null) {
-				sb.append("\nAvailable dimension columns (use exact names):\n");
-				cubeSchema.getColumns()
-						.getColumns()
-						.keySet()
-						.stream()
-						.sorted()
-						.forEach(c -> sb.append("  - ").append(c).append("\n"));
+	/**
+	 * Pick a rate-limiter key from a remote socket address, robust against the {@code getAddress()=null} case (which
+	 * happens with unresolved addresses on some Netty configurations and previously crashed every chat turn with NPE).
+	 * Package-private so the unit test can exercise the three branches without mocking {@code ServerRequest}.
+	 *
+	 * @param remoteAddress
+	 *            the request's remote address, may be empty
+	 * @return the IP literal when resolvable, the host string when only that is available, or {@code "anonymous"} as a
+	 *         last resort
+	 */
+	static String extractRemoteIp(Optional<java.net.InetSocketAddress> remoteAddress) {
+		return remoteAddress.map(a -> {
+			if (a.getAddress() != null) {
+				return a.getAddress().getHostAddress();
 			}
-		}
-
-		sb.append("""
-
-				When the user asks to see or analyse data, call the appropriate tools:
-				- set_measures: select which measures to display (e.g. "show revenue" → select Revenue.SUM)
-				- set_groupby: set groupBy dimensions (e.g. "by country" → add Country column)
-				- clear_query: reset all selections when the user wants to start over
-
-				Rules:
-				- Always use EXACT names from the schema above.
-				- You may call multiple tools in one turn (e.g. set_measures AND set_groupby together).
-				- Respond briefly in plain text, then call the tool(s).
-				- If the request is ambiguous, ask for clarification before calling tools.
-				""");
-
-		return sb.toString();
-	}
-
-	protected List<Map<String, Object>> buildMessages(ChatRequest chatRequest) {
-		List<Map<String, Object>> messages = new ArrayList<>();
-		chatRequest.getConversations()
-				.forEach(msg -> messages.add(ImmutableMap.of("role", msg.getRole(), "content", msg.getContent())));
-		messages.add(ImmutableMap.of("role", "user", "content", chatRequest.getMessage()));
-		return messages;
-	}
-
-	@SuppressWarnings("PMD.AvoidDuplicateLiterals")
-	protected List<Map<String, Object>> buildTools() {
-		return ImmutableList.of(ImmutableMap.<String, Object>builder()
-				.put("name", "set_measures")
-				.put("description",
-						"Select the measures to display in the query result. Replaces any previously selected measures.")
-				.put("input_schema",
-						ImmutableMap.<String, Object>builder()
-								.put("type", "object")
-								.put("properties",
-										ImmutableMap.of("measureNames",
-												ImmutableMap.<String, Object>builder()
-														.put("type", "array")
-														.put("items", ImmutableMap.of("type", "string"))
-														.put("description", "Exact measure names from the cube schema")
-														.build()))
-								.put("required", ImmutableList.of("measureNames"))
-								.build())
-				.build(),
-
-				ImmutableMap.<String, Object>builder()
-						.put("name", "set_groupby")
-						.put("description",
-								"Set the groupBy dimensions (columns to aggregate by). Order matters — first column is the primary grouping.")
-						.put("input_schema",
-								ImmutableMap.<String, Object>builder()
-										.put("type", "object")
-										.put("properties",
-												ImmutableMap.of("columns",
-														ImmutableMap.<String, Object>builder()
-																.put("type", "array")
-																.put("items", ImmutableMap.of("type", "string"))
-																.put("description",
-																		"Exact dimension column names from the cube schema")
-																.build()))
-										.put("required", ImmutableList.of("columns"))
-										.build())
-						.build(),
-
-				ImmutableMap.<String, Object>builder()
-						.put("name", "clear_query")
-						.put("description",
-								"Reset all selections (measures and groupBy columns) to start a fresh query.")
-						.put("input_schema",
-								ImmutableMap.<String, Object>builder()
-										.put("type", "object")
-										.put("properties", ImmutableMap.of())
-										.build())
-						.build());
+			if (a.getHostString() == null) {
+				return "anonymous";
+			}
+			return a.getHostString();
+		}).orElse("anonymous");
 	}
 
 	protected Flux<String> callAnthropic(Map<String, Object> body) {
@@ -211,81 +176,55 @@ public class PivotableChatHandler {
 				.bodyToFlux(new ParameterizedTypeReference<>() {
 				});
 
-		return parseAnthropicStream(rawStream);
+		return translateStream(rawStream);
 	}
 
-	@SuppressWarnings("checkstyle:AvoidInlineConditionals")
-	protected Flux<String> parseAnthropicStream(Flux<ServerSentEvent<String>> rawStream) {
-		return Flux.create(sink -> {
-			// Mutable state for the current content block
-			final String[] blockType = { "none" };
-			final String[] toolName = { "" };
-			final StringBuilder toolInput = new StringBuilder();
-
-			rawStream.subscribe(event -> {
-				String data = event.data();
-				if (data == null || "[DONE]".equals(data)) {
-					return;
+	/**
+	 * Bridge the raw Anthropic SSE flux into the simplified SSE flux consumed by the SPA, framing each event with
+	 * {@code data: ...\n\n}.
+	 */
+	protected Flux<String> translateStream(Flux<ServerSentEvent<String>> rawStream) {
+		AnthropicSseTranslator translator = new AnthropicSseTranslator(objectMapper);
+		// Emit RAW JSON strings — Spring's WebFlux SSE codec wraps each Flux<String> emission with `data:` framing
+		// automatically when the response content type is text/event-stream. Adding our own `data: ...\n\n` framing
+		// on top produced a double-prefixed wire output (`data:data: {...}\n data:\n data:\n`) that the SPA parser
+		// silently failed to JSON.parse, leaving the assistant bubble empty.
+		return Flux.create(sink -> rawStream.subscribe(event -> {
+			translator.onAnthropicEvent(event.data(), json -> {
+				sink.next(json);
+				// Anthropic sometimes holds the SSE connection open after `message_stop` instead of closing it
+				// immediately. Without this explicit complete, the SPA's reader.read() loop blocks forever waiting
+				// for {done:true}, so `isSending = false` in the finally block never runs and the Send button stays
+				// greyed.
+				if (json.contains("\"type\":\"done\"")) {
+					sink.complete();
 				}
-				try {
-					JsonNode node = objectMapper.readTree(data);
-					String type = node.path("type").asString();
-
-					switch (type) {
-					case "content_block_start": {
-						JsonNode block = node.path("content_block");
-						blockType[0] = block.path("type").asString("none");
-						if ("tool_use".equals(blockType[0])) {
-							toolName[0] = block.path("name").asString();
-							toolInput.setLength(0);
-						}
-						break;
-					}
-					case "content_block_delta": {
-						JsonNode delta = node.path("delta");
-						String deltaType = delta.path("type").asString();
-						if ("text_delta".equals(deltaType)) {
-							sink.next(toSseData(
-									ImmutableMap.of("type", "text", "content", delta.path("text").asString(""))));
-						} else if ("input_json_delta".equals(deltaType)) {
-							toolInput.append(delta.path("partial_json").asString(""));
-						}
-						break;
-					}
-					case "content_block_stop": {
-						if ("tool_use".equals(blockType[0])) {
-							String accumulated = toolInput.toString();
-							JsonNode input = objectMapper.readTree(accumulated.isEmpty() ? "{}" : accumulated);
-							sink.next(toSseData(
-									ImmutableMap.of("type", "tool_use", "name", toolName[0], "input", input)));
-						}
-						blockType[0] = "none";
-						break;
-					}
-					case "message_stop": {
-						sink.next(toSseData(ImmutableMap.of("type", "done")));
-						sink.complete();
-						break;
-					}
-					default:
-						break;
-					}
-				} catch (Exception e) {
-					log.warn("Error parsing Anthropic SSE event: {}", data, e);
-				}
-			}, error -> {
-				log.error("Anthropic stream error", error);
-				try {
-					sink.next(toSseData(ImmutableMap.of("type", "error", "message", error.getMessage())));
-				} catch (Exception ignored) {
-					// best-effort: emit the error event before failing
-				}
-				sink.error(error);
-			}, sink::complete);
-		});
+			});
+		}, error -> {
+			String detail = describeError(error);
+			log.error("Anthropic stream error: {}", detail, error);
+			if (error instanceof WebClientResponseException wcre) {
+				guard.tripIfLongTermFailure(wcre.getResponseBodyAsString());
+			}
+			sink.next(translator.errorEvent(detail));
+			sink.error(error);
+		}, sink::complete));
 	}
 
-	private String toSseData(Object event) {
-		return "data: " + objectMapper.writeValueAsString(event) + "\n\n";
+	/**
+	 * Build a human-readable error description that includes Anthropic's response body when the failure is an HTTP
+	 * status error. The default {@code WebClientResponseException#getMessage()} only carries the status + URL, hiding
+	 * the JSON {@code {"error":{"type":..., "message":...}}} payload that explains the real problem.
+	 */
+	protected String describeError(Throwable error) {
+		if (error instanceof WebClientResponseException wcre) {
+			String body = wcre.getResponseBodyAsString();
+			return wcre.getStatusCode() + " from Anthropic — body: " + body;
+		}
+		if (error.getMessage() == null) {
+			return error.getClass().getSimpleName();
+		} else {
+			return error.getMessage();
+		}
 	}
 }

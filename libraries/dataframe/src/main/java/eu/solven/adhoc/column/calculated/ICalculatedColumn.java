@@ -29,7 +29,13 @@ import eu.solven.adhoc.model.column.IAdhocColumn;
 /**
  * Typically extended by an {@link IAdhocColumn} in order to generate a column based on the output from the
  * {@link ITableWrapper}.
- * 
+ *
+ * <p>
+ * Implementations whose {@code computeCoordinate} output depends on the executing query's {@code customMarker} or
+ * options (e.g. a complex column that performs a DB round-trip and needs to honour {@code NO_CACHE} / {@code EXPLAIN})
+ * should read them via {@code CustomMarkerScope#current()} and {@code QueryOptionsScope#current()} respectively — the
+ * engine binds both on thread scopes for the duration of execution, so no parameter is added to this interface.
+ *
  * @author Benoit Lacelle
  */
 public interface ICalculatedColumn extends IAdhocColumn {

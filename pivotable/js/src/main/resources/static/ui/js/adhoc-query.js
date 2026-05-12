@@ -1,5 +1,7 @@
 import { reactive, ref, watch, provide, onMounted, onUnmounted } from "vue";
 
+import { Collapse } from "bootstrap";
+
 import { mapState } from "pinia";
 import { useAdhocStore } from "./store-adhoc.js";
 
@@ -154,9 +156,36 @@ export default {
 				}
 			}
 		};
+		// Click-on-grid → collapse any open wizard accordion. The Submit block re-docks under the
+		// wizard automatically because it watches `accordionState.isOpen`. Without this, the user has
+		// to either toggle the accordion header again or click outside both panels, which is unintuitive
+		// after they've started interacting with the grid. We detect "click on the grid" via a delegated
+		// listener that looks for a `.slick-viewport` ancestor (SlickGrid's scroll container — covers
+		// header click, cell click, and resize-handle dblclick alike).
+		const onDocumentClick = (event) => {
+			if (!event.target || typeof event.target.closest !== "function") {
+				return;
+			}
+			// Only fire when the click was inside the SlickGrid. `.slick-viewport` is SlickGrid's
+			// canonical scroll-container class, present on every running build.
+			if (!event.target.closest(".slick-viewport")) {
+				return;
+			}
+			// Find the open accordion panel (Bootstrap stamps `.show` on the active `.accordion-collapse`).
+			const open = document.querySelector("#accordionWizard .accordion-collapse.show");
+			if (!open) {
+				return;
+			}
+			// Hide via Bootstrap's Collapse API so the standard `hide.bs.collapse` event fires —
+			// which our `onAccordionHide` listener uses to flip `accordionState.isOpen` and let the
+			// Submit block re-dock.
+			Collapse.getOrCreateInstance(open).hide();
+		};
+
 		onMounted(() => {
 			document.addEventListener("show.bs.collapse", onAccordionShow);
 			document.addEventListener("hide.bs.collapse", onAccordionHide);
+			document.addEventListener("click", onDocumentClick);
 
 			// Restore the last-open accordion. The wizard is rendered after this hook
 			// fires, so we wait one tick for the DOM. We toggle by adding the `show`
@@ -182,6 +211,7 @@ export default {
 		onUnmounted(() => {
 			document.removeEventListener("show.bs.collapse", onAccordionShow);
 			document.removeEventListener("hide.bs.collapse", onAccordionHide);
+			document.removeEventListener("click", onDocumentClick);
 		});
 
 		// Snapshot of the queryModel as it was when the last successful result landed. Used by the
@@ -341,7 +371,15 @@ export default {
 						Restore last successful query
 					</button>
 				</div>
-				<AdhocQueryGrid :tabularView="tabularView" :loading="loading" :queryModel="queryModel" :domId="domId" :cube="cube" />
+				<AdhocQueryGrid
+					:tabularView="tabularView"
+					:loading="loading"
+					:queryModel="queryModel"
+					:domId="domId"
+					:cube="cube"
+					:endpointId="endpointId"
+					:cubeId="cubeId"
+				/>
 			</div>
 
 			<AdhocMeasuresDag :measuresDagModel="measuresDagModel" />

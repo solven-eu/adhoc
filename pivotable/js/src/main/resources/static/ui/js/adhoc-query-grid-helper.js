@@ -17,6 +17,7 @@ import { Modal } from "bootstrap";
 
 import { computeMeasureStats, computeParentSliceStats, heatmapColor, secondaryHeatmapFill } from "./adhoc-query-grid-heatmap.js";
 import { headerNameWithCopyIcon, registerCopyNameDelegation } from "./adhoc-query-grid-clipboard.js";
+import { registerHeaderResizeAutoFit } from "./adhoc-query-grid-autofit.js";
 
 // https://github.com/SortableJS/Sortable/issues/1229#issuecomment-521951729
 window.Sortable = Sortable;
@@ -52,7 +53,66 @@ const copyColumnNameToClipboard = function (name) {
 	document.body.removeChild(ta);
 };
 
-const formatters = function (formatOptions, measureStats, parentSliceStats, parentColumnNames) {
+// Cell-value placeholders rendered in greyed italic to distinguish "no data" from "blank". Apply to every
+// view (not just DRILLTHROUGH):
+//
+//   - `NULL`        : the cell value is null/undefined. A blank cell would be ambiguous with an empty string,
+//                     so we make the null state explicit.
+//   - `empty`       : the cell value is the empty string. Symmetric to `NULL` — makes it clear the source
+//                     data is "" rather than missing.
+//   - `Out of DT`   : DRILLTHROUGH-only. The column is NOT in the user's query — it appeared in the DT
+//                     response because the engine decomposed a higher-level measure (e.g. a Combinator) into
+//                     its underlying aggregator columns, or because a row-inclusion filter column was added
+//                     to the groupBy. The user did not explicitly request this column, so a missing/empty
+//                     value really means "this column is not part of the DT contract for this row".
+//
+// Sanitised inline (no user-controlled content) so it is safe to emit as raw HTML.
+const NULL_HTML = '<span style="color:#888;font-style:italic">NULL</span>';
+const NULL_TOOLTIP = "The cell carries a null value.";
+const EMPTY_HTML = '<span style="color:#888;font-style:italic">empty</span>';
+const EMPTY_TOOLTIP = "The cell carries an empty string.";
+const OUT_OF_DT_HTML = '<span style="color:#888;font-style:italic">Out of DT</span>';
+const OUT_OF_DT_TOOLTIP = "This column is not part of the user's DrillThrough query.";
+
+// `*` is the engine-side marker for a grand-total rollup (CalculatedCoordinate). The query payload keeps
+// `*` as the literal coordinate; only the rendering swaps it for the human-friendly `Total` label so the
+// asterisk is not read as a real coordinate value. Hardcoded for now — could become a pivotable parameter
+// later (Excel uses "Grand Total" for the all-columns rollup). BEWARE: a real data row carrying the literal
+// coordinate `*` is visually indistinguishable from the synthetic grand-total — documented limitation,
+// see query-grid-formatters.spec.js for the pinned behaviour.
+const TOTAL_LABEL = "Total";
+const TOTAL_TOOLTIP = "Grand-total rollup for this coordinate.";
+
+function isMissing(value) {
+	return value === null || typeof value === "undefined";
+}
+
+// Returns a SlickGrid cell descriptor when `value` should be rendered as a special missing/empty marker,
+// else null (caller falls through to its normal formatting). Logic:
+//
+//   - DT mode + column NOT in `requestedColumns` + value missing/empty  → "Out of DT"
+//   - value null/undefined                                              → "NULL"
+//   - value === ""                                                      → "empty"
+//   - otherwise                                                         → null (no placeholder)
+//
+// `requestedColumns` may be undefined outside DT mode; it is consulted only when `isDrillthrough` is true.
+function placeholderForCellValue(columnId, value, requestedColumns, isDrillthrough) {
+	const isMissingValue = isMissing(value);
+	const isEmptyString = value === "";
+	if (!isMissingValue && !isEmptyString) {
+		return null;
+	}
+	const isOutOfDT = isDrillthrough && requestedColumns && !requestedColumns.has(columnId);
+	if (isOutOfDT) {
+		return { html: OUT_OF_DT_HTML, toolTip: OUT_OF_DT_TOOLTIP };
+	}
+	if (isMissingValue) {
+		return { html: NULL_HTML, toolTip: NULL_TOOLTIP };
+	}
+	return { html: EMPTY_HTML, toolTip: EMPTY_TOOLTIP };
+}
+
+const formatters = function (formatOptions, measureStats, parentSliceStats, parentColumnNames, isDrillthrough, requestedColumns) {
 	if (!formatOptions) {
 		formatOptions = {};
 	}
@@ -137,6 +197,14 @@ const formatters = function (formatOptions, measureStats, parentSliceStats, pare
 	function measureFormatter(row, cell, value, columnDef, dataContext) {
 		var rtn = {};
 
+		// Missing / empty cell rendering: greyed italic `NULL` for null/undefined, `empty` for "". Applies
+		// to every view, not just DT. DT additionally distinguishes columns the user did not request
+		// ("Out of DT") — handled inside placeholderForCellValue.
+		const placeholder = placeholderForCellValue(columnDef.id, value, requestedColumns, isDrillthrough);
+		if (placeholder) {
+			return placeholder;
+		}
+
 		// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Data_structures
 		if (typeof value === "number") {
 			const color = measureStats ? heatmapColor(value, measureStats[columnDef.id]) : null;
@@ -212,6 +280,12 @@ const formatters = function (formatOptions, measureStats, parentSliceStats, pare
 	function percentFormatter(row, cell, value, columnDef, dataContext) {
 		var rtn = {};
 		const percentFormat = getPercentFormat(columnDef.id);
+
+		// Same missing/empty placeholder handling as `measureFormatter` — see comment there.
+		const placeholder = placeholderForCellValue(columnDef.id, value, requestedColumns, isDrillthrough);
+		if (placeholder) {
+			return placeholder;
+		}
 
 		// Apply the primary + secondary heatmaps to percent-formatted cells the same way
 		// `measureFormatter` does — they share the same numeric semantics, and any measure whose
@@ -326,8 +400,22 @@ export default {
 		}
 	},
 
-	groupByToGridColumns: function (columnNames, queryModel, renderCallback) {
+	groupByToGridColumns: function (columnNames, queryModel, renderCallback, isDrillthrough, requestedColumns) {
 		const gridColumns = [];
+
+		// Always-on formatter: renders missing/empty cells as `NULL` / `empty` placeholders, and the
+		// engine-side grand-total marker `*` as the friendlier `Total` label. DRILLTHROUGH additionally
+		// distinguishes columns the user did not request (`Out of DT`) — handled by placeholderForCellValue.
+		const groupByFormatter = function (row, cell, value, columnDef /* , dataContext */) {
+			const placeholder = placeholderForCellValue(columnDef.id, value, requestedColumns, isDrillthrough);
+			if (placeholder) {
+				return placeholder;
+			}
+			if (value === "*") {
+				return { text: TOTAL_LABEL, toolTip: TOTAL_TOOLTIP };
+			}
+			return { text: value, toolTip: value };
+		};
 
 		for (let columnName of columnNames) {
 			const column = {
@@ -336,51 +424,25 @@ export default {
 				field: columnName,
 				sortable: isSortable(),
 				asyncPostRender: renderCallback,
-				// formatter: popoverFormatter,
+				formatter: groupByFormatter,
 			};
 
 			if (queryModel) {
-				// queryModel is available: show a button to edit the queryModel from the grid.
-				// Note: the copy-name affordance lives INLINE in `column.name` (above) so the
-				// icon sits right next to the name rather than at the far end of the header
-				// alongside the other action buttons.
+				// Single 3-dot menu in the header — replaces the previous pair of separate
+				// remove-column / filter-column icons. Stacking destructive icons next to the
+				// column's resize handle was error-prone (one mis-aimed click and the column
+				// disappeared). The menu is populated dynamically in `registerHeaderButtons` by
+				// reading `column.__menuItems`.
+				column.__menuItems = [
+					{ label: "Filter…", icon: "bi-filter-circle", command: "filter-column" },
+					{ label: "Remove from groupBy", icon: "bi-x-circle", command: "remove-column", destructive: true },
+				];
 				column.header = {
 					buttons: [
 						{
-							command: "remove-column",
-							tooltip: "Remove this groupBy",
-							cssClass: "bi bi-x-circle",
-							itemVisibilityOverride: function (args) {
-								// for example don't show the header button on column "E"
-								return args.column.id !== "E";
-							},
-							itemUsabilityOverride: function (args) {
-								// for example the button usable everywhere except on last column "J"
-								return args.column.id !== "J";
-							},
-							action: function (e, args) {
-								// you can use the "action" callback and/or subscribe to the "onCallback" event, they both have the same arguments
-								// do something
-								console.log("Requested removal of groupBy=" + args.column.name);
-							},
-						},
-						{
-							command: "filter-column",
-							tooltip: "Filter over c=" + columnName,
-							cssClass: "bi bi-filter-circle",
-							itemVisibilityOverride: function (args) {
-								// for example don't show the header button on column "E"
-								return args.column.id !== "E";
-							},
-							itemUsabilityOverride: function (args) {
-								// for example the button usable everywhere except on last column "J"
-								return args.column.id !== "J";
-							},
-							action: function (e, args) {
-								// you can use the "action" callback and/or subscribe to the "onCallback" event, they both have the same arguments
-								// do something
-								console.log("Open Filter modal for c=" + args.column.name);
-							},
+							command: "column-menu",
+							tooltip: "Column actions",
+							cssClass: "bi bi-three-dots-vertical",
 						},
 					],
 				};
@@ -392,8 +454,18 @@ export default {
 		return gridColumns;
 	},
 
-	measuresToGridColumns: function (measureNames, queryModel, renderCallback, formatOptions, measureStats, parentSliceStats, parentColumnNames) {
-		const measureFormatters = formatters(formatOptions, measureStats, parentSliceStats, parentColumnNames);
+	measuresToGridColumns: function (
+		measureNames,
+		queryModel,
+		renderCallback,
+		formatOptions,
+		measureStats,
+		parentSliceStats,
+		parentColumnNames,
+		isDrillthrough,
+		requestedColumns,
+	) {
+		const measureFormatters = formatters(formatOptions, measureStats, parentSliceStats, parentColumnNames, isDrillthrough, requestedColumns);
 
 		const gridColumns = [];
 
@@ -419,47 +491,18 @@ export default {
 			}
 
 			if (queryModel) {
-				// queryModel is available: show a button to edit the queryModel from the grid.
-				// Note: the copy-name affordance lives INLINE in `column.name` (above) so the
-				// icon sits right next to the name rather than at the far end of the header.
-				// The Statistics affordance lives in the FOOTER (next to min/max), not here.
+				// Single 3-dot menu — same design as for groupBy columns. The menu is populated
+				// dynamically in `registerHeaderButtons` by reading `column.__menuItems`.
+				column.__menuItems = [
+					{ label: "Show DAG", icon: "bi-question-circle", command: "info-measure" },
+					{ label: "Remove measure", icon: "bi-x-circle", command: "remove-measure", destructive: true },
+				];
 				column.header = {
 					buttons: [
 						{
-							command: "remove-measure",
-							tooltip: "Remove this measure",
-							cssClass: "bi bi-x-circle",
-							itemVisibilityOverride: function (args) {
-								// for example don't show the header button on column "E"
-								return args.column.id !== "E";
-							},
-							itemUsabilityOverride: function (args) {
-								// for example the button usable everywhere except on last column "J"
-								return args.column.id !== "J";
-							},
-							action: function (e, args) {
-								// you can use the "action" callback and/or subscribe to the "onCallback" event, they both have the same arguments
-								// do something
-								console.log("Requested removal of measure=" + args.column.name);
-							},
-						},
-						{
-							command: "info-measure",
-							tooltip: "DAG about m=" + measureName,
-							cssClass: "bi bi-question-circle",
-							itemVisibilityOverride: function (args) {
-								// for example don't show the header button on column "E"
-								return args.column.id !== "E";
-							},
-							itemUsabilityOverride: function (args) {
-								// for example the button usable everywhere except on last column "J"
-								return args.column.id !== "J";
-							},
-							action: function (e, args) {
-								// you can use the "action" callback and/or subscribe to the "onCallback" event, they both have the same arguments
-								// do something
-								console.log("Requested DAG of measure=" + args.column.name);
-							},
+							command: "column-menu",
+							tooltip: "Measure actions",
+							cssClass: "bi bi-three-dots-vertical",
 						},
 					],
 				};
@@ -616,6 +659,71 @@ export default {
 	},
 
 	registerHeaderButtons(grid, queryModel) {
+		// Internal helper used by the per-column 3-dot menu. Builds a small floating dropdown next
+		// to the icon and dispatches each item's command through the caller-provided callback. Pure
+		// DOM (no Bootstrap Dropdown wiring) so we can position it precisely without retrofitting
+		// the SlickGrid header markup with a `data-bs-toggle` parent.
+		// eslint-disable-next-line no-inner-declarations
+		function showColumnHeaderMenu(anchorEl, items, onPick) {
+			// Tear down any prior menu so a second click on a different column's icon does not
+			// leave two menus floating.
+			document.querySelectorAll(".adhoc-column-menu").forEach((el) => el.remove());
+
+			const menu = document.createElement("div");
+			menu.className = "adhoc-column-menu dropdown-menu show shadow-sm";
+			menu.style.position = "absolute";
+			menu.style.zIndex = "1050";
+
+			for (const item of items) {
+				const btn = document.createElement("button");
+				btn.type = "button";
+				btn.className = "dropdown-item d-flex align-items-center" + (item.destructive ? " text-danger" : "");
+				btn.innerHTML = `<i class="bi ${item.icon} me-2"></i><span>${item.label}</span>`;
+				btn.addEventListener("click", function (e) {
+					e.preventDefault();
+					e.stopPropagation();
+					menu.remove();
+					onPick(item.command);
+				});
+				menu.appendChild(btn);
+			}
+
+			document.body.appendChild(menu);
+
+			// Position the menu just under the icon, right-aligned so it doesn't push past the
+			// viewport's right edge.
+			const rect = anchorEl.getBoundingClientRect();
+			const menuWidth = menu.offsetWidth;
+			const top = rect.bottom + window.scrollY + 2;
+			let left = rect.right + window.scrollX - menuWidth;
+			if (left < 8) left = 8;
+			menu.style.top = top + "px";
+			menu.style.left = left + "px";
+
+			// Click anywhere outside the menu → dismiss. Capture phase so we run before any
+			// bubble-phase handler that might also react to the click.
+			const onOutside = function (e) {
+				if (!menu.contains(e.target)) {
+					menu.remove();
+					document.removeEventListener("click", onOutside, true);
+					document.removeEventListener("keydown", onEsc, true);
+				}
+			};
+			const onEsc = function (e) {
+				if (e.key === "Escape") {
+					menu.remove();
+					document.removeEventListener("click", onOutside, true);
+					document.removeEventListener("keydown", onEsc, true);
+				}
+			};
+			// Defer the listener wiring one tick so the click that opened the menu doesn't
+			// immediately close it.
+			setTimeout(() => {
+				document.addEventListener("click", onOutside, true);
+				document.addEventListener("keydown", onEsc, true);
+			}, 0);
+		}
+
 		// https://github.com/6pac/SlickGrid/blob/master/examples/example-plugin-headerbuttons.html
 		var headerButtonsPlugin = new SlickHeaderButtons();
 
@@ -643,35 +751,44 @@ export default {
 		const measureStatsModal = measureStatsEl ? new Modal(measureStatsEl, {}) : null;
 		const measureStatsModel = inject("measureStatsModel", null);
 
+		// Per-column action dispatcher. Shared between the legacy `onCommand` (in case some
+		// pre-existing call site still fires a direct command) and the new 3-dot-menu items.
+		const dispatchColumnCommand = function (command, column) {
+			if (command === "remove-column") {
+				queryModel.selectedColumns[column.id] = false;
+				queryModel.onColumnToggled(column.id);
+			} else if (command === "filter-column") {
+				columnFilterModel.column = column.id;
+				columnFilterModal.show();
+			} else if (command === "remove-measure") {
+				queryModel.selectedMeasures[column.id] = false;
+			} else if (command === "info-measure") {
+				measuresDagModel.main = column.id;
+				measuresDagModal.show();
+			}
+		};
+
 		// All action callbacks read `column.id` rather than `column.name` because
 		// `column.name` now contains the rendered HTML (name + inline copy icon) — see
 		// `headerNameWithCopyIcon`. `column.id` is still the bare identifier the rest of
 		// the model keys off.
 		headerButtonsPlugin.onCommand.subscribe(function (e, args) {
 			var column = args.column;
-			var button = args.button;
 			var command = args.command;
 
-			if (command == "remove-column") {
-				queryModel.selectedColumns[column.id] = false;
-				queryModel.onColumnToggled(column.id);
-
-				// No need to invalidate the grid, as the queryModel change shall trigger a grid/tabularView/data update
-				// grid.invalidate();
-			} else if (command == "filter-column") {
-				columnFilterModel.column = column.id;
-				columnFilterModal.show();
-			} else if (command == "remove-measure") {
-				queryModel.selectedMeasures[column.id] = false;
-
-				// No need to invalidate the grid, as the queryModel change shall trigger a grid/tabularView/data update
-				// grid.invalidate();
-			} else if (command == "info-measure") {
-				console.log("Info measure", column.id);
-
-				measuresDagModel.main = column.id;
-				measuresDagModal.show();
+			if (command === "column-menu") {
+				// The 3-dot icon was clicked. Open a small dropdown anchored to the icon with the
+				// column-specific actions declared on `column.__menuItems`.
+				const items = column.__menuItems || [];
+				const anchor = e && e.target ? e.target.closest(".slick-header-button") || e.target : null;
+				if (anchor && items.length > 0) {
+					showColumnHeaderMenu(anchor, items, (cmd) => dispatchColumnCommand(cmd, column));
+				}
+				return;
 			}
+
+			// Legacy direct-command path — kept so any pre-existing caller still works.
+			dispatchColumnCommand(command, column);
 		});
 
 		// Footer-side click delegation — the Statistics button lives in the per-measure
@@ -826,5 +943,9 @@ export default {
 			param[cell.row] = columnCss;
 			args.grid.setCellCssStyles("row_highlighter", param);
 		});
+
+		// Excel-like auto-fit on dblclick of a column resize handle. See `adhoc-query-grid-autofit.js` for
+		// the measurement strategy + unit tests.
+		registerHeaderResizeAutoFit(grid, dataView);
 	},
 };

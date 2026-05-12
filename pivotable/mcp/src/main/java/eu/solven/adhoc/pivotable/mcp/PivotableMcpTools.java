@@ -81,7 +81,7 @@ public class PivotableMcpTools {
 	@Tool(description = "Execute an OLAP query against a cube and return a tabular result as JSON. "
 			+ "Call listEndpoints and getSchema first to discover valid endpointId, cubeName and available measures/columns. "
 			+ "queryJson must be a valid CubeQuery JSON, "
-			+ "e.g. {\"measureNames\":[\"Revenue.SUM\"],\"groupBy\":[\"Country\"]}")
+			+ "e.g. {\"measureNames\":[\"Revenue.SUM\"],\"groupBy\":{\"columns\":[\"Country\"]}}")
 	public String executeQuery(@ToolParam(description = "Endpoint UUID returned by listEndpoints") String endpointId,
 			@ToolParam(description = "Cube name returned by getSchema") String cubeName,
 			@ToolParam(description = "CubeQuery as JSON") String queryJson) {
@@ -94,7 +94,7 @@ public class PivotableMcpTools {
 		return toJson(ListBasedTabularView.load(result));
 	}
 
-	private String toJson(Object value) {
+	protected String toJson(Object value) {
 		return objectMapper.writeValueAsString(value);
 	}
 }

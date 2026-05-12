@@ -49,6 +49,8 @@ function buildPayload(state) {
 		wizardHidden: state.wizardHidden,
 		localEndpoints: state.localEndpoints,
 		wizardOpenAccordion: state.wizardOpenAccordion,
+		gridLayout: state.gridLayout,
+		gridColumnWidths: state.gridColumnWidths,
 	};
 }
 
@@ -133,6 +135,32 @@ const store = defineStore("preferences", {
 		// collapsed. Restored on F5 so the wizard re-opens to the same section the user
 		// was working in. Persisted via the standard `$subscribe` path.
 		wizardOpenAccordion: "",
+
+		// Layout mode of the SlickGrid:
+		//   - "fit"    (default): columns fill the viewport width (`forceFitColumns: true`).
+		//                         Long names truncate with ellipsis; no horizontal scroll.
+		//   - "scroll":           columns auto-size against their headers (`autosizeColumns()`).
+		//                         Horizontal scroll appears once the natural sum of widths exceeds
+		//                         the viewport. A trailing phantom column provides scroll
+		//                         headroom so the user can grab and widen the last real column.
+		gridLayout: "fit",
+
+		// Per-cube, per-column-id grid widths the user has manually set (via drag of the resize
+		// handle OR a dblclick auto-fit). Keyed by `<endpointId>:<cubeName>:scroll`/`:fit` so the
+		// preference is mode-aware. The two buckets carry the same numeric shape but different
+		// SEMANTICS:
+		//   - "scroll" bucket → absolute pixel width. SlickGrid in scroll mode (`forceFitColumns:
+		//     false`) respects each declared width literally; horizontal scroll fills the leftover
+		//     viewport space.
+		//   - "fit" bucket → a relative weight. SlickGrid in fit mode scales every column's stored
+		//     "width" proportionally to fill the viewport, so the RATIO between stored values is
+		//     what's preserved (the absolute values are arbitrary). Default weight is 1 (no entry
+		//     in the bucket → SlickGrid uses its built-in equal-distribution); a column the user
+		//     manually widened gets a value > 1 (or larger px, equivalent in proportional terms).
+		// Shape:
+		//   { "<endpoint>:<cube>:scroll": { "<columnId>": <px>, ... },
+		//     "<endpoint>:<cube>:fit":    { "<columnId>": <weight>, ... } }
+		gridColumnWidths: {},
 	}),
 	getters: {
 		isDraft: (store) => !store.currentQueryId,
@@ -140,6 +168,33 @@ const store = defineStore("preferences", {
 	actions: {
 		hashQuery(queryModel) {
 			return hash(queryModel);
+		},
+
+		// Returns the persisted width-or-weight map for the cube at the given layout mode. The
+		// shape is `{ [columnId]: number }`. Missing entries fall back to whatever the grid
+		// helpers produce by default (SlickGrid's `autosizeColumns` for scroll mode, an even
+		// distribution for fit mode).
+		getCubeColumnWidths(endpointId, cubeName, mode) {
+			const k = endpointId + ":" + cubeName + ":" + mode;
+			return this.gridColumnWidths[k] || {};
+		},
+
+		// Persist a single column's width-or-weight under the given cube + mode. Writes through
+		// the standard `$subscribe` path so the change lands in localStorage on the next tick.
+		setCubeColumnWidth(endpointId, cubeName, mode, columnId, value) {
+			const k = endpointId + ":" + cubeName + ":" + mode;
+			if (!this.gridColumnWidths[k]) {
+				this.gridColumnWidths[k] = {};
+			}
+			this.gridColumnWidths[k][columnId] = value;
+		},
+
+		// Bulk-write the widths for a cube + mode. Used after a resize event so the entire row
+		// of the persistence map for that cube is updated atomically rather than one column at a
+		// time (cheaper for the $subscribe writer too).
+		setCubeColumnWidths(endpointId, cubeName, mode, widths) {
+			const k = endpointId + ":" + cubeName + ":" + mode;
+			this.gridColumnWidths[k] = { ...widths };
 		},
 
 		// Add a user-defined tag to a saved favorite. Tags are free-form strings, deduped
@@ -397,6 +452,9 @@ export const usePreferencesStore = function () {
 			}
 			if (typeof migrated.wizardOpenAccordion === "string") {
 				theStore.wizardOpenAccordion = migrated.wizardOpenAccordion;
+			}
+			if (migrated.gridLayout === "fit" || migrated.gridLayout === "scroll") {
+				theStore.gridLayout = migrated.gridLayout;
 			}
 		}
 

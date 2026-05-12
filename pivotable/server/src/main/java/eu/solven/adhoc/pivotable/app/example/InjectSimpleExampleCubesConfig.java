@@ -43,6 +43,7 @@ import eu.solven.adhoc.beta.schema.ColumnIdentifier;
 import eu.solven.adhoc.beta.schema.CustomMarkerMetadataGenerator;
 import eu.solven.adhoc.beta.schema.IAdhocSchema;
 import eu.solven.adhoc.beta.schema.IAdhocSchemaRegistrer;
+import eu.solven.adhoc.filter.ColumnFilter;
 import eu.solven.adhoc.filter.editor.SimpleFilterEditor;
 import eu.solven.adhoc.filter.value.EqualsMatcher;
 import eu.solven.adhoc.measure.ThrowingCombination;
@@ -51,6 +52,7 @@ import eu.solven.adhoc.measure.forest.MeasureForest;
 import eu.solven.adhoc.measure.sum.SumCombination;
 import eu.solven.adhoc.model.measure.Aggregator;
 import eu.solven.adhoc.model.measure.Combinator;
+import eu.solven.adhoc.model.measure.Filtrator;
 import eu.solven.adhoc.model.measure.IMeasure;
 import eu.solven.adhoc.model.measure.Shiftor;
 import eu.solven.adhoc.pivotable.endpoint.PivotableAdhocEndpointMetadata;
@@ -99,6 +101,10 @@ public class InjectSimpleExampleCubesConfig {
 
 		measures.add(Aggregator.sum("delta").toBuilder().tag("δ").build());
 		measures.add(Aggregator.sum("gamma").toBuilder().tag("γ").build());
+		// `theta` aggregates a sparse column (only ~50% of source rows carry it). Useful for DRILLTHROUGH
+		// scenarios where the user wants to see which source rows are missing a column — paired with the
+		// `Out of DT` placeholder formatter on the grid side.
+		measures.add(Aggregator.sum("theta").toBuilder().tag("θ").build());
 
 		measures.add(Combinator.builder()
 				.name("delta+gamma")
@@ -124,6 +130,18 @@ public class InjectSimpleExampleCubesConfig {
 				.underlying("delta")
 				.editorKey(SimpleFilterEditor.KEY)
 				.editorOptions(Map.of(SimpleFilterEditor.P_SHIFTED, Map.of("country", "France")))
+				.tags(Arrays.asList("δ"))
+				.build());
+
+		// `delta.FRANCE.Filter` differs from `delta.FRANCE` (Shiftor) in that it wraps the underlying
+		// aggregator in a per-aggregator FILTER rather than SHIFTING the cube-side filter. Useful for manual
+		// testing of the DRILLTHROUGH path: the Filtrator's FILTER survives into the merged covering query as
+		// a CASE WHEN, so non-France rows return NULL for this alias when both `delta` and this measure are
+		// queried with DRILLTHROUGH enabled — driving the `Out of DT` placeholder in the grid.
+		measures.add(Filtrator.builder()
+				.name("delta.FRANCE.Filter")
+				.underlying("delta")
+				.filter(ColumnFilter.matchEq("country", "France"))
 				.tags(Arrays.asList("δ"))
 				.build());
 
@@ -189,7 +207,7 @@ public class InjectSimpleExampleCubesConfig {
 			double gamma = r.nextInt(1024 * 16) / 100D;
 
 			Country country = faker.country();
-			table.add(ImmutableMap.<String, Object>builder()
+			ImmutableMap.Builder<String, Object> row = ImmutableMap.<String, Object>builder()
 
 					// This is useful to force large tables
 					.put("rowIndex", rowIndex.getAndIncrement())
@@ -202,9 +220,17 @@ public class InjectSimpleExampleCubesConfig {
 					.put("city", faker.address().city())
 
 					.put("delta", delta)
-					.put("gamma", gamma)
+					.put("gamma", gamma);
 
-					.build());
+			// `theta` is intentionally sparse — only ~50% of rows carry it. Lets the DRILLTHROUGH path emit a
+			// heterogeneous schema (rows where `theta` is missing → null in the per-aggregator alias), which the
+			// SlickGrid `Out of DT` placeholder formatter is built to surface. Exercised by the
+			// `localhost8080-drillthrough-out-of-dt.spec.js` Playwright e2e.
+			if (r.nextBoolean()) {
+				row.put("theta", r.nextInt(2048) / 100D);
+			}
+
+			table.add(row.build());
 		});
 		return table;
 	}

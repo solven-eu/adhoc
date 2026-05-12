@@ -27,6 +27,9 @@ import org.springframework.ai.tool.method.MethodToolCallbackProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
+import org.springframework.context.annotation.Profile;
+
+import eu.solven.adhoc.app.IPivotableSpringProfiles;
 
 /**
  * Spring configuration for the Pivotable MCP server.
@@ -40,6 +43,7 @@ import org.springframework.context.annotation.Import;
  */
 @Configuration
 @Import(PivotableMcpTools.class)
+@Profile(IPivotableSpringProfiles.P_MCP)
 public class PivotableMcpConfiguration {
 
 	@Bean

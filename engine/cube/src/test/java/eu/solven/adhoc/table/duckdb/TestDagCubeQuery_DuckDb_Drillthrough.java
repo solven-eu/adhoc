@@ -33,6 +33,7 @@ import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.dataframe.tabular.ITabularView;
 import eu.solven.adhoc.dataframe.tabular.ListMapEntryBasedTabularViewDrillThrough;
 import eu.solven.adhoc.engine.query.CubeQuery;
+import eu.solven.adhoc.model.measure.Aggregator;
 import eu.solven.adhoc.options.StandardQueryOptions;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
@@ -86,6 +87,62 @@ public class TestDagCubeQuery_DuckDb_Drillthrough extends ATestDagDuckDb impleme
 		}).anySatisfy(entry -> {
 			Assertions.assertThat((Map) entry.getCoordinates()).containsEntry("a", "a2");
 			Assertions.assertThat((Map) entry.getValues()).containsEntry(k1Sum.getName(), 234D);
+		});
+	}
+
+	// Reproducer for the bug where `COUNT(*)` (an aggregator whose columnName is the literal `*`) reaches the DT
+	// ROWS path. `selectedRowsFields` builds `DSL.field(name(a.getColumnName()))` for every aggregator — for `*`
+	// this becomes a reference to a wildcard, so the emitted SQL contains a literal `*` in the SELECT clause and
+	// JOOQ expands it to every column of the underlying table. Consequences:
+	// 1. With just COUNT(*): the row stream still returns 3 entries (since the wildcard expansion happens to
+	// yield the original rows), but the alias is not attached to a meaningful per-row value.
+	// 2. With COUNT(*) alongside another measure: the wildcard expansion pollutes the SELECT, causing values
+	// to bind to the wrong aliases — this is the "values not attached to the correct column" symptom.
+	// The SLICES path special-cases this via `buildCountAggregate` (DSL.count handles `*` correctly); the ROWS
+	// path does not.
+	@Test
+	public void testDrillthrough_countAsterisk_alongsideSum_aliasesMustNotCrossWire() {
+		dsl.createTableIfNotExists(tableName)
+				.column("a", SQLDataType.VARCHAR)
+				.column("k1", SQLDataType.DOUBLE)
+				.execute();
+		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a1", 123).execute();
+		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a2", 234).execute();
+		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a1", 345).execute();
+
+		Aggregator countAll = Aggregator.countAsterisk();
+		forest.addMeasure(countAll);
+		forest.addMeasure(k1Sum);
+
+		ITabularView output = cube().execute(CubeQuery.builder()
+				.measure(countAll.getName(), k1Sum.getName())
+				.groupByAlso("a")
+				.option(StandardQueryOptions.DRILLTHROUGH)
+				.build());
+
+		ListMapEntryBasedTabularViewDrillThrough view = ListMapEntryBasedTabularViewDrillThrough.load(output);
+
+		// 3 source rows expected. Each entry should carry the `k1` value under its own alias — and crucially
+		// NOT under `count(*)`'s alias (the wildcard expansion bug would mis-bind values across aliases).
+		Assertions.assertThat(view.getEntries()).hasSize(3);
+
+		// The k1Sum alias must hold the matching k1 source-row value.
+		Assertions.assertThat(view.getEntries())
+				.anySatisfy(
+						entry -> Assertions.assertThat((Map) entry.getValues()).containsEntry(k1Sum.getName(), 123D))
+				.anySatisfy(
+						entry -> Assertions.assertThat((Map) entry.getValues()).containsEntry(k1Sum.getName(), 234D))
+				.anySatisfy(
+						entry -> Assertions.assertThat((Map) entry.getValues()).containsEntry(k1Sum.getName(), 345D));
+
+		// COUNT(*)'s per-row contribution is 1 (each row counts as 1). Every entry must have the count(*) alias
+		// resolve to 1, NOT to a column value from the underlying table (which would indicate the wildcard
+		// expansion mis-bound the alias).
+		Assertions.assertThat(view.getEntries()).allSatisfy(entry -> {
+			Object countValue = entry.getValues().get(countAll.getName());
+			Assertions.assertThat(countValue)
+					.as("COUNT(*) alias must hold the per-row counter (1), not a column value from `*` expansion")
+					.isIn(1, 1L, 1D);
 		});
 	}
 }

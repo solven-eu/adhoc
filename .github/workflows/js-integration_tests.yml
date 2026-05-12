@@ -18,7 +18,7 @@ jobs:
       matrix:
         include:
           - server-variant: webflux
-            maven-module: ':pivotable-server'
+            maven-module: ':pivotable-server-webflux'
             npm-script: pw_localhost8080
           - server-variant: webmvc
             maven-module: ':pivotable-server-webmvc'
