@@ -528,6 +528,9 @@ export default {
 		dataView.setItems([]);
 
 		// https://github.com/6pac/SlickGrid/wiki/Grid-Options
+		// `Partial<GridOption>` so SlickGrid's strict typing accepts our partial overrides — every key
+		// here is optional in the underlying interface.
+		/** @type {Partial<import("slickgrid").GridOption>} */
 		let options = {
 			// Do not allow re-ordering until it is compatible with rowSpans
 			enableColumnReorder: true,

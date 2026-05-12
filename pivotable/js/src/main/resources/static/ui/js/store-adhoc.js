@@ -16,26 +16,31 @@ class NetworkError extends Error {
 const prefix = "/api/v1";
 
 export const useAdhocStore = defineStore("adhoc", {
-	state: () => ({
-		// Various metadata to enrich the UX
-		metadata: {},
+	// State widened to `Record<string, any>` because pinia infers a strict shape from the literal returned
+	// here, and several component files reference dynamic / not-yet-modelled keys (`players`, `endpointId`,
+	// `cubeId`) that the store grows incrementally as it loads them from the server. A future pass can
+	// replace this with a proper TypeScript interface for the store state.
+	state: () =>
+		/** @type {Record<string, any>} */ ({
+			// Various metadata to enrich the UX
+			metadata: {},
 
-		// May load other accounts, for multi-accounts scenarios (e.g. query sharing)
-		accounts: {},
-		nbAccountFetching: 0,
+			// May load other accounts, for multi-accounts scenarios (e.g. query sharing)
+			accounts: {},
+			nbAccountFetching: 0,
 
-		// endpoints are the available servers. Typically loading `self`, which is the same endpoint than the one serving JS
-		endpoints: {},
-		// schemas are the cubes. They are grouped by endpoints, as multiple endpoints may have cubes with the same name
-		// we should consider schema for a endpoint+cube only if the endpoint is properly loaded
-		schemas: {},
-		nbSchemaFetching: 0,
-		columns: {},
-		nbColumnFetching: 0,
+			// endpoints are the available servers. Typically loading `self`, which is the same endpoint than the one serving JS
+			endpoints: {},
+			// schemas are the cubes. They are grouped by endpoints, as multiple endpoints may have cubes with the same name
+			// we should consider schema for a endpoint+cube only if the endpoint is properly loaded
+			schemas: {},
+			nbSchemaFetching: 0,
+			columns: {},
+			nbColumnFetching: 0,
 
-		queries: { nextQuery: 0 },
-		nbQueryFetching: 0,
-	}),
+			queries: { nextQuery: 0 },
+			nbQueryFetching: 0,
+		}),
 	getters: {
 		// isLoggedIn is often used when manipulating schemas
 		isLoggedIn: () => {

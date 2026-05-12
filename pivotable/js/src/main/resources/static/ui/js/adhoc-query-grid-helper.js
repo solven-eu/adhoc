@@ -729,7 +729,8 @@ export default {
 		}
 
 		// https://github.com/6pac/SlickGrid/blob/master/examples/example-plugin-headerbuttons.html
-		var headerButtonsPlugin = new SlickHeaderButtons();
+		// SlickHeaderButtons 5.x expects an options arg; the runtime accepts an empty object as defaults.
+		var headerButtonsPlugin = new SlickHeaderButtons({});
 
 		// Inline copy-name icon — rendered as part of `column.name` HTML so it sits next to
 		// the name itself (not at the far right of the header where SlickHeaderButtons drops
@@ -783,7 +784,10 @@ export default {
 			if (command === "column-menu") {
 				// The 3-dot icon was clicked. Open a small dropdown anchored to the icon with the
 				// column-specific actions declared on `column.__menuItems`.
-				const items = column.__menuItems || [];
+				// `__menuItems` is a Pivotable-stamped extension on the SlickGrid column definition, see
+				// `groupByToGridColumns` / `measuresToGridColumns` for the producers. SlickGrid's strict
+				// `Column<T>` shape doesn't include it.
+				const items = /** @type {any} */ (column).__menuItems || [];
 				const anchor = e && e.target ? e.target.closest(".slick-header-button") || e.target : null;
 				if (anchor && items.length > 0) {
 					showColumnHeaderMenu(anchor, items, (cmd) => dispatchColumnCommand(cmd, column));

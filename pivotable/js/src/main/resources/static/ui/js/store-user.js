@@ -23,32 +23,34 @@ class UserNeedsToLoginError extends Error {
 const prefix = "/api/v1";
 
 export const useUserStore = defineStore("user", {
-	state: () => ({
-		// Currently connected account
-		account: { details: {} },
-		tokens: {},
+	// State widened — see store-adhoc.js for rationale.
+	state: () =>
+		/** @type {Record<string, any>} */ ({
+			// Currently connected account
+			account: { details: {} },
+			tokens: {},
 
-		// Used to know when a first `loadUser` has kicked-in
-		// hasTriedLoadingUser: false,
+			// Used to know when a first `loadUser` has kicked-in
+			// hasTriedLoadingUser: false,
 
-		// Some very first check to know if we are potentially logged-in
-		// (May check some Cookie or localStorage, or some API preferably returning 2XX even if not logged-in)
-		needsToCheckLogin: true,
+			// Some very first check to know if we are potentially logged-in
+			// (May check some Cookie or localStorage, or some API preferably returning 2XX even if not logged-in)
+			needsToCheckLogin: true,
 
-		// Typically turned to true by an `authenticatedFetch` while loggedOut
-		// Means the User is doing a connected operation, while being logged out
-		// Hence, will probably open the login modal
-		needsToLogin: false,
+			// Typically turned to true by an `authenticatedFetch` while loggedOut
+			// Means the User is doing a connected operation, while being logged out
+			// Hence, will probably open the login modal
+			needsToLogin: false,
 
-		// We loads information about various accounts (e.g. current account, through contests and leaderboards)
-		// Playing players are stores in contests
-		nbLoginLoading: 0,
+			// We loads information about various accounts (e.g. current account, through contests and leaderboards)
+			// Playing players are stores in contests
+			nbLoginLoading: 0,
 
-		// Promise loading the userDetails
-		// Used to prevent fetching concurrently information about current
-		initializingUserPromise: null,
-		initializingUserTokensPromise: null,
-	}),
+			// Promise loading the userDetails
+			// Used to prevent fetching concurrently information about current
+			initializingUserPromise: null,
+			initializingUserTokensPromise: null,
+		}),
 	getters: {
 		// If true, we have an account details. We typically have a session. Hence we can logout.
 		// BEWARE `store.account.details.username` is not null after a session expiry, but `needsToLogin` would turn to true

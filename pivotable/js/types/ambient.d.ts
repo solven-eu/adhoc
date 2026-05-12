@@ -9,18 +9,31 @@
 // named/default imports — what we need for `import { mapState } from 'pinia'`,
 // `import Sortable from 'sortablejs'`, etc.
 
-declare module "bootstrap";
+// `bootstrap` ships its own .d.ts as of 5.x.
 declare module "bootstrap/*";
-declare module "mermaid";
-declare module "slickgrid";
-declare module "sortablejs";
+// `mermaid` ships its own .d.ts (installed at the same version pinned in the importmap).
+// `slickgrid` ships its own .d.ts (installed at the same version pinned in the importmap).
+// `sortablejs` types come from `@types/sortablejs`.
+// `pinia` ships its own `.d.ts` but we keep it as a wildcard here: enabling the strict types
+// surfaces ~60 errors in `mapState` getter functions where `this` refers to the Vue Options-API
+// component context (props/data) that pinia's types do not know about. Until the stores have
+// explicit state interfaces AND the components migrate to the Composition API, the wildcard
+// declaration is the lower-friction path. Re-enable by deleting this line once those are done.
 declare module "pinia";
-declare module "vue-router";
+// `vue-router` ships its own .d.ts (installed at the same version pinned in the importmap).
 
-// `lodashEs` is a package.json alias to `lodash` (the original CommonJS build). lodash 4.x ships
-// per-function modules as `lodash/<name>.js` but no TypeScript declarations.
-declare module "lodashEs";
-declare module "lodashEs/*";
+// `lodashEs` is a package.json alias to `lodash` (the original CommonJS build) — `@types/lodash`
+// provides types for the underlying package but TypeScript looks them up by the IMPORT specifier
+// (`lodashEs`), so we re-export the `lodash` types under the aliased name. Per-function imports
+// (`lodashEs/debounce.js`) resolve to `lodash/<fn>` typings via the wildcard re-export.
+declare module "lodashEs" {
+	import lodash = require("lodash");
+	export = lodash;
+}
+declare module "lodashEs/*" {
+	const fn: any;
+	export default fn;
+}
 
 // SPA loads `export-to-csv` directly from a jsDelivr URL — TypeScript cannot follow that, so we
 // declare the URL as a module.
