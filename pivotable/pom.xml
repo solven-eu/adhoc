@@ -20,6 +20,8 @@
 		<module>server-core</module>
 		<module>js</module>
 		<module>mcp</module>
+		<module>mcp-webflux</module>
+		<module>mcp-webmvc</module>
 		<module>server</module>
 
 		<!-- Following modules are bootable-->

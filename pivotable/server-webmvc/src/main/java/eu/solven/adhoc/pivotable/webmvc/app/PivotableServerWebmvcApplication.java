@@ -35,6 +35,7 @@ import eu.solven.adhoc.pivotable.app.example.InjectPixarExampleCubesConfig;
 import eu.solven.adhoc.pivotable.app.example.InjectSimpleExampleCubesConfig;
 import eu.solven.adhoc.pivotable.app.example.InjectWorldCupExampleCubesConfig;
 import eu.solven.adhoc.pivotable.core.PivotableComponentsConfiguration;
+import eu.solven.adhoc.pivotable.mcp.PivotableMcpConfiguration;
 import eu.solven.adhoc.pivotable.webmvc.actuator.AdhocSchemaHealthIndicator;
 import eu.solven.adhoc.pivotable.webmvc.security.PivotableSecurityWebmvcSpringConfig;
 import eu.solven.adhoc.table.sql.AdhocJooqHelper;
@@ -61,7 +62,10 @@ import lombok.extern.slf4j.Slf4j;
 		InjectSimpleExampleCubesConfig.class,
 		InjectAdvancedExamplesCubesConfig.class,
 		InjectPixarExampleCubesConfig.class,
-		InjectWorldCupExampleCubesConfig.class, })
+		InjectWorldCupExampleCubesConfig.class,
+
+		// MCP server — gated on @Profile("pivotable-mcp"), so this import is a no-op unless the profile is active.
+		PivotableMcpConfiguration.class, })
 @Slf4j
 @SuppressWarnings("checkstyle:HideUtilityClassConstructor")
 public class PivotableServerWebmvcApplication {

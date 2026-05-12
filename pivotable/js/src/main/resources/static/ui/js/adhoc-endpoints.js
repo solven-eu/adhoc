@@ -50,7 +50,14 @@ export default {
 			addError.value = "";
 			try {
 				preferencesStore.addLocalEndpoint({ ...newEndpoint.value });
-				newEndpoint.value = { host: "", port: 8080, prefix: "", name: "" };
+				newEndpoint.value = { host: "127.0.0.1", port: 8080, prefix: "", name: "" };
+				// Dismiss the modal on success — Bootstrap exposes a programmatic close via the same
+				// `data-bs-dismiss="modal"` mechanism we use on the X button. We trigger it by clicking
+				// the close button in the header so we do not have to import the Modal JS class.
+				const closeBtn = document.querySelector('#registerEndpointModal [data-bs-dismiss="modal"]');
+				if (closeBtn) {
+					closeBtn.click();
+				}
 			} catch (e) {
 				addError.value = e.message || String(e);
 			}
@@ -92,63 +99,92 @@ export default {
 			</div>
 
 			<!--
-				Register-an-endpoint form. Lives BELOW the list (the user is here to browse
-				the existing endpoints first; the "register a new one" affordance is the
-				secondary action). The user supplies host / port / prefix and the
-				preferences store synthesises a local endpoint entry tagged local:true.
-				Persisted to localStorage so it survives reloads.
+				Register-an-endpoint affordance: a single trigger button that opens a modal carrying the
+				form. The button lives BELOW the list (the user is here to browse the existing endpoints
+				first; the "register a new one" action is secondary). The previous inline-form layout
+				was demoted to a modal so it no longer competes with the endpoint list for attention.
 			-->
-			<div class="card mt-3" data-testid="register-endpoint-card">
-				<div class="card-body">
-					<h6 class="card-title mb-3"><i class="bi bi-plus-circle me-1"></i>Register an endpoint</h6>
-					<form class="row g-2 align-items-end" @submit.prevent="addEndpoint">
-						<div class="col-12 col-md-3">
-							<label for="newEndpointHost" class="form-label small text-muted mb-1">Host</label>
-							<input
-								id="newEndpointHost"
-								class="form-control form-control-sm"
-								v-model="newEndpoint.host"
-								placeholder="127.0.0.1"
-								data-testid="new-endpoint-host"
-							/>
+			<div class="mt-3 text-end">
+				<button
+					type="button"
+					class="btn btn-outline-primary btn-sm"
+					data-bs-toggle="modal"
+					data-bs-target="#registerEndpointModal"
+					data-testid="open-register-endpoint-modal"
+				>
+					<i class="bi bi-plus-circle me-1"></i>Register an endpoint
+				</button>
+			</div>
+
+			<!-- Register-endpoint modal -->
+			<div
+				class="modal fade"
+				id="registerEndpointModal"
+				tabindex="-1"
+				aria-labelledby="registerEndpointModalLabel"
+				aria-hidden="true"
+				data-testid="register-endpoint-card"
+			>
+				<div class="modal-dialog modal-dialog-centered">
+					<div class="modal-content">
+						<div class="modal-header">
+							<h5 class="modal-title" id="registerEndpointModalLabel"><i class="bi bi-plus-circle me-1"></i>Register an endpoint</h5>
+							<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
 						</div>
-						<div class="col-6 col-md-2">
-							<label for="newEndpointPort" class="form-label small text-muted mb-1">Port</label>
-							<input
-								id="newEndpointPort"
-								class="form-control form-control-sm"
-								type="number"
-								min="1"
-								max="65535"
-								v-model.number="newEndpoint.port"
-								data-testid="new-endpoint-port"
-							/>
-						</div>
-						<div class="col-6 col-md-3">
-							<label for="newEndpointPrefix" class="form-label small text-muted mb-1">Prefix (optional)</label>
-							<input
-								id="newEndpointPrefix"
-								class="form-control form-control-sm"
-								v-model="newEndpoint.prefix"
-								placeholder="/api"
-								data-testid="new-endpoint-prefix"
-							/>
-						</div>
-						<div class="col-12 col-md-3">
-							<label for="newEndpointName" class="form-label small text-muted mb-1">Display name (optional)</label>
-							<input
-								id="newEndpointName"
-								class="form-control form-control-sm"
-								v-model="newEndpoint.name"
-								placeholder="auto"
-								data-testid="new-endpoint-name"
-							/>
-						</div>
-						<div class="col-12 col-md-1 text-end">
-							<button type="submit" class="btn btn-primary btn-sm w-100" data-testid="new-endpoint-submit">Add</button>
-						</div>
-					</form>
-					<div v-if="addError" class="alert alert-danger small mt-2 mb-0" role="alert">{{addError}}</div>
+						<form @submit.prevent="addEndpoint">
+							<div class="modal-body">
+								<div class="row g-2">
+									<div class="col-12 col-md-7">
+										<label for="newEndpointHost" class="form-label small text-muted mb-1">Host</label>
+										<input
+											id="newEndpointHost"
+											class="form-control form-control-sm"
+											v-model="newEndpoint.host"
+											placeholder="127.0.0.1"
+											data-testid="new-endpoint-host"
+										/>
+									</div>
+									<div class="col-12 col-md-5">
+										<label for="newEndpointPort" class="form-label small text-muted mb-1">Port</label>
+										<input
+											id="newEndpointPort"
+											class="form-control form-control-sm"
+											type="number"
+											min="1"
+											max="65535"
+											v-model.number="newEndpoint.port"
+											data-testid="new-endpoint-port"
+										/>
+									</div>
+									<div class="col-12 col-md-6">
+										<label for="newEndpointPrefix" class="form-label small text-muted mb-1">Prefix (optional)</label>
+										<input
+											id="newEndpointPrefix"
+											class="form-control form-control-sm"
+											v-model="newEndpoint.prefix"
+											placeholder="/api"
+											data-testid="new-endpoint-prefix"
+										/>
+									</div>
+									<div class="col-12 col-md-6">
+										<label for="newEndpointName" class="form-label small text-muted mb-1">Display name (optional)</label>
+										<input
+											id="newEndpointName"
+											class="form-control form-control-sm"
+											v-model="newEndpoint.name"
+											placeholder="auto"
+											data-testid="new-endpoint-name"
+										/>
+									</div>
+								</div>
+								<div v-if="addError" class="alert alert-danger small mt-3 mb-0" role="alert">{{addError}}</div>
+							</div>
+							<div class="modal-footer">
+								<button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+								<button type="submit" class="btn btn-primary btn-sm" data-testid="new-endpoint-submit">Add</button>
+							</div>
+						</form>
+					</div>
 				</div>
 			</div>
 		</div>

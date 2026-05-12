@@ -50,6 +50,7 @@ Pivotable is a referential implementation of a web application wrapping Adhoc ca
 - [Composite Cubes](composite-cubes.md) — unifying multiple `ICubeWrapper` instances via `CompositeCubesTableWrapper`
 - [Authorizations](authorizations.md) — rights management via `IImplicitFilter`
 - [Pivotable Security Model](pivotable-security.md) — SPA authentication flow, `SESSION` cookie vs applicative JWT, and the `/api/login/v1/*` routes involved
+- [MCP integration](mcp-integration.md) — exposing Pivotable to AI agents over Model Context Protocol: profile wiring, the three `@Tool` methods, SSE client setup, and the three test layers (including the end-to-end SSE round-trip test that does not require an AI agent)
 
 ### Project reference
 

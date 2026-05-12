@@ -26,8 +26,6 @@ import java.util.logging.Level;
 
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Logger;
-import org.greenrobot.eventbus.NoSubscriberEvent;
-import org.greenrobot.eventbus.Subscribe;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -72,10 +70,5 @@ public class EventBusLogger implements Logger {
 		} else {
 			log.error("Unmanaged level={}. Original message: {}", level, msg, t);
 		}
-	}
-
-	@Subscribe
-	public void onNoSubscriberEvent(NoSubscriberEvent noSubscriberEvent) {
-		log.warn("No subscriberEvent for {}", noSubscriberEvent.originalEvent);
 	}
 }

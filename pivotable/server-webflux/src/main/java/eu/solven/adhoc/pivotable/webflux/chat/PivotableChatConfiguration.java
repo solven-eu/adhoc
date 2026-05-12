@@ -27,8 +27,8 @@ import static org.springframework.web.reactive.function.server.RequestPredicates
 import static org.springframework.web.reactive.function.server.RequestPredicates.accept;
 import static org.springframework.web.reactive.function.server.RouterFunctions.route;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.MediaType;
@@ -37,52 +37,76 @@ import org.springframework.web.reactive.function.server.RouterFunction;
 import org.springframework.web.reactive.function.server.ServerResponse;
 
 import eu.solven.adhoc.pivotable.api.IPivotableApiConstants;
+import eu.solven.adhoc.pivotable.chat.ChatAvailabilityGuard;
+import eu.solven.adhoc.pivotable.chat.ChatRateLimiter;
+import eu.solven.adhoc.pivotable.chat.PivotableChatProperties;
 import eu.solven.adhoc.pivotable.endpoint.PivotableSchemaRegistry;
 import lombok.extern.slf4j.Slf4j;
 import tools.jackson.databind.ObjectMapper;
 
 /**
- * Activates the AI chat endpoint when {@code adhoc.pivotable.chat.anthropic-api-key} is set.
- *
- * <p>
- * Example configuration:
- * 
- * <pre>{@code
- * adhoc:
- *   pivotable:
- *     chat:
- *       anthropic-api-key: ${ANTHROPIC_API_KEY}
- *       model: claude-haiku-4-5-20251001   # optional, this is the default
- * }</pre>
+ * Activates the AI chat endpoint when {@code adhoc.pivotable.chat.anthropic-api-key} is set. All chat-related knobs are
+ * bound to {@link PivotableChatProperties} (preferred shape: YAML — see that class for the full schema).
  *
  * @author Benoit Lacelle
  */
 @Configuration(proxyBeanMethods = false)
 @ConditionalOnProperty("adhoc.pivotable.chat.anthropic-api-key")
+@EnableConfigurationProperties(PivotableChatProperties.class)
 @Slf4j
 public class PivotableChatConfiguration {
 
 	@Bean
 	public PivotableChatHandler pivotableChatHandler(PivotableSchemaRegistry schemasRegistry,
 			ObjectMapper objectMapper,
-			WebClient.Builder webClientBuilder,
-			@Value("${adhoc.pivotable.chat.anthropic-api-key}") String apiKey,
-			@Value("${adhoc.pivotable.chat.model:claude-haiku-4-5-20251001}") String model) {
+			PivotableChatProperties properties) {
 
-		WebClient anthropicClient = webClientBuilder.clone()
+		// Build the WebClient directly via the static builder rather than injecting WebClient.Builder, because the
+		// Builder bean is provided by Spring Boot's WebClientAutoConfiguration only when it has not been excluded — and
+		// some Pivotable-derived apps disable that auto-config. The static builder is functionally equivalent for our
+		// use case (no codec customisations needed).
+		WebClient.Builder builder = WebClient.builder()
 				.baseUrl("https://api.anthropic.com")
-				.defaultHeader("x-api-key", apiKey)
-				.defaultHeader("anthropic-version", "2023-06-01")
-				.build();
+				.defaultHeader("anthropic-version", "2023-06-01");
+		// `sk-ant-oat01-…` tokens (from `claude setup-token`) authenticate via OAuth Bearer; the regular
+		// `sk-ant-api03-…` API keys use the legacy `x-api-key` header. Auto-detect from the prefix so users can swap
+		// formats by changing only the config value.
+		String apiKey = properties.getAnthropicApiKey();
+		if (apiKey.startsWith("sk-ant-oat")) {
+			builder.defaultHeader("Authorization", "Bearer " + apiKey);
+		} else {
+			builder.defaultHeader("x-api-key", apiKey);
+		}
+		WebClient anthropicClient = builder.build();
 
-		log.info("Pivotable chat enabled with model={}", model);
-		return new PivotableChatHandler(schemasRegistry, objectMapper, anthropicClient, model);
+		log.info("Pivotable chat enabled with model={} forceToolCall={} style={}",
+				properties.getModel(),
+				properties.isForceToolCall(),
+				properties.getStyle());
+		return new PivotableChatHandler(schemasRegistry,
+				objectMapper,
+				anthropicClient,
+				properties.getModel(),
+				chatAvailabilityGuard(),
+				chatRateLimiter(),
+				properties.isForceToolCall(),
+				properties.toChatStyle());
+	}
+
+	@Bean
+	public ChatAvailabilityGuard chatAvailabilityGuard() {
+		return new ChatAvailabilityGuard();
+	}
+
+	@Bean
+	public ChatRateLimiter chatRateLimiter() {
+		return new ChatRateLimiter();
 	}
 
 	@Bean
 	public RouterFunction<ServerResponse> chatRoutes(PivotableChatHandler chatHandler) {
 		String base = IPivotableApiConstants.PREFIX + "/cubes/chat";
-		return route(GET(base + "/enabled"), req -> ServerResponse.noContent().build())
+		return route(GET(base + "/enabled"), chatHandler::enabled)
 				.andRoute(POST(base).and(accept(MediaType.APPLICATION_JSON)), chatHandler::chat);
 	}
 }

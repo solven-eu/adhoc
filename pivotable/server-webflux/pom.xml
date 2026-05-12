@@ -25,6 +25,14 @@
 			<version>${project.version}</version>
 		</dependency>
 
+		<!-- MCP server (WebFlux SSE transport). The configuration is gated on @Profile("pivotable-mcp") so this dep
+		     is a no-op when the profile is not active — no MCP endpoints, no extra autoconfiguration triggers. -->
+		<dependency>
+			<groupId>eu.solven.adhoc</groupId>
+			<artifactId>pivotable-mcp-webflux</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-webflux</artifactId>

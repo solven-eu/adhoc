@@ -31,6 +31,7 @@ import eu.solven.adhoc.pivotable.webflux.api.PivotableFakeUserRouter;
 import eu.solven.adhoc.pivotable.webflux.api.PivotableLoginRouter;
 import eu.solven.adhoc.pivotable.webflux.api.PivotableQueryHandler;
 import eu.solven.adhoc.pivotable.webflux.api.PivotableSpaRouter;
+import eu.solven.adhoc.pivotable.webflux.chat.PivotableChatConfiguration;
 import eu.solven.adhoc.pivotable.webflux.cube.CubesHandler;
 import eu.solven.adhoc.pivotable.webflux.endpoint.PivotableEndpointsHandler;
 import eu.solven.adhoc.pivotable.webflux.security.tokens.AccessTokenHandler;
@@ -62,7 +63,11 @@ import lombok.extern.slf4j.Slf4j;
 		PivotableWebExceptionHandler.class,
 
 		// Static resources: long-cache policy for `/webjars/**`.
-		PivotableWebjarsCachingWebFluxConfigurer.class, })
+		PivotableWebjarsCachingWebFluxConfigurer.class,
+
+		// Chat endpoint — gated on `adhoc.pivotable.chat.anthropic-api-key`, so this import is a no-op when the
+		// property is not set.
+		PivotableChatConfiguration.class, })
 @Slf4j
 @Configuration
 public class PivotableWebfluxSpringConfig {

@@ -85,10 +85,9 @@ public class PivotableComponentsConfiguration {
 		EventBus eventBus = EventBus.builder()
 				.strictMethodVerification(true)
 				.throwSubscriberException(true)
+				.logNoSubscriberMessages(false)
 				.logger(makeLogger())
 				.build();
-
-		eventBus.register(new EventBusLogger());
 
 		return eventBus;
 	}

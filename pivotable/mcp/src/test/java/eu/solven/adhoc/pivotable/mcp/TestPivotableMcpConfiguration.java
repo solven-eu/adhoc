@@ -30,6 +30,7 @@ import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.context.ApplicationContext;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
@@ -45,6 +46,8 @@ import eu.solven.adhoc.pivotable.endpoint.PivotableSchemaRegistry;
 @ExtendWith(SpringExtension.class)
 @ContextConfiguration(classes = { PivotableMcpConfiguration.class })
 @EnableAutoConfiguration
+// PivotableMcpConfiguration is gated on @Profile("pivotable-mcp"); activate it so the beans materialise here.
+@ActiveProfiles("pivotable-mcp")
 @MockitoBean(types = { PivotableEndpointsRegistry.class, PivotableSchemaRegistry.class, })
 public class TestPivotableMcpConfiguration {
 
