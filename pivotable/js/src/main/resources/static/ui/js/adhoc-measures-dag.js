@@ -1,3 +1,4 @@
+// @ts-check
 import { inject, ref, watch } from "vue";
 import mermaid from "mermaid";
 

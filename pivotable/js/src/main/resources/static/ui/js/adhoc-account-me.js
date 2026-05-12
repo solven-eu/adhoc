@@ -1,3 +1,4 @@
+// @ts-check
 import { mapState } from "pinia";
 import { useUserStore } from "./store-user.js";
 

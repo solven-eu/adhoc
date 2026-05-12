@@ -1,3 +1,4 @@
+// @ts-check
 import { expect, test } from "vitest";
 
 //import lodashEs from "https://cdn.jsdelivr.net/npm/lodash-es@4.17.21/+esm";
@@ -52,7 +53,7 @@ test("loadQueryModelFromHash - from 2 columns", () => {
 	const newHash = queryHelper.queryModelToHash(undefined, queryModel);
 
 	if (!newHash.startsWith("#")) {
-		fail("Should starts with '#'");
+		throw new Error("Should starts with '#'");
 	}
 
 	expect(newHash).toEqual(

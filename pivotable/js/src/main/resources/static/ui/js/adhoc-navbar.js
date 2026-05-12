@@ -1,3 +1,4 @@
+// @ts-check
 import { ref } from "vue";
 import { mapState } from "pinia";
 import { useUserStore } from "./store-user.js";
@@ -54,7 +55,7 @@ export default {
 				expired.value = false;
 				return;
 			}
-			const deltaSeconds = Math.round((userStore.tokens.expires_at - new Date()) / 1000);
+			const deltaSeconds = Math.round((+userStore.tokens.expires_at - Date.now()) / 1000);
 			if (deltaSeconds >= 0) {
 				expired.value = false;
 				expiresIn.value = formatSeconds(deltaSeconds);

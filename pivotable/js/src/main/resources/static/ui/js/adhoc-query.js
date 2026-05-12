@@ -1,3 +1,4 @@
+// @ts-check
 import { reactive, ref, watch, provide, onMounted, onUnmounted } from "vue";
 
 import { Collapse } from "bootstrap";
@@ -70,6 +71,7 @@ export default {
 		store.loadCubeSchemaIfMissing(props.cubeId, props.endpointId);
 
 		const loading = ref(false);
+		/** @type {any} reactive query model — methods (`onColumnToggled`, …) are bolted on later via `Object.assign` */
 		const queryModel = reactive(queryHelper.makeQueryModel());
 
 		// Watch for changes on `selectedColumns` to update `selectedColumnsOrdered` accordingly
@@ -108,6 +110,7 @@ export default {
 		});
 		provide("measureStatsModel", measureStatsModel);
 
+		/** @type {any} reactive container — `view`, `error`, `timing`, `loading` are filled in by the executor */
 		const tabularView = reactive({});
 
 		// Shared reactive flag indicating whether any wizard accordion (columns / measures /

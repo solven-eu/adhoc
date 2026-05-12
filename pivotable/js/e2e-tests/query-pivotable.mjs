@@ -1,3 +1,4 @@
+// @ts-check
 import { expect } from "@playwright/test";
 
 const addColumn = async function (page, column) {

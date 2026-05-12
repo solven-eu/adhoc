@@ -1,3 +1,4 @@
+// @ts-check
 import { expect, test, vi } from "vitest";
 
 import { escapeHtml, headerNameWithCopyIcon, extractCopyTarget, registerCopyNameDelegation } from "@/js/adhoc-query-grid-clipboard.js";

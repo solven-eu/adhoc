@@ -1,3 +1,4 @@
+// @ts-check
 import { test, expect } from "./_coverage-fixture.mjs";
 
 import queryPivotable from "./query-pivotable.mjs";
@@ -71,11 +72,11 @@ test("Reset query recovers the UI after a failing query on simple cube", async (
 	// is also cleared on Reset, so the `delta` / `always_throws` switches are no longer
 	// rendered (their accordion bodies filter on the search text).
 	const stateAfterReset = await page.evaluate(() => {
-		const piniaApp = document.querySelector("#app").__vue_app__;
+		const piniaApp = /** @type {any} */ (document.querySelector("#app")).__vue_app__;
 		// The queryModel lives on the route component instance; reach it via the
 		// inspectable DOM by reading the input states + searchbox.
-		const sel = (id) => {
-			const i = document.getElementById(id);
+		const sel = (/** @type {string} */ id) => {
+			const i = /** @type {HTMLInputElement | null} */ (document.getElementById(id));
 			return i ? i.checked : null;
 		};
 		return {

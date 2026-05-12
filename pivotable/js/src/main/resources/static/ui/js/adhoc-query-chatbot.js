@@ -1,3 +1,4 @@
+// @ts-check
 import { ref, inject, nextTick, onMounted } from "vue";
 import { useUserStore } from "./store-user.js";
 

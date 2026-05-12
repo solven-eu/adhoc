@@ -1,3 +1,4 @@
+// @ts-check
 import { computed, ref, watch, onBeforeUnmount } from "vue";
 
 import { formatTimings, hasActiveTiming } from "./adhoc-query-grid-timings.js";

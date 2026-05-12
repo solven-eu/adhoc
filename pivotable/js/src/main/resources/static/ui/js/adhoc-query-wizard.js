@@ -1,3 +1,4 @@
+// @ts-check
 import { reactive, ref, watch } from "vue";
 
 import { mapState } from "pinia";

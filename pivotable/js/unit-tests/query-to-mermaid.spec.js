@@ -1,3 +1,4 @@
+// @ts-check
 import { expect, test } from "vitest";
 
 import { queryModelToMermaid } from "@/js/adhoc-query-to-mermaid.js";

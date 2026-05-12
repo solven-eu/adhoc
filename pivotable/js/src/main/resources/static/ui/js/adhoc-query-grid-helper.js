@@ -1,3 +1,4 @@
+// @ts-check
 import { ref, inject } from "vue";
 
 // Ordering of rows. Per-function imports keep the browser from fetching the lodash root bundle —
@@ -118,6 +119,9 @@ const formatters = function (formatOptions, measureStats, parentSliceStats, pare
 	}
 
 	// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/NumberFormat
+	// `Intl.NumberFormatOptions & any` so newer keys (`roundingPriority`) that may be missing from the
+	// installed TypeScript lib still type-check — the runtime accepts them on all evergreen browsers.
+	/** @type {Intl.NumberFormatOptions & Record<string, any>} */
 	const numberFormatOptions = {};
 	numberFormatOptions.maximumSignificantDigits = formatOptions.maximumSignificantDigits;
 	numberFormatOptions.minimumFractionDigits = formatOptions.minimumFractionDigits;
@@ -936,6 +940,12 @@ export default {
 			const columnCss = {};
 
 			for (const column in grid.columns) {
+				// TODO Pre-existing bug: `for...in` makes `column` a string KEY, so `column.id` is always
+				// undefined and `columnCss` ends up empty. The row-highlighter therefore applies no styles
+				// in practice. Should be `for...of` over `grid.getColumns()` to iterate column DEFINITIONS,
+				// but changing that here would enable a visual feature that has been dormant in prod for a
+				// long time — leave the no-op behavior unchanged until a follow-up validates the intended UX.
+				// @ts-ignore -- intentional: see TODO above.
 				var id = column.id;
 				// https://stackoverflow.com/questions/15327990/generate-random-color-with-pure-css-no-javascript
 				columnCss[id] = "my_highlighter_style";

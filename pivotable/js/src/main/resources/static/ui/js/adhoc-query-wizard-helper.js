@@ -1,3 +1,4 @@
+// @ts-check
 // Ordering of columns. Per-function import to avoid fetching the lodash root bundle.
 import sortBy from "lodashEs/sortBy.js";
 

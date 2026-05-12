@@ -1,3 +1,4 @@
+// @ts-check
 // Minimal queryModel -> Mermaid flowchart converter. Sibling of `adhoc-query-to-sql.js` and
 // `adhoc-query-to-mdx.js` — same informative-only contract: the rendered diagram is a visual
 // projection of the JSON queryModel, not an execution plan.

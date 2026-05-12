@@ -1,3 +1,4 @@
+// @ts-check
 // Minimal queryModel -> MDX converter. Intended for side-by-side comparison with MDX-native
 // OLAP clients (Excel, Mondrian, Atoti, etc.), not for back-and-forth round-tripping of every
 // possible filter shape. The code lives on the JS/Pivotable side intentionally — we don't want

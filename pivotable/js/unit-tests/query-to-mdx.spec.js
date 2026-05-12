@@ -1,3 +1,4 @@
+// @ts-check
 import { expect, test } from "vitest";
 
 import { queryModelToMdx } from "@/js/adhoc-query-to-mdx.js";

@@ -1,3 +1,4 @@
+// @ts-check
 import { ref, inject } from "vue";
 
 import AdhocMeasure from "./adhoc-query-wizard-measure.js";

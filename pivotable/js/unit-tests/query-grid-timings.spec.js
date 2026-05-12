@@ -1,3 +1,4 @@
+// @ts-check
 import { expect, test } from "vitest";
 
 import { TIMING_ORDER, formatTimings, hasActiveTiming } from "@/js/adhoc-query-grid-timings.js";

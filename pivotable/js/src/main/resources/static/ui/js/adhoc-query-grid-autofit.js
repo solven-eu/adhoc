@@ -1,3 +1,4 @@
+// @ts-check
 // Excel-like column auto-fit for the SlickGrid-based pivot grid. SlickGrid does not provide this
 // out of the box — we delegate a `dblclick` listener on the grid container, target
 // `.slick-resizable-handle` (the 4-px-wide strip on the right edge of each header cell), measure

@@ -1,3 +1,4 @@
+// @ts-check
 import { ref, computed } from "vue";
 
 // Preferences modal exposing the `?cdn` / `?dev` URL flags as user-facing toggles.

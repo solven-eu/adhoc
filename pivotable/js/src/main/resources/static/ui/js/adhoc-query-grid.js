@@ -1,3 +1,4 @@
+// @ts-check
 import { ref, computed, watch, onMounted, reactive, provide, inject } from "vue";
 
 import AdhocCellModal from "./adhoc-query-grid-cell-modal.js";
@@ -74,6 +75,7 @@ export default {
 		const measureStatsModel = inject("measureStatsModel");
 
 		let grid;
+		/** @type {any} reactive bag of grid-side metadata populated incrementally by resyncData (`nb_rows`, etc.) */
 		const gridMetadata = reactive({});
 		// Two distinct "empty" states with different UX:
 		//
@@ -180,7 +182,7 @@ export default {
 			rendering.value = false;
 			props.tabularView.loading.rendering = false;
 			if (props.tabularView.timing.rendering_startedAt) {
-				props.tabularView.timing.rendering = new Date() - props.tabularView.timing.rendering_startedAt;
+				props.tabularView.timing.rendering = Date.now() - +props.tabularView.timing.rendering_startedAt;
 				delete props.tabularView.timing.rendering_startedAt;
 			} else {
 				// another cell already registered renderering as done
@@ -379,7 +381,7 @@ export default {
 						gridHelper.sortRows(columnNames, view.coordinates, view.values);
 					} finally {
 						props.tabularView.loading.sorting = false;
-						props.tabularView.timing.sorting = new Date() - sortingStart;
+						props.tabularView.timing.sorting = Date.now() - +sortingStart;
 						delete props.tabularView.timing.sorting_startedAt;
 					}
 				}
@@ -405,7 +407,7 @@ export default {
 					gridHelper.computeRowSpan(columnNames, metadata, view.coordinates);
 				} finally {
 					props.tabularView.loading.rowSpanning = false;
-					props.tabularView.timing.rowSpanning = new Date() - rowSpanningStart;
+					props.tabularView.timing.rowSpanning = Date.now() - +rowSpanningStart;
 					delete props.tabularView.timing.rowSpanning_startedAt;
 				}
 			}
@@ -693,7 +695,7 @@ export default {
 						resyncData();
 					} finally {
 						props.tabularView.loading.preparingGrid = false;
-						props.tabularView.timing.preparingGrid = new Date() - startPreparingGrid;
+						props.tabularView.timing.preparingGrid = Date.now() - +startPreparingGrid;
 						delete props.tabularView.timing.preparingGrid_startedAt;
 					}
 				},

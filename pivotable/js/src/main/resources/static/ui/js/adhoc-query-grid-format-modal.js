@@ -1,3 +1,4 @@
+// @ts-check
 import AdhocGridFormat from "./adhoc-query-grid-format.js";
 
 export default {

@@ -1,3 +1,4 @@
+// @ts-check
 import { watch } from "vue";
 
 import { defineStore } from "pinia";
@@ -322,7 +323,7 @@ export const useUserStore = defineStore("user", {
 				console.info("Expired access_token");
 				console.debug("Expired access_token", this.tokens.access_token);
 			} else {
-				const expiresIn = this.tokens.expires_at - new Date();
+				const expiresIn = +this.tokens.expires_at - Date.now();
 
 				if (expiresIn < 15 * 1000) {
 					// Preemptive refresh when the token is within 15s of expiry.

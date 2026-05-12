@@ -1,3 +1,4 @@
+// @ts-check
 import { defineStore } from "pinia";
 
 import queryHelper from "./adhoc-query-helper.js";

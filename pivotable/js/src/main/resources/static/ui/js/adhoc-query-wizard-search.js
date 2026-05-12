@@ -1,3 +1,4 @@
+// @ts-check
 // Used for debouncing on search. Per-function import (rather than the lodash root) so the browser
 // only fetches debounce.js + its small transitive deps.
 import debounce from "lodashEs/debounce.js";

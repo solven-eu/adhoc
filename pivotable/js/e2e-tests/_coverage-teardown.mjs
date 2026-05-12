@@ -1,3 +1,4 @@
+// @ts-check
 // Playwright globalTeardown — flushes the accumulated V8 coverage to lcov + html once the
 // whole test run has finished. Invoked by `playwright.config.mjs` only when PW_COVERAGE=1.
 //

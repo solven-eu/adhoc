@@ -1,3 +1,4 @@
+// @ts-check
 export default {
 	components: {},
 	// https://vuejs.org/guide/components/props.html

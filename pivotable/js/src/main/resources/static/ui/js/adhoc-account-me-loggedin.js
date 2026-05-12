@@ -1,3 +1,4 @@
+// @ts-check
 import { ref, computed } from "vue";
 
 import { mapState } from "pinia";
@@ -53,6 +54,7 @@ export default {
 			userUpdates.countryCode = newCountryCode;
 
 			userStore.fetchCsrfToken().then((csrfToken) => {
+				/** @type {Record<string, string>} */
 				const headers = {};
 				headers[csrfToken.header] = csrfToken.token;
 				headers["Content-Type"] = "application/json";

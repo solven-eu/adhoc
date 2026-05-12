@@ -1,3 +1,4 @@
+// @ts-check
 import { defineStore } from "pinia";
 
 import { useUserStore } from "./store-user.js";
@@ -104,7 +105,9 @@ export const useAdhocStore = defineStore("adhoc", {
 			const decoder = new TextDecoder();
 			let text = "";
 
-			const onProgress = function (done, percent) {
+			// Accepts the bytes-so-far counter as the first arg (call sites pass it explicitly), even though the body
+			// also reads `currentDecodedBytes` from the closure — keep the signature aligned with the callers.
+			const onProgress = function (/** @type {any} */ _currentBytes, /** @type {any} */ done, /** @type {any} */ percent) {
 				if (totalDecodedBytes != undefined) {
 					console.log("download progress:", currentDecodedBytes, totalDecodedBytes, done, percent);
 				} else {

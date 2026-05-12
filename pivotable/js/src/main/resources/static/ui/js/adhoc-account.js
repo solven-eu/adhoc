@@ -1,3 +1,4 @@
+// @ts-check
 import {} from "vue";
 
 import { mapState } from "pinia";

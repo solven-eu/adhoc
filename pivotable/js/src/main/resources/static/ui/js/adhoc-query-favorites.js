@@ -1,3 +1,4 @@
+// @ts-check
 import { ref, computed } from "vue";
 
 import { usePreferencesStore } from "./store-preferences.js";

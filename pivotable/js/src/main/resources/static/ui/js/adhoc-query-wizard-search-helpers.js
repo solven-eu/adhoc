@@ -1,16 +1,33 @@
+// @ts-check
+
 /**
- * Helps marking elements macthing a Wizard search
+ * @typedef WizardSearchOptions
+ * @property {string} [text] regex-free string the user is searching for; empty / undefined → no highlighting
+ * @property {boolean} [caseSensitive] when true, the match preserves case
+ */
+
+/**
+ * Wraps occurrences of {@code searchOptions.text} inside {@code text} with {@code <mark>...</mark>} so the rendered
+ * HTML highlights every match.
+ *
+ * @param {WizardSearchOptions} searchOptions the search state from the Wizard panel
+ * @param {unknown} text the value to highlight; non-strings are JSON-stringified first (Shiftor-style objects)
+ * @returns {string} the input text with `<mark>` wrappers around each match, or unchanged when no search is active
  */
 export function markMatchingWizard(searchOptions, text) {
-	if (!(typeof text === "string")) {
+	/** @type {string} */
+	let str;
+	if (typeof text === "string") {
+		str = text;
+	} else {
 		// BEWARE This happens on `Shiftor`
 		// TODO We should mark only along values, not keys
-		text = JSON.stringify(text);
+		str = JSON.stringify(text);
 	}
 
 	if (!searchOptions.text) {
 		// No regex: nothing to highlight/mark
-		return text;
+		return str;
 	}
 
 	// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RegExp/global
@@ -27,11 +44,15 @@ export function markMatchingWizard(searchOptions, text) {
 	// `RegExp.escape` is not in Chrome
 
 	// https://stackoverflow.com/questions/3561493/is-there-a-regexp-escape-function-in-javascript
-	function escapeRegex(string) {
-		return string.replace(/[/\-\\^$*+?.()|[\]{}]/g, "\\$&");
+	/**
+	 * @param {string} s the literal text to escape so it can be embedded inside a new RegExp
+	 * @returns {string} the escaped form, where every regex-special character is back-slashed
+	 */
+	function escapeRegex(s) {
+		return s.replace(/[/\-\\^$*+?.()|[\]{}]/g, "\\$&");
 	}
 	const quotedText = escapeRegex(searchOptions.text);
 
 	// https://bitsofco.de/a-one-line-solution-to-highlighting-search-matches/
-	return text.replace(new RegExp(quotedText, flags), (match) => `<mark>${match}</mark>`);
+	return str.replace(new RegExp(quotedText, flags), (match) => `<mark>${match}</mark>`);
 }

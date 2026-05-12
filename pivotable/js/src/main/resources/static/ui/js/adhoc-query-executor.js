@@ -1,3 +1,4 @@
+// @ts-check
 import { computed, ref, reactive, watch, inject, provide } from "vue";
 
 import { Collapse } from "bootstrap";
@@ -88,6 +89,7 @@ export default {
 
 		const autoQuery = ref(true);
 		// True when a query is active, hence cancellable
+		/** @type {any} reactive bag of executor-side loading flags (`nbLoading`, `synchronous`, …) populated dynamically */
 		const loadingV2 = reactive({ nbLoading: 0 });
 
 		if (!props.queryModel.selectedColumns) {
@@ -206,7 +208,7 @@ export default {
 		const latestQueryResultId = ref(null);
 
 		const onView = function (queryForApi, responseTabularView, stringifiedQuery, startDownloading) {
-			props.tabularView.timing.downloading = new Date() - startDownloading;
+			props.tabularView.timing.downloading = Date.now() - +startDownloading;
 			delete props.tabularView.timing.downloading_startedAt;
 
 			// This will be cancelled in the finally block: the rendering status is managed autonomously by the grid
@@ -302,7 +304,7 @@ export default {
 						}
 
 						props.tabularView.loading.sending = false;
-						props.tabularView.timing.sending = new Date() - startSending;
+						props.tabularView.timing.sending = Date.now() - +startSending;
 						delete props.tabularView.timing.sending_startedAt;
 
 						if (!response.ok) {
@@ -330,7 +332,7 @@ export default {
 						}
 
 						props.tabularView.loading.sending = false;
-						props.tabularView.timing.sending = new Date() - startSending;
+						props.tabularView.timing.sending = Date.now() - +startSending;
 						delete props.tabularView.timing.sending_startedAt;
 
 						if (!response.ok) {
@@ -362,8 +364,8 @@ export default {
 								url +
 									"/result?" +
 									new URLSearchParams({
-										query_id: queryResultId,
-										with_view: false,
+										query_id: String(queryResultId),
+										with_view: "false",
 									}).toString(),
 								fetchStateOnlyOptions,
 							);
@@ -403,7 +405,7 @@ export default {
 							}
 						}
 						props.tabularView.loading.executing = false;
-						props.tabularView.timing.executing = new Date() - startExecuting;
+						props.tabularView.timing.executing = Date.now() - +startExecuting;
 						delete props.tabularView.timing.executing_startedAt;
 
 						const startDownloading = new Date();
@@ -419,8 +421,8 @@ export default {
 							url +
 								"/result?" +
 								new URLSearchParams({
-									query_id: queryResultId,
-									with_view: true,
+									query_id: String(queryResultId),
+									with_view: "true",
 								}).toString(),
 							fetchViewOptions,
 						);

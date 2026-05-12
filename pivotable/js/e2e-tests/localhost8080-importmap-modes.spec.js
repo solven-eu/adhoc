@@ -1,3 +1,4 @@
+// @ts-check
 import { test, expect } from "@playwright/test";
 
 // Verifies each (cdn/webjars) × (dev/min) combination boots cleanly.

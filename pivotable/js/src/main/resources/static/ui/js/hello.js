@@ -1,3 +1,4 @@
+// @ts-check
 import Whatnow from "./whatnow.js";
 
 export default {

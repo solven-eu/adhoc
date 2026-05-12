@@ -1,3 +1,4 @@
+// @ts-check
 // Pure-Node tests. The auto-fit code reaches for `document.createElement("canvas")` +
 // `window.getComputedStyle`, both of which are normally unavailable outside a browser. Rather than
 // pull in `jsdom` as a dev-dependency just for this file, we stub the bare-minimum surface area

@@ -1,3 +1,4 @@
+// @ts-check
 import { reactive, ref } from "vue";
 
 import { useAdhocStore } from "./store-adhoc.js";
