@@ -38,6 +38,7 @@ import org.jooq.AggregateFunction;
 import org.jooq.DSLContext;
 import org.jooq.Field;
 import org.jooq.impl.DSL;
+import org.jspecify.annotations.NonNull;
 import org.springframework.core.io.ClassPathResource;
 
 import com.google.common.base.CharMatcher;
@@ -88,15 +89,19 @@ import lombok.extern.slf4j.Slf4j;
 @SuppressWarnings({ "PMD.AvoidDuplicateLiterals", "checkstyle:MagicNumber" })
 @RequiredArgsConstructor
 public class WorldCupPlayersSchema {
-	@lombok.NonNull
+	@NonNull
 	final IDSLSupplier dslSupplier;
 
 	public String getName() {
 		return "WorldCupPlayers";
 	}
 
+	/**
+	 * 
+	 * @param forestName
+	 * @return an {@link IMeasureForest} for WorkCybePlayers
+	 */
 	public IMeasureForest getForest(String forestName) {
-
 		List<IMeasure> measures = new ArrayList<>();
 		measures.add(Aggregator.countAsterisk());
 		measures.add(Aggregator.builder()
@@ -109,6 +114,7 @@ public class WorldCupPlayersSchema {
 		// they include the snowflake-join duplication, so a query that does NOT groupBy MatchID will see
 		// each match's attendance multiplied by the number of player rows that match has. To get the
 		// "true" per-match attendance, groupBy MatchID in the query (or pair with `match_count`).
+		// TODO These should count 1 per matchId.
 		measures.add(Aggregator.builder()
 				.name("Attendance.SUM")
 				.columnName("Attendance")

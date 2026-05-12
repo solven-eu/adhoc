@@ -215,6 +215,34 @@
 			}
 
 			/*
+			 * Make the column-resize handle symmetric around the column boundary so the user can
+			 * grab it from either side — not just by hovering slightly to the left of it. The
+			 * SlickGrid Alpine theme ships the handle at `right: -4px, width: ~8px` (4 px each
+			 * side of the boundary), which is geometrically symmetric BUT the right half is
+			 * clipped — both visually and for hit-testing — by `.slick-header-column { overflow:
+			 * hidden }`. Lifting the parent's overflow restores the right-side hit area without
+			 * needing to widen the handle: keep the strip the SlickGrid default size so it does
+			 * NOT overlap the next column's name. Column-name truncation still works because
+			 * `.slick-column-name` has its own `overflow: hidden + text-overflow: ellipsis`.
+			 *
+			 * `z-index: 10` keeps the handle above sibling header chrome (3-dot menu icon, sort
+			 * indicator) when those overlap the right edge — without it, hovering near the
+			 * boundary lands on the icon instead of the handle.
+			 */
+			.slick-header-column {
+				overflow: visible !important;
+			}
+			.slick-resizable-handle {
+				/* Slightly wider than the SlickGrid default (8 px / 4 px each side) — 10 px / 5 px each
+				 * side keeps the strip comfortably grabbable without bleeding into the next column's
+				 * name area at typical column widths. */
+				width: 10px !important;
+				right: -5px !important;
+				z-index: 10;
+				cursor: col-resize;
+			}
+
+			/*
 			 * Phantom trailing column injected in `scroll` layout mode (see adhoc-query-grid.js).
 			 * Provides horizontal-scroll headroom so the user can grab the last REAL column's
 			 * right resize handle and widen it freely. Visually invisible: no borders, no
@@ -228,6 +256,11 @@
 				border: none !important;
 				box-shadow: none !important;
 				color: transparent !important;
+			}
+			/* The phantom column exists only to provide horizontal-scroll headroom; resizing or
+			 * auto-fitting it makes no sense and the visible handle would just be confusing. */
+			.slick-header-phantom .slick-resizable-handle {
+				display: none !important;
 			}
 
 			/*

@@ -27,7 +27,6 @@ import static org.springframework.web.reactive.function.server.RequestPredicates
 import static org.springframework.web.reactive.function.server.RequestPredicates.accept;
 import static org.springframework.web.reactive.function.server.RouterFunctions.route;
 
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -45,13 +44,16 @@ import lombok.extern.slf4j.Slf4j;
 import tools.jackson.databind.ObjectMapper;
 
 /**
- * Activates the AI chat endpoint when {@code adhoc.pivotable.chat.anthropic-api-key} is set. All chat-related knobs are
- * bound to {@link PivotableChatProperties} (preferred shape: YAML — see that class for the full schema).
+ * Wires the chat endpoints into the WebFlux server. The routes (and the {@link PivotableChatHandler} bean) are
+ * <strong>always</strong> registered — whether or not {@code adhoc.pivotable.chat.anthropic-api-key} is set, and
+ * regardless of the {@code adhoc.pivotable.chat.enabled} toggle. The handler itself consults
+ * {@link eu.solven.adhoc.pivotable.chat.ChatAvailability#resolve} at request time and reports the current state via the
+ * JSON body of {@code GET /api/v1/cubes/chat/enabled}, so the SPA always sees a 200 response and can render a stable UI
+ * regardless of server-side configuration.
  *
  * @author Benoit Lacelle
  */
 @Configuration(proxyBeanMethods = false)
-@ConditionalOnProperty("adhoc.pivotable.chat.anthropic-api-key")
 @EnableConfigurationProperties(PivotableChatProperties.class)
 @Slf4j
 public class PivotableChatConfiguration {
@@ -61,36 +63,44 @@ public class PivotableChatConfiguration {
 			ObjectMapper objectMapper,
 			PivotableChatProperties properties) {
 
-		// Build the WebClient directly via the static builder rather than injecting WebClient.Builder, because the
-		// Builder bean is provided by Spring Boot's WebClientAutoConfiguration only when it has not been excluded — and
-		// some Pivotable-derived apps disable that auto-config. The static builder is functionally equivalent for our
-		// use case (no codec customisations needed).
+		// Build the WebClient unconditionally so the bean shape stays stable. When no API key is configured we still
+		// construct the client (no auth headers) — the handler short-circuits with a 503 long before any HTTP call is
+		// made, so the unauthenticated client never reaches Anthropic. Building it directly via `WebClient.builder()`
+		// rather than injecting `WebClient.Builder` because that bean is only provided by `WebClientAutoConfiguration`
+		// in some Pivotable-derived apps; the static builder is functionally equivalent for our use case.
 		WebClient.Builder builder = WebClient.builder()
 				.baseUrl("https://api.anthropic.com")
 				.defaultHeader("anthropic-version", "2023-06-01");
-		// `sk-ant-oat01-…` tokens (from `claude setup-token`) authenticate via OAuth Bearer; the regular
-		// `sk-ant-api03-…` API keys use the legacy `x-api-key` header. Auto-detect from the prefix so users can swap
-		// formats by changing only the config value.
 		String apiKey = properties.getAnthropicApiKey();
-		if (apiKey.startsWith("sk-ant-oat")) {
-			builder.defaultHeader("Authorization", "Bearer " + apiKey);
-		} else {
-			builder.defaultHeader("x-api-key", apiKey);
+		if (apiKey != null && !apiKey.isBlank()) {
+			// `sk-ant-oat01-…` tokens (from `claude setup-token`) authenticate via OAuth Bearer; the regular
+			// `sk-ant-api03-…` API keys use the legacy `x-api-key` header. Auto-detect from the prefix.
+			if (apiKey.startsWith("sk-ant-oat")) {
+				builder.defaultHeader("Authorization", "Bearer " + apiKey);
+			} else {
+				builder.defaultHeader("x-api-key", apiKey);
+			}
 		}
 		WebClient anthropicClient = builder.build();
 
-		log.info("Pivotable chat enabled with model={} forceToolCall={} style={}",
-				properties.getModel(),
-				properties.isForceToolCall(),
-				properties.getStyle());
+		if (apiKey == null || apiKey.isBlank()) {
+			log.info(
+					"Pivotable chat mounted but NOT_CONFIGURED — set adhoc.pivotable.chat.anthropic-api-key to enable");
+		} else if (!properties.isEnabled()) {
+			log.info(
+					"Pivotable chat mounted but DISABLED_BY_CONFIG — set adhoc.pivotable.chat.enabled=true to activate");
+		} else {
+			log.info("Pivotable chat enabled with model={} forceToolCall={} style={}",
+					properties.getModel(),
+					properties.isForceToolCall(),
+					properties.getStyle());
+		}
 		return new PivotableChatHandler(schemasRegistry,
 				objectMapper,
 				anthropicClient,
-				properties.getModel(),
+				properties,
 				chatAvailabilityGuard(),
-				chatRateLimiter(),
-				properties.isForceToolCall(),
-				properties.toChatStyle());
+				chatRateLimiter());
 	}
 
 	@Bean

@@ -46,20 +46,22 @@ import eu.solven.adhoc.beta.schema.EndpointSchemaMetadata;
 import eu.solven.adhoc.beta.schema.IAdhocSchema;
 import eu.solven.adhoc.pivotable.api.IPivotableApiConstants;
 import eu.solven.adhoc.pivotable.chat.AnthropicSseTranslator;
+import eu.solven.adhoc.pivotable.chat.ChatAvailability;
 import eu.solven.adhoc.pivotable.chat.ChatAvailabilityGuard;
 import eu.solven.adhoc.pivotable.chat.ChatRateLimiter;
 import eu.solven.adhoc.pivotable.chat.ChatRequest;
 import eu.solven.adhoc.pivotable.chat.ChatRequestPlanner;
-import eu.solven.adhoc.pivotable.chat.ChatStyle;
+import eu.solven.adhoc.pivotable.chat.PivotableChatProperties;
 import eu.solven.adhoc.pivotable.endpoint.PivotableSchemaRegistry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import tools.jackson.databind.ObjectMapper;
 
 /**
- * Handles {@code GET /cubes/chat/enabled} (probe) and {@code POST /cubes/chat} (SSE stream) on the WebMVC server.
- * Mirrors the WebFlux {@code PivotableChatHandler}: it produces an identical wire contract to the SPA via the shared
- * {@link ChatRequestPlanner} / {@link AnthropicSseTranslator} helpers.
+ * Handles {@code GET /cubes/chat/enabled} (availability probe — always 200 with a JSON body) and
+ * {@code POST /cubes/chat} (SSE stream) on the WebMVC server. Mirrors the WebFlux {@code PivotableChatHandler}: routes
+ * are always mounted, the controller resolves {@link ChatAvailability} per request and short-circuits with 503 when the
+ * chat is not currently usable.
  *
  * <p>
  * The Anthropic call uses the JDK {@link HttpClient}; the streamed response is iterated line-by-line on an
@@ -78,11 +80,6 @@ public class PivotableChatController {
 	/** Idle timeout for the SSE response on the SPA side. 0 means "no timeout" but most browsers/proxies cap. */
 	private static final long SSE_TIMEOUT_MS = 5L * 60L * 1000L;
 
-	/**
-	 * Conversion factor used to turn the JVM's millisecond clock into the {@code Retry-After} header's seconds unit.
-	 */
-	private static final long MILLIS_PER_SECOND = 1000L;
-
 	/** HTTP status family divisor — `status / HTTP_STATUS_FAMILY != 2` flags any non-2xx response. */
 	private static final int HTTP_STATUS_FAMILY = 100;
 
@@ -90,28 +87,30 @@ public class PivotableChatController {
 	final ObjectMapper objectMapper;
 	final HttpClient httpClient;
 	final AsyncTaskExecutor taskExecutor;
-	final String apiKey;
-	final String model;
+	final PivotableChatProperties properties;
 	final ChatAvailabilityGuard guard;
 	final ChatRateLimiter rateLimiter;
-	final boolean forceToolCall;
-	final ChatStyle style;
 	final ChatRequestPlanner planner = new ChatRequestPlanner();
 
 	@GetMapping("/enabled")
-	public ResponseEntity<Void> enabled() {
-		return guard.disabledUntil()
-				.map(until -> ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
-						.header("Retry-After",
-								Long.toString(Math.max(0L,
-										until.getEpochSecond() - System.currentTimeMillis() / MILLIS_PER_SECOND)))
-						.<Void>build())
-				.orElseGet(() -> ResponseEntity.noContent().build());
+	public ResponseEntity<ChatAvailability> enabled() {
+		return ResponseEntity.ok(currentAvailability());
 	}
 
 	@PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-	public ResponseEntity<SseEmitter> chat(@RequestBody ChatRequest chatRequest,
+	public ResponseEntity<?> chat(@RequestBody ChatRequest chatRequest,
 			jakarta.servlet.http.HttpServletRequest httpRequest) {
+		// Short-circuit when chat is not currently usable — same JSON body the probe returns, with HTTP 503 +
+		// Retry-After
+		// so well-behaved clients back off cleanly.
+		ChatAvailability availability = currentAvailability();
+		if (!availability.enabled()) {
+			return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+					.contentType(MediaType.APPLICATION_JSON)
+					.header("Retry-After", Long.toString(availability.retryAfterSecondsOrZero()))
+					.body(availability);
+		}
+
 		// Mechanism (3): per-principal rate limit. Falls back to remote IP when no auth principal is plumbed yet.
 		String key;
 		if (httpRequest.getUserPrincipal() == null) {
@@ -134,12 +133,23 @@ public class PivotableChatController {
 				IAdhocSchema.AdhocSchemaQuery.builder().cube(Optional.of(chatRequest.getCube())).build();
 		EndpointSchemaMetadata metadata = schema.getMetadata(schemaQuery, false);
 
-		Map<String, Object> anthropicBody =
-				planner.buildAnthropicBody(chatRequest, metadata, model, forceToolCall, style);
+		Map<String, Object> anthropicBody = planner.buildAnthropicBody(chatRequest,
+				metadata,
+				properties.getModel(),
+				properties.isForceToolCall(),
+				properties.toChatStyle());
 
 		SseEmitter emitter = new SseEmitter(SSE_TIMEOUT_MS);
 		taskExecutor.execute(() -> pumpAnthropic(anthropicBody, emitter));
 		return ResponseEntity.ok(emitter);
+	}
+
+	/**
+	 * Pure read of the current availability — combines config (API key presence + enabled toggle) with the runtime
+	 * guard state. Cheap; no caching needed.
+	 */
+	protected ChatAvailability currentAvailability() {
+		return ChatAvailability.resolve(properties.getAnthropicApiKey(), properties.isEnabled(), guard);
 	}
 
 	/**
@@ -157,6 +167,7 @@ public class PivotableChatController {
 					.POST(HttpRequest.BodyPublishers.ofString(objectMapper.writeValueAsString(anthropicBody)));
 			// `sk-ant-oat01-…` tokens (from `claude setup-token`) authenticate via OAuth Bearer; the regular
 			// `sk-ant-api03-…` API keys use the legacy `x-api-key` header. Auto-detect from the prefix.
+			String apiKey = properties.getAnthropicApiKey();
 			if (apiKey.startsWith("sk-ant-oat")) {
 				requestBuilder.header("Authorization", "Bearer " + apiKey);
 			} else {

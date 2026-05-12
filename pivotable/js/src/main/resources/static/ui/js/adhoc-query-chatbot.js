@@ -27,11 +27,21 @@ export default {
 		onMounted(async () => {
 			try {
 				// authenticatedFetch prefixes "/api/v1" automatically — pass only the path under that.
+				// The endpoint is ALWAYS mounted now (regardless of whether an Anthropic API key is configured) and
+				// always returns 200 with a JSON body `{enabled: boolean, reason?: string, retryAfterSeconds?: number}`.
+				// The SPA hides the chatbot icon when `enabled === false` and logs the reason so a configuration miss
+				// is debuggable from the browser console.
 				const response = await userStore.authenticatedFetch("/cubes/chat/enabled", {
 					method: "GET",
 				});
-				isAvailable.value = response.ok;
-				if (!response.ok) {
+				if (response.ok) {
+					const data = await response.json();
+					isAvailable.value = data && data.enabled === true;
+					if (!isAvailable.value) {
+						console.info("Chat assistant hidden:", data && data.reason ? data.reason : "(no reason)", data);
+					}
+				} else {
+					isAvailable.value = false;
 					console.info("Chat assistant hidden: /api/v1/cubes/chat/enabled returned", response.status);
 				}
 			} catch (e) {

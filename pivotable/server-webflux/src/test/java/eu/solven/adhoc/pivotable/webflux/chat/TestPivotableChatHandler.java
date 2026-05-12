@@ -31,7 +31,7 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.codec.ServerSentEvent;
 
-import eu.solven.adhoc.pivotable.chat.ChatStyle;
+import eu.solven.adhoc.pivotable.chat.PivotableChatProperties;
 import reactor.core.publisher.Flux;
 import tools.jackson.databind.ObjectMapper;
 
@@ -87,14 +87,9 @@ public class TestPivotableChatHandler {
 	public void testTranslateStream_emitsRawJson_neverPreFramed() {
 		ObjectMapper objectMapper = new ObjectMapper();
 		// Constructor args we don't exercise here can be null — translateStream only touches `objectMapper`.
-		PivotableChatHandler handler = new PivotableChatHandler(null,
-				objectMapper,
-				null,
-				"test-model",
-				null,
-				null,
-				false,
-				ChatStyle.defaults());
+		// translateStream only touches `objectMapper` — the other constructor args may be defaulted.
+		PivotableChatHandler handler =
+				new PivotableChatHandler(null, objectMapper, null, new PivotableChatProperties(), null, null);
 
 		// Hand-crafted Anthropic-shape SSE events covering all three emission paths: text chunk, tool_use stop, done.
 		Flux<ServerSentEvent<String>> raw = Flux.just(

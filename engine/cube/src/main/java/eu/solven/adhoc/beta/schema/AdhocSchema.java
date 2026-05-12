@@ -247,7 +247,7 @@ public class AdhocSchema implements IAdhocSchema, IAdhocSchemaRegistrer {
 								CustomMarkerMetadata previous =
 										customMarkerNameToMetadata.put(customMarkerName, customMarkerMetadata);
 
-								if (previous != null) {
+								if (previous != null && !previous.equals(customMarkerMetadata)) {
 									log.warn("cube={} customMarker={} matches multiple metadata: {} and {}",
 											cubeName,
 											customMarkerName,

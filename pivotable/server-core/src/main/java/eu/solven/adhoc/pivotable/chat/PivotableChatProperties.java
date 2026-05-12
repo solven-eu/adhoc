@@ -38,7 +38,8 @@ import lombok.Data;
  * adhoc:
  *   pivotable:
  *     chat:
- *       anthropic-api-key: ${ANTHROPIC_API_KEY}    # required to activate the endpoint
+ *       enabled: true                              # default; set to false to disable without removing the key
+ *       anthropic-api-key: ${ANTHROPIC_API_KEY}    # leave unset to disable; the endpoint stays mounted regardless
  *       model: claude-haiku-4-5                    # default; override with claude-sonnet-4-6 etc.
  *       force-tool-call: false                     # true → Anthropic must end every turn with a tool call
  *       style:
@@ -57,9 +58,18 @@ import lombok.Data;
 public class PivotableChatProperties {
 
 	/**
+	 * Master on/off toggle. Defaults to {@code true} so a configured key activates the assistant straight away; set to
+	 * {@code false} to disable the assistant without scrubbing the API key from the configuration. The chat endpoints
+	 * stay registered either way — the {@code GET /api/v1/cubes/chat/enabled} probe reports the current state, and
+	 * {@code POST /api/v1/cubes/chat} returns 503 when this is {@code false}.
+	 */
+	private boolean enabled = true;
+
+	/**
 	 * Anthropic credential — either an {@code sk-ant-api03-…} API key or an {@code sk-ant-oat01-…} OAuth token from
-	 * {@code claude setup-token}. Mandatory: leaving it unset deactivates the chat endpoint entirely (the
-	 * {@code @ConditionalOnProperty} gate trips).
+	 * {@code claude setup-token}. Optional: leaving it unset still mounts the chat endpoints (they report
+	 * {@code enabled: false, reason: "NOT_CONFIGURED"}), so the SPA's probe behaves identically whether or not the
+	 * server is configured.
 	 */
 	private String anthropicApiKey;
 

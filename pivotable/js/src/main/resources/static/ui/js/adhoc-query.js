@@ -371,7 +371,15 @@ export default {
 						Restore last successful query
 					</button>
 				</div>
-				<AdhocQueryGrid :tabularView="tabularView" :loading="loading" :queryModel="queryModel" :domId="domId" :cube="cube" />
+				<AdhocQueryGrid
+					:tabularView="tabularView"
+					:loading="loading"
+					:queryModel="queryModel"
+					:domId="domId"
+					:cube="cube"
+					:endpointId="endpointId"
+					:cubeId="cubeId"
+				/>
 			</div>
 
 			<AdhocMeasuresDag :measuresDagModel="measuresDagModel" />

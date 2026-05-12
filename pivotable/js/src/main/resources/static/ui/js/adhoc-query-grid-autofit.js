@@ -12,22 +12,48 @@
  *  can still be revealed by a manual drag. */
 export const AUTOFIT_MAX_ROWS_PROBED = 200;
 
-/** Padding added to the measured pixel width to leave breathing room — accounts for SlickGrid's cell
- *  padding (~6px left + 2px right) plus a couple of pixels so the text doesn't render right against the
- *  resize handle. */
-export const AUTOFIT_PADDING_PX = 16;
+/** Padding added on TOP of the measured `scrollWidth` to leave a sliver of breathing room.
+ *  Deliberately tiny: `scrollWidth` already includes SlickGrid's cell padding (~6px left + 2px
+ *  right), so adding any more than 2–3 px here makes the column visibly looser than the cells
+ *  actually need. The previous value (16 px) caused dblclick to INCREASE the column even when
+ *  the content was already comfortable. */
+export const AUTOFIT_PADDING_PX = 2;
+
+/** Pixel budget reserved for the header's static chrome: sort-indicator slot + 3-dot action menu icon
+ *  + header padding. Counted IN ADDITION to the measured `.slick-column-name` scrollWidth (which
+ *  itself already includes the inline clipboard copy-name icon).
+ *
+ *  The 3-dot menu is only visible on hover, but we still reserve space for it here so the auto-fit
+ *  width never under-shoots the rendered header: a column auto-fitted to "just the name + clipboard
+ *  icon" would visually overflow the moment the user hovered the header and the 3-dot icon faded
+ *  in, popping the name text into an ellipsis. Reserving the slot keeps the header stable in both
+ *  states. ~12 px for the sort indicator slot, ~22 px for the 3-dot icon, ~8 px for padding. */
+export const AUTOFIT_HEADER_CHROME_PX = 42;
 
 /** Floor for the computed width — narrower than this and the resize handle becomes hard to grab. */
 export const AUTOFIT_MIN_WIDTH_PX = 40;
 
 /** Strip HTML tags from a rendered cell value so the canvas measure reflects the visible text only.
  *  Cell formatters in this codebase often emit `<span>` / `<i>` wrappers; without this strip, the angle
- *  brackets count towards the measured width and produce ridiculous results. */
+ *  brackets count towards the measured width and produce ridiculous results.
+ *
+ *  <p>The replace loop is INTENTIONALLY iterative rather than a single `replace` call: an attacker-
+ *  crafted (or accidentally pathological) payload like `<scr<script>ipt>alert(1)</scr</script>ipt>`
+ *  collapses to `<script>alert(1)</script>` after one pass of the regex — a still-functional script
+ *  tag that a downstream text-based check might rule "safe". Keep replacing until a pass produces
+ *  no change, so the result is genuinely tag-free regardless of nesting. Flagged by CodeQL's
+ *  `js/incomplete-multi-character-sanitization` rule. */
 export function stripHtml(value) {
 	if (value == null) {
 		return "";
 	}
-	return String(value).replace(/<[^>]+>/g, "");
+	let text = String(value);
+	let previous;
+	do {
+		previous = text;
+		text = text.replace(/<[^>]+>/g, "");
+	} while (text !== previous);
+	return text;
 }
 
 /**
@@ -45,48 +71,103 @@ export function autoFitColumnWidth(grid, dataView, column, colIdx) {
 	if (!column) {
 		return 0;
 	}
-	// Preferred path: probe the live DOM. Each rendered cell has overflow:hidden in SlickGrid's CSS,
-	// so `scrollWidth` reports the cell's NATURAL width — exactly what we need to "unsqueeze" it.
-	const fromDom = measureFromDom(grid, colIdx);
-	if (fromDom > 0) {
-		return Math.max(AUTOFIT_MIN_WIDTH_PX, Math.ceil(fromDom) + AUTOFIT_PADDING_PX);
+	// Header → measure the DOM (the inner `.slick-column-name` scrollWidth is reliable, header text
+	// is short enough that `overflow: hidden` rarely lies). Cells → measure the FORMATTER OUTPUT via
+	// canvas: `cell.scrollWidth` returns the cell's CURRENT width when content fits comfortably
+	// (not the natural content width), so a DOM-based cell measurement perpetuates whatever
+	// over-wide width the cell currently has. Canvas text-measure is independent of the rendered
+	// cell width and gives the true content width.
+	const headerPx = measureHeaderFromDom(grid, colIdx);
+	const cellsPx = measureCellsFromCanvas(dataView, column, colIdx, grid);
+	const measuredMax = Math.max(headerPx, cellsPx);
+	if (measuredMax <= 0) {
+		// Initial-paint case (no DOM, no rows). Fall back to the all-canvas path which measures
+		// the header text via canvas too — same as the previous behaviour.
+		return measureFromCanvas(dataView, column, colIdx, grid);
 	}
-	// Fallback: canvas-text-measure path. Used when no row is rendered yet (e.g. the grid was just
-	// created with zero rows) and during unit tests where we stub out the document API.
-	return measureFromCanvas(dataView, column, colIdx, grid);
+	return Math.max(AUTOFIT_MIN_WIDTH_PX, Math.ceil(measuredMax) + AUTOFIT_PADDING_PX);
 }
 
 /**
- * Walk the DOM under the grid root, find the rendered header AND every visible cell for the given
- * column index, and return the maximum `scrollWidth` — i.e. the width each element would need to
- * stop truncating. Returns 0 if the grid root, header, or cells aren't in the document yet.
+ * Walk the DOM under the grid root, find the rendered header's inner `.slick-column-name` for the
+ * given column index, and return its `scrollWidth` plus a reserved budget for the surrounding chrome
+ * (sort indicator + 3-dot action menu icon + header padding). Returns 0 if the grid root or header
+ * is not in the document yet — the caller falls back to canvas-text measurement.
  */
-function measureFromDom(grid, colIdx) {
+function measureHeaderFromDom(grid, colIdx) {
 	const root = typeof grid.getContainerNode === "function" ? grid.getContainerNode() : null;
-	if (!root || typeof root.querySelectorAll !== "function") {
+	if (!root || typeof root.querySelector !== "function") {
 		return 0;
 	}
-	let max = 0;
+	// Measure the INNER `.slick-column-name` (just the name + the sort-indicator slot) and add
+	// `AUTOFIT_HEADER_CHROME_PX` for the padding. The outer `.slick-header-column` would include
+	// the 3-dot action menu icon, which is `display: none` off-hover but becomes visible (and
+	// therefore part of scrollWidth) during the dblclick interaction itself — using that outer
+	// measurement makes the column inflate by ~24 px every dblclick even when the content is
+	// comfortable in the current width.
+	const headerName = root.querySelector(`.slick-header-column:nth-child(${colIdx + 1}) .slick-column-name`);
+	if (!headerName || !headerName.scrollWidth) {
+		return 0;
+	}
+	return headerName.scrollWidth + AUTOFIT_HEADER_CHROME_PX;
+}
 
-	// Header — we measure the OUTER `.slick-header-column` (not just the inner `.slick-column-name`
-	// span) because the cell includes left/right padding and a sort-indicator slot whose width was
-	// being missed by the inner-span probe, leaving the resulting column too narrow to show the
-	// header text fully.
-	const header = root.querySelector(`.slick-header-column:nth-child(${colIdx + 1})`);
-	if (header && header.scrollWidth) {
-		max = header.scrollWidth;
+/**
+ * Measure the widest formatted cell value in the column via Canvas2D text measurement. Returns the
+ * pixel width (including SlickGrid's per-cell horizontal padding), or 0 when the dataView is empty
+ * or no canvas context can be obtained.
+ *
+ * <p>We deliberately do NOT read `cell.scrollWidth` from the DOM here: when the cell content fits
+ * comfortably, `scrollWidth` returns the cell's CURRENT rendered width — so an already-too-wide
+ * column would auto-fit to its own current width and never shrink. Canvas `measureText` reports
+ * the natural content width, independent of how SlickGrid is currently rendering the cell.
+ */
+function measureCellsFromCanvas(dataView, column, colIdx, grid) {
+	if (!dataView || typeof dataView.getLength !== "function") {
+		return 0;
+	}
+	const canvas = document.createElement("canvas");
+	const ctx = canvas.getContext("2d");
+	if (!ctx) {
+		return 0;
+	}
+	// Read the grid's font from a real cell so the canvas measurement matches the painted text
+	// width to the pixel. Fall back to the header's font, then to a sensible default.
+	const sampleEl = document.querySelector(".slick-cell") || document.querySelector(".slick-header-column .slick-column-name");
+	if (sampleEl) {
+		const cs = window.getComputedStyle(sampleEl);
+		ctx.font = `${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
+	} else {
+		ctx.font = "13px sans-serif";
 	}
 
-	// Cells. SlickGrid lazy-renders rows: only visible ones are in the DOM. That gives us a natural
-	// performance cap that mirrors AUTOFIT_MAX_ROWS_PROBED — we don't probe rows that aren't visible
-	// anyway. The cell selectors stamp `.l{colIdx}` and `.r{colIdx}` classes (left/right cell index).
-	const cells = root.querySelectorAll(`.slick-cell.l${colIdx}`);
-	for (const cell of cells) {
-		if (cell.scrollWidth > max) {
-			max = cell.scrollWidth;
+	let maxPx = 0;
+	const rowCount = Math.min(dataView.getLength(), AUTOFIT_MAX_ROWS_PROBED);
+	for (let r = 0; r < rowCount; r++) {
+		const item = dataView.getItem(r);
+		if (!item) continue;
+		let rendered;
+		if (typeof column.formatter === "function") {
+			try {
+				rendered = column.formatter(r, colIdx, item[column.field], column, item, grid);
+			} catch {
+				rendered = item[column.field];
+			}
+		} else {
+			rendered = item[column.field];
+		}
+		if (rendered == null) continue;
+		const w = ctx.measureText(stripHtml(rendered)).width;
+		if (w > maxPx) {
+			maxPx = w;
 		}
 	}
-	return max;
+
+	// SlickGrid cells have ~8 px of horizontal padding (6 left + 2 right) baked into the cell box.
+	// `measureText` returns just the text width, so we need to add this to land on a column width
+	// the cell can comfortably display.
+	const CELL_INNER_PADDING_PX = 8;
+	return maxPx > 0 ? maxPx + CELL_INNER_PADDING_PX : 0;
 }
 
 /**
@@ -172,25 +253,37 @@ export function applyAutoFitWidth(grid, colIdx, newWidth) {
 	}
 	cols[colIdx].width = newWidth;
 
-	// Cell-side update via the light path. applyColumnWidths is SlickGrid's "I changed widths,
-	// repaint cells" entry point — much cheaper than setColumns (which re-renders every row).
-	if (typeof grid.applyColumnWidths === "function") {
-		grid.applyColumnWidths();
-	} else {
-		grid.setColumns(cols);
-	}
-
-	// Header-side update: applyColumnWidths only repaints cells on the SlickGrid build we ship.
-	// Manually patch the matching `.slick-header-column` width attribute and inline style so the
-	// header aligns with the cells. `updateColumnHeader` would also work but isn't available on
-	// every build.
-	if (typeof grid.getContainerNode === "function") {
-		const root = grid.getContainerNode();
-		if (root && typeof root.querySelector === "function") {
-			const headerCell = root.querySelector(`.slick-header-column:nth-child(${colIdx + 1})`);
-			if (headerCell) {
-				headerCell.style.width = newWidth + "px";
+	// Width-only update path: rebuild the per-column CSS rules + reapply widths to the existing
+	// header / cell / footer DOM, WITHOUT recreating those rows. SlickGrid's higher-level entry
+	// points (`setColumns` and `updateColumnsInternal`) both call `createColumnHeaders()` AND
+	// `createColumnFooter()`, which empty + recreate the header and footer DOM — emptying any
+	// content that lived in those cells (the min/max footer summary populated by
+	// `gridHelper.updateFooters` in `adhoc-query-grid.js`). Since auto-fit only changes a single
+	// column's width, the row DOM is already correct; rebuilding it costs ~1-3 s on large grids
+	// AND drops the footer content. The sequence below mirrors what `updateColumnsInternal` does
+	// for the WIDTH portion but skips the structural-rebuild calls.
+	const tryWidthOnlyUpdate = () => {
+		const methods = ["removeCssRules", "createCssRules", "updateCanvasWidth", "applyColumnHeaderWidths", "applyColumnWidths", "resizeCanvas"];
+		for (const m of methods) {
+			if (typeof grid[m] !== "function") {
+				return false;
 			}
+		}
+		grid.removeCssRules();
+		grid.createCssRules();
+		grid.updateCanvasWidth();
+		grid.applyColumnHeaderWidths();
+		grid.applyColumnWidths();
+		grid.resizeCanvas();
+		return true;
+	};
+	if (!tryWidthOnlyUpdate()) {
+		// Fallback: builds that don't expose the low-level methods — accept the footer wipe to
+		// keep the column resize working at all.
+		if (typeof grid.updateColumnsInternal === "function") {
+			grid.updateColumnsInternal();
+		} else {
+			grid.setColumns(cols);
 		}
 	}
 
@@ -199,6 +292,7 @@ export function applyAutoFitWidth(grid, colIdx, newWidth) {
 	if (grid.onColumnsResized && typeof grid.onColumnsResized.notify === "function") {
 		grid.onColumnsResized.notify({ grid }, null, grid);
 	}
+
 	return true;
 }
 

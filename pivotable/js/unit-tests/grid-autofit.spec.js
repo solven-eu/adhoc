@@ -40,6 +40,35 @@ describe("stripHtml", () => {
 		expect(stripHtml(42)).toBe("42");
 		expect(stripHtml(0)).toBe("0");
 	});
+
+	// Regression / CodeQL `js/incomplete-multi-character-sanitization`. The flagged concern is
+	// that a single-pass `replace(/<[^>]+>/g, "")` can leave residue when an attacker (or a
+	// pathological cell formatter) emits an angle bracket that the regex re-assembles into a
+	// fresh tag on the next read. The fixed implementation re-runs the regex until the input
+	// stabilises (the "iterative strip" pattern recommended by CodeQL).
+	//
+	// The contract we pin: (a) the loop is idempotent (running it twice gives the same result
+	// as once), (b) no `<` survives in the output regardless of input nesting, and (c) clean
+	// inputs are unchanged.
+	test("CodeQL: iterative strip leaves no `<` in the output", () => {
+		// Nested-tag bypass attempts: even if the regex's greediness leaves partial fragments,
+		// the loop keeps stripping until no more `<...>` patterns are present.
+		const nested = "<scr<script>ipt>alert(1)</scr</script>ipt>";
+		expect(stripHtml(nested)).not.toContain("<");
+		const doubleNested = "<<span></span>span>hello</<span></span>span>";
+		expect(stripHtml(doubleNested)).not.toContain("<");
+
+		// Clean inputs round-trip without surprise: regular tag wrappers strip to their text.
+		expect(stripHtml("<span>OK</span>")).toBe("OK");
+		expect(stripHtml("<i class='bi'></i><b>bold</b>")).toBe("bold");
+	});
+
+	test("CodeQL: stripHtml is idempotent (running it twice == running it once)", () => {
+		const samples = ["plain", "<span>x</span>", "<a><b><c>nested</c></b></a>", "<scr<script>ipt>x</scr</script>ipt>", "<<><>><><<>>", ""];
+		for (const s of samples) {
+			expect(stripHtml(stripHtml(s))).toBe(stripHtml(s));
+		}
+	});
 });
 
 // ---------------------------------------------------------------------------------------------
@@ -100,10 +129,11 @@ describe("autoFitColumnWidth", () => {
 		const grid = {};
 		const items = [{ v: "tiny" }, { v: "a much longer cell value here" }, { v: "mid" }];
 		const dataView = { getLength: () => items.length, getItem: (i) => items[i] };
-		// Header "v" → 7px. Widest cell "a much longer cell value here" = 29 chars × 7 = 203px.
-		// + AUTOFIT_PADDING_PX 16 = 219px.
+		// Header DOM lookup returns null in the stub → header contributes 0. Cells go through the
+		// canvas path: widest cell "a much longer cell value here" = 29 chars × 7 = 203px, plus the
+		// 8 px cell horizontal padding bake-in = 211 px, plus AUTOFIT_PADDING_PX (2) = 213 px.
 		const w = autoFitColumnWidth(grid, dataView, { name: "v", field: "v" }, 0);
-		expect(w).toBe(29 * CHAR_PX + AUTOFIT_PADDING_PX);
+		expect(w).toBe(29 * CHAR_PX + 8 + AUTOFIT_PADDING_PX);
 	});
 
 	test("formatter output is what gets measured (not the raw field value)", () => {
@@ -112,9 +142,10 @@ describe("autoFitColumnWidth", () => {
 		const dataView = { getLength: () => 1, getItem: (i) => items[i] };
 		// Raw `42` would be 2 chars; the formatter expands it to a wider string with HTML wrappers.
 		// stripHtml removes the wrappers, so the measured text is "value=42 %" → 10 chars.
+		// Plus 8 px cell padding + AUTOFIT_PADDING_PX (2) = 80 px.
 		const formatter = () => '<span class="foo">value=42 %</span>';
 		const w = autoFitColumnWidth(grid, dataView, { name: "v", field: "v", formatter }, 0);
-		expect(w).toBe(10 * CHAR_PX + AUTOFIT_PADDING_PX);
+		expect(w).toBe(10 * CHAR_PX + 8 + AUTOFIT_PADDING_PX);
 	});
 
 	test("rows past AUTOFIT_MAX_ROWS_PROBED are ignored — bounded scan", () => {
@@ -135,9 +166,9 @@ describe("autoFitColumnWidth", () => {
 		const formatter = () => {
 			throw new Error("boom");
 		};
-		// Falls back to item[field] = "raw-value-here" = 14 chars.
+		// Falls back to item[field] = "raw-value-here" = 14 chars. + 8 px cell padding + AUTOFIT_PADDING_PX (2).
 		const w = autoFitColumnWidth(grid, dataView, { name: "v", field: "v", formatter }, 0);
-		expect(w).toBe(14 * CHAR_PX + AUTOFIT_PADDING_PX);
+		expect(w).toBe(14 * CHAR_PX + 8 + AUTOFIT_PADDING_PX);
 	});
 
 	test("null cells are skipped, not measured as 'null'", () => {
@@ -155,20 +186,20 @@ describe("autoFitColumnWidth", () => {
 // out-of-range column-index guards, the in-place mutation contract, and the setColumns dispatch.
 // ---------------------------------------------------------------------------------------------
 describe("applyAutoFitWidth", () => {
-	// Build a grid mock with the methods applyAutoFitWidth touches. By default both the fast
-	// (`applyColumnWidths`) path and the fallback (`setColumns`) path are available; individual
-	// tests override `applyColumnWidths` to undefined to exercise the fallback.
+	// Build a grid mock with the methods applyAutoFitWidth touches. By default the fast path
+	// (`updateColumnsInternal`) is available; individual tests override it to undefined to
+	// exercise the fallback (`setColumns`).
 	const makeGrid = (cols, overrides = {}) => {
-		const applyCalls = [];
+		const updateCalls = [];
 		const setColumnsCalls = [];
 		const notifyCalls = [];
 		return {
 			getColumns: () => cols,
-			applyColumnWidths: () => applyCalls.push(true),
+			updateColumnsInternal: () => updateCalls.push(true),
 			setColumns: (newCols) => setColumnsCalls.push(newCols),
 			getContainerNode: () => null,
 			onColumnsResized: { notify: () => notifyCalls.push(true) },
-			_applyCalls: applyCalls,
+			_updateCalls: updateCalls,
 			_setColumnsCalls: setColumnsCalls,
 			_notifyCalls: notifyCalls,
 			...overrides,
@@ -183,13 +214,13 @@ describe("applyAutoFitWidth", () => {
 		const grid = makeGrid(cols);
 		const result = applyAutoFitWidth(grid, 0, 100);
 		expect(result).toBe(false);
-		expect(grid._applyCalls).toHaveLength(0);
+		expect(grid._updateCalls).toHaveLength(0);
 		expect(grid._setColumnsCalls).toHaveLength(0);
 		expect(grid._notifyCalls).toHaveLength(0);
 		expect(cols[0].width).toBe(100);
 	});
 
-	test("fast path: mutates the target column in place + calls applyColumnWidths (NOT setColumns)", () => {
+	test("fast path: mutates in place + calls updateColumnsInternal (NOT setColumns)", () => {
 		const cols = [
 			{ id: "a", width: 100 },
 			{ id: "b", width: 50 },
@@ -200,18 +231,19 @@ describe("applyAutoFitWidth", () => {
 		expect(cols[1].width).toBe(250);
 		// First column untouched — confirms scroll-mode preservation contract.
 		expect(cols[0].width).toBe(100);
-		// Fast path: applyColumnWidths is called, setColumns is NOT. setColumns re-renders
-		// every row and was the source of the 1-3 second dblclick lag.
-		expect(grid._applyCalls).toHaveLength(1);
+		// Fast path: updateColumnsInternal is called, setColumns is NOT. setColumns adds the
+		// event chain (onBeforeSetColumns / onAfterSetColumns) that fires column-picker plugins
+		// and similar consumers; we don't need that on a pure width change.
+		expect(grid._updateCalls).toHaveLength(1);
 		expect(grid._setColumnsCalls).toHaveLength(0);
 		// Notify must fire so the per-grid columnWidthMemo watcher in `adhoc-query-grid.js` picks
 		// up the manual auto-fit and persists it across resyncs.
 		expect(grid._notifyCalls).toHaveLength(1);
 	});
 
-	test("fallback path: setColumns when applyColumnWidths is unavailable", () => {
+	test("fallback path: setColumns when updateColumnsInternal is unavailable", () => {
 		const cols = [{ id: "a", width: 100 }];
-		const grid = makeGrid(cols, { applyColumnWidths: undefined });
+		const grid = makeGrid(cols, { updateColumnsInternal: undefined });
 		const result = applyAutoFitWidth(grid, 0, 200);
 		expect(result).toBe(true);
 		expect(cols[0].width).toBe(200);
@@ -228,7 +260,7 @@ describe("applyAutoFitWidth", () => {
 		const grid = makeGrid(cols);
 		expect(applyAutoFitWidth(grid, -1, 200)).toBe(false);
 		expect(applyAutoFitWidth(grid, 5, 200)).toBe(false);
-		expect(grid._applyCalls).toHaveLength(0);
+		expect(grid._updateCalls).toHaveLength(0);
 		expect(grid._setColumnsCalls).toHaveLength(0);
 	});
 });

@@ -24,7 +24,6 @@ package eu.solven.adhoc.pivotable.webmvc.chat;
 
 import java.net.http.HttpClient;
 
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -38,14 +37,14 @@ import lombok.extern.slf4j.Slf4j;
 import tools.jackson.databind.ObjectMapper;
 
 /**
- * Activates the AI chat endpoint when {@code adhoc.pivotable.chat.anthropic-api-key} is set, on the WebMVC server.
- * Mirrors the WebFlux config — both consume the same {@link PivotableChatProperties} bean (YAML preferred; see that
- * class for the full schema).
+ * Wires the chat endpoints into the WebMVC server. Mirrors the WebFlux config: the controller (and its routes) are
+ * <strong>always</strong> registered — whether or not {@code adhoc.pivotable.chat.anthropic-api-key} is set, and
+ * regardless of the {@code adhoc.pivotable.chat.enabled} toggle. The controller itself resolves the current state on
+ * every request and reports it via the JSON body of {@code GET /api/v1/cubes/chat/enabled}.
  *
  * @author Benoit Lacelle
  */
 @Configuration(proxyBeanMethods = false)
-@ConditionalOnProperty("adhoc.pivotable.chat.anthropic-api-key")
 @EnableConfigurationProperties(PivotableChatProperties.class)
 @Slf4j
 public class PivotableChatConfiguration {
@@ -58,20 +57,26 @@ public class PivotableChatConfiguration {
 
 		HttpClient httpClient = HttpClient.newBuilder().build();
 
-		log.info("Pivotable chat (webmvc) enabled with model={} forceToolCall={} style={}",
-				properties.getModel(),
-				properties.isForceToolCall(),
-				properties.getStyle());
+		String apiKey = properties.getAnthropicApiKey();
+		if (apiKey == null || apiKey.isBlank()) {
+			log.info(
+					"Pivotable chat (webmvc) mounted but NOT_CONFIGURED — set adhoc.pivotable.chat.anthropic-api-key to enable");
+		} else if (!properties.isEnabled()) {
+			log.info(
+					"Pivotable chat (webmvc) mounted but DISABLED_BY_CONFIG — set adhoc.pivotable.chat.enabled=true to activate");
+		} else {
+			log.info("Pivotable chat (webmvc) enabled with model={} forceToolCall={} style={}",
+					properties.getModel(),
+					properties.isForceToolCall(),
+					properties.getStyle());
+		}
 		return new PivotableChatController(schemasRegistry,
 				objectMapper,
 				httpClient,
 				applicationTaskExecutor,
-				properties.getAnthropicApiKey(),
-				properties.getModel(),
+				properties,
 				chatAvailabilityGuard(),
-				chatRateLimiter(),
-				properties.isForceToolCall(),
-				properties.toChatStyle());
+				chatRateLimiter());
 	}
 
 	@Bean

@@ -38,11 +38,12 @@ import org.springframework.web.reactive.function.server.ServerResponse;
 import eu.solven.adhoc.beta.schema.EndpointSchemaMetadata;
 import eu.solven.adhoc.beta.schema.IAdhocSchema;
 import eu.solven.adhoc.pivotable.chat.AnthropicSseTranslator;
+import eu.solven.adhoc.pivotable.chat.ChatAvailability;
 import eu.solven.adhoc.pivotable.chat.ChatAvailabilityGuard;
 import eu.solven.adhoc.pivotable.chat.ChatRateLimiter;
 import eu.solven.adhoc.pivotable.chat.ChatRequest;
 import eu.solven.adhoc.pivotable.chat.ChatRequestPlanner;
-import eu.solven.adhoc.pivotable.chat.ChatStyle;
+import eu.solven.adhoc.pivotable.chat.PivotableChatProperties;
 import eu.solven.adhoc.pivotable.endpoint.PivotableSchemaRegistry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -51,8 +52,10 @@ import reactor.core.publisher.Mono;
 import tools.jackson.databind.ObjectMapper;
 
 /**
- * Handles POST {@code /cubes/chat} for the WebFlux server: proxies user messages to the Anthropic API with the cube
- * schema as context, and streams back simplified SSE events that the Vue chatbot can act on.
+ * Handles GET {@code /cubes/chat/enabled} (always-available availability probe) and POST {@code /cubes/chat} (Anthropic
+ * SSE proxy) for the WebFlux server. Both endpoints are always mounted; the handler consults
+ * {@link ChatAvailability#resolve(String, boolean, ChatAvailabilityGuard)} at every request and short-circuits with a
+ * 503 + {@link ChatAvailability} body when the chat is not currently usable.
  *
  * <p>
  * All non-transport logic (system prompt, message + tools assembly, Anthropic-to-simplified SSE translation) lives in
@@ -64,35 +67,35 @@ import tools.jackson.databind.ObjectMapper;
 @Slf4j
 public class PivotableChatHandler {
 
-	/**
-	 * Conversion factor used to turn the JVM's millisecond clock into the {@code Retry-After} header's seconds unit.
-	 */
-	private static final long MILLIS_PER_SECOND = 1000L;
-
 	final PivotableSchemaRegistry schemasRegistry;
 	final ObjectMapper objectMapper;
 	final WebClient anthropicClient;
-	final String model;
+	final PivotableChatProperties properties;
 	final ChatAvailabilityGuard guard;
 	final ChatRateLimiter rateLimiter;
-	final boolean forceToolCall;
-	final ChatStyle style;
 	final ChatRequestPlanner planner = new ChatRequestPlanner();
 
 	/**
-	 * Probe consumed by the SPA's chatbot on mount: 204 when chat is available, 503 (with {@code Retry-After}) when the
-	 * guard has been tripped (e.g. Anthropic credit exhausted).
+	 * Probe consumed by the SPA's chatbot on mount: always returns 200 with a JSON body describing the current
+	 * availability. The endpoint is stable across all four reachable states (enabled / not configured / disabled by
+	 * config / cooldown) so the SPA does not have to special-case HTTP status codes.
 	 */
 	public Mono<ServerResponse> enabled(ServerRequest request) {
-		return guard.disabledUntil().map(until -> {
-			long retryAfter = Math.max(0L, until.getEpochSecond() - System.currentTimeMillis() / MILLIS_PER_SECOND);
-			return ServerResponse.status(HttpStatus.SERVICE_UNAVAILABLE)
-					.header("Retry-After", Long.toString(retryAfter))
-					.build();
-		}).orElseGet(() -> ServerResponse.noContent().build());
+		return ServerResponse.ok().contentType(MediaType.APPLICATION_JSON).bodyValue(currentAvailability());
 	}
 
 	public Mono<ServerResponse> chat(ServerRequest request) {
+		// First: short-circuit with the same JSON body the probe returns whenever chat is not usable. The SPA already
+		// hides its panel based on the probe, but a stray POST from a script or stale tab should still get a clean
+		// 503 instead of a request that crashes deeper down on a null/blank API key.
+		ChatAvailability availability = currentAvailability();
+		if (!availability.enabled()) {
+			return ServerResponse.status(HttpStatus.SERVICE_UNAVAILABLE)
+					.contentType(MediaType.APPLICATION_JSON)
+					.header("Retry-After", Long.toString(availability.retryAfterSecondsOrZero()))
+					.bodyValue(availability);
+		}
+
 		// Mechanism (3): per-principal sliding-window rate limit. Falls back to the remote IP when no auth principal is
 		// attached to the exchange. 429 on overflow.
 		return request.principal().map(Principal::getName).defaultIfEmpty(remoteIp(request)).flatMap(key -> {
@@ -109,6 +112,14 @@ public class PivotableChatHandler {
 		});
 	}
 
+	/**
+	 * Pure read of the current availability — combines config (API key presence + enabled toggle) with the runtime
+	 * guard state. Cheap; no caching needed.
+	 */
+	protected ChatAvailability currentAvailability() {
+		return ChatAvailability.resolve(properties.getAnthropicApiKey(), properties.isEnabled(), guard);
+	}
+
 	private Mono<ServerResponse> doChat(ServerRequest request) {
 		return request.bodyToMono(ChatRequest.class).flatMap(chatRequest -> {
 			IAdhocSchema schema = schemasRegistry.getSchema(chatRequest.getEndpointId());
@@ -117,8 +128,11 @@ public class PivotableChatHandler {
 					IAdhocSchema.AdhocSchemaQuery.builder().cube(Optional.of(chatRequest.getCube())).build();
 			EndpointSchemaMetadata metadata = schema.getMetadata(schemaQuery, false);
 
-			Map<String, Object> anthropicBody =
-					planner.buildAnthropicBody(chatRequest, metadata, model, forceToolCall, style);
+			Map<String, Object> anthropicBody = planner.buildAnthropicBody(chatRequest,
+					metadata,
+					properties.getModel(),
+					properties.isForceToolCall(),
+					properties.toChatStyle());
 
 			Flux<String> sseFlux = callAnthropic(anthropicBody);
 

@@ -46,6 +46,16 @@ export default {
 			type: Object,
 			required: true,
 		},
+		// Identifies the cube for per-cube preferences (column widths, …). Both optional to keep
+		// the grid usable without persistence wiring (e.g. in isolated previews).
+		endpointId: {
+			type: String,
+			default: "",
+		},
+		cubeId: {
+			type: String,
+			default: "",
+		},
 	},
 	setup(props) {
 		// https://stackoverflow.com/questions/2402953/javascript-data-grid-for-millions-of-rows
@@ -140,7 +150,29 @@ export default {
 		// only the newly-introduced columns get an automatic size. Without this memo every resync
 		// hit `grid.autosizeColumns()`, which rebalanced every column's width — disorienting when
 		// the user just wanted to append a column.
+		//
+		// Seeded from `preferencesStore.getCubeColumnWidths(...)` so the user's per-cube widths
+		// survive page reloads. The mode-aware split lives at the preferences layer (different
+		// bucket key per scroll/fit mode):
+		//   - scroll: stored value IS the literal width in px.
+		//   - fit:    stored value is a RELATIVE WEIGHT (default 1, larger = wider). We convert
+		//             back to a working px value here using `WEIGHT_BASE_PX` so SlickGrid's fit-mode
+		//             balancer has something to scale (it preserves ratios → any positive base
+		//             works; we pick 100 because that's the natural mental model "1 unit weight
+		//             = 100 px before viewport-scaling").
+		const WEIGHT_BASE_PX = 100;
 		const columnWidthMemo = new Map();
+		const hydrateColumnWidthMemo = () => {
+			columnWidthMemo.clear();
+			const mode = preferencesStore.gridLayout;
+			const persisted = preferencesStore.getCubeColumnWidths(props.endpointId, props.cubeId, mode);
+			for (const [colId, v] of Object.entries(persisted || {})) {
+				if (typeof v !== "number" || v <= 0) continue;
+				const pxWidth = mode === "fit" ? Math.round(v * WEIGHT_BASE_PX) : v;
+				columnWidthMemo.set(colId, pxWidth);
+			}
+		};
+		hydrateColumnWidthMemo();
 
 		const rendering = ref(false);
 
@@ -444,25 +476,18 @@ export default {
 							console.warn("Per-column auto-fit failed for", newId, e);
 						}
 					}
-					// Light update: applyColumnWidths repaints cells without re-rendering every
-					// row, and we patch the new columns' header DOM widths manually so the headers
-					// stay aligned. `setColumns(gridColumns)` would re-render every row and was
-					// observed at 1-3s on a busy grid.
-					if (typeof grid.applyColumnWidths === "function") {
-						grid.applyColumnWidths();
+					// Light update mirroring SlickGrid's internal drag-resize completion path.
+					// `updateCanvasWidth(true)` is the key piece — it recomputes the canvas width
+					// AND re-applies column widths with the fresh dimensions, which is what makes a
+					// column actually shrink visually. Avoids the heavy `setColumns(...)` re-render
+					// (1-3 s on a busy grid). See `applyAutoFitWidth` for the same pattern.
+					if (typeof grid.applyColumnHeaderWidths === "function") {
+						grid.applyColumnHeaderWidths();
 					}
-					if (typeof grid.getContainerNode === "function") {
-						const root = grid.getContainerNode();
-						if (root) {
-							for (const newId of newColumnIds) {
-								const newIdx = gridColumns.findIndex((c) => c.id === newId);
-								if (newIdx < 0) continue;
-								const headerCell = root.querySelector(`.slick-header-column:nth-child(${newIdx + 1})`);
-								if (headerCell) {
-									headerCell.style.width = gridColumns[newIdx].width + "px";
-								}
-							}
-						}
+					if (typeof grid.updateCanvasWidth === "function") {
+						grid.updateCanvasWidth(true);
+					} else if (typeof grid.applyColumnWidths === "function") {
+						grid.applyColumnWidths();
 					}
 				}
 			}
@@ -550,11 +575,34 @@ export default {
 
 			// Keep the columnWidthMemo current with any manual resize (drag handle) or programmatic
 			// resize (dblclick auto-fit). Without this, the next resync would replay the OLD memoed
-			// width and discard the user's manual change.
+			// width and discard the user's manual change. Also persist to the preferences store so
+			// the user's per-cube widths survive page reloads.
 			if (grid.onColumnsResized && typeof grid.onColumnsResized.subscribe === "function") {
 				grid.onColumnsResized.subscribe(() => {
-					for (const col of grid.getColumns()) {
-						columnWidthMemo.set(col.id, col.width);
+					const cols = grid.getColumns().filter((c) => c.id !== "__phantom_trailing");
+					if (cols.length === 0) return;
+					const mode = preferencesStore.gridLayout;
+
+					// In FIT mode persist a WEIGHT (each column's width / mean width). Weights are
+					// dimensionless, so reopening the cube on a wider screen scales every column up
+					// proportionally and the user's chosen ratio is preserved. In SCROLL mode
+					// persist the literal px width.
+					const persistedValues = {};
+					if (mode === "fit") {
+						const totalPx = cols.reduce((s, c) => s + (c.width || 0), 0);
+						const meanPx = totalPx / cols.length || 1;
+						for (const col of cols) {
+							columnWidthMemo.set(col.id, col.width);
+							persistedValues[col.id] = (col.width || meanPx) / meanPx;
+						}
+					} else {
+						for (const col of cols) {
+							columnWidthMemo.set(col.id, col.width);
+							persistedValues[col.id] = col.width;
+						}
+					}
+					if (props.endpointId && props.cubeId) {
+						preferencesStore.setCubeColumnWidths(props.endpointId, props.cubeId, mode, persistedValues);
 					}
 				});
 			}
@@ -605,6 +653,24 @@ export default {
 					} else if (!wantPhantom && hasPhantom) {
 						cols.pop();
 						grid.setColumns(cols);
+					}
+					// Re-hydrate the memo from the bucket that matches the new mode — scroll-mode
+					// widths and fit-mode widths/weights live in separate per-cube buckets so the
+					// user can have different sizings per mode without one bleeding into the other.
+					hydrateColumnWidthMemo();
+					// Apply the freshly-hydrated widths to the columns currently in the grid.
+					const restored = grid.getColumns();
+					let dirty = false;
+					for (const col of restored) {
+						if (col.id === "__phantom_trailing") continue;
+						const w = columnWidthMemo.get(col.id);
+						if (typeof w === "number" && w > 0 && col.width !== w) {
+							col.width = w;
+							dirty = true;
+						}
+					}
+					if (dirty) {
+						grid.setColumns(restored);
 					}
 					grid.resizeCanvas();
 				},
