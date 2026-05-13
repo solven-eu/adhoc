@@ -1,0 +1,49 @@
+{
+    "groups": [
+        {
+            "name": "adhoc.pivotable.login.oauth2",
+            "type": "java.lang.Object",
+            "description": "OAuth2 login-button rendering on the Pivotable login page. The buttons themselves are produced by PivotableLoginWebnoneController.loginProviders(); the keys below gate which registrations surface."
+        }
+    ],
+    "properties": [
+        {
+            "name": "adhoc.pivotable.login.oauth2.enabled",
+            "type": "java.lang.Boolean",
+            "description": "Master toggle for OAuth2 login buttons. When false, PivotableLoginWebnoneController.loginProviders() short-circuits the registration scan and returns no OAuth2 entries (BASIC fakeuser remains visible if its profile is active). Default true via the Java fallback in the controller.",
+            "defaultValue": true
+        },
+        {
+            "name": "adhoc.pivotable.login.oauth2.github.enabled",
+            "type": "java.lang.Boolean",
+            "description": "Per-provider gate for the github ClientRegistration. False suppresses the button while leaving the underlying Spring Security wiring intact.",
+            "defaultValue": true
+        },
+        {
+            "name": "adhoc.pivotable.login.oauth2.github.clientId",
+            "type": "java.lang.String",
+            "description": "Client ID for the github OAuth2 ClientRegistration. Consumed by spring.security.oauth2.client.registration.github.clientId via ${...} substitution in application-pivotable-demo_external_oauth2.yml."
+        },
+        {
+            "name": "adhoc.pivotable.login.oauth2.github.clientSecret",
+            "type": "java.lang.String",
+            "description": "Client secret for the github OAuth2 ClientRegistration. Pair with adhoc.pivotable.login.oauth2.github.clientId; provided via env var or system property for production."
+        },
+        {
+            "name": "adhoc.pivotable.login.oauth2.google.enabled",
+            "type": "java.lang.Boolean",
+            "description": "Per-provider gate for the google ClientRegistration. False suppresses the button while leaving the underlying Spring Security wiring intact.",
+            "defaultValue": true
+        },
+        {
+            "name": "adhoc.pivotable.login.oauth2.google.clientId",
+            "type": "java.lang.String",
+            "description": "Client ID for the google OAuth2 ClientRegistration. Consumed by spring.security.oauth2.client.registration.google.client-id via ${...} substitution in application-pivotable-demo_external_oauth2.yml."
+        },
+        {
+            "name": "adhoc.pivotable.login.oauth2.google.clientSecret",
+            "type": "java.lang.String",
+            "description": "Client secret for the google OAuth2 ClientRegistration. Pair with adhoc.pivotable.login.oauth2.google.clientId; provided via env var or system property for production."
+        }
+    ]
+}
