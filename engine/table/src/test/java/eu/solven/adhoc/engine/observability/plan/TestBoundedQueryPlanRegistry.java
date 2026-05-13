@@ -46,7 +46,7 @@ public class TestBoundedQueryPlanRegistry {
 				.build();
 		return QueryPlan.builder()
 				.queryId(id)
-				.parentQueryId(parent)
+				.parentQueryId(parent == null ? null : parent.getQueryId())
 				.cubeName("test-cube")
 				.state(state)
 				.submittedAt(Instant.now())
@@ -189,6 +189,98 @@ public class TestBoundedQueryPlanRegistry {
 		Assertions.assertThat(registry.get(c)).isPresent();
 		Assertions.assertThat(registry.get(d)).isPresent();
 		Assertions.assertThat(registry.totalNodeCount()).isEqualTo(8);
+	}
+
+	@Test
+	public void testLockMovesEntryAndProtectsFromEviction() {
+		BoundedQueryPlanRegistry registry = new BoundedQueryPlanRegistry(10);
+		AdhocQueryId a = newId();
+		AdhocQueryId b = newId();
+		AdhocQueryId c = newId();
+		registry.register(newPlan(a, null, PlanState.DONE, 4));
+		registry.register(newPlan(b, null, PlanState.DONE, 4));
+
+		// Pin `a`. It would otherwise be the LRU eviction candidate.
+		Assertions.assertThat(registry.lock(a)).isTrue();
+		Assertions.assertThat(registry.isLocked(a)).isTrue();
+		Assertions.assertThat(registry.isLocked(b)).isFalse();
+
+		// Register a third plan pushing us over budget (12 > 10). Eviction must skip `a` (locked) and drop `b`.
+		registry.register(newPlan(c, null, PlanState.DONE, 4));
+		Assertions.assertThat(registry.get(a)).isPresent();
+		Assertions.assertThat(registry.get(b)).isEmpty();
+		Assertions.assertThat(registry.get(c)).isPresent();
+	}
+
+	@Test
+	public void testLockIsIdempotentAndUnknownIsNoop() {
+		BoundedQueryPlanRegistry registry = new BoundedQueryPlanRegistry(10);
+		AdhocQueryId a = newId();
+		registry.register(newPlan(a, null, PlanState.DONE, 1));
+
+		Assertions.assertThat(registry.lock(a)).isTrue();
+		// Already locked → no state change.
+		Assertions.assertThat(registry.lock(a)).isFalse();
+		Assertions.assertThat(registry.isLocked(a)).isTrue();
+
+		// Unknown id → no-op.
+		AdhocQueryId ghost = newId();
+		Assertions.assertThat(registry.lock(ghost)).isFalse();
+		Assertions.assertThat(registry.isLocked(ghost)).isFalse();
+	}
+
+	@Test
+	public void testUnlockRestoresLruEligibility() {
+		BoundedQueryPlanRegistry registry = new BoundedQueryPlanRegistry(10);
+		AdhocQueryId a = newId();
+		registry.register(newPlan(a, null, PlanState.DONE, 4));
+		Assertions.assertThat(registry.lock(a)).isTrue();
+		Assertions.assertThat(registry.unlock(a)).isTrue();
+		Assertions.assertThat(registry.isLocked(a)).isFalse();
+		// Idempotent: unlocking again is a no-op.
+		Assertions.assertThat(registry.unlock(a)).isFalse();
+		Assertions.assertThat(registry.get(a)).isPresent();
+	}
+
+	@Test
+	public void testHasPlanCoversBothMaps() {
+		BoundedQueryPlanRegistry registry = new BoundedQueryPlanRegistry(10);
+		AdhocQueryId a = newId();
+		AdhocQueryId b = newId();
+		registry.register(newPlan(a, null, PlanState.DONE, 1));
+		registry.register(newPlan(b, null, PlanState.DONE, 1));
+		registry.lock(a);
+
+		Assertions.assertThat(registry.hasPlan(a)).isTrue(); // in `locked`
+		Assertions.assertThat(registry.hasPlan(b)).isTrue(); // in `sources`
+		Assertions.assertThat(registry.hasPlan(newId())).isFalse();
+	}
+
+	@Test
+	public void testPlanCountSumsBothMaps() {
+		BoundedQueryPlanRegistry registry = new BoundedQueryPlanRegistry(10);
+		AdhocQueryId a = newId();
+		AdhocQueryId b = newId();
+		registry.register(newPlan(a, null, PlanState.DONE, 1));
+		registry.register(newPlan(b, null, PlanState.DONE, 1));
+		registry.lock(a);
+
+		Assertions.assertThat(registry.planCount()).isEqualTo(2);
+	}
+
+	@Test
+	public void testGetChildrenOfWalksBothMaps() {
+		BoundedQueryPlanRegistry registry = new BoundedQueryPlanRegistry(20);
+		AdhocQueryId parent = newId();
+		AdhocQueryId childLocked = newId();
+		AdhocQueryId childUnlocked = newId();
+		registry.register(newPlan(parent, null, PlanState.DONE, 1));
+		registry.register(newPlan(childLocked, parent, PlanState.DONE, 1));
+		registry.register(newPlan(childUnlocked, parent, PlanState.DONE, 1));
+		registry.lock(childLocked);
+
+		List<QueryPlan> kids = registry.getChildrenOf(parent);
+		Assertions.assertThat(kids).hasSize(2);
 	}
 
 	@Test

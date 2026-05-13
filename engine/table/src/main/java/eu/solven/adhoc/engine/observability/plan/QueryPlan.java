@@ -23,13 +23,16 @@
 package eu.solven.adhoc.engine.observability.plan;
 
 import java.time.Instant;
+import java.util.UUID;
 
 import org.jspecify.annotations.Nullable;
 
 import eu.solven.adhoc.query.AdhocQueryId;
 import lombok.Builder;
 import lombok.NonNull;
+import lombok.Setter;
 import lombok.Value;
+import lombok.experimental.NonFinal;
 
 /**
  * Top-level container for the plan of one {@code execute(...)} call. Composite-cube fan-outs produce one
@@ -57,8 +60,14 @@ public class QueryPlan {
 	@NonNull
 	AdhocQueryId queryId;
 
+	/**
+	 * Just the UUID of the parent execution, matching {@link AdhocQueryId#getParentQueryId()} on the engine side. UI
+	 * navigation: {@code registry.getChildrenOf(parentAdhocQueryId)} compares this against the parent's own
+	 * {@code AdhocQueryId.queryId}. Synthesizing a full {@code AdhocQueryId} here would require knowing the parent's
+	 * cube/queryHash/etc., which isn't available at sub-cube spawn time.
+	 */
 	@Nullable
-	AdhocQueryId parentQueryId;
+	UUID parentQueryId;
 
 	@NonNull
 	String cubeName;
@@ -66,6 +75,12 @@ public class QueryPlan {
 	@Nullable
 	Object submittedCustomMarker;
 
+	/**
+	 * Aggregate plan state. Mutable for the same in-place reason as {@link QueryPlanNode#getState()}: the registry
+	 * updater flips it on {@code PlanCompleted} / {@code PlanFailed} without rebuilding the plan.
+	 */
+	@NonFinal
+	@Setter
 	@NonNull
 	@Builder.Default
 	PlanState state = PlanState.PENDING;
@@ -73,6 +88,20 @@ public class QueryPlan {
 	@NonNull
 	Instant submittedAt;
 
+	/**
+	 * When the engine actually started executing this plan — typically a few millis after {@link #submittedAt} on an
+	 * idle system, but possibly seconds or minutes later when the query pool is saturated. Mutable so the engine can
+	 * flip it in place at the start of execution without rebuilding the plan. {@code null} while the plan is still
+	 * queued.
+	 */
+	@NonFinal
+	@Setter
+	@Nullable
+	Instant executionStartedAt;
+
+	/** Mutable — set when the plan reaches a terminal {@link PlanState}. */
+	@NonFinal
+	@Setter
 	@Nullable
 	Instant completedAt;
 

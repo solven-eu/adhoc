@@ -67,6 +67,10 @@ import eu.solven.adhoc.engine.observability.AdhocQueryMonitor;
 import eu.solven.adhoc.engine.observability.DagExplainer;
 import eu.solven.adhoc.engine.observability.DagExplainerForPerfs;
 import eu.solven.adhoc.engine.observability.SizeAndDuration;
+import eu.solven.adhoc.engine.observability.plan.IQueryPlanRegistry;
+import eu.solven.adhoc.engine.observability.plan.LiveQueryPlanSource;
+import eu.solven.adhoc.engine.observability.plan.NoopQueryPlanRegistry;
+import eu.solven.adhoc.engine.observability.plan.PlanState;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.TableQueryStep;
 import eu.solven.adhoc.engine.tabular.ITableQueryEngineFactory;
@@ -146,16 +150,32 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 	@Getter
 	ITableQueryEngineFactory tableQueryEngine;
 
+	/**
+	 * Registry for {@link eu.solven.adhoc.engine.observability.plan.QueryPlan} observability — drives the Live View use
+	 * case. Defaults to {@link NoopQueryPlanRegistry#INSTANCE} so callers that don't care pay nothing. Applications
+	 * wiring a real registry (Pivotable's server) inject a {@code BoundedQueryPlanRegistry} here.
+	 */
+	@NonNull
+	@Default
+	@Getter
+	@SuppressWarnings("PMD.UnusedAssignment")
+	final IQueryPlanRegistry queryPlanRegistry = NoopQueryPlanRegistry.INSTANCE;
+
 	protected CubeQueryEngine(IAdhocFactories factories,
 			IAdhocEventBus eventBus,
-			ITableQueryEngineFactory tableQueryEngine) {
+			ITableQueryEngineFactory tableQueryEngine,
+			IQueryPlanRegistry queryPlanRegistry) {
 		if (tableQueryEngine == null) {
 			tableQueryEngine = TableQueryEngineFactory.builder().eventBus(eventBus).factories(factories).build();
+		}
+		if (queryPlanRegistry == null) {
+			queryPlanRegistry = NoopQueryPlanRegistry.INSTANCE;
 		}
 
 		this.factories = factories;
 		this.eventBus = eventBus;
 		this.tableQueryEngine = tableQueryEngine;
+		this.queryPlanRegistry = queryPlanRegistry;
 	}
 
 	@Override
@@ -183,10 +203,26 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 	protected ITabularView executeInScope(QueryPod queryPod) {
 		IStopwatch stopWatch = factories.getStopwatchFactory().createStarted();
 		boolean postedAboutDone = false;
+		// Captured outside the try so the finally can mark it completed regardless of which branch we exit through.
+		// Null until the DAG is built — if `makeQueryStepsDag` itself throws, there is no source to mark.
+		LiveQueryPlanSource planSource = null;
 		try {
 			postAboutQueryStart(queryPod);
 
 			QueryStepsDag queryStepsDag = makeQueryStepsDag(queryPod);
+
+			// Register a live plan source so pollers (UI Live View, programmatic monitors) can observe this query
+			// as it runs. Free when nobody reads: the registry just holds a reference to the dag the engine is
+			// already mutating in place; full plan projection happens only on `snapshot()`. The default
+			// `NoopQueryPlanRegistry` discards the registration, so callers that don't care pay nothing.
+			planSource = LiveQueryPlanSource.builder()
+					.dag(queryStepsDag)
+					.queryId(queryPod.getQueryId())
+					.parentQueryId(queryPod.getQueryId().getParentQueryId())
+					.cubeName(queryPod.getQueryId().getCube())
+					.submittedAt(java.time.Instant.now())
+					.build();
+			queryPlanRegistry.registerSource(planSource);
 
 			if (queryPod.isDebugOrExplain()) {
 				explainDagSteps(queryPod, queryStepsDag);
@@ -201,10 +237,14 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 				explainDagPerfs(queryPod, queryStepsDag);
 			}
 
+			planSource.markCompleted(PlanState.DONE, java.time.Instant.now());
 			postAboutQueryDone(queryPod, "OK", stopWatch);
 			postedAboutDone = true;
 			return tabularView;
 		} catch (RuntimeException e) {
+			if (planSource != null) {
+				planSource.markCompleted(PlanState.FAILED, java.time.Instant.now());
+			}
 			// TODO Add the Exception to the event
 			postAboutQueryDone(queryPod, "KO", stopWatch);
 			postedAboutDone = true;
@@ -215,6 +255,9 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 		} finally {
 			if (!postedAboutDone) {
 				// This may happen in case of OutOfMemoryError, or any uncaught exception
+				if (planSource != null) {
+					planSource.markCompleted(PlanState.FAILED, java.time.Instant.now());
+				}
 				postAboutQueryDone(queryPod, "KO_Uncaught", stopWatch);
 			}
 		}

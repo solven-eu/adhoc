@@ -30,7 +30,9 @@ import org.jspecify.annotations.Nullable;
 import eu.solven.adhoc.query.AdhocQueryId;
 import lombok.Builder;
 import lombok.NonNull;
+import lombok.Setter;
 import lombok.Value;
+import lombok.experimental.NonFinal;
 
 /**
  * One node in a {@link QueryPlan}. Mutates during execution: {@link #state} transitions and {@link #stats} fills in.
@@ -86,13 +88,25 @@ public class QueryPlanNode {
 	@Nullable
 	AdhocQueryId subQueryId;
 
-	/** Current execution state. */
+	/**
+	 * Current execution state. Mutable — the event-driven registry updater flips this in-place on each
+	 * {@code NodeStarted} / {@code NodeCompleted} event. Reads via
+	 * {@link IQueryPlanRegistry#snapshot(eu.solven.adhoc.query.AdhocQueryId)} deep-copy so concurrent reads never
+	 * observe a mid-mutation tree.
+	 */
 	@Builder.Default
+	@NonFinal
+	@Setter
 	@NonNull
 	NodeState state = NodeState.PENDING;
 
-	/** Stats — {@link NodeStats#empty()} until execution starts. */
+	/**
+	 * Stats — {@link NodeStats#empty()} until execution starts. Mutable for the same reason as {@link #state};
+	 * {@link NodeStats} itself is immutable so updates allocate a fresh instance.
+	 */
 	@Builder.Default
+	@NonFinal
+	@Setter
 	@NonNull
 	NodeStats stats = NodeStats.empty();
 
