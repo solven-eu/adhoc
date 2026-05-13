@@ -1,3 +1,4 @@
+// @ts-check
 import {} from "vue";
 
 import { mapState } from "pinia";
@@ -14,7 +15,8 @@ export default {
 	computed: {
 		...mapState(useAdhocStore, {
 			endpoint(store) {
-				return store.endpoints[this.endpointId] || { error: "not_loaded" };
+				const self = /** @type {any} */ (this);
+				return store.endpoints[self.endpointId] || { error: "not_loaded" };
 			},
 		}),
 	},

@@ -1,3 +1,4 @@
+// @ts-check
 import { ref } from "vue";
 
 import { usePreferencesStore } from "./store-preferences.js";
@@ -44,7 +45,9 @@ export default {
 			preferencesStore.registerLatestQueryId(queryId);
 		};
 
-		if (preferencesStore.latestQueryIds >= 1) {
+		// Was previously `latestQueryIds >= 1` (comparing the whole array to a number); coerced to a string
+		// and was always false — the `if` block below was effectively dead.
+		if (preferencesStore.latestQueryIds.length >= 1) {
 			const latestQueryId = preferencesStore.latestQueryIds[preferencesStore.latestQueryIds.length - 1];
 			// TODO Restore latestQueryId
 		}

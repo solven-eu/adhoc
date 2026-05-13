@@ -1,3 +1,4 @@
+// @ts-check
 import { inject } from "vue";
 
 import AdhocColumnChip from "./adhoc-column-chip.js";

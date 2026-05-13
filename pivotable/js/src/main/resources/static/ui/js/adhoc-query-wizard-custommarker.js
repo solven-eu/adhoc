@@ -1,3 +1,4 @@
+// @ts-check
 import {} from "vue";
 
 export default {

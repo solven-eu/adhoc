@@ -1,3 +1,4 @@
+// @ts-check
 import { ref } from "vue";
 
 import { mapState } from "pinia";
@@ -38,13 +39,15 @@ export default {
 		...mapState(useAdhocStore, ["nbSchemaFetching", "metadata"]),
 		...mapState(useAdhocStore, {
 			schema(store) {
-				return store.schemas[this.endpointId] || { error: "not_loaded" };
+				const self = /** @type {any} */ (this);
+				return store.schemas[self.endpointId] || { error: "not_loaded" };
 			},
 		}),
 	},
 	setup(props) {
 		const store = useAdhocStore();
 
+		/** @type {import('vue').Ref<string | number>} */
 		const nbCubes = ref("...");
 
 		const percentUi = ref(0);

@@ -1,3 +1,4 @@
+// @ts-check
 import { inject } from "vue";
 
 import AdhocGridFormatModal from "./adhoc-query-grid-format-modal.js";

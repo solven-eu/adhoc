@@ -1,3 +1,4 @@
+// @ts-check
 import { watch } from "vue";
 
 import { defineStore } from "pinia";
@@ -21,43 +22,56 @@ class UserNeedsToLoginError extends Error {
 
 const prefix = "/api/v1";
 
+/**
+ * @typedef UserStoreState
+ * @property {{ details: Record<string, any>, error?: Error }} account currently-connected account record; `details` empty until logged-in
+ * @property {Record<string, any>} tokens OAuth2 token bundle (`access_token`, `refresh_token`, `expires_at`, …); empty until login completes
+ * @property {boolean} needsToCheckLogin true on app boot, before the first `fetchLoginStatus` round-trip resolves
+ * @property {boolean} needsToLogin user is mid-operation but signed out (drives the login modal)
+ * @property {number} nbLoginLoading in-flight login round-trips (for spinners)
+ * @property {Promise<any> | null} initializingUserPromise dedupes concurrent calls to `loadUserIfMissing`
+ * @property {Promise<any> | null} initializingUserTokensPromise dedupes concurrent calls to `loadUserTokensIfMissing`
+ */
 export const useUserStore = defineStore("user", {
-	state: () => ({
-		// Currently connected account
-		account: { details: {} },
-		tokens: {},
+	state: () =>
+		/** @type {UserStoreState} */ ({
+			// Currently connected account
+			account: { details: {} },
+			tokens: {},
 
-		// Used to know when a first `loadUser` has kicked-in
-		// hasTriedLoadingUser: false,
+			// Used to know when a first `loadUser` has kicked-in
+			// hasTriedLoadingUser: false,
 
-		// Some very first check to know if we are potentially logged-in
-		// (May check some Cookie or localStorage, or some API preferably returning 2XX even if not logged-in)
-		needsToCheckLogin: true,
+			// Some very first check to know if we are potentially logged-in
+			// (May check some Cookie or localStorage, or some API preferably returning 2XX even if not logged-in)
+			needsToCheckLogin: true,
 
-		// Typically turned to true by an `authenticatedFetch` while loggedOut
-		// Means the User is doing a connected operation, while being logged out
-		// Hence, will probably open the login modal
-		needsToLogin: false,
+			// Typically turned to true by an `authenticatedFetch` while loggedOut
+			// Means the User is doing a connected operation, while being logged out
+			// Hence, will probably open the login modal
+			needsToLogin: false,
 
-		// We loads information about various accounts (e.g. current account, through contests and leaderboards)
-		// Playing players are stores in contests
-		nbLoginLoading: 0,
+			// We loads information about various accounts (e.g. current account, through contests and leaderboards)
+			// Playing players are stores in contests
+			nbLoginLoading: 0,
 
-		// Promise loading the userDetails
-		// Used to prevent fetching concurrently information about current
-		initializingUserPromise: null,
-		initializingUserTokensPromise: null,
-	}),
+			// Promise loading the userDetails
+			// Used to prevent fetching concurrently information about current
+			initializingUserPromise: null,
+			initializingUserTokensPromise: null,
+		}),
 	getters: {
 		// If true, we have an account details. We typically have a session. Hence we can logout.
 		// BEWARE `store.account.details.username` is not null after a session expiry, but `needsToLogin` would turn to true
 		// If false, we need to check `needsToCheckLogin && needsToLogin`
 		isLoggedIn: (store) => !store.needsToLogin && !!store.account.details.username,
-		isLoggedOut: (store) => {
-			if (store.isLoggedIn) {
+		isLoggedOut() {
+			// Reads the sibling getter `isLoggedIn` via `this` — pinia's `store` arg only types STATE,
+			// not getters, so we go through the function-form getter signature instead of an arrow.
+			if (this.isLoggedIn) {
 				// No need to login as we have an account (hence presumably relevant Cookies/tokens)
 				return false;
-			} else if (store.needsToCheckLogin) {
+			} else if (this.needsToCheckLogin) {
 				// We need to check login: we are not clearly logged-out
 				return false;
 			}
@@ -66,12 +80,13 @@ export const useUserStore = defineStore("user", {
 			return true;
 		},
 		// Default headers: we authenticate ourselves
-		apiHeaders: (store) => {
-			if (store.needsToRefreshAccessToken) {
+		apiHeaders() {
+			// Reads the sibling getter `needsToRefreshAccessToken` — see `isLoggedOut` for rationale.
+			if (this.needsToRefreshAccessToken) {
 				// TODO Implement automated access_token refresh through Promise
 				throw new Error("access_token is missing or expired");
 			}
-			return { Authorization: "Bearer " + store.tokens.access_token };
+			return { Authorization: "Bearer " + this.tokens.access_token };
 		},
 		needsToRefreshAccessToken: (store) => {
 			return !store.tokens.access_token || store.tokens.access_token_expired;
@@ -322,7 +337,7 @@ export const useUserStore = defineStore("user", {
 				console.info("Expired access_token");
 				console.debug("Expired access_token", this.tokens.access_token);
 			} else {
-				const expiresIn = this.tokens.expires_at - new Date();
+				const expiresIn = +this.tokens.expires_at - Date.now();
 
 				if (expiresIn < 15 * 1000) {
 					// Preemptive refresh when the token is within 15s of expiry.

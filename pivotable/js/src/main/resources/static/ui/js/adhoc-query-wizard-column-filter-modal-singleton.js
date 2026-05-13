@@ -1,3 +1,4 @@
+// @ts-check
 import { ref, inject } from "vue";
 
 import { mapState } from "pinia";
@@ -41,13 +42,16 @@ export default {
 	computed: {
 		...mapState(useAdhocStore, {
 			endpoint(store) {
-				return store.endpoints[this.columnFilterModel.endpointId] || { error: "not_loaded" };
+				const self = /** @type {any} */ (this);
+				return store.endpoints[self.columnFilterModel.endpointId] || { error: "not_loaded" };
 			},
 			schema(store) {
-				return store.schemas[this.columnFilterModel.endpointId] || { error: "not_loaded" };
+				const self = /** @type {any} */ (this);
+				return store.schemas[self.columnFilterModel.endpointId] || { error: "not_loaded" };
 			},
 			cube(store) {
-				return store.schemas[this.columnFilterModel.endpointId]?.cubes[this.columnFilterModel.cubeId] || { error: "not_loaded" };
+				const self = /** @type {any} */ (this);
+				return store.schemas[self.columnFilterModel.endpointId]?.cubes[self.columnFilterModel.cubeId] || { error: "not_loaded" };
 			},
 		}),
 	},

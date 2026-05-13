@@ -1,3 +1,4 @@
+// @ts-check
 import { ref } from "vue";
 
 import { mkConfig, generateCsv, download } from "https://cdn.jsdelivr.net/npm/export-to-csv@1.4.0/output/index.min.js";

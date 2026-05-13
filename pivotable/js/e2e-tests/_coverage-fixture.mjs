@@ -1,3 +1,4 @@
+// @ts-check
 // Shared Playwright fixture that wraps every test with Chromium V8 JS-coverage collection.
 // Tests import `test` and `expect` from here instead of `@playwright/test` — the extended
 // `test` adds an auto-fixture so coverage is gathered without per-test boilerplate.
@@ -42,22 +43,24 @@ function getReport() {
 	return coverageReport;
 }
 
-export const test = base.extend({
-	autoCoverage: [
-		async ({ page }, use) => {
-			if (!COVERAGE_ENABLED) {
+export const test = base.extend(
+	/** @type {any} */ ({
+		autoCoverage: [
+			async ({ page }, use) => {
+				if (!COVERAGE_ENABLED) {
+					await use();
+					return;
+				}
+				// `resetOnNavigation: false` keeps per-page-load coverage accumulating within one
+				// test — otherwise a login + a query-page navigation would only report the latter.
+				await page.coverage.startJSCoverage({ resetOnNavigation: false });
 				await use();
-				return;
-			}
-			// `resetOnNavigation: false` keeps per-page-load coverage accumulating within one
-			// test — otherwise a login + a query-page navigation would only report the latter.
-			await page.coverage.startJSCoverage({ resetOnNavigation: false });
-			await use();
-			const entries = await page.coverage.stopJSCoverage();
-			await getReport().add(entries);
-		},
-		{ auto: true, scope: "test" },
-	],
-});
+				const entries = await page.coverage.stopJSCoverage();
+				await getReport().add(entries);
+			},
+			{ auto: true, scope: "test" },
+		],
+	}),
+);
 
 export { expect };

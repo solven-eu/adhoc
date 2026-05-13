@@ -1,3 +1,4 @@
+// @ts-check
 import { expect, test } from "vitest";
 
 import { isLoading, loadingMessage, loadingPercent } from "@/js/adhoc-query-grid-loading.js";

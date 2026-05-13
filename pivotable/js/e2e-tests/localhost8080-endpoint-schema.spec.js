@@ -1,3 +1,4 @@
+// @ts-check
 import { test, expect } from "@playwright/test";
 
 import queryPivotable from "./query-pivotable.mjs";

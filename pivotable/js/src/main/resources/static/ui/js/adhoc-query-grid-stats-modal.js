@@ -1,3 +1,4 @@
+// @ts-check
 import { ref, computed } from "vue";
 
 // Per-measure descriptive-statistics modal. Triggered from the grid measure column
@@ -27,6 +28,7 @@ export default {
 		// visually with the cells in the column. Built lazily so toggling formatOptions
 		// (currency, fraction digits) propagates without remounting the modal.
 		const numberFormat = computed(() => {
+			/** @type {Intl.NumberFormatOptions} */
 			const opts = {};
 			if (typeof props.formatOptions.minimumFractionDigits === "number") {
 				opts.minimumFractionDigits = props.formatOptions.minimumFractionDigits;

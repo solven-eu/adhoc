@@ -1,3 +1,4 @@
+// @ts-check
 import { mapState } from "pinia";
 import { useAdhocStore } from "./store-adhoc.js";
 
@@ -22,13 +23,17 @@ export default {
 		},
 	},
 	computed: {
-		...mapState(useAdhocStore, ["nbSchemaFetching", "nbCubeFetching", "isLoggedIn", "account"]),
+		// Drop the dead-but-referenced `nbCubeFetching` (no store ever defined it; the template condition
+		// below evaluated it as `undefined > 0` = false, so the only effective gate was `nbSchemaFetching > 0`).
+		...mapState(useAdhocStore, ["nbSchemaFetching", "isLoggedIn", "account"]),
 		...mapState(useAdhocStore, {
 			endpoint(store) {
-				return store.endpoints[this.endpointId] || { error: "not_loaded" };
+				const self = /** @type {any} */ (this);
+				return store.endpoints[self.endpointId] || { error: "not_loaded" };
 			},
 			cube(store) {
-				return store.schemas[this.endpointId]?.cubes[this.cubeId] || { error: "not_loaded" };
+				const self = /** @type {any} */ (this);
+				return store.schemas[self.endpointId]?.cubes[self.cubeId] || { error: "not_loaded" };
 			},
 		}),
 	},
@@ -40,7 +45,7 @@ export default {
 		return {};
 	},
 	template: /* HTML */ `
-		<div v-if="(!endpoint || !cube) && (nbSchemaFetching > 0 || nbCubeFetching > 0)">
+		<div v-if="(!endpoint || !cube) && nbSchemaFetching > 0">
 			<div class="spinner-border" role="status">
 				<span class="visually-hidden">Loading cubeId={{cubeId}}</span>
 			</div>

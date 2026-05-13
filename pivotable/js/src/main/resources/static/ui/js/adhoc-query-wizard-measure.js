@@ -1,3 +1,4 @@
+// @ts-check
 import { ref, inject } from "vue";
 
 import { markMatchingWizard } from "./adhoc-query-wizard-search-helpers.js";

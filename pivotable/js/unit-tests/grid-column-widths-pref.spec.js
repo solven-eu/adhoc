@@ -1,3 +1,4 @@
+// @ts-check
 // Tests for the per-cube grid-column-widths preferences actions. Pinia isn't easily importable
 // in the unit-test context (it's wired via importmap at runtime, not as a node_modules package),
 // so instead of going through `usePreferencesStore()` we replay the action bodies against a

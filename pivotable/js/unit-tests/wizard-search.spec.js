@@ -1,3 +1,4 @@
+// @ts-check
 import { expect, test, describe } from "vitest";
 
 import wizardHelper from "@/js/adhoc-query-wizard-helper.js";

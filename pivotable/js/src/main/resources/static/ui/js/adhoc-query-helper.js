@@ -1,3 +1,4 @@
+// @ts-check
 import wizardHelper from "./adhoc-query-wizard-helper.js";
 
 export default {

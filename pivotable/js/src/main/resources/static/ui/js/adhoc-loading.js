@@ -1,3 +1,4 @@
+// @ts-check
 import { mapState } from "pinia";
 
 import { useAdhocStore } from "./store-adhoc.js";

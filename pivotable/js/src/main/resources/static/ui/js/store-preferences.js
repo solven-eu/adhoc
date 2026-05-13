@@ -1,3 +1,4 @@
+// @ts-check
 import { defineStore } from "pinia";
 
 import queryHelper from "./adhoc-query-helper.js";
@@ -106,62 +107,74 @@ function readStoredPayload() {
 	return null;
 }
 
+/**
+ * @typedef PreferencesStoreState
+ * @property {Record<string, any>} queryModels saved query models, keyed by an internal id; the active and the favorited ones live here
+ * @property {string[]} latestQueryIds recently-used queryIds (for the "recent" picker)
+ * @property {string | undefined} currentQueryId id of the active query; `undefined` for an unsaved draft
+ * @property {boolean} wizardHidden when true the wizard column is collapsed and the grid spans full width
+ * @property {Record<string, any>} localEndpoints user-registered Pivotable endpoints (`{id, name, url, host, port, prefix, local: true}`)
+ * @property {string} wizardOpenAccordion id of the wizard accordion section last opened (`wizardColumns`, `wizardMeasures`, `wizardCustoms`, `wizardOptions`) or empty string when collapsed
+ * @property {"fit" | "scroll"} gridLayout SlickGrid layout mode
+ * @property {Record<string, Record<string, number>>} gridColumnWidths per-cube/mode column widths; outer key `"<endpoint>:<cube>:scroll"|":fit"`, inner key column-id → px (scroll) or weight (fit)
+ */
 const store = defineStore("preferences", {
-	state: () => ({
-		// queryId->queryModel
-		queryModels: {},
-		// used to help the user loading previous views
-		latestQueryIds: [],
+	state: () =>
+		/** @type {PreferencesStoreState} */ ({
+			// queryId->queryModel
+			queryModels: {},
+			// used to help the user loading previous views
+			latestQueryIds: [],
 
-		// id of the active query.
-		// TODO Should this be rather a URL parameter? (with a getter and a setter)
-		currentQueryId: undefined,
+			// id of the active query.
+			// TODO Should this be rather a URL parameter? (with a getter and a setter)
+			currentQueryId: undefined,
 
-		// When true, the query view hides the left-column wizard and expands the grid to
-		// full width. Persisted so the preference survives reloads. Toggled from a button
-		// in the grid column header (see adhoc-query.js).
-		wizardHidden: false,
+			// When true, the query view hides the left-column wizard and expands the grid to
+			// full width. Persisted so the preference survives reloads. Toggled from a button
+			// in the grid column header (see adhoc-query.js).
+			wizardHidden: false,
 
-		// User-registered Pivotable endpoints (in addition to the ones discovered via the
-		// `/endpoints` server route). Each entry is `{id, name, url, host, port, prefix,
-		// local: true}`. `local: true` marks them as locally-added so the rest of the app
-		// can distinguish them from server-side ones. Persisted in the same payload as
-		// favorites so they survive a reload — the typical use case is registering a peer
-		// Pivotable server (e.g. one running locally on a different host:port).
-		localEndpoints: {},
+			// User-registered Pivotable endpoints (in addition to the ones discovered via the
+			// `/endpoints` server route). Each entry is `{id, name, url, host, port, prefix,
+			// local: true}`. `local: true` marks them as locally-added so the rest of the app
+			// can distinguish them from server-side ones. Persisted in the same payload as
+			// favorites so they survive a reload — the typical use case is registering a peer
+			// Pivotable server (e.g. one running locally on a different host:port).
+			localEndpoints: {},
 
-		// Id of the wizard accordion section the user last opened (one of `wizardColumns`,
-		// `wizardMeasures`, `wizardCustoms`, `wizardOptions`) or empty string when all are
-		// collapsed. Restored on F5 so the wizard re-opens to the same section the user
-		// was working in. Persisted via the standard `$subscribe` path.
-		wizardOpenAccordion: "",
+			// Id of the wizard accordion section the user last opened (one of `wizardColumns`,
+			// `wizardMeasures`, `wizardCustoms`, `wizardOptions`) or empty string when all are
+			// collapsed. Restored on F5 so the wizard re-opens to the same section the user
+			// was working in. Persisted via the standard `$subscribe` path.
+			wizardOpenAccordion: "",
 
-		// Layout mode of the SlickGrid:
-		//   - "fit"    (default): columns fill the viewport width (`forceFitColumns: true`).
-		//                         Long names truncate with ellipsis; no horizontal scroll.
-		//   - "scroll":           columns auto-size against their headers (`autosizeColumns()`).
-		//                         Horizontal scroll appears once the natural sum of widths exceeds
-		//                         the viewport. A trailing phantom column provides scroll
-		//                         headroom so the user can grab and widen the last real column.
-		gridLayout: "fit",
+			// Layout mode of the SlickGrid:
+			//   - "fit"    (default): columns fill the viewport width (`forceFitColumns: true`).
+			//                         Long names truncate with ellipsis; no horizontal scroll.
+			//   - "scroll":           columns auto-size against their headers (`autosizeColumns()`).
+			//                         Horizontal scroll appears once the natural sum of widths exceeds
+			//                         the viewport. A trailing phantom column provides scroll
+			//                         headroom so the user can grab and widen the last real column.
+			gridLayout: "fit",
 
-		// Per-cube, per-column-id grid widths the user has manually set (via drag of the resize
-		// handle OR a dblclick auto-fit). Keyed by `<endpointId>:<cubeName>:scroll`/`:fit` so the
-		// preference is mode-aware. The two buckets carry the same numeric shape but different
-		// SEMANTICS:
-		//   - "scroll" bucket → absolute pixel width. SlickGrid in scroll mode (`forceFitColumns:
-		//     false`) respects each declared width literally; horizontal scroll fills the leftover
-		//     viewport space.
-		//   - "fit" bucket → a relative weight. SlickGrid in fit mode scales every column's stored
-		//     "width" proportionally to fill the viewport, so the RATIO between stored values is
-		//     what's preserved (the absolute values are arbitrary). Default weight is 1 (no entry
-		//     in the bucket → SlickGrid uses its built-in equal-distribution); a column the user
-		//     manually widened gets a value > 1 (or larger px, equivalent in proportional terms).
-		// Shape:
-		//   { "<endpoint>:<cube>:scroll": { "<columnId>": <px>, ... },
-		//     "<endpoint>:<cube>:fit":    { "<columnId>": <weight>, ... } }
-		gridColumnWidths: {},
-	}),
+			// Per-cube, per-column-id grid widths the user has manually set (via drag of the resize
+			// handle OR a dblclick auto-fit). Keyed by `<endpointId>:<cubeName>:scroll`/`:fit` so the
+			// preference is mode-aware. The two buckets carry the same numeric shape but different
+			// SEMANTICS:
+			//   - "scroll" bucket → absolute pixel width. SlickGrid in scroll mode (`forceFitColumns:
+			//     false`) respects each declared width literally; horizontal scroll fills the leftover
+			//     viewport space.
+			//   - "fit" bucket → a relative weight. SlickGrid in fit mode scales every column's stored
+			//     "width" proportionally to fill the viewport, so the RATIO between stored values is
+			//     what's preserved (the absolute values are arbitrary). Default weight is 1 (no entry
+			//     in the bucket → SlickGrid uses its built-in equal-distribution); a column the user
+			//     manually widened gets a value > 1 (or larger px, equivalent in proportional terms).
+			// Shape:
+			//   { "<endpoint>:<cube>:scroll": { "<columnId>": <px>, ... },
+			//     "<endpoint>:<cube>:fit":    { "<columnId>": <weight>, ... } }
+			gridColumnWidths: {},
+		}),
 	getters: {
 		isDraft: (store) => !store.currentQueryId,
 	},
@@ -435,7 +448,7 @@ export const usePreferencesStore = function () {
 	// across calls, so the `__hydrated` guard prevents re-loading stale data on every call
 	// (and re-installing redundant subscribers). Previously hydration ran on every call,
 	// which silently overwrote in-memory edits with whatever was on disk.
-	if (!theStore.__hydrated) {
+	if (!(/** @type {any} */ (theStore).__hydrated)) {
 		const raw = readStoredPayload();
 		if (raw) {
 			const migrated = migrate(raw);
@@ -480,7 +493,7 @@ export const usePreferencesStore = function () {
 			{ detached: true },
 		);
 
-		theStore.__hydrated = true;
+		/** @type {any} */ (theStore).__hydrated = true;
 	}
 
 	return theStore;

@@ -1,3 +1,4 @@
+// @ts-check
 import { defineStore } from "pinia";
 
 import { useUserStore } from "./store-user.js";
@@ -14,27 +15,47 @@ class NetworkError extends Error {
 
 const prefix = "/api/v1";
 
+/**
+ * @typedef AdhocStoreState
+ * @property {Record<string, any>} metadata server-public metadata payload — populated by `loadMetadata`
+ * @property {Record<string, any>} accounts account-id → account record, lazily filled by `loadAccount`
+ * @property {number} nbAccountFetching count of in-flight account loads (for spinners)
+ * @property {Record<string, any>} endpoints endpoint-id → endpoint descriptor; grown by `loadEndpoints` / local-only registrations
+ * @property {Record<string, any>} schemas endpoint-id → schema (cube tree); grown by `loadEndpointSchemas`
+ * @property {number} nbSchemaFetching in-flight schema loads (for spinners)
+ * @property {Record<string, any>} columns column-id → column-details; grown by `loadCubeColumnDetails` / `loadAllCubeColumnsCoordinates`
+ * @property {number} nbColumnFetching in-flight column-detail loads
+ * @property {{ nextQuery: number }} queries query-id counter container
+ * @property {number} nbQueryFetching in-flight query loads
+ *
+ * <p>NOTE: a handful of component files (`adhoc-account-chip.js`, `adhoc-account.js`) reference
+ * {@code store.players[this.playerId]} which is NOT a member of this state and is also not written by any
+ * action — it's a pre-existing dead reference that the runtime evaluates to {@code undefined.players} (NPE)
+ * the moment those components actually mount. Flagged as a separate bug; left out of the typedef so the
+ * type-checker surfaces the issue once the pinia wildcard is dropped in step 2.
+ */
 export const useAdhocStore = defineStore("adhoc", {
-	state: () => ({
-		// Various metadata to enrich the UX
-		metadata: {},
+	state: () =>
+		/** @type {AdhocStoreState} */ ({
+			// Various metadata to enrich the UX
+			metadata: {},
 
-		// May load other accounts, for multi-accounts scenarios (e.g. query sharing)
-		accounts: {},
-		nbAccountFetching: 0,
+			// May load other accounts, for multi-accounts scenarios (e.g. query sharing)
+			accounts: {},
+			nbAccountFetching: 0,
 
-		// endpoints are the available servers. Typically loading `self`, which is the same endpoint than the one serving JS
-		endpoints: {},
-		// schemas are the cubes. They are grouped by endpoints, as multiple endpoints may have cubes with the same name
-		// we should consider schema for a endpoint+cube only if the endpoint is properly loaded
-		schemas: {},
-		nbSchemaFetching: 0,
-		columns: {},
-		nbColumnFetching: 0,
+			// endpoints are the available servers. Typically loading `self`, which is the same endpoint than the one serving JS
+			endpoints: {},
+			// schemas are the cubes. They are grouped by endpoints, as multiple endpoints may have cubes with the same name
+			// we should consider schema for a endpoint+cube only if the endpoint is properly loaded
+			schemas: {},
+			nbSchemaFetching: 0,
+			columns: {},
+			nbColumnFetching: 0,
 
-		queries: { nextQuery: 0 },
-		nbQueryFetching: 0,
-	}),
+			queries: { nextQuery: 0 },
+			nbQueryFetching: 0,
+		}),
 	getters: {
 		// isLoggedIn is often used when manipulating schemas
 		isLoggedIn: () => {
@@ -104,7 +125,9 @@ export const useAdhocStore = defineStore("adhoc", {
 			const decoder = new TextDecoder();
 			let text = "";
 
-			const onProgress = function (done, percent) {
+			// Accepts the bytes-so-far counter as the first arg (call sites pass it explicitly), even though the body
+			// also reads `currentDecodedBytes` from the closure — keep the signature aligned with the callers.
+			const onProgress = function (/** @type {any} */ _currentBytes, /** @type {any} */ done, /** @type {any} */ percent) {
 				if (totalDecodedBytes != undefined) {
 					console.log("download progress:", currentDecodedBytes, totalDecodedBytes, done, percent);
 				} else {

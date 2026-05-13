@@ -1,3 +1,4 @@
+// @ts-check
 export default {
 	// https://vuejs.org/guide/components/registration#local-registration
 	components: {},

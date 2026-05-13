@@ -1,6 +1,8 @@
+// @ts-check
 import { ref, computed, watch } from "vue";
 import { mapState } from "pinia";
 import { useAdhocStore } from "./store-adhoc.js";
+import { useUserStore } from "./store-user.js";
 import { usePreferencesStore } from "./store-preferences.js";
 
 import LoginChip from "./login-chip.js";
@@ -13,7 +15,9 @@ export default {
 		AdhocEndpoint,
 	},
 	computed: {
-		...mapState(useAdhocStore, ["needsToCheckLogin", "isLoggedIn", "nbSchemaFetching"]),
+		// `needsToCheckLogin` lives on the user store (not the adhoc store); split accordingly.
+		...mapState(useUserStore, ["needsToCheckLogin"]),
+		...mapState(useAdhocStore, ["isLoggedIn", "nbSchemaFetching"]),
 	},
 	setup() {
 		const store = useAdhocStore();
@@ -54,7 +58,7 @@ export default {
 				// Dismiss the modal on success — Bootstrap exposes a programmatic close via the same
 				// `data-bs-dismiss="modal"` mechanism we use on the X button. We trigger it by clicking
 				// the close button in the header so we do not have to import the Modal JS class.
-				const closeBtn = document.querySelector('#registerEndpointModal [data-bs-dismiss="modal"]');
+				const closeBtn = /** @type {HTMLElement | null} */ (document.querySelector('#registerEndpointModal [data-bs-dismiss="modal"]'));
 				if (closeBtn) {
 					closeBtn.click();
 				}

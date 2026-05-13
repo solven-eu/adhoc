@@ -1,3 +1,4 @@
+// @ts-check
 import { mapState } from "pinia";
 import { useAdhocStore } from "./store-adhoc.js";
 
@@ -24,7 +25,8 @@ export default {
 		...mapState(useAdhocStore, ["nbSchemaFetching"]),
 		...mapState(useAdhocStore, {
 			endpoint(store) {
-				return store.endpoints[this.endpointId];
+				const self = /** @type {any} */ (this);
+				return store.endpoints[self.endpointId];
 			},
 		}),
 	},

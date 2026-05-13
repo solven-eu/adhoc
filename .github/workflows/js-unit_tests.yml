@@ -38,6 +38,12 @@ jobs:
     - name: Install NPM dependencies
       working-directory: ./pivotable/js
       run: npm ci
+    # `tsc --noEmit` gates files that have opted in via `// @ts-check`. The project ships
+    # `checkJs: false`, so this step is a no-op until contributors add the directive; once they do,
+    # mismatched JSDoc types or undeclared globals will break this job in CI.
+    - name: Run TypeScript JSDoc check
+      working-directory: ./pivotable/js
+      run: npm run tsc_check
     - name: Run ViTest tests
       working-directory: ./pivotable/js
       run: npm run unit_tests_ci

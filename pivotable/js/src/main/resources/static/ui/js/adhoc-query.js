@@ -1,3 +1,4 @@
+// @ts-check
 import { reactive, ref, watch, provide, onMounted, onUnmounted } from "vue";
 
 import { Collapse } from "bootstrap";
@@ -57,10 +58,12 @@ export default {
 		...mapState(useAdhocStore, ["nbSchemaFetching"]),
 		...mapState(useAdhocStore, {
 			endpoint(store) {
-				return store.endpoints[this.endpointId] || { error: "not_loaded" };
+				const self = /** @type {any} */ (this);
+				return store.endpoints[self.endpointId] || { error: "not_loaded" };
 			},
 			schema(store) {
-				return store.schemas[this.endpointId] || { error: "not_loaded" };
+				const self = /** @type {any} */ (this);
+				return store.schemas[self.endpointId] || { error: "not_loaded" };
 			},
 		}),
 	},
@@ -70,6 +73,7 @@ export default {
 		store.loadCubeSchemaIfMissing(props.cubeId, props.endpointId);
 
 		const loading = ref(false);
+		/** @type {any} reactive query model — methods (`onColumnToggled`, …) are bolted on later via `Object.assign` */
 		const queryModel = reactive(queryHelper.makeQueryModel());
 
 		// Watch for changes on `selectedColumns` to update `selectedColumnsOrdered` accordingly
@@ -108,6 +112,7 @@ export default {
 		});
 		provide("measureStatsModel", measureStatsModel);
 
+		/** @type {any} reactive container — `view`, `error`, `timing`, `loading` are filled in by the executor */
 		const tabularView = reactive({});
 
 		// Shared reactive flag indicating whether any wizard accordion (columns / measures /

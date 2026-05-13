@@ -1,3 +1,4 @@
+// @ts-check
 import { ref } from "vue";
 
 import LoginBasic from "./login-basic.js";

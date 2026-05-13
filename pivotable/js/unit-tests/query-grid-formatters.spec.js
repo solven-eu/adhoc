@@ -1,3 +1,4 @@
+// @ts-check
 import { expect, test, vi } from "vitest";
 
 // `adhoc-query-grid-helper.js` is browser code: it imports a few bare module specifiers (slickgrid,
@@ -7,7 +8,7 @@ import { expect, test, vi } from "vitest";
 // to be loadable. We mock the bare imports with minimal shims and stub `window` via vi.hoisted so
 // the assignment at line ~22 succeeds without a DOM environment.
 vi.hoisted(() => {
-	globalThis.window = globalThis.window || {};
+	globalThis.window = globalThis.window || /** @type {any} */ ({});
 });
 vi.mock("sortablejs", () => ({ default: {} }));
 vi.mock("slickgrid", () => ({ SlickHeaderButtons: function () {} }));
@@ -31,6 +32,9 @@ const groupByFormatterFor = function (isDrillthrough, requestedColumns) {
 	return columns[0].formatter;
 };
 
+/**
+ * @param {{ isDrillthrough: boolean, requestedColumns?: any }} opts
+ */
 const measureFormatters = function ({ isDrillthrough, requestedColumns }) {
 	return gridHelper.formatters({}, null, null, null, isDrillthrough || false, requestedColumns);
 };

@@ -1,3 +1,4 @@
+// @ts-check
 import {} from "vue";
 
 import { mapState } from "pinia";
@@ -18,7 +19,10 @@ export default {
 	computed: {
 		...mapState(useAdhocStore, {
 			cube(store) {
-				return store.schemas[this.endpointId]?.cubes[this.cubeId] || { error: "not_loaded" };
+				// `this` is the Vue Options-API component instance (props/data); pinia's `mapState` types
+				// don't know about that context, so cast it to read `endpointId` / `cubeId` props.
+				const self = /** @type {any} */ (this);
+				return store.schemas[self.endpointId]?.cubes[self.cubeId] || { error: "not_loaded" };
 			},
 		}),
 	},

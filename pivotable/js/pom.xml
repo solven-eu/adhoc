@@ -97,12 +97,12 @@
 		<dependency>
 			<groupId>org.webjars.npm</groupId>
 			<artifactId>lodash-es</artifactId>
-			<version>4.17.21</version>
+			<version>4.18.1</version>
 		</dependency>
 		<dependency>
 			<groupId>org.webjars.npm</groupId>
 			<artifactId>mermaid</artifactId>
-			<version>11.6.0</version>
+			<version>11.14.0</version>
 			<!--
 				Blanket-exclude transitives: the mermaid WebJar's transitive graph has
 				internally-conflicting version ranges (cytoscape / d3 modules) that Maven

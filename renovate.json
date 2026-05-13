@@ -20,6 +20,68 @@
             "matchDepTypes": [
                 "devDependencies"
             ]
+        },
+        {
+            "description": "Pivotable SPA libraries with versions duplicated across pom.xml (WebJar), package.json (npm types / aliased runtime), the four importmaps and vite.config.js. Group every detection that matches the library name into a single PR so the reviewer can land all layers together. Add a new entry per library when you adopt one. The cross-layer-alignment unit-test (`pivotable/js/unit-tests/lib-version-alignment.spec.js`) will fail if a partial bump lands.",
+            "groupName": "lodash",
+            "matchPackageNames": [
+                "org.webjars.npm:lodash-es",
+                "lodash",
+                "lodash-es",
+                "@types/lodash",
+                "@types/lodash-es"
+            ]
+        },
+        {
+            "groupName": "mermaid",
+            "matchPackageNames": [
+                "org.webjars.npm:mermaid",
+                "mermaid"
+            ]
+        },
+        {
+            "groupName": "slickgrid",
+            "matchPackageNames": [
+                "org.webjars.npm:slickgrid",
+                "slickgrid"
+            ]
+        },
+        {
+            "groupName": "sortablejs",
+            "matchPackageNames": [
+                "org.webjars.npm:sortablejs",
+                "sortablejs",
+                "@types/sortablejs"
+            ]
+        },
+        {
+            "groupName": "vue",
+            "matchPackageNames": [
+                "org.webjars.npm:vue",
+                "vue"
+            ]
+        },
+        {
+            "groupName": "vue-router",
+            "matchPackageNames": [
+                "org.webjars.npm:vue-router",
+                "vue-router"
+            ]
+        },
+        {
+            "groupName": "pinia",
+            "matchPackageNames": [
+                "org.webjars.npm:pinia",
+                "pinia"
+            ]
+        },
+        {
+            "groupName": "bootstrap",
+            "matchPackageNames": [
+                "org.webjars:bootstrap",
+                "org.webjars.npm:bootstrap",
+                "bootstrap"
+            ]
         }
     ]
 }

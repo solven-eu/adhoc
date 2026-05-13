@@ -1,3 +1,4 @@
+// @ts-check
 // Pure formatting helpers for the per-stage timings emitted by the executor and grid hooks.
 // Extracted from `adhoc-query-grid.js` so the logic can be unit-tested without a DOM, and so
 // the main grid file stays focused on SlickGrid lifecycle.
@@ -18,12 +19,39 @@
 // order to stay forward-compatible with new stages.
 export const TIMING_ORDER = ["sending", "executing", "downloading", "preparingGrid", "sorting", "rowSpanning", "rendering"];
 
-// Internal: extract the display entry (or null) for one stage given the raw timing map.
-// A stage yields an entry when either:
-//   - `timing[stage]` is a finite number (step is finished — show that duration, `active` false).
-//   - `timing[stage + '_startedAt']` is a Date or numeric ms (step is in-flight — show
-//     `now - startedAt`, `active` true).
-// Otherwise returns null so the stage stays hidden until it starts.
+/**
+ * @typedef {Record<string, any>} TimingMap
+ *   raw timing payload — finished stages are keyed by stage name with a ms number, in-flight stages add
+ *   `<stage>_startedAt` keys carrying a Date (or numeric ms). Typed as `any` per-value so callers can pass
+ *   noisy upstream payloads (non-numeric strings, null) — the runtime `Number.isFinite` guard filters them.
+ *
+ * @typedef TimingEntry
+ * @property {string} stage stage identifier (e.g. "executing")
+ * @property {number} ms duration in ms — final value for finished stages, live `now - startedAt` for active ones
+ * @property {boolean} active whether the stage is still in-flight
+ *
+ * @typedef FormattedTimings
+ * @property {TimingEntry[]} entries display entries in {@link TIMING_ORDER} (then unknown keys in insertion order)
+ * @property {number} total sum of every entry's ms
+ * @property {boolean} anyActive flips the renderer to the "still running" affordance
+ */
+
+/**
+ * Extract the display entry (or null) for one stage given the raw timing map.
+ *
+ * <p>A stage yields an entry when either:
+ * <ul>
+ *   <li>{@code timing[stage]} is a finite number (step is finished — show that duration, `active` false), or</li>
+ *   <li>{@code timing[stage + '_startedAt']} is a Date or numeric ms (step is in-flight — show
+ *       {@code now - startedAt}, `active` true).</li>
+ * </ul>
+ * Otherwise returns null so the stage stays hidden until it starts.
+ *
+ * @param {TimingMap} timing
+ * @param {string} stage
+ * @param {Date | number | undefined} now
+ * @returns {TimingEntry | null}
+ */
 const entryFor = function (timing, stage, now) {
 	const ms = timing[stage];
 	if (typeof ms === "number" && Number.isFinite(ms)) {
@@ -33,20 +61,24 @@ const entryFor = function (timing, stage, now) {
 	if (startedAt) {
 		// Date - Date returns ms; Date - number also returns ms when `now` is given as epoch ms.
 		// Guard against the rare case where `startedAt` is a number by normalising both sides.
-		const startMs = typeof startedAt === "number" ? startedAt : startedAt.getTime ? startedAt.getTime() : +startedAt;
-		const nowMs = typeof now === "number" ? now : now && now.getTime ? now.getTime() : +new Date();
+		const startMs = typeof startedAt === "number" ? startedAt : typeof startedAt.getTime === "function" ? startedAt.getTime() : +startedAt;
+		const nowMs = typeof now === "number" ? now : now && typeof now.getTime === "function" ? now.getTime() : +new Date();
 		return { stage, ms: Math.max(0, nowMs - startMs), active: true };
 	}
 	return null;
 };
 
-// Turn the raw timing object into a { entries, total, anyActive } shape ready for template
-// rendering, or null when there is nothing to show (no timing attached yet, and no stage is
-// in-flight). `entries` is `[{ stage, ms, active }]` in display order; `total` is the sum of
-// all `ms` values; `anyActive` flips the rendering to "this query is still running".
-//
-// The optional `now` argument (Date or ms number) lets the caller drive live-updating of active
-// stages. Defaults to "right now" at call time.
+/**
+ * Turn the raw timing object into a {@link FormattedTimings} shape ready for template rendering, or {@code null}
+ * when there is nothing to show (no timing attached yet, and no stage is in-flight).
+ *
+ * <p>The optional {@code now} argument (Date or ms number) lets the caller drive live-updating of active stages.
+ * Defaults to "right now" at call time.
+ *
+ * @param {TimingMap | null | undefined} timing
+ * @param {Date | number} [now]
+ * @returns {FormattedTimings | null}
+ */
 export const formatTimings = function (timing, now) {
 	if (!timing) return null;
 
@@ -79,8 +111,13 @@ export const formatTimings = function (timing, now) {
 	return { entries, total, anyActive };
 };
 
-// True when `timing` has at least one `<stage>_startedAt` key whose matching `<stage>` is not yet
-// a finite number — i.e. the view is mid-query and the timings bar should tick.
+/**
+ * True when {@code timing} has at least one {@code <stage>_startedAt} key whose matching {@code <stage>} is not yet
+ * a finite number — i.e. the view is mid-query and the timings bar should tick.
+ *
+ * @param {TimingMap | null | undefined} timing
+ * @returns {boolean}
+ */
 export const hasActiveTiming = function (timing) {
 	if (!timing) return false;
 	for (const key of Object.keys(timing)) {

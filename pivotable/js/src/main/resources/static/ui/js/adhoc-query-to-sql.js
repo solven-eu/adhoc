@@ -1,3 +1,4 @@
+// @ts-check
 // Minimal queryModel -> SQL converter. Like the sibling MDX converter (adhoc-query-to-mdx.js)
 // this is intended for side-by-side comparison / copy-paste into an external SQL client. The
 // produced SQL is NOT the query Adhoc actually runs — Adhoc evaluates the JSON queryModel via

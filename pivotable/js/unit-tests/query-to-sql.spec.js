@@ -1,3 +1,4 @@
+// @ts-check
 import { expect, test } from "vitest";
 
 import { queryModelToSql } from "@/js/adhoc-query-to-sql.js";

@@ -1,3 +1,4 @@
+// @ts-check
 import { expect, test } from "vitest";
 
 import { computeMeasureStats, heatmapColor } from "@/js/adhoc-query-grid-heatmap.js";

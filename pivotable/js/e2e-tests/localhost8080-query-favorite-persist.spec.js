@@ -1,3 +1,4 @@
+// @ts-check
 import { test, expect } from "./_coverage-fixture.mjs";
 
 import queryPivotable from "./query-pivotable.mjs";
@@ -127,7 +128,7 @@ test("Favorite saved on simple cube survives F5 and restores on reopen", async (
 		const items = Array.from(document.querySelectorAll("#queryFavorites .list-group-item"));
 		const row = items.find((li) => li.textContent.includes(name));
 		if (!row) throw new Error("Favorite row not found");
-		const target = row.querySelector(".adhoc-favorite-load");
+		const target = /** @type {HTMLElement | null} */ (row.querySelector(".adhoc-favorite-load"));
 		if (!target) throw new Error("adhoc-favorite-load child not found");
 		target.click();
 	}, favoriteName);

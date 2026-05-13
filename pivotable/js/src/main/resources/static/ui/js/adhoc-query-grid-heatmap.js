@@ -1,3 +1,4 @@
+// @ts-check
 // Heatmap helpers for the query grid's measure columns.
 //
 // Kept in its own file because `adhoc-query-grid-helper.js` imports SlickGrid / Sortable /

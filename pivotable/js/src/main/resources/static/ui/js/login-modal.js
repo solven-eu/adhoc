@@ -1,3 +1,4 @@
+// @ts-check
 import { watch, onMounted } from "vue";
 
 import { mapState } from "pinia";

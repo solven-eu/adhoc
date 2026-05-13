@@ -1,3 +1,4 @@
+// @ts-check
 import {} from "vue";
 
 import { mapState } from "pinia";
@@ -18,9 +19,12 @@ export default {
 	},
 	computed: {
 		...mapState(useUserStore, ["account"]),
+		// TODO Dead getter — see adhoc-account-chip.js for the full diagnostic.
 		...mapState(useAdhocStore, {
 			player(store) {
-				return store.players[this.playerId] || { error: "not_loaded" };
+				/** @type {any} */
+				const self = this;
+				return /** @type {any} */ (store).players[self.playerId] || { error: "not_loaded" };
 			},
 		}),
 	},
