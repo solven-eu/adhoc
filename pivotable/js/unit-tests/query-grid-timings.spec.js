@@ -1,7 +1,7 @@
 // @ts-check
 import { expect, test } from "vitest";
 
-import { TIMING_ORDER, formatTimings, hasActiveTiming } from "@/js/adhoc-query-grid-timings.js";
+import { TIMING_ORDER, formatTimings, hasActiveTiming, finalizeActiveStages } from "@/js/adhoc-query-grid-timings.js";
 
 test("returns null when the timing object is null / undefined", () => {
 	expect(formatTimings(null)).toBeNull();
@@ -96,4 +96,78 @@ test("hasActiveTiming: false for empty / all-finished / null inputs", () => {
 test("hasActiveTiming: true when at least one _startedAt has no matching finished ms", () => {
 	expect(hasActiveTiming({ executing_startedAt: 100 })).toBe(true);
 	expect(hasActiveTiming({ sending: 3, rendering_startedAt: 200 })).toBe(true);
+});
+
+// ---------------------------------------------------------------------------------------------
+// finalizeActiveStages — sweep dangling `_startedAt` markers from an aborted query.
+//
+// Regression: when the executor's POST throws (e.g. backend down), the `catch` block surfaces
+// an error to the user but leaves `timing.sending_startedAt` in place. The renderer's
+// hasActiveTiming + formatTimings then treat the stage as in-flight forever, growing the
+// "sending" bar on every tick until the next successful query overwrites the bag.
+// ---------------------------------------------------------------------------------------------
+test("finalizeActiveStages: no-op on null/undefined", () => {
+	// Should not throw — just return.
+	expect(() => finalizeActiveStages(null)).not.toThrow();
+	expect(() => finalizeActiveStages(undefined)).not.toThrow();
+});
+
+test("finalizeActiveStages: an in-flight stage is finalized to (now - startedAt) and the marker is dropped", () => {
+	const startedAt = new Date(1_000_000);
+	const now = 1_000_500;
+	const timing = { sending_startedAt: startedAt };
+	finalizeActiveStages(timing, now);
+	// Stage value now reflects time-until-failure: 500 ms.
+	expect(timing.sending).toBe(500);
+	// Start marker gone — `hasActiveTiming` will return false from now on.
+	expect(timing).not.toHaveProperty("sending_startedAt");
+	expect(hasActiveTiming(timing)).toBe(false);
+});
+
+test("finalizeActiveStages: stages already finished are not overwritten — only the start marker is dropped", () => {
+	const timing = {
+		executing: 42,
+		executing_startedAt: new Date(0),
+	};
+	finalizeActiveStages(timing, 5_000);
+	expect(timing.executing).toBe(42); // preserved
+	expect(timing).not.toHaveProperty("executing_startedAt");
+});
+
+test("finalizeActiveStages: multiple dangling stages are all finalized in one pass", () => {
+	const now = 2_000;
+	const timing = {
+		sending_startedAt: new Date(1_000),
+		executing_startedAt: new Date(1_500),
+		// One already-finished stage interleaved — must stay untouched.
+		downloading: 300,
+		downloading_startedAt: new Date(0),
+	};
+	finalizeActiveStages(timing, now);
+	expect(timing.sending).toBe(1_000);
+	expect(timing.executing).toBe(500);
+	expect(timing.downloading).toBe(300); // preserved
+	expect(timing).not.toHaveProperty("sending_startedAt");
+	expect(timing).not.toHaveProperty("executing_startedAt");
+	expect(timing).not.toHaveProperty("downloading_startedAt");
+});
+
+test("finalizeActiveStages: negative deltas (clock skew / stale startedAt) clamp to 0", () => {
+	const timing = { sending_startedAt: new Date(2_000) };
+	finalizeActiveStages(timing, 1_000); // now < startedAt
+	expect(timing.sending).toBe(0);
+});
+
+test("finalizeActiveStages: accepts a numeric `now`", () => {
+	const timing = { sending_startedAt: 0 };
+	finalizeActiveStages(timing, 250);
+	expect(timing.sending).toBe(250);
+});
+
+test("finalizeActiveStages: defaults `now` to Date.now() when omitted", () => {
+	// startedAt slightly in the past so a tiny positive delta is guaranteed.
+	const timing = { sending_startedAt: new Date(Date.now() - 10) };
+	finalizeActiveStages(timing);
+	expect(timing.sending).toBeGreaterThanOrEqual(0);
+	expect(timing).not.toHaveProperty("sending_startedAt");
 });
