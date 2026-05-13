@@ -249,9 +249,14 @@ export default {
 		const router = useRouter();
 
 		// https://github.com/vuejs/router/issues/2017
-		// Else, typicall when re-logging-in without F5, we observe the hash may not be available through the router
+		// Even with `router.isReady()`, `currentRoute.value.hash` can be STALE on the remount
+		// path (e.g. after a token-expiry + in-place re-login that swapped <LoginChip> back to
+		// <AdhocQuery>). The model→URL watcher below writes the hash via `history.pushState`,
+		// which bypasses vue-router; vue-router's reactive `currentRoute.value.hash` therefore
+		// stops tracking the real URL after the first edit. Read straight from
+		// `window.location.hash` via the helper so the hydration uses the authoritative source.
 		router.isReady().then(() => {
-			const currentHashDecoded = router.currentRoute.value.hash;
+			const currentHashDecoded = queryHelper.readUrlHash();
 
 			queryHelper.hashToQueryModel(currentHashDecoded, queryModel);
 
