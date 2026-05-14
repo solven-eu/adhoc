@@ -231,6 +231,9 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 			// Bind any per-thread scopes required by the slice factory (e.g. ScopedValueAppendableTable) for the
 			// whole DAG execution. No-op for ThreadLocal-backed factories. Each sub-cube spawned in a child
 			// virtual thread re-establishes its own scope via its own CubeQueryEngine#execute.
+			// Mark execution start right before the DAG runs — gap from submittedAt is the queueing/saturation delay
+			// surfaced by QueryPlanSummary#startDelayMs.
+			planSource.markExecutionStarted(java.time.Instant.now());
 			ITabularView tabularView = PodExecutors.runScoped(queryPod, () -> executeDag(queryPod, queryStepsDag));
 
 			if (queryPod.isDebugOrExplain()) {

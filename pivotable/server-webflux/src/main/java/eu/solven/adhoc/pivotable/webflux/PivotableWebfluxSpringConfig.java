@@ -29,6 +29,7 @@ import eu.solven.adhoc.pivotable.webflux.api.GreetingHandler;
 import eu.solven.adhoc.pivotable.webflux.api.PivotableApiRouter;
 import eu.solven.adhoc.pivotable.webflux.api.PivotableFakeUserRouter;
 import eu.solven.adhoc.pivotable.webflux.api.PivotableLoginRouter;
+import eu.solven.adhoc.pivotable.webflux.api.PivotablePlanHandler;
 import eu.solven.adhoc.pivotable.webflux.api.PivotableQueryHandler;
 import eu.solven.adhoc.pivotable.webflux.api.PivotableSpaRouter;
 import eu.solven.adhoc.pivotable.webflux.chat.PivotableChatConfiguration;
@@ -54,6 +55,7 @@ import lombok.extern.slf4j.Slf4j;
 		PivotableEndpointsHandler.class,
 		GreetingHandler.class,
 		PivotableQueryHandler.class,
+		PivotablePlanHandler.class,
 		PivotableApiRouter.class,
 		PivotableFakeUserRouter.class,
 		GreetingHandler.class,

@@ -24,6 +24,7 @@ package eu.solven.adhoc.engine.observability.plan;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import eu.solven.adhoc.query.AdhocQueryId;
 
@@ -179,5 +180,18 @@ public interface IQueryPlanRegistry {
 	 */
 	default boolean isLocked(AdhocQueryId queryId) {
 		return false;
+	}
+
+	/**
+	 * UUID-based lookup helper for HTTP endpoints, which carry only the {@link UUID} part of an {@link AdhocQueryId} in
+	 * their URL. Scans the registered ids; O(N) where N is the registry size — fine for the bounded sizes the registry
+	 * holds (hundreds, not millions). The default implementation returns empty; backing impls override.
+	 *
+	 * @param queryUuid
+	 *            the UUID to match against {@link AdhocQueryId#getQueryId()}
+	 * @return the matching {@link AdhocQueryId}, or empty when no plan is registered for that UUID
+	 */
+	default Optional<AdhocQueryId> findIdByUuid(UUID queryUuid) {
+		return Optional.empty();
 	}
 }

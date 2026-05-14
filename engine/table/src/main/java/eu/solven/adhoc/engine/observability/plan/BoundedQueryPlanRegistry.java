@@ -212,6 +212,22 @@ public class BoundedQueryPlanRegistry implements IQueryPlanRegistry {
 		return locked.containsKey(queryId);
 	}
 
+	@Override
+	public synchronized Optional<AdhocQueryId> findIdByUuid(java.util.UUID queryUuid) {
+		Objects.requireNonNull(queryUuid, "queryUuid");
+		for (AdhocQueryId id : sources.keySet()) {
+			if (queryUuid.equals(id.getQueryId())) {
+				return Optional.of(id);
+			}
+		}
+		for (AdhocQueryId id : locked.keySet()) {
+			if (queryUuid.equals(id.getQueryId())) {
+				return Optional.of(id);
+			}
+		}
+		return Optional.empty();
+	}
+
 	/**
 	 * Lookup a source by id across both the LRU pool and the locked map. Returns {@code null} when absent. Used by
 	 * {@link #get(AdhocQueryId)} / {@link #snapshot(AdhocQueryId)} so they share the same dispatch logic.

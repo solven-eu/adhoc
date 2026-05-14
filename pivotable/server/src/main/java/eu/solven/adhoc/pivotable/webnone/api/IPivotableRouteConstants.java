@@ -29,4 +29,12 @@ package eu.solven.adhoc.pivotable.webnone.api;
  */
 public interface IPivotableRouteConstants {
 	String R_CUBE_QUERY = "/cubes/query";
+
+	/**
+	 * Plan-introspection routes. The {@code {queryUuid}} path variable is the {@link java.util.UUID} portion of an
+	 * {@code AdhocQueryId} ({@code AdhocQueryId.queryId}). {@code /summary} returns a lightweight status object
+	 * suitable for high-frequency polling; {@code /snapshot} returns the full plan tree.
+	 */
+	String R_CUBE_PLAN_SUMMARY = "/cubes/queries/{queryUuid}/plan/summary";
+	String R_CUBE_PLAN_SNAPSHOT = "/cubes/queries/{queryUuid}/plan/snapshot";
 }
