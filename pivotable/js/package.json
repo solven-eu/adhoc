@@ -23,7 +23,7 @@
         "slickgrid": "5.18.2",
         "sortablejs": "1.15.7",
         "typescript": "6.0.3",
-        "vite": "8.0.12",
+        "vite": "8.0.13",
         "vitest": "4.1.6",
         "vue-router": "4.6.3"
     },
