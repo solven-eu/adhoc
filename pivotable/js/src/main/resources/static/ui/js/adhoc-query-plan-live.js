@@ -1,36 +1,94 @@
 // @ts-check
 import { onBeforeUnmount, ref, watch } from "vue";
 
-// LiveView for a running query: polls /api/v1/cubes/queries/{queryUuid}/plan/summary at ~2 Hz and renders a small
-// status line: state badge + "12/40 done" counts + elapsed/startDelay + last finished step. Stops polling on
-// terminal state (DONE/FAILED) or 404, and on component unmount.
-//
-// Polling cadence is intentionally on the slow side (500ms) — the UI value is "is anything happening", not
-// frame-perfect updates. Faster polls would burn cycles for tiny visual deltas.
-//
-// 204 path: a UUID with no registered plan is rendered as a discreet hint rather than an error, since the registry
-// is bounded and an old query may have been evicted between the user's first click and the LiveView render. The
-// server reserves 404 strictly for "the endpoint itself does not exist".
+// LiveView for an asynchronous query: polls /api/v1/cubes/queries/{queryUuid}/plan/summary at ~2 Hz. The server
+// distinguishes four states via HTTP code + Retry-After header:
+//   - 200            → plan registered; body is the summary.
+//   - 204 + Retry-After → Pivotable has the UUID but the engine hasn't yet registered a plan (queueing/planning).
+//                         Keep polling.
+//   - 204            → terminal — plan was evicted (only after the query finished and LRU flushed it). Stop.
+//   - 404            → the UUID was never seen by Pivotable (typo / stale link). Stop.
+// The 5xx / network-error path is treated as a transient blip — keep polling and let the next tick recover.
 
 const POLL_INTERVAL_MS = 500;
 
 /** @typedef {{state: string, totalNodes: number, doneNodes: number, pendingNodes: number, runningNodes: number, failedNodes: number, elapsedMs: number, startDelayMs: number, totalRowsOut: number, latestCompletedLabel: string | null}} PlanSummary */
 
+/** @typedef {"polling" | "queuing" | "gone" | "unknown" | "error" | "terminal"} PollStatus */
+
+/**
+ * @typedef PollState
+ * @property {PlanSummary | null} summary
+ * @property {PollStatus} status
+ */
+
+/**
+ * @typedef {PlanSummary | "queuing" | "gone" | "unknown" | "error"} FetchResult
+ *
+ * @typedef PollOutcome
+ * @property {PollState} state - new state to apply
+ * @property {boolean} shouldStop - whether the caller should clear its polling timer
+ */
+
 /**
  * @param {string} queryUuid
- * @returns {Promise<PlanSummary | "not_found" | "error">}
+ * @returns {Promise<FetchResult>}
  */
-async function fetchSummary(queryUuid) {
+export async function fetchSummary(queryUuid) {
 	const url = `/api/v1/cubes/queries/${encodeURIComponent(queryUuid)}/plan/summary`;
 	try {
 		const response = await fetch(url, { headers: { Accept: "application/json" } });
-		if (response.status === 204) return "not_found";
+		if (response.status === 404) return "unknown";
+		if (response.status === 204) {
+			// Retry-After present = queuing (manager has the UUID, engine not yet ready). Absent = evicted.
+			return response.headers.get("Retry-After") ? "queuing" : "gone";
+		}
 		if (!response.ok) return "error";
 		return /** @type {PlanSummary} */ (await response.json());
 	} catch (e) {
 		console.error("Issue polling plan summary:", e);
 		return "error";
 	}
+}
+
+/**
+ * Pure reducer for one poll tick. Separated from the component so the state-machine can be unit-tested without
+ * mocking timers, the DOM, or `fetch`. The component just composes `fetchSummary` + `nextPollState` + a Vue
+ * `ref` update.
+ *
+ * Transitions:
+ * - `"unknown"` (404) → status `unknown`, shouldStop=true. UUID never seen; nothing to wait for.
+ * - `"queuing"` (204 + Retry-After) → status `queuing`, shouldStop=false. Engine is planning; keep polling.
+ * - `"gone"` (204 no Retry-After) → status `gone`, shouldStop=true. Plan was evicted post-termination.
+ * - `"error"` (network glitch, 5xx) → status `error`, shouldStop=false. Keep last-known summary, keep polling —
+ *   the next tick may recover.
+ * - real `PlanSummary` with terminal state (DONE/FAILED) → status `terminal`, shouldStop=true.
+ * - real `PlanSummary` mid-flight → status `polling`, shouldStop=false.
+ *
+ * @param {PollState} prev
+ * @param {FetchResult} result
+ * @returns {PollOutcome}
+ */
+export function nextPollState(prev, result) {
+	if (result === "unknown") {
+		return { state: { summary: prev.summary, status: "unknown" }, shouldStop: true };
+	}
+	if (result === "queuing") {
+		return { state: { summary: prev.summary, status: "queuing" }, shouldStop: false };
+	}
+	if (result === "gone") {
+		return { state: { summary: prev.summary, status: "gone" }, shouldStop: true };
+	}
+	if (result === "error") {
+		// Preserve the last successful summary so the UI keeps showing useful info during a transient blip,
+		// instead of flashing back to a loading spinner.
+		return { state: { summary: prev.summary, status: "error" }, shouldStop: false };
+	}
+	const terminal = result.state === "DONE" || result.state === "FAILED";
+	return {
+		state: { summary: result, status: terminal ? "terminal" : "polling" },
+		shouldStop: terminal,
+	};
 }
 
 export default {
@@ -43,7 +101,7 @@ export default {
 	setup(props) {
 		/** @type {import("vue").Ref<PlanSummary | null>} */
 		const summary = ref(null);
-		/** @type {import("vue").Ref<"polling" | "not_found" | "error" | "terminal">} */
+		/** @type {import("vue").Ref<PollStatus>} */
 		const status = ref("polling");
 
 		/** @type {ReturnType<typeof setInterval> | null} */
@@ -58,22 +116,10 @@ export default {
 
 		const tick = async () => {
 			const result = await fetchSummary(props.queryUuid);
-			if (result === "not_found") {
-				status.value = "not_found";
-				stop();
-				return;
-			}
-			if (result === "error") {
-				status.value = "error";
-				return; // keep polling — transient network blip should recover on next tick
-			}
-			summary.value = result;
-			if (result.state === "DONE" || result.state === "FAILED") {
-				status.value = "terminal";
-				stop();
-			} else {
-				status.value = "polling";
-			}
+			const outcome = nextPollState({ summary: summary.value, status: status.value }, result);
+			summary.value = outcome.state.summary;
+			status.value = outcome.state.status;
+			if (outcome.shouldStop) stop();
 		};
 
 		const start = () => {
@@ -99,9 +145,17 @@ export default {
 	},
 	template: /* HTML */ `
 		<div class="adhoc-plan-live d-inline-flex align-items-center gap-2 small">
-			<template v-if="status === 'not_found'">
+			<template v-if="status === 'unknown'">
+				<i class="bi bi-exclamation-circle text-warning"></i>
+				<span class="text-warning">Unknown query id.</span>
+			</template>
+			<template v-else-if="status === 'gone'">
 				<i class="bi bi-question-circle text-muted"></i>
-				<span class="text-muted">No plan available (may have been evicted).</span>
+				<span class="text-muted">Plan no longer available (may have been evicted).</span>
+			</template>
+			<template v-else-if="status === 'queuing'">
+				<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+				<span class="text-muted">Queuing…</span>
 			</template>
 			<template v-else-if="summary === null">
 				<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>

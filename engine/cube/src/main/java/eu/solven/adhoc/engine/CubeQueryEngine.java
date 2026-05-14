@@ -124,7 +124,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Builder(toBuilder = true)
 @Slf4j
-@SuppressWarnings({ "PMD.GodClass" })
+@SuppressWarnings({ "PMD.GodClass", "PMD.CouplingBetweenObjects" })
 public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 	private final UUID engineId = UUID.randomUUID();
 

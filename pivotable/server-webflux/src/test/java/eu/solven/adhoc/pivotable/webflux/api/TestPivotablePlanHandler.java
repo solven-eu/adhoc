@@ -24,29 +24,63 @@ package eu.solven.adhoc.pivotable.webflux.api;
 
 import java.time.Instant;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.mock.web.reactive.function.server.MockServerRequest;
 
 import eu.solven.adhoc.engine.observability.plan.BoundedQueryPlanRegistry;
+import eu.solven.adhoc.engine.observability.plan.IPlanSource;
 import eu.solven.adhoc.engine.observability.plan.NodeOperator;
 import eu.solven.adhoc.engine.observability.plan.NodeState;
 import eu.solven.adhoc.engine.observability.plan.PlanState;
 import eu.solven.adhoc.engine.observability.plan.QueryPlan;
 import eu.solven.adhoc.engine.observability.plan.QueryPlanNode;
+import eu.solven.adhoc.pivotable.query.AsynchronousStatus;
+import eu.solven.adhoc.pivotable.query.PivotableAsynchronousQueriesManager;
 import eu.solven.adhoc.query.AdhocQueryId;
 import reactor.test.StepVerifier;
 
 /**
- * Unit tests for {@link PivotablePlanHandler}. Use a real {@link BoundedQueryPlanRegistry} + {@link MockServerRequest}
- * so the test exercises the actual UUID-parsing + lookup + 404 path without Spring boot overhead.
+ * WebFlux counterpart to {@code TestPivotablePlanController}. Same four-state contract; verified through a
+ * {@link MockServerRequest} + {@link StepVerifier} pipeline.
  */
 public class TestPivotablePlanHandler {
 
-	private static AdhocQueryId newId() {
-		return AdhocQueryId.builder().cube("test-cube").build();
+	private static IPlanSource sourceOf(QueryPlan plan) {
+		return new IPlanSource() {
+			@Override
+			public AdhocQueryId getQueryId() {
+				return plan.getQueryId();
+			}
+
+			@Override
+			public QueryPlan snapshot() {
+				return plan;
+			}
+
+			@Override
+			public boolean isCompleted() {
+				PlanState s = plan.getState();
+				return s == PlanState.DONE || s == PlanState.FAILED;
+			}
+		};
+	}
+
+	private static PivotableAsynchronousQueriesManager stubManager(AtomicReference<AsynchronousStatus> stateRef) {
+		return new PivotableAsynchronousQueriesManager() {
+			@Override
+			public AsynchronousStatus getState(UUID queryId) {
+				return stateRef.get();
+			}
+		};
+	}
+
+	private static AdhocQueryId adhocId(UUID uuid) {
+		return AdhocQueryId.builder().cube("test-cube").queryId(uuid).build();
 	}
 
 	private static QueryPlan plan(AdhocQueryId id) {
@@ -68,14 +102,14 @@ public class TestPivotablePlanHandler {
 	}
 
 	@Test
-	public void testSummaryReturns200() {
+	public void testSummary200WhenPlanRegistered() {
 		BoundedQueryPlanRegistry registry = new BoundedQueryPlanRegistry(100);
-		AdhocQueryId id = newId();
-		registry.register(plan(id));
+		UUID uuid = UUID.randomUUID();
+		registry.registerSource(sourceOf(plan(adhocId(uuid))));
 
-		MockServerRequest request =
-				MockServerRequest.builder().pathVariable("queryUuid", id.getQueryId().toString()).build();
-		PivotablePlanHandler handler = new PivotablePlanHandler(registry);
+		PivotablePlanHandler handler =
+				new PivotablePlanHandler(stubManager(new AtomicReference<>(AsynchronousStatus.SERVED)), registry);
+		MockServerRequest request = MockServerRequest.builder().pathVariable("queryUuid", uuid.toString()).build();
 
 		StepVerifier.create(handler.getPlanSummary(request))
 				.assertNext(response -> Assertions.assertThat(response.statusCode()).isEqualTo(HttpStatus.OK))
@@ -83,44 +117,56 @@ public class TestPivotablePlanHandler {
 	}
 
 	@Test
-	public void testSnapshotReturns200() {
+	public void testSummary404WhenUuidUnknownToManager() {
 		BoundedQueryPlanRegistry registry = new BoundedQueryPlanRegistry(100);
-		AdhocQueryId id = newId();
-		registry.register(plan(id));
-
-		MockServerRequest request =
-				MockServerRequest.builder().pathVariable("queryUuid", id.getQueryId().toString()).build();
-		PivotablePlanHandler handler = new PivotablePlanHandler(registry);
-
-		StepVerifier.create(handler.getPlanSnapshot(request))
-				.assertNext(response -> Assertions.assertThat(response.statusCode()).isEqualTo(HttpStatus.OK))
-				.verifyComplete();
-	}
-
-	@Test
-	public void testSummary204OnUnknownUuid() {
-		// Reserve 404 for "endpoint doesn't exist"; an unknown UUID (possibly evicted) returns 204 No Content.
-		BoundedQueryPlanRegistry registry = new BoundedQueryPlanRegistry(100);
-		PivotablePlanHandler handler = new PivotablePlanHandler(registry);
-
+		PivotablePlanHandler handler =
+				new PivotablePlanHandler(stubManager(new AtomicReference<>(AsynchronousStatus.UNKNOWN)), registry);
 		MockServerRequest request =
 				MockServerRequest.builder().pathVariable("queryUuid", UUID.randomUUID().toString()).build();
 
 		StepVerifier.create(handler.getPlanSummary(request))
-				.assertNext(response -> Assertions.assertThat(response.statusCode()).isEqualTo(HttpStatus.NO_CONTENT))
+				.assertNext(response -> Assertions.assertThat(response.statusCode()).isEqualTo(HttpStatus.NOT_FOUND))
 				.verifyComplete();
 	}
 
 	@Test
-	public void testSnapshot204OnUnknownUuid() {
+	public void testSummary204WithRetryAfterWhenQueuing() {
 		BoundedQueryPlanRegistry registry = new BoundedQueryPlanRegistry(100);
-		PivotablePlanHandler handler = new PivotablePlanHandler(registry);
+		PivotablePlanHandler handler =
+				new PivotablePlanHandler(stubManager(new AtomicReference<>(AsynchronousStatus.RUNNING)), registry);
+		MockServerRequest request =
+				MockServerRequest.builder().pathVariable("queryUuid", UUID.randomUUID().toString()).build();
 
+		StepVerifier.create(handler.getPlanSummary(request)).assertNext(response -> {
+			Assertions.assertThat(response.statusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+			Assertions.assertThat(response.headers().getFirst(HttpHeaders.RETRY_AFTER)).isEqualTo("1");
+		}).verifyComplete();
+	}
+
+	@Test
+	public void testSummary204WithoutRetryAfterWhenEvicted() {
+		BoundedQueryPlanRegistry registry = new BoundedQueryPlanRegistry(100);
+		PivotablePlanHandler handler =
+				new PivotablePlanHandler(stubManager(new AtomicReference<>(AsynchronousStatus.SERVED)), registry);
+		MockServerRequest request =
+				MockServerRequest.builder().pathVariable("queryUuid", UUID.randomUUID().toString()).build();
+
+		StepVerifier.create(handler.getPlanSummary(request)).assertNext(response -> {
+			Assertions.assertThat(response.statusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+			Assertions.assertThat(response.headers().getFirst(HttpHeaders.RETRY_AFTER)).isNull();
+		}).verifyComplete();
+	}
+
+	@Test
+	public void testSnapshot404WhenUuidUnknownToManager() {
+		BoundedQueryPlanRegistry registry = new BoundedQueryPlanRegistry(100);
+		PivotablePlanHandler handler =
+				new PivotablePlanHandler(stubManager(new AtomicReference<>(AsynchronousStatus.UNKNOWN)), registry);
 		MockServerRequest request =
 				MockServerRequest.builder().pathVariable("queryUuid", UUID.randomUUID().toString()).build();
 
 		StepVerifier.create(handler.getPlanSnapshot(request))
-				.assertNext(response -> Assertions.assertThat(response.statusCode()).isEqualTo(HttpStatus.NO_CONTENT))
+				.assertNext(response -> Assertions.assertThat(response.statusCode()).isEqualTo(HttpStatus.NOT_FOUND))
 				.verifyComplete();
 	}
 }

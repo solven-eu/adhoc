@@ -23,6 +23,7 @@ import { useRouter } from "vue-router";
 import AdhocMeasuresDag from "./adhoc-measures-dag.js";
 import AdhocQueryWizardColumnFilterModalSingleton from "./adhoc-query-wizard-column-filter-modal-singleton.js";
 import AdhocQueryChatbot from "./adhoc-query-chatbot.js";
+import AdhocQueryPlanLive from "./adhoc-query-plan-live.js";
 
 export default {
 	// https://vuejs.org/guide/components/registration#local-registration
@@ -36,6 +37,7 @@ export default {
 		AdhocMeasuresDag,
 		AdhocQueryWizardColumnFilterModalSingleton,
 		AdhocQueryChatbot,
+		AdhocQueryPlanLive,
 	},
 	// https://vuejs.org/guide/components/props.html
 	props: {
@@ -375,6 +377,9 @@ export default {
 					>
 						Restore last successful query
 					</button>
+				</div>
+				<div v-if="tabularView.queryUuid" class="mt-2 mb-1">
+					<AdhocQueryPlanLive :queryUuid="tabularView.queryUuid" />
 				</div>
 				<AdhocQueryGrid
 					:tabularView="tabularView"

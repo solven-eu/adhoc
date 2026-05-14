@@ -32,6 +32,39 @@ import eu.solven.adhoc.query.AdhocQueryId;
 
 public class TestBoundedQueryPlanRegistry {
 
+	/**
+	 * Minimal {@link IPlanSource} that returns a pre-built {@link QueryPlan} verbatim. Used by tests that want to
+	 * exercise the registry's bookkeeping without standing up a full {@code LiveQueryPlanSource} (which needs a real
+	 * {@code QueryStepsDag}).
+	 */
+	private static final class FixedPlanSource implements IPlanSource {
+		private final QueryPlan plan;
+
+		FixedPlanSource(QueryPlan plan) {
+			this.plan = plan;
+		}
+
+		@Override
+		public AdhocQueryId getQueryId() {
+			return plan.getQueryId();
+		}
+
+		@Override
+		public QueryPlan snapshot() {
+			return plan;
+		}
+
+		@Override
+		public boolean isCompleted() {
+			PlanState s = plan.getState();
+			return s == PlanState.DONE || s == PlanState.FAILED;
+		}
+	}
+
+	private static void registerPlan(BoundedQueryPlanRegistry registry, QueryPlan plan) {
+		registry.registerSource(new FixedPlanSource(plan));
+	}
+
 	private static AdhocQueryId newId() {
 		return AdhocQueryId.builder().cube("test-cube").build();
 	}
@@ -62,7 +95,7 @@ public class TestBoundedQueryPlanRegistry {
 		AdhocQueryId id = newId();
 		QueryPlan plan = newPlan(id, null, PlanState.PENDING, 5);
 
-		registry.register(plan);
+		registerPlan(registry, plan);
 
 		Assertions.assertThat(registry.get(id)).contains(plan);
 		Assertions.assertThat(registry.planCount()).isEqualTo(1);
@@ -81,28 +114,27 @@ public class TestBoundedQueryPlanRegistry {
 		BoundedQueryPlanRegistry registry = new BoundedQueryPlanRegistry(100);
 		AdhocQueryId id = newId();
 
-		registry.register(newPlan(id, null, PlanState.PENDING, 5));
+		registerPlan(registry, newPlan(id, null, PlanState.PENDING, 5));
 		Assertions.assertThat(registry.totalNodeCount()).isEqualTo(5);
 
 		// Same id, different node count — simulates the PENDING-to-RUNNING transition that grows the tree.
-		registry.register(newPlan(id, null, PlanState.RUNNING, 12));
+		registerPlan(registry, newPlan(id, null, PlanState.RUNNING, 12));
 		Assertions.assertThat(registry.planCount()).isEqualTo(1);
 		Assertions.assertThat(registry.totalNodeCount()).isEqualTo(12);
 	}
 
 	@Test
-	public void testSnapshotReturnsDeepCopy() {
+	public void testSnapshotDelegatesToSource() {
+		// The registry no longer deep-copies — it trusts each {@link IPlanSource} to produce a safe-to-share plan on
+		// every {@code snapshot()} call. {@link LiveQueryPlanSource} does so by re-projecting the dag; a test fixture
+		// can choose to return the same instance.
 		BoundedQueryPlanRegistry registry = new BoundedQueryPlanRegistry(100);
 		AdhocQueryId id = newId();
 		QueryPlan plan = newPlan(id, null, PlanState.DONE, 1);
-		registry.register(plan);
+		registerPlan(registry, plan);
 
 		QueryPlan snapshot = registry.snapshot(id).orElseThrow();
-
-		// The snapshot equals the registered plan (field-wise) but is not the same instance — engine mutations on the
-		// real plan must not leak into the reader's view.
 		Assertions.assertThat(snapshot).isEqualTo(plan);
-		Assertions.assertThat(snapshot.getRoot()).isNotSameAs(plan.getRoot());
 	}
 
 	@Test
@@ -113,10 +145,10 @@ public class TestBoundedQueryPlanRegistry {
 		AdhocQueryId child2 = newId();
 		AdhocQueryId unrelated = newId();
 
-		registry.register(newPlan(parent, null, PlanState.RUNNING, 1));
-		registry.register(newPlan(child1, parent, PlanState.RUNNING, 1));
-		registry.register(newPlan(child2, parent, PlanState.RUNNING, 1));
-		registry.register(newPlan(unrelated, null, PlanState.RUNNING, 1));
+		registerPlan(registry, newPlan(parent, null, PlanState.RUNNING, 1));
+		registerPlan(registry, newPlan(child1, parent, PlanState.RUNNING, 1));
+		registerPlan(registry, newPlan(child2, parent, PlanState.RUNNING, 1));
+		registerPlan(registry, newPlan(unrelated, null, PlanState.RUNNING, 1));
 
 		List<QueryPlan> children = registry.getChildrenOf(parent);
 		Assertions.assertThat(children).extracting(QueryPlan::getQueryId).containsExactlyInAnyOrder(child1, child2);
@@ -126,7 +158,7 @@ public class TestBoundedQueryPlanRegistry {
 	public void testGetChildrenOfReturnsEmptyForLeafQuery() {
 		BoundedQueryPlanRegistry registry = new BoundedQueryPlanRegistry(100);
 		AdhocQueryId id = newId();
-		registry.register(newPlan(id, null, PlanState.DONE, 1));
+		registerPlan(registry, newPlan(id, null, PlanState.DONE, 1));
 
 		Assertions.assertThat(registry.getChildrenOf(id)).isEmpty();
 	}
@@ -139,9 +171,9 @@ public class TestBoundedQueryPlanRegistry {
 		AdhocQueryId a = newId();
 		AdhocQueryId b = newId();
 		AdhocQueryId c = newId();
-		registry.register(newPlan(a, null, PlanState.DONE, 4));
-		registry.register(newPlan(b, null, PlanState.DONE, 4));
-		registry.register(newPlan(c, null, PlanState.DONE, 4));
+		registerPlan(registry, newPlan(a, null, PlanState.DONE, 4));
+		registerPlan(registry, newPlan(b, null, PlanState.DONE, 4));
+		registerPlan(registry, newPlan(c, null, PlanState.DONE, 4));
 
 		Assertions.assertThat(registry.totalNodeCount()).isLessThanOrEqualTo(10);
 		Assertions.assertThat(registry.get(a)).as("oldest should be evicted").isEmpty();
@@ -159,10 +191,10 @@ public class TestBoundedQueryPlanRegistry {
 		AdhocQueryId completed = newId();
 		AdhocQueryId fresh = newId();
 
-		registry.register(newPlan(inFlight, null, PlanState.RUNNING, 8));
-		registry.register(newPlan(completed, null, PlanState.DONE, 4));
+		registerPlan(registry, newPlan(inFlight, null, PlanState.RUNNING, 8));
+		registerPlan(registry, newPlan(completed, null, PlanState.DONE, 4));
 		// Re-registering inFlight as still-RUNNING (the engine's normal update path) does not change its state.
-		registry.register(newPlan(fresh, null, PlanState.DONE, 6));
+		registerPlan(registry, newPlan(fresh, null, PlanState.DONE, 6));
 
 		Assertions.assertThat(registry.get(inFlight)).as("in-flight plan must survive eviction").isPresent();
 		// Either `completed` or `fresh` must have been evicted to satisfy the budget.
@@ -177,12 +209,12 @@ public class TestBoundedQueryPlanRegistry {
 		AdhocQueryId b = newId();
 		AdhocQueryId c = newId();
 		AdhocQueryId d = newId();
-		registry.register(newPlan(a, null, PlanState.DONE, 4));
-		registry.register(newPlan(b, null, PlanState.DONE, 4));
-		registry.register(newPlan(c, null, PlanState.DONE, 1));
+		registerPlan(registry, newPlan(a, null, PlanState.DONE, 4));
+		registerPlan(registry, newPlan(b, null, PlanState.DONE, 4));
+		registerPlan(registry, newPlan(c, null, PlanState.DONE, 1));
 		// d pushes total to 12 (>10). Eviction must drop `a` (4 nodes) → total 8 (<=10). It must NOT continue evicting
 		// `b` since we are already under budget.
-		registry.register(newPlan(d, null, PlanState.DONE, 3));
+		registerPlan(registry, newPlan(d, null, PlanState.DONE, 3));
 
 		Assertions.assertThat(registry.get(a)).isEmpty();
 		Assertions.assertThat(registry.get(b)).isPresent();
@@ -197,8 +229,8 @@ public class TestBoundedQueryPlanRegistry {
 		AdhocQueryId a = newId();
 		AdhocQueryId b = newId();
 		AdhocQueryId c = newId();
-		registry.register(newPlan(a, null, PlanState.DONE, 4));
-		registry.register(newPlan(b, null, PlanState.DONE, 4));
+		registerPlan(registry, newPlan(a, null, PlanState.DONE, 4));
+		registerPlan(registry, newPlan(b, null, PlanState.DONE, 4));
 
 		// Pin `a`. It would otherwise be the LRU eviction candidate.
 		Assertions.assertThat(registry.lock(a)).isTrue();
@@ -206,7 +238,7 @@ public class TestBoundedQueryPlanRegistry {
 		Assertions.assertThat(registry.isLocked(b)).isFalse();
 
 		// Register a third plan pushing us over budget (12 > 10). Eviction must skip `a` (locked) and drop `b`.
-		registry.register(newPlan(c, null, PlanState.DONE, 4));
+		registerPlan(registry, newPlan(c, null, PlanState.DONE, 4));
 		Assertions.assertThat(registry.get(a)).isPresent();
 		Assertions.assertThat(registry.get(b)).isEmpty();
 		Assertions.assertThat(registry.get(c)).isPresent();
@@ -216,7 +248,7 @@ public class TestBoundedQueryPlanRegistry {
 	public void testLockIsIdempotentAndUnknownIsNoop() {
 		BoundedQueryPlanRegistry registry = new BoundedQueryPlanRegistry(10);
 		AdhocQueryId a = newId();
-		registry.register(newPlan(a, null, PlanState.DONE, 1));
+		registerPlan(registry, newPlan(a, null, PlanState.DONE, 1));
 
 		Assertions.assertThat(registry.lock(a)).isTrue();
 		// Already locked → no state change.
@@ -233,7 +265,7 @@ public class TestBoundedQueryPlanRegistry {
 	public void testUnlockRestoresLruEligibility() {
 		BoundedQueryPlanRegistry registry = new BoundedQueryPlanRegistry(10);
 		AdhocQueryId a = newId();
-		registry.register(newPlan(a, null, PlanState.DONE, 4));
+		registerPlan(registry, newPlan(a, null, PlanState.DONE, 4));
 		Assertions.assertThat(registry.lock(a)).isTrue();
 		Assertions.assertThat(registry.unlock(a)).isTrue();
 		Assertions.assertThat(registry.isLocked(a)).isFalse();
@@ -247,8 +279,8 @@ public class TestBoundedQueryPlanRegistry {
 		BoundedQueryPlanRegistry registry = new BoundedQueryPlanRegistry(10);
 		AdhocQueryId a = newId();
 		AdhocQueryId b = newId();
-		registry.register(newPlan(a, null, PlanState.DONE, 1));
-		registry.register(newPlan(b, null, PlanState.DONE, 1));
+		registerPlan(registry, newPlan(a, null, PlanState.DONE, 1));
+		registerPlan(registry, newPlan(b, null, PlanState.DONE, 1));
 		registry.lock(a);
 
 		Assertions.assertThat(registry.hasPlan(a)).isTrue(); // in `locked`
@@ -261,8 +293,8 @@ public class TestBoundedQueryPlanRegistry {
 		BoundedQueryPlanRegistry registry = new BoundedQueryPlanRegistry(10);
 		AdhocQueryId a = newId();
 		AdhocQueryId b = newId();
-		registry.register(newPlan(a, null, PlanState.DONE, 1));
-		registry.register(newPlan(b, null, PlanState.DONE, 1));
+		registerPlan(registry, newPlan(a, null, PlanState.DONE, 1));
+		registerPlan(registry, newPlan(b, null, PlanState.DONE, 1));
 		registry.lock(a);
 
 		Assertions.assertThat(registry.planCount()).isEqualTo(2);
@@ -274,9 +306,9 @@ public class TestBoundedQueryPlanRegistry {
 		AdhocQueryId parent = newId();
 		AdhocQueryId childLocked = newId();
 		AdhocQueryId childUnlocked = newId();
-		registry.register(newPlan(parent, null, PlanState.DONE, 1));
-		registry.register(newPlan(childLocked, parent, PlanState.DONE, 1));
-		registry.register(newPlan(childUnlocked, parent, PlanState.DONE, 1));
+		registerPlan(registry, newPlan(parent, null, PlanState.DONE, 1));
+		registerPlan(registry, newPlan(childLocked, parent, PlanState.DONE, 1));
+		registerPlan(registry, newPlan(childUnlocked, parent, PlanState.DONE, 1));
 		registry.lock(childLocked);
 
 		List<QueryPlan> kids = registry.getChildrenOf(parent);

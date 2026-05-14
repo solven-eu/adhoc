@@ -75,8 +75,8 @@ import reactor.core.scheduler.Schedulers;
 public class PivotableQueryHandler {
 	final PivotableSchemaRegistry schemaRegistry;
 	final AdhocCubesRegistry cubesRegistry;
-
-	final PivotableAsynchronousQueriesManager asynchronousQueriesManager = new PivotableAsynchronousQueriesManager();
+	// Shared with PivotablePlanHandler so the LiveView can ask the same manager "have you seen this UUID?"
+	final PivotableAsynchronousQueriesManager asynchronousQueriesManager;
 
 	public static final MediaType ARROW_STREAM_MEDIA_TYPE =
 			MediaType.parseMediaType("application/vnd.apache.arrow.stream");

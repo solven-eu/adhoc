@@ -23,8 +23,10 @@
 package eu.solven.adhoc.pivotable.webmvc.api;
 
 import java.time.Instant;
+import java.util.Optional;
 import java.util.UUID;
 
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -36,26 +38,31 @@ import eu.solven.adhoc.engine.observability.plan.IQueryPlanRegistry;
 import eu.solven.adhoc.engine.observability.plan.QueryPlan;
 import eu.solven.adhoc.engine.observability.plan.QueryPlanSummary;
 import eu.solven.adhoc.pivotable.api.IPivotableApiConstants;
+import eu.solven.adhoc.pivotable.query.AsynchronousStatus;
+import eu.solven.adhoc.pivotable.query.PivotableAsynchronousQueriesManager;
 import eu.solven.adhoc.pivotable.webnone.api.IPivotableRouteConstants;
 import eu.solven.adhoc.query.AdhocQueryId;
 import lombok.RequiredArgsConstructor;
 
 /**
- * Read-only endpoints serving {@link QueryPlan} state for the UI Live View and CLI/programmatic monitors.
+ * Read-only endpoints serving {@link QueryPlan} state for the UI Live View and CLI/programmatic monitors. The
+ * {@code queryUuid} path variable is the Pivotable-side UUID the SPA already knows — same UUID the engine adopts as
+ * {@link AdhocQueryId#getQueryId()} (the async-query manager binds it via {@code SubmittedQueryIdScope} before
+ * submitting).
  *
  * <p>
- * Two granularities:
+ * Response contract — distinct states require distinct HTTP signals so the SPA's polling loop can react correctly:
  * <ul>
- * <li>{@code /plan/summary} — single small JSON object suitable for high-frequency polling (state, counts, elapsedMs,
- * startDelayMs, latestCompletedLabel). Cheap; backed by a single DAG walk that allocates only the summary value
- * object.</li>
- * <li>{@code /plan/snapshot} — full {@link QueryPlan} tree. Pay this once when the user opens the Live View modal; the
- * UI then keeps polling the cheap summary for the status chip.</li>
+ * <li><strong>404 Not Found</strong> — the Pivotable manager has never seen this UUID (typo / stale link). The SPA
+ * should drop the LiveView, not retry.</li>
+ * <li><strong>204 No Content + {@code Retry-After: 1}</strong> — the manager accepted the submission but the engine
+ * hasn't yet registered the plan (queueing or planning). The SPA shows a "Queuing…" state and keeps polling.</li>
+ * <li><strong>200 OK</strong> — engine has registered a plan; body is a {@link QueryPlanSummary} or full
+ * {@link QueryPlan}. The SPA renders normally.</li>
+ * <li><strong>204 No Content</strong> (no {@code Retry-After}) — the manager knows the UUID but the registry has
+ * evicted the plan (only happens after the query has terminated and the LRU pool flushed it). The SPA shows "may have
+ * been evicted" and stops polling.</li>
  * </ul>
- *
- * <p>
- * Path variable is the {@link UUID} portion of {@link AdhocQueryId#getQueryId()}, not the full
- * {@link AdhocQueryId#toString()} — URLs stay clean and copy/pasteable.
  *
  * @author Benoit Lacelle
  */
@@ -64,36 +71,51 @@ import lombok.RequiredArgsConstructor;
 @RequestMapping(IPivotableApiConstants.PREFIX)
 public class PivotablePlanController implements IPivotableRouteConstants {
 
+	protected final PivotableAsynchronousQueriesManager asyncManager;
 	protected final IQueryPlanRegistry registry;
 
 	/**
 	 * @param queryUuid
-	 *            the UUID portion of an {@link AdhocQueryId}
-	 * @return 200 with a {@link QueryPlanSummary} when a plan is registered; 204 No Content when no plan is registered
-	 *         for that UUID (the registry is bounded — the plan may have been evicted, or the UUID may simply be
-	 *         unknown). 404 is reserved for "the endpoint itself does not exist".
+	 *            the Pivotable-side UUID returned by {@code POST /cubes/query/asynchronous}
+	 * @return see class-level contract
 	 */
 	@GetMapping(value = R_CUBE_PLAN_SUMMARY, produces = MediaType.APPLICATION_JSON_VALUE)
 	public ResponseEntity<QueryPlanSummary> getPlanSummary(@PathVariable("queryUuid") UUID queryUuid) {
-		return registry.findIdByUuid(queryUuid)
-				.flatMap(registry::snapshot)
-				.map(plan -> QueryPlanSummary.of(plan, Instant.now()))
-				.map(ResponseEntity::ok)
-				.orElseGet(() -> ResponseEntity.noContent().build());
+		Optional<QueryPlan> plan = lookupPlan(queryUuid);
+		if (plan.isPresent()) {
+			return ResponseEntity.ok(QueryPlanSummary.of(plan.get(), Instant.now()));
+		}
+		return notReadyResponse(queryUuid);
 	}
 
 	/**
 	 * @param queryUuid
-	 *            the UUID portion of an {@link AdhocQueryId}
-	 * @return 200 with the full {@link QueryPlan} tree (deep-copied — safe to consume on the response side); 204 No
-	 *         Content when no plan is registered for that UUID. 404 is reserved for "the endpoint itself does not
-	 *         exist".
+	 *            the Pivotable-side UUID returned by {@code POST /cubes/query/asynchronous}
+	 * @return see class-level contract
 	 */
 	@GetMapping(value = R_CUBE_PLAN_SNAPSHOT, produces = MediaType.APPLICATION_JSON_VALUE)
 	public ResponseEntity<QueryPlan> getPlanSnapshot(@PathVariable("queryUuid") UUID queryUuid) {
-		return registry.findIdByUuid(queryUuid)
-				.flatMap(registry::snapshot)
-				.map(ResponseEntity::ok)
-				.orElseGet(() -> ResponseEntity.noContent().build());
+		Optional<QueryPlan> plan = lookupPlan(queryUuid);
+		if (plan.isPresent()) {
+			return ResponseEntity.ok(plan.get());
+		}
+		return notReadyResponse(queryUuid);
+	}
+
+	protected Optional<QueryPlan> lookupPlan(UUID queryUuid) {
+		return registry.findIdByUuid(queryUuid).flatMap(registry::snapshot);
+	}
+
+	/**
+	 * Build the not-200 response — distinguishes unknown UUID (404), queuing (204 + Retry-After), and evicted (204).
+	 * Used by both the summary and the snapshot endpoint, so the contract is uniform.
+	 */
+	protected <T> ResponseEntity<T> notReadyResponse(UUID queryUuid) {
+		AsynchronousStatus status = asyncManager.getState(queryUuid);
+		return switch (status) {
+		case UNKNOWN -> ResponseEntity.notFound().build();
+		case RUNNING -> ResponseEntity.noContent().header(HttpHeaders.RETRY_AFTER, "1").build();
+		case SERVED, FAILED, DISCARDED -> ResponseEntity.noContent().build();
+		};
 	}
 }

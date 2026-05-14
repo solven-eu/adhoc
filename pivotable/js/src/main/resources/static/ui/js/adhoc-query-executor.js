@@ -344,6 +344,10 @@ export default {
 
 						const queryResultId = await response.json();
 						latestQueryResultId.value = queryResultId;
+						// Surface the engine-side query UUID on the shared tabularView so the LiveView component (which
+						// lives in the grid tree, not here) can read it as a prop. Same UUID Pivotable holds and the
+						// engine adopts (via SubmittedQueryIdScope at submit time).
+						props.tabularView.queryUuid = queryResultId;
 
 						console.info("Query #", latestSendQueryIdSnapshot, " has been registered as query_id=", queryResultId);
 

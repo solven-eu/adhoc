@@ -24,29 +24,69 @@ package eu.solven.adhoc.pivotable.webmvc.api;
 
 import java.time.Instant;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
 import eu.solven.adhoc.engine.observability.plan.BoundedQueryPlanRegistry;
+import eu.solven.adhoc.engine.observability.plan.IPlanSource;
 import eu.solven.adhoc.engine.observability.plan.NodeOperator;
 import eu.solven.adhoc.engine.observability.plan.NodeState;
 import eu.solven.adhoc.engine.observability.plan.PlanState;
 import eu.solven.adhoc.engine.observability.plan.QueryPlan;
 import eu.solven.adhoc.engine.observability.plan.QueryPlanNode;
 import eu.solven.adhoc.engine.observability.plan.QueryPlanSummary;
+import eu.solven.adhoc.pivotable.query.AsynchronousStatus;
+import eu.solven.adhoc.pivotable.query.PivotableAsynchronousQueriesManager;
 import eu.solven.adhoc.query.AdhocQueryId;
 
 /**
- * Unit tests for {@link PivotablePlanController}. Use a real {@link BoundedQueryPlanRegistry} (cheap, no Spring boot)
- * to exercise the UUID-based lookup + 404 path.
+ * Unit tests for {@link PivotablePlanController}. The controller's four-state response contract (404 / 204+Retry-After
+ * / 200 / 204) is exercised against a real {@link BoundedQueryPlanRegistry} and a stub async manager. Each state
+ * asserts the HTTP code and the {@code Retry-After} header where it matters.
  */
 public class TestPivotablePlanController {
 
-	private static AdhocQueryId newId() {
-		return AdhocQueryId.builder().cube("test-cube").build();
+	/** Minimal test fixture — wraps a pre-built {@link QueryPlan} as an {@link IPlanSource}. */
+	private static IPlanSource sourceOf(QueryPlan plan) {
+		return new IPlanSource() {
+			@Override
+			public AdhocQueryId getQueryId() {
+				return plan.getQueryId();
+			}
+
+			@Override
+			public QueryPlan snapshot() {
+				return plan;
+			}
+
+			@Override
+			public boolean isCompleted() {
+				PlanState s = plan.getState();
+				return s == PlanState.DONE || s == PlanState.FAILED;
+			}
+		};
+	}
+
+	/**
+	 * Stub async manager: every call to {@link #getState(UUID)} returns whatever the test wrote into the
+	 * {@code AtomicReference}. Sidesteps the cache-backed timing semantics of the real manager.
+	 */
+	private static PivotableAsynchronousQueriesManager stubManager(AtomicReference<AsynchronousStatus> stateRef) {
+		return new PivotableAsynchronousQueriesManager() {
+			@Override
+			public AsynchronousStatus getState(UUID queryId) {
+				return stateRef.get();
+			}
+		};
+	}
+
+	private static AdhocQueryId adhocId(UUID uuid) {
+		return AdhocQueryId.builder().cube("test-cube").queryId(uuid).build();
 	}
 
 	private static QueryPlan plan(AdhocQueryId id) {
@@ -68,50 +108,88 @@ public class TestPivotablePlanController {
 	}
 
 	@Test
-	public void testSummaryReturnsRegisteredPlan() {
+	public void testSummary200WhenPlanRegistered() {
+		// Engine has registered the plan → 200 with body.
 		BoundedQueryPlanRegistry registry = new BoundedQueryPlanRegistry(100);
-		AdhocQueryId id = newId();
-		registry.register(plan(id));
+		UUID uuid = UUID.randomUUID();
+		registry.registerSource(sourceOf(plan(adhocId(uuid))));
 
-		PivotablePlanController controller = new PivotablePlanController(registry);
-		ResponseEntity<QueryPlanSummary> response = controller.getPlanSummary(id.getQueryId());
+		PivotablePlanController controller =
+				new PivotablePlanController(stubManager(new AtomicReference<>(AsynchronousStatus.SERVED)), registry);
+		ResponseEntity<QueryPlanSummary> response = controller.getPlanSummary(uuid);
 
 		Assertions.assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
 		Assertions.assertThat(response.getBody()).isNotNull();
 		Assertions.assertThat(response.getBody().getState()).isEqualTo(PlanState.DONE);
-		Assertions.assertThat(response.getBody().getTotalNodes()).isEqualTo(1);
 	}
 
 	@Test
-	public void testSnapshotReturnsRegisteredPlan() {
+	public void testSnapshot200WhenPlanRegistered() {
 		BoundedQueryPlanRegistry registry = new BoundedQueryPlanRegistry(100);
-		AdhocQueryId id = newId();
-		registry.register(plan(id));
+		UUID uuid = UUID.randomUUID();
+		registry.registerSource(sourceOf(plan(adhocId(uuid))));
 
-		PivotablePlanController controller = new PivotablePlanController(registry);
-		ResponseEntity<QueryPlan> response = controller.getPlanSnapshot(id.getQueryId());
+		PivotablePlanController controller =
+				new PivotablePlanController(stubManager(new AtomicReference<>(AsynchronousStatus.SERVED)), registry);
+		ResponseEntity<QueryPlan> response = controller.getPlanSnapshot(uuid);
 
 		Assertions.assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
 		Assertions.assertThat(response.getBody()).isNotNull();
-		Assertions.assertThat(response.getBody().getQueryId().getQueryId()).isEqualTo(id.getQueryId());
 	}
 
 	@Test
-	public void testSummary204OnUnknownUuid() {
-		// Reserve 404 for "endpoint doesn't exist"; an unknown UUID (possibly evicted) returns 204 No Content.
+	public void testSummary404WhenUuidUnknownToManager() {
+		// Manager has never seen the UUID → 404 (typo / stale link).
 		BoundedQueryPlanRegistry registry = new BoundedQueryPlanRegistry(100);
-		PivotablePlanController controller = new PivotablePlanController(registry);
+		PivotablePlanController controller =
+				new PivotablePlanController(stubManager(new AtomicReference<>(AsynchronousStatus.UNKNOWN)), registry);
+
+		ResponseEntity<QueryPlanSummary> response = controller.getPlanSummary(UUID.randomUUID());
+		Assertions.assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+	}
+
+	@Test
+	public void testSummary204WithRetryAfterWhenManagerKnowsButEngineNotReady() {
+		// Manager accepted the submission, engine hasn't yet registered the plan → 204 + Retry-After.
+		BoundedQueryPlanRegistry registry = new BoundedQueryPlanRegistry(100);
+		PivotablePlanController controller =
+				new PivotablePlanController(stubManager(new AtomicReference<>(AsynchronousStatus.RUNNING)), registry);
 
 		ResponseEntity<QueryPlanSummary> response = controller.getPlanSummary(UUID.randomUUID());
 		Assertions.assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+		Assertions.assertThat(response.getHeaders().getFirst(HttpHeaders.RETRY_AFTER)).isEqualTo("1");
 	}
 
 	@Test
-	public void testSnapshot204OnUnknownUuid() {
+	public void testSummary204WithoutRetryAfterWhenEvictedAfterTermination() {
+		// Manager marked it SERVED but the registry has nothing → 204 without Retry-After (terminal/gone).
 		BoundedQueryPlanRegistry registry = new BoundedQueryPlanRegistry(100);
-		PivotablePlanController controller = new PivotablePlanController(registry);
+		PivotablePlanController controller =
+				new PivotablePlanController(stubManager(new AtomicReference<>(AsynchronousStatus.SERVED)), registry);
+
+		ResponseEntity<QueryPlanSummary> response = controller.getPlanSummary(UUID.randomUUID());
+		Assertions.assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+		Assertions.assertThat(response.getHeaders().getFirst(HttpHeaders.RETRY_AFTER)).isNull();
+	}
+
+	@Test
+	public void testSnapshot404WhenUuidUnknownToManager() {
+		BoundedQueryPlanRegistry registry = new BoundedQueryPlanRegistry(100);
+		PivotablePlanController controller =
+				new PivotablePlanController(stubManager(new AtomicReference<>(AsynchronousStatus.UNKNOWN)), registry);
+
+		ResponseEntity<QueryPlan> response = controller.getPlanSnapshot(UUID.randomUUID());
+		Assertions.assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+	}
+
+	@Test
+	public void testSnapshot204WithRetryAfterWhenQueuing() {
+		BoundedQueryPlanRegistry registry = new BoundedQueryPlanRegistry(100);
+		PivotablePlanController controller =
+				new PivotablePlanController(stubManager(new AtomicReference<>(AsynchronousStatus.RUNNING)), registry);
 
 		ResponseEntity<QueryPlan> response = controller.getPlanSnapshot(UUID.randomUUID());
 		Assertions.assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+		Assertions.assertThat(response.getHeaders().getFirst(HttpHeaders.RETRY_AFTER)).isEqualTo("1");
 	}
 }

@@ -34,7 +34,6 @@ import eu.solven.adhoc.query.AdhocQueryId;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;
-import lombok.experimental.NonFinal;
 
 /**
  * Live {@link IPlanSource} backed by a running {@link QueryStepsDag}. Each {@link #snapshot()} call re-projects the
@@ -46,16 +45,9 @@ import lombok.experimental.NonFinal;
  * after (post-mortem inspection while the registry hasn't evicted yet).
  *
  * <p>
- * Wiring TODO (deferred to a follow-up PR): {@code CubeQueryEngine.executeInScope} should build one of these right
- * after the DAG is constructed, hand it to {@code IQueryPlanRegistry.registerSource(...)}, and call
- * {@link #markCompleted(PlanState, Instant)} in its {@code finally} block. PR 3 introduces the abstractions; the engine
- * call sites move in PR 4.
- *
- * <p>
- * Future test reminder: a deterministic intermediate-state poll. Build a query whose dag includes a {@code Combinator}
- * backed by a {@code CountDownLatch} — the combinator blocks until the test latch is released, which gives the
- * assertion thread a chance to call {@link #snapshot()} and observe a mix of DONE / PENDING nodes mid-flight. Pin both
- * the partial-stats correctness and the version bump.
+ * Mid-flight projection — i.e. one node DONE while a downstream node is still running — is covered by
+ * {@code TestLiveQueryPlanSource_MidFlight} (engine/cube test) via a {@code CountDownLatch}-blocking combinator. The
+ * test pins both the partial-stats correctness and the {@link #version()} bump on {@link #markCompleted}.
  *
  * @author Benoit Lacelle
  */
@@ -94,7 +86,7 @@ public class LiveQueryPlanSource implements IPlanSource {
 	 */
 	@NonNull
 	@Builder.Default
-	private final AtomicLong version = new AtomicLong();
+	private final AtomicLong versionCounter = new AtomicLong();
 
 	/**
 	 * Plan-level state. {@link AtomicReference} so {@link #snapshot()} reads a coherent value even while
@@ -104,19 +96,19 @@ public class LiveQueryPlanSource implements IPlanSource {
 	@Builder.Default
 	private final AtomicReference<PlanState> planState = new AtomicReference<>(PlanState.PENDING);
 
-	/** Set on completion. {@code null} while in-flight. */
-	@NonFinal
-	@Nullable
-	private volatile Instant completedAt;
+	/** Set on completion. {@code null} while in-flight. {@link AtomicReference} provides cross-thread visibility. */
+	@NonNull
+	@Builder.Default
+	private final AtomicReference<@Nullable Instant> completedAt = new AtomicReference<>();
 
 	/**
 	 * Set when execution actually starts (after queueing). {@code null} while the query is still waiting for a slot —
 	 * the gap {@code executionStartedAt - submittedAt} feeds {@link QueryPlanSummary#getStartDelayMs()}, which surfaces
 	 * pool-saturation symptoms.
 	 */
-	@NonFinal
-	@Nullable
-	private volatile Instant executionStartedAt;
+	@NonNull
+	@Builder.Default
+	private final AtomicReference<@Nullable Instant> executionStartedAt = new AtomicReference<>();
 
 	@Override
 	public AdhocQueryId getQueryId() {
@@ -130,14 +122,14 @@ public class LiveQueryPlanSource implements IPlanSource {
 				parentQueryId,
 				cubeName,
 				submittedAt,
-				executionStartedAt,
+				executionStartedAt.get(),
 				planState.get(),
-				completedAt);
+				completedAt.get());
 	}
 
 	@Override
 	public long version() {
-		return version.get();
+		return versionCounter.get();
 	}
 
 	@Override
@@ -153,7 +145,7 @@ public class LiveQueryPlanSource implements IPlanSource {
 	 * @return the new version
 	 */
 	public long bumpVersion() {
-		return version.incrementAndGet();
+		return versionCounter.incrementAndGet();
 	}
 
 	/**
@@ -164,8 +156,7 @@ public class LiveQueryPlanSource implements IPlanSource {
 	 *            wall-clock time at which execution started
 	 */
 	public void markExecutionStarted(Instant at) {
-		if (this.executionStartedAt == null) {
-			this.executionStartedAt = at;
+		if (executionStartedAt.compareAndSet(null, at)) {
 			bumpVersion();
 		}
 	}
@@ -182,7 +173,7 @@ public class LiveQueryPlanSource implements IPlanSource {
 	 */
 	public void markCompleted(PlanState state, Instant at) {
 		planState.set(state);
-		this.completedAt = at;
+		completedAt.set(at);
 		bumpVersion();
 	}
 }

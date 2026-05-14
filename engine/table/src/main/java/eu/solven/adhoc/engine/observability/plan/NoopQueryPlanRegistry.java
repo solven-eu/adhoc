@@ -45,11 +45,6 @@ public final class NoopQueryPlanRegistry implements IQueryPlanRegistry {
 	}
 
 	@Override
-	public void register(QueryPlan plan) {
-		// drop
-	}
-
-	@Override
 	public void registerSource(IPlanSource source) {
 		// drop
 	}

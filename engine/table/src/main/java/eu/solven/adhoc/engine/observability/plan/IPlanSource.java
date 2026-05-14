@@ -25,21 +25,13 @@ package eu.solven.adhoc.engine.observability.plan;
 import eu.solven.adhoc.query.AdhocQueryId;
 
 /**
- * Source of {@link QueryPlan} snapshots — the pull-side counterpart to the push-side
- * {@link eu.solven.adhoc.engine.observability.plan.events.IQueryPlanEvent} family.
+ * Source of {@link QueryPlan} snapshots — the pull-side abstraction the registry holds.
  *
  * <p>
- * Two concrete shapes are intended:
- * <ul>
- * <li>A <strong>static</strong> source holding a single {@link QueryPlan} instance. Returns it on every
- * {@link #snapshot()}. Useful when a caller has the full plan in hand and just wants to register it in the
- * {@link IQueryPlanRegistry}. (This is the shape used by the push-driven path: the {@code QueryPlanRegistryUpdater}
- * mutates the same instance, the registry returns a deep copy via
- * {@link IQueryPlanRegistry#snapshot(AdhocQueryId)}.)</li>
- * <li>A <strong>live projection</strong> source backed by a running {@code QueryStepsDag}. Returns a fresh immutable
- * {@link QueryPlan} each time, projected from the dag's current state. Cheap when nobody calls, O(N) per call when
- * polled — for the 20k-step plans this codebase produces, single-digit ms per snapshot on modern hardware.</li>
- * </ul>
+ * The canonical implementation is {@link LiveQueryPlanSource}: a live-projection source backed by a running
+ * {@code QueryStepsDag} that returns a fresh immutable {@link QueryPlan} on each {@link #snapshot()}, projected from
+ * the dag's current state. Cheap when nobody calls, O(N) per call when polled — for the 20k-step plans this codebase
+ * produces, single-digit ms per snapshot on modern hardware.
  *
  * <p>
  * Snapshot semantics are intentionally <em>monitor-quality</em>: there is no ACID-style guarantee that the returned
@@ -68,8 +60,8 @@ public interface IPlanSource {
 	 * unchanged snapshot.
 	 *
 	 * <p>
-	 * Default returns {@code 0} for static sources whose state never changes. Live projection sources bump it whenever
-	 * the projected plan would differ from the previous {@link #snapshot()} return — typically once per step state
+	 * Default returns {@code 0} for sources whose state never changes. Live sources should bump it whenever the
+	 * projected plan would differ from the previous {@link #snapshot()} return — typically once per step state
 	 * transition. The counter is monotonic but otherwise opaque; callers compare equality, not order.
 	 *
 	 * @return the current version

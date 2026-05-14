@@ -32,13 +32,11 @@ import eu.solven.adhoc.query.AdhocQueryId;
  * Holds the {@link QueryPlan} for every recent execution. Two consumer shapes are intended:
  *
  * <ol>
- * <li><strong>Engine</strong> — the {@code DagExplainer} variants build plans into the registry while a query is
- * executing. The plan transitions from {@link PlanState#PENDING} to {@link PlanState#RUNNING} to {@link PlanState#DONE}
- * / {@link PlanState#FAILED} as nodes complete.</li>
- * <li><strong>UI / log renderer</strong> — read-side. The log renderer dumps the plan on completion; the Live View
- * polls {@link #snapshot(AdhocQueryId)} every few hundred ms while the plan is RUNNING and stops once it reaches a
- * terminal state. {@link #snapshot} returns a deep copy so mutation on the engine side is never observed mid-flight by
- * readers.</li>
+ * <li><strong>Engine</strong> — {@code CubeQueryEngine} registers a {@link LiveQueryPlanSource} per execution, then
+ * marks it complete via {@link LiveQueryPlanSource#markCompleted(PlanState, java.time.Instant)} on exit.</li>
+ * <li><strong>UI / log renderer</strong> — read-side. The Live View polls {@link #snapshot(AdhocQueryId)} every few
+ * hundred ms while the plan is RUNNING and stops once it reaches a terminal state. Each call returns a fresh immutable
+ * {@link QueryPlan} (projected from the live {@code QueryStepsDag}) so readers never see mid-mutation.</li>
  * </ol>
  *
  * <p>
@@ -62,22 +60,6 @@ import eu.solven.adhoc.query.AdhocQueryId;
 // returns the full plan tree; `.../plan/mermaid` and `.../plan/text` (future) render. Same path family enables the
 // query-history endpoint to enrich entries with a `hasPlan` flag via {@link #hasPlan(AdhocQueryId)}.
 public interface IQueryPlanRegistry {
-
-	/**
-	 * Register a freshly-built plan via the push-side path (the {@code QueryPlanRegistryUpdater} pattern). Idempotent
-	 * on {@code plan.queryId} — re-registering replaces the existing entry, which is the normal path when the engine
-	 * transitions a plan from PENDING to RUNNING (or updates after a node completes).
-	 *
-	 * <p>
-	 * Equivalent to wrapping {@code plan} in a {@link StaticPlanSource} and calling
-	 * {@link #registerSource(IPlanSource)} — convenience overload for callers that already have a complete
-	 * {@link QueryPlan}.
-	 *
-	 * @param plan
-	 *            the plan; must not be {@code null}
-	 */
-	@Deprecated(since = "Push will be removed")
-	void register(QueryPlan plan);
 
 	/**
 	 * Register a {@link IPlanSource} — the pull-side path used by {@link LiveQueryPlanSource}, which projects a

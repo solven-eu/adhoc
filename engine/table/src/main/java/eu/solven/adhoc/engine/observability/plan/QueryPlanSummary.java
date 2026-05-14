@@ -182,6 +182,9 @@ public class QueryPlanSummary {
 	 * Extracted from the walk for symmetry with {@link #walk(QueryPlanNode, Consumer)} and to make per-node logic
 	 * testable in isolation.
 	 */
+	// Switch is exhaustive over NodeState; PMD warns when an exhaustive switch carries a default. Checkstyle's
+	// MissingSwitchDefault fires for statement-style switches without one — suppress it here.
+	@SuppressWarnings("checkstyle:MissingSwitchDefault")
 	protected static void count(Counter counter, QueryPlanNode n) {
 		counter.total++;
 		switch (n.getState()) {

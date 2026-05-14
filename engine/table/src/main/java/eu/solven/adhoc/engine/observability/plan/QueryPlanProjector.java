@@ -25,6 +25,7 @@ package eu.solven.adhoc.engine.observability.plan;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -125,13 +126,25 @@ public class QueryPlanProjector {
 		if (rootNodes.size() == 1) {
 			planRoot = rootNodes.get(0);
 		} else {
+			NodeState syntheticRootState;
+			if (planState == PlanState.PENDING) {
+				syntheticRootState = NodeState.PENDING;
+			} else {
+				syntheticRootState = NodeState.DONE;
+			}
 			planRoot = QueryPlanNode.builder()
 					.subject(SYNTHETIC_ROOT)
 					.operator(NodeOperator.CUBE_STEP)
 					.label("(query roots × " + rootNodes.size() + ")")
 					.children(List.copyOf(rootNodes))
-					.state(planState == PlanState.PENDING ? NodeState.PENDING : NodeState.DONE)
+					.state(syntheticRootState)
 					.build();
+		}
+
+		// Synthetic-root contributes +1 to the node count when present.
+		long nodeCount = memo.size();
+		if (rootNodes.size() > 1) {
+			nodeCount++;
 		}
 
 		return QueryPlan.builder()
@@ -144,7 +157,7 @@ public class QueryPlanProjector {
 				.executionStartedAt(executionStartedAt)
 				.completedAt(completedAt)
 				.root(planRoot)
-				.nodeCount(memo.size() + (rootNodes.size() > 1 ? 1 : 0))
+				.nodeCount(nodeCount)
 				.build();
 	}
 
@@ -154,8 +167,9 @@ public class QueryPlanProjector {
 	 */
 	@Nullable
 	protected Object readSubmittedCustomMarker(QueryStepsDag dag) {
-		for (CubeQueryStep explicit : dag.getExplicits()) {
-			return explicit.getCustomMarker();
+		Iterator<CubeQueryStep> it = dag.getExplicits().iterator();
+		if (it.hasNext()) {
+			return it.next().getCustomMarker();
 		}
 		return null;
 	}
@@ -175,7 +189,7 @@ public class QueryPlanProjector {
 			QueryPlanNode leaf = QueryPlanNode.builder()
 					.subject(step)
 					.operator(NodeOperator.CUBE_STEP)
-					.label(String.valueOf(step) + " (cycle-detected)")
+					.label(step + " (cycle-detected)")
 					.state(NodeState.PENDING)
 					.build();
 			memo.put(step, leaf);

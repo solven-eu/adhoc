@@ -25,12 +25,11 @@ package eu.solven.adhoc.engine.observability.plan;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.stream.Collectors;
+import java.util.UUID;
 
 import eu.solven.adhoc.query.AdhocQueryId;
 import lombok.extern.slf4j.Slf4j;
@@ -42,11 +41,8 @@ import lombok.extern.slf4j.Slf4j;
  * Properties:
  * <ul>
  * <li>Backed by a {@link LinkedHashMap} of {@link IPlanSource} entries in access-order so the LRU is implicit.</li>
- * <li>{@link #snapshot(AdhocQueryId)} returns a safe-to-share {@link QueryPlan} — for {@link StaticPlanSource} it
- * deep-copies the wrapped plan; for {@link LiveQueryPlanSource} it returns the projector's fresh tree directly (the
- * projector already builds an immutable structure per call).</li>
- * <li>{@link #get(AdhocQueryId)} returns the source's raw plan — for {@link StaticPlanSource} that's the mutable
- * instance, used by the push-side {@code QueryPlanRegistryUpdater} to mutate state in place.</li>
+ * <li>{@link #snapshot(AdhocQueryId)} delegates to {@link IPlanSource#snapshot()}, which returns a fresh immutable
+ * {@link QueryPlan} per call — readers therefore never see a mid-mutation tree.</li>
  * <li>Sources that report {@link IPlanSource#isCompleted()} are eligible for LRU eviction once the registry is over
  * budget. In-flight sources are exempt.</li>
  * <li>{@link #lock(AdhocQueryId) Locked} sources sit in a separate map and are never evicted regardless of budget.
@@ -58,6 +54,9 @@ import lombok.extern.slf4j.Slf4j;
  * @author Benoit Lacelle
  */
 @Slf4j
+// All public methods guard mutation/lookup on the private {@link #mutationLock} object. The codebase convention is
+// to suppress PMD's AvoidSynchronizedStatement at the class level rather than per-method (see e.g. AdhocQueryMonitor).
+@SuppressWarnings("PMD.AvoidSynchronizedStatement")
 public class BoundedQueryPlanRegistry implements IQueryPlanRegistry {
 
 	private final long maxTotalNodes;
@@ -77,88 +76,86 @@ public class BoundedQueryPlanRegistry implements IQueryPlanRegistry {
 
 	protected long currentNodeCount;
 
+	private static final int INITIAL_MAP_CAPACITY = 64;
+	private static final float MAP_LOAD_FACTOR = 0.75f;
+
+	/**
+	 * Private lock object — avoids the PMD AvoidSynchronizedAtMethodLevel pattern and shields against external callers
+	 * synchronising on {@code this}. Named with a distinct identifier from the {@link #lock(AdhocQueryId)} method to
+	 * keep PMD's AvoidFieldNameMatchingMethodName happy.
+	 */
+	private final Object mutationLock = new Object();
+
 	public BoundedQueryPlanRegistry(long maxTotalNodes) {
 		if (maxTotalNodes <= 0L) {
 			throw new IllegalArgumentException("maxTotalNodes must be positive, got " + maxTotalNodes);
 		}
 		this.maxTotalNodes = maxTotalNodes;
-		this.sources = new LinkedHashMap<>(64, 0.75f, true);
+		// `true` selects access-order — the LRU policy depends on this.
+		this.sources = new LinkedHashMap<>(INITIAL_MAP_CAPACITY, MAP_LOAD_FACTOR, true);
 		this.locked = new LinkedHashMap<>();
 	}
 
 	@Override
-	public synchronized void register(QueryPlan plan) {
-		Objects.requireNonNull(plan, "plan");
-		registerSource(new StaticPlanSource(plan));
-	}
-
-	@Override
-	public synchronized void registerSource(IPlanSource source) {
+	public void registerSource(IPlanSource source) {
 		Objects.requireNonNull(source, "source");
 		AdhocQueryId id = source.getQueryId();
-		// If the id is currently locked, replace it in place — the user expects their pin to survive a re-register.
-		IPlanSource previous;
-		if (locked.containsKey(id)) {
-			previous = locked.put(id, source);
-		} else {
-			previous = sources.put(id, source);
+		synchronized (mutationLock) {
+			// If the id is currently locked, replace it in place — the user expects their pin to survive a re-register.
+			IPlanSource previous;
+			if (locked.containsKey(id)) {
+				previous = locked.put(id, source);
+			} else {
+				previous = sources.put(id, source);
+			}
+			if (previous != null) {
+				currentNodeCount -= nodeCountOf(previous);
+			}
+			currentNodeCount += nodeCountOf(source);
+			evictIfOverBudget();
 		}
-		if (previous != null) {
-			currentNodeCount -= nodeCountOf(previous);
-		}
-		currentNodeCount += nodeCountOf(source);
-		evictIfOverBudget();
 	}
 
 	@Override
-	public synchronized Optional<QueryPlan> get(AdhocQueryId queryId) {
-		IPlanSource source = lookup(queryId);
-		if (source == null) {
-			return Optional.empty();
+	public Optional<QueryPlan> get(AdhocQueryId queryId) {
+		synchronized (mutationLock) {
+			IPlanSource source = lookup(queryId);
+			if (source == null) {
+				return Optional.empty();
+			}
+			return Optional.of(source.snapshot());
 		}
-		// Static sources expose the underlying mutable plan; live sources have nothing mutable to expose so we
-		// fall back to the projection. The push-side updater always works with static sources.
-		if (source instanceof StaticPlanSource s) {
-			return Optional.of(s.getPlan());
-		}
-		return Optional.of(source.snapshot());
 	}
 
 	@Override
-	public synchronized Optional<QueryPlan> snapshot(AdhocQueryId queryId) {
-		IPlanSource source = lookup(queryId);
-		if (source == null) {
-			return Optional.empty();
+	public Optional<QueryPlan> snapshot(AdhocQueryId queryId) {
+		synchronized (mutationLock) {
+			IPlanSource source = lookup(queryId);
+			if (source == null) {
+				return Optional.empty();
+			}
+			return Optional.of(source.snapshot());
 		}
-		if (source instanceof StaticPlanSource s) {
-			// Deep-copy because the wrapped plan is mutated in place by the push-side updater. The live source's
-			// own snapshot() returns a fresh immutable tree per call — no need to copy again.
-			return Optional.of(deepCopy(s.getPlan()));
-		}
-		return Optional.of(source.snapshot());
 	}
 
 	@Override
-	public synchronized List<QueryPlan> getChildrenOf(AdhocQueryId parent) {
+	public List<QueryPlan> getChildrenOf(AdhocQueryId parent) {
 		Objects.requireNonNull(parent, "parent");
 		// Match by UUID — that's the link the engine maintains (AdhocQueryId.parentQueryId is a UUID).
-		java.util.UUID parentUuid = parent.getQueryId();
+		UUID parentUuid = parent.getQueryId();
 		List<QueryPlan> kids = new ArrayList<>();
-		collectChildren(sources.values(), parentUuid, kids);
-		collectChildren(locked.values(), parentUuid, kids);
+		synchronized (mutationLock) {
+			collectChildren(sources.values(), parentUuid, kids);
+			collectChildren(locked.values(), parentUuid, kids);
+		}
 		return kids;
 	}
 
 	protected static void collectChildren(java.util.Collection<IPlanSource> srcs,
-			java.util.UUID parentUuid,
+			UUID parentUuid,
 			List<QueryPlan> out) {
 		for (IPlanSource source : srcs) {
-			QueryPlan p;
-			if (source instanceof StaticPlanSource s) {
-				p = deepCopy(s.getPlan());
-			} else {
-				p = source.snapshot();
-			}
+			QueryPlan p = source.snapshot();
 			if (parentUuid.equals(p.getParentQueryId())) {
 				out.add(p);
 			}
@@ -166,66 +163,80 @@ public class BoundedQueryPlanRegistry implements IQueryPlanRegistry {
 	}
 
 	@Override
-	public synchronized int planCount() {
-		return sources.size() + locked.size();
+	public int planCount() {
+		synchronized (mutationLock) {
+			return sources.size() + locked.size();
+		}
 	}
 
 	@Override
-	public synchronized long totalNodeCount() {
-		return currentNodeCount;
+	public long totalNodeCount() {
+		synchronized (mutationLock) {
+			return currentNodeCount;
+		}
 	}
 
 	@Override
-	public synchronized boolean hasPlan(AdhocQueryId queryId) {
-		return sources.containsKey(queryId) || locked.containsKey(queryId);
+	public boolean hasPlan(AdhocQueryId queryId) {
+		synchronized (mutationLock) {
+			return sources.containsKey(queryId) || locked.containsKey(queryId);
+		}
 	}
 
 	@Override
-	public synchronized boolean lock(AdhocQueryId queryId) {
+	public boolean lock(AdhocQueryId queryId) {
 		Objects.requireNonNull(queryId, "queryId");
-		if (locked.containsKey(queryId)) {
-			return false;
+		synchronized (mutationLock) {
+			if (locked.containsKey(queryId)) {
+				return false;
+			}
+			IPlanSource source = sources.remove(queryId);
+			if (source == null) {
+				return false;
+			}
+			locked.put(queryId, source);
+			return true;
 		}
-		IPlanSource source = sources.remove(queryId);
-		if (source == null) {
-			return false;
-		}
-		locked.put(queryId, source);
-		return true;
 	}
 
 	@Override
-	public synchronized boolean unlock(AdhocQueryId queryId) {
+	public boolean unlock(AdhocQueryId queryId) {
 		Objects.requireNonNull(queryId, "queryId");
-		IPlanSource source = locked.remove(queryId);
-		if (source == null) {
-			return false;
+		synchronized (mutationLock) {
+			IPlanSource source = locked.remove(queryId);
+			if (source == null) {
+				return false;
+			}
+			sources.put(queryId, source);
+			// Now that the source is back in the LRU pool, the budget might be exceeded — give eviction a chance.
+			evictIfOverBudget();
+			return true;
 		}
-		sources.put(queryId, source);
-		// Now that the source is back in the LRU pool, the budget might be exceeded — give eviction a chance.
-		evictIfOverBudget();
-		return true;
 	}
 
 	@Override
-	public synchronized boolean isLocked(AdhocQueryId queryId) {
-		return locked.containsKey(queryId);
+	public boolean isLocked(AdhocQueryId queryId) {
+		synchronized (mutationLock) {
+			return locked.containsKey(queryId);
+		}
 	}
 
 	@Override
-	public synchronized Optional<AdhocQueryId> findIdByUuid(java.util.UUID queryUuid) {
+	public Optional<AdhocQueryId> findIdByUuid(UUID queryUuid) {
 		Objects.requireNonNull(queryUuid, "queryUuid");
-		for (AdhocQueryId id : sources.keySet()) {
-			if (queryUuid.equals(id.getQueryId())) {
-				return Optional.of(id);
+		synchronized (mutationLock) {
+			for (AdhocQueryId id : sources.keySet()) {
+				if (queryUuid.equals(id.getQueryId())) {
+					return Optional.of(id);
+				}
 			}
-		}
-		for (AdhocQueryId id : locked.keySet()) {
-			if (queryUuid.equals(id.getQueryId())) {
-				return Optional.of(id);
+			for (AdhocQueryId id : locked.keySet()) {
+				if (queryUuid.equals(id.getQueryId())) {
+					return Optional.of(id);
+				}
 			}
+			return Optional.empty();
 		}
-		return Optional.empty();
 	}
 
 	/**
@@ -250,7 +261,7 @@ public class BoundedQueryPlanRegistry implements IQueryPlanRegistry {
 			return;
 		}
 		Iterator<Map.Entry<AdhocQueryId, IPlanSource>> it = sources.entrySet().iterator();
-		LinkedList<AdhocQueryId> evictable = new LinkedList<>();
+		List<AdhocQueryId> evictable = new ArrayList<>();
 		while (it.hasNext()) {
 			Map.Entry<AdhocQueryId, IPlanSource> e = it.next();
 			if (e.getValue().isCompleted()) {
@@ -275,30 +286,10 @@ public class BoundedQueryPlanRegistry implements IQueryPlanRegistry {
 	}
 
 	/**
-	 * Pre-projected node count for the eviction budget. For static sources we read the field directly; for live sources
-	 * we have to project once to learn it. The live cost is acceptable: register happens once per query and projection
-	 * is a single dag walk.
+	 * Pre-projected node count for the eviction budget. Each source projects once at registration to learn its size;
+	 * the cost is acceptable since register happens once per query and projection is a single dag walk.
 	 */
 	private static long nodeCountOf(IPlanSource source) {
-		if (source instanceof StaticPlanSource s) {
-			return s.getPlan().getNodeCount();
-		}
 		return source.snapshot().getNodeCount();
-	}
-
-	/**
-	 * Deep-copy a plan + its node tree so the caller can read it without race against the engine. Static sources route
-	 * through this; live sources don't need it. Visible for tests.
-	 */
-	static QueryPlan deepCopy(QueryPlan plan) {
-		return plan.toBuilder().root(deepCopy(plan.getRoot())).build();
-	}
-
-	private static QueryPlanNode deepCopy(QueryPlanNode node) {
-		List<QueryPlanNode> copiedChildren = node.getChildren()
-				.stream()
-				.map(BoundedQueryPlanRegistry::deepCopy)
-				.collect(Collectors.toUnmodifiableList());
-		return node.toBuilder().children(copiedChildren).details(Map.copyOf(node.getDetails())).build();
 	}
 }

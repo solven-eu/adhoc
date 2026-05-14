@@ -23,8 +23,10 @@
 package eu.solven.adhoc.pivotable.webflux.api;
 
 import java.time.Instant;
+import java.util.Optional;
 import java.util.UUID;
 
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.server.ServerRequest;
@@ -33,51 +35,65 @@ import org.springframework.web.reactive.function.server.ServerResponse;
 import eu.solven.adhoc.engine.observability.plan.IQueryPlanRegistry;
 import eu.solven.adhoc.engine.observability.plan.QueryPlan;
 import eu.solven.adhoc.engine.observability.plan.QueryPlanSummary;
+import eu.solven.adhoc.pivotable.query.AsynchronousStatus;
+import eu.solven.adhoc.pivotable.query.PivotableAsynchronousQueriesManager;
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
 /**
- * WebFlux mirror of the webmvc {@code PivotablePlanController}. Reads from {@link IQueryPlanRegistry} and serves the
- * Live View's polling endpoints. The path variable is the {@link UUID} portion of an {@code AdhocQueryId}.
+ * WebFlux mirror of {@code PivotablePlanController}. Implements the same 404 / 204+Retry-After / 200 / 204 contract —
+ * see that class's Javadoc for the full state table.
  *
  * @author Benoit Lacelle
  */
 @RequiredArgsConstructor
 public class PivotablePlanHandler {
 
+	protected final PivotableAsynchronousQueriesManager asyncManager;
 	protected final IQueryPlanRegistry registry;
 
 	/**
 	 * @param serverRequest
 	 *            carrying {@code queryUuid} as a path variable
-	 * @return 200 with a {@link QueryPlanSummary} when a plan is registered; 204 No Content when no plan is registered
-	 *         for that UUID (the registry is bounded — the plan may have been evicted, or the UUID may simply be
-	 *         unknown). 404 is reserved for "the endpoint itself does not exist".
+	 * @return see {@code PivotablePlanController} for the contract
 	 */
 	public Mono<ServerResponse> getPlanSummary(ServerRequest serverRequest) {
 		UUID queryUuid = UUID.fromString(serverRequest.pathVariable("queryUuid"));
-		return registry.findIdByUuid(queryUuid)
-				.flatMap(registry::snapshot)
-				.map(plan -> QueryPlanSummary.of(plan, Instant.now()))
-				.<Mono<ServerResponse>>map(summary -> ServerResponse.ok()
-						.contentType(MediaType.APPLICATION_JSON)
-						.body(BodyInserters.fromValue(summary)))
-				.orElseGet(() -> ServerResponse.noContent().build());
+		Optional<QueryPlan> plan = registry.findIdByUuid(queryUuid).flatMap(registry::snapshot);
+		if (plan.isPresent()) {
+			return ServerResponse.ok()
+					.contentType(MediaType.APPLICATION_JSON)
+					.body(BodyInserters.fromValue(QueryPlanSummary.of(plan.get(), Instant.now())));
+		}
+		return notReadyResponse(queryUuid);
 	}
 
 	/**
 	 * @param serverRequest
 	 *            carrying {@code queryUuid} as a path variable
-	 * @return 200 with the full {@link QueryPlan} tree, or 204 No Content when no plan is registered for that UUID. 404
-	 *         is reserved for "the endpoint itself does not exist".
+	 * @return see {@code PivotablePlanController} for the contract
 	 */
 	public Mono<ServerResponse> getPlanSnapshot(ServerRequest serverRequest) {
 		UUID queryUuid = UUID.fromString(serverRequest.pathVariable("queryUuid"));
-		return registry.findIdByUuid(queryUuid)
-				.flatMap(registry::snapshot)
-				.<Mono<ServerResponse>>map(plan -> ServerResponse.ok()
-						.contentType(MediaType.APPLICATION_JSON)
-						.body(BodyInserters.fromValue(plan)))
-				.orElseGet(() -> ServerResponse.noContent().build());
+		Optional<QueryPlan> plan = registry.findIdByUuid(queryUuid).flatMap(registry::snapshot);
+		if (plan.isPresent()) {
+			return ServerResponse.ok()
+					.contentType(MediaType.APPLICATION_JSON)
+					.body(BodyInserters.fromValue(plan.get()));
+		}
+		return notReadyResponse(queryUuid);
+	}
+
+	/**
+	 * Build the not-200 response — 404 for never-seen UUIDs, 204 + {@code Retry-After: 1} while the engine is still
+	 * planning, 204 for evicted/terminal-without-plan.
+	 */
+	protected Mono<ServerResponse> notReadyResponse(UUID queryUuid) {
+		AsynchronousStatus status = asyncManager.getState(queryUuid);
+		return switch (status) {
+		case UNKNOWN -> ServerResponse.notFound().build();
+		case RUNNING -> ServerResponse.noContent().header(HttpHeaders.RETRY_AFTER, "1").build();
+		case SERVED, FAILED, DISCARDED -> ServerResponse.noContent().build();
+		};
 	}
 }

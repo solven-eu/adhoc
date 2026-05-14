@@ -88,8 +88,8 @@ public class PivotableQueryController implements IPivotableRouteConstants {
 
 	final PivotableSchemaRegistry schemaRegistry;
 	final AdhocCubesRegistry cubesRegistry;
-
-	final PivotableAsynchronousQueriesManager asynchronousQueriesManager = new PivotableAsynchronousQueriesManager();
+	// Shared with PivotablePlanController so the LiveView can ask the same manager "have you seen this UUID?"
+	final PivotableAsynchronousQueriesManager asynchronousQueriesManager;
 
 	final AtomicLongMap<UUID> queryIdPolls = AtomicLongMap.create();
 

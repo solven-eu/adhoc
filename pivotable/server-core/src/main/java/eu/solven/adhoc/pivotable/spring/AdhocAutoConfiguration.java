@@ -57,6 +57,9 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class AdhocAutoConfiguration {
 
+	/** Default cap on the in-memory plan registry — enough for ~10 simultaneous 20k-step plans. */
+	private static final long DEFAULT_PLAN_REGISTRY_NODE_BUDGET = 200_000L;
+
 	@Bean
 	@ConditionalOnMissingBean({ IAdhocEventBus.class,
 			com.google.common.eventbus.EventBus.class,
@@ -156,7 +159,7 @@ public class AdhocAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean(IQueryPlanRegistry.class)
 	public IQueryPlanRegistry queryPlanRegistry() {
-		return new BoundedQueryPlanRegistry(200_000L);
+		return new BoundedQueryPlanRegistry(DEFAULT_PLAN_REGISTRY_NODE_BUDGET);
 	}
 
 	@Bean

@@ -101,6 +101,20 @@ public class PivotableComponentsConfiguration {
 		return null;
 	}
 
+	/**
+	 * Shared async-query manager: tracks every async submission's UUID + lifecycle. Promoted to a singleton bean so
+	 * both the query controller (submission, result-polling) and the plan controller (Live View) share the same view of
+	 * which UUIDs are in flight. Previously each controller new'd its own instance, which made the LiveView's "have you
+	 * ever seen this UUID?" check incoherent.
+	 *
+	 * @return the singleton {@link PivotableAsynchronousQueriesManager}
+	 */
+	@Bean
+	@org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean(eu.solven.adhoc.pivotable.query.PivotableAsynchronousQueriesManager.class)
+	public eu.solven.adhoc.pivotable.query.PivotableAsynchronousQueriesManager asyncQueriesManager() {
+		return new eu.solven.adhoc.pivotable.query.PivotableAsynchronousQueriesManager();
+	}
+
 	@Bean
 	public JsonMapperBuilderCustomizer jsonCustomizer() {
 		// https://www.baeldung.com/spring-boot-customize-jackson-objectmapper
