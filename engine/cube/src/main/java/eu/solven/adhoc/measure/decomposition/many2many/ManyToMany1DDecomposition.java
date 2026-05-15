@@ -282,6 +282,8 @@ public class ManyToMany1DDecomposition implements IDecomposition {
 		return underlyingFilter;
 	}
 
+	// Duplicated with ManyToManyNDDecomposition
+	@SuppressWarnings("CPD-START")
 	protected Set<?> elementsMatchingGroups(IValueMatcher valueMatcher) {
 		return manyToManyDefinition.getElementsMatchingGroups(valueMatcher);
 	}

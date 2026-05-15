@@ -196,11 +196,9 @@ export default {
 		// chip overlayed in the top-right of the grid so the user knows the table is wider than
 		// what they see. Always 0 in fit mode (no horizontal scroll). Updated on horizontal scroll,
 		// column resize, layout toggle, and after every resync.
-		const offscreenColumnsRight = ref(0);
 		const recomputeOffscreenColumns = () => {
 			if (!grid) return;
 			const setCount = (n) => {
-				offscreenColumnsRight.value = n;
 				if (props.gridShared) props.gridShared.offscreenColumnsRight = n;
 			};
 			if (preferencesStore.gridLayout !== "scroll") {
@@ -527,26 +525,24 @@ export default {
 				if (memoWasEmptyBefore) {
 					// Initial scroll-mode load: SlickGrid's `grid.autosizeColumns()` is a no-op
 					// here (its viewport-balancing branch only runs when forceFitColumns is true),
-					// so columns stayed at the default ~80 px. Instead, defer one frame so cells
-					// are in the DOM and `autoFitColumnWidth` can measure them, then apply
-					// `min(SCROLL_MODE_AUTOFIT_CAP_PX, naturalContentWidth)` per column.
+					// so columns would stay at the default ~80 px. Instead, defer one frame so
+					// cells are in the DOM and `autoFitColumnWidth` can measure them, then apply
+					// `min(SCROLL_MODE_AUTOFIT_CAP_PX, naturalContentWidth)` per column — same
+					// strategy as the fit→scroll watcher above.
 					requestAnimationFrame(() => {
 						if (!grid) return;
 						const cols = grid.getColumns();
 						const dataCols = cols.filter((c) => c.id !== "__phantom_trailing");
-						const widthsDebug = [];
 						let dirty = false;
 						dataCols.forEach((col, idx) => {
-							const before = col.width;
 							const natural = autoFitColumnWidth(grid, dataView, col, idx);
-							const capped = natural > 0 ? Math.min(SCROLL_MODE_AUTOFIT_CAP_PX, natural) : null;
-							widthsDebug.push({ id: col.id, before, natural, capped });
-							if (capped !== null && col.width !== capped) {
+							if (natural <= 0) return;
+							const capped = Math.min(SCROLL_MODE_AUTOFIT_CAP_PX, natural);
+							if (col.width !== capped) {
 								col.width = capped;
 								dirty = true;
 							}
 						});
-						console.log("[grid] initial scroll-mode load — applying min(%d, naturalContentWidth):", SCROLL_MODE_AUTOFIT_CAP_PX, widthsDebug);
 						if (dirty) {
 							grid.setColumns(cols);
 							if (typeof grid.updateCanvasWidth === "function") grid.updateCanvasWidth(true);
@@ -833,23 +829,16 @@ export default {
 							// content information (all columns end up at the same ~80-90 px in
 							// scroll mode, far smaller than they should be).
 							const dataCols = grid.getColumns().filter((c) => c.id !== "__phantom_trailing");
-							const widthsDebug = [];
 							let autofitDirty = false;
 							dataCols.forEach((col, idx) => {
-								const fitWidth = col.width;
 								const natural = autoFitColumnWidth(grid, dataView, col, idx);
-								const capped = natural > 0 ? Math.min(SCROLL_MODE_AUTOFIT_CAP_PX, natural) : null;
-								widthsDebug.push({ id: col.id, fitWidth, natural, capped });
-								if (capped !== null && col.width !== capped) {
+								if (natural <= 0) return;
+								const capped = Math.min(SCROLL_MODE_AUTOFIT_CAP_PX, natural);
+								if (col.width !== capped) {
 									col.width = capped;
 									autofitDirty = true;
 								}
 							});
-							console.log(
-								"[grid] fit→scroll transition — fitWidth is forceFit's viewport/N, applying min(%d, naturalContentWidth):",
-								SCROLL_MODE_AUTOFIT_CAP_PX,
-								widthsDebug,
-							);
 							if (autofitDirty) {
 								grid.setColumns(grid.getColumns());
 							}

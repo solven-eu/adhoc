@@ -22,6 +22,7 @@
  */
 package eu.solven.adhoc.pivotable.webmvc.app.it;
 
+import java.io.IOException;
 import java.util.UUID;
 
 import org.assertj.core.api.Assertions;
@@ -29,26 +30,29 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.boot.webtestclient.autoconfigure.WebTestClientAutoConfiguration;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.web.client.ResponseErrorHandler;
+import org.springframework.web.client.RestTemplate;
 
 import eu.solven.adhoc.app.IPivotableSpringProfiles;
 import eu.solven.adhoc.pivotable.webmvc.app.PivotableServerWebmvcApplication;
 
 /**
- * Integration test that boots the full webmvc application and asserts the {@code /api/v1/cubes/queries/&#123;uuid&#125;/plan/*}
- * routes are *mapped*. Existing unit tests in {@code TestPivotablePlanController} instantiate the controller via
- * {@code new PivotablePlanController(...)} which bypasses Spring's routing — a missing {@code @Import} of the
- * controller is invisible to those tests. This test exercises the routing layer specifically.
+ * Integration test that boots the full webmvc application and asserts the
+ * {@code /api/v1/cubes/queries/&#123;uuid&#125;/plan/*} routes are *mapped*. Existing unit tests in
+ * {@code TestPivotablePlanController} instantiate the controller via {@code new PivotablePlanController(...)} which
+ * bypasses Spring's routing — a missing {@code @Import} of the controller is invisible to those tests. This test
+ * exercises the routing layer specifically.
  *
  * <p>
  * Assertion shape: the response status must <strong>not</strong> be 404. We don't authenticate, so the JWT chain
- * answers 401 ({@code "Pivotable API Realm"} bearer challenge) — that's the success case here. A 404 would mean
- * Spring has no mapping for the path and is the regression we're protecting against.
+ * answers 401 ({@code "Pivotable API Realm"} bearer challenge) — that's the success case here. A 404 would mean Spring
+ * has no mapping for the path and is the regression we're protecting against.
  */
 @ExtendWith({})
 @SpringBootTest(classes = PivotableServerWebmvcApplication.class,
@@ -63,7 +67,20 @@ public class TestPivotablePlanEndpointsRouted {
 
 	private static final UUID ANY_UUID = UUID.fromString("00000000-0000-0000-0000-000000000000");
 
-	private final TestRestTemplate rest = new TestRestTemplate();
+	// Default RestTemplate throws on 4xx/5xx, which would mask the very status codes this test is
+	// asserting on. Install a no-op error handler so getForEntity returns the response regardless.
+	private final RestTemplate rest = buildRest();
+
+	private static RestTemplate buildRest() {
+		RestTemplate template = new RestTemplate();
+		template.setErrorHandler(new ResponseErrorHandler() {
+			@Override
+			public boolean hasError(ClientHttpResponse response) throws IOException {
+				return false;
+			}
+		});
+		return template;
+	}
 
 	private String url(String path) {
 		return "http://localhost:" + randomServerPort + "/api/v1/cubes/queries/" + ANY_UUID + path;
