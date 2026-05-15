@@ -87,7 +87,7 @@ export function autoFitColumnWidth(grid, dataView, column, colIdx) {
 	// (not the natural content width), so a DOM-based cell measurement perpetuates whatever
 	// over-wide width the cell currently has. Canvas text-measure is independent of the rendered
 	// cell width and gives the true content width.
-	const headerPx = measureHeaderFromDom(grid, colIdx);
+	const headerPx = measureHeaderFromDom(grid, column);
 	const cellsPx = measureCellsFromCanvas(dataView, column, colIdx, grid);
 	const measuredMax = Math.max(headerPx, cellsPx);
 	if (measuredMax <= 0) {
@@ -100,22 +100,31 @@ export function autoFitColumnWidth(grid, dataView, column, colIdx) {
 
 /**
  * Walk the DOM under the grid root, find the rendered header's inner `.slick-column-name` for the
- * given column index, and return its `scrollWidth` plus a reserved budget for the surrounding chrome
+ * given column, and return its `scrollWidth` plus a reserved budget for the surrounding chrome
  * (sort indicator + 3-dot action menu icon + header padding). Returns 0 if the grid root or header
  * is not in the document yet — the caller falls back to canvas-text measurement.
+ *
+ * <p>Identifies the header cell by its column id rather than its document-order position because the
+ * grid runs with {@code frozenColumn: 1}: SlickGrid renders TWO `.slick-header-columns` containers
+ * (left = frozen, right = the rest), so a `:nth-child(N)` selector walking the whole subtree picks
+ * the wrong cell (left pane has only one column, so `colIdx >= 1` lands on the right pane offset by
+ * one). Every non-frozen column was being measured against the NEXT column's header text, which
+ * under-reports whenever the next column's header is shorter — visible after fit→scroll as columns
+ * narrower than the actual rendered content.
  */
-function measureHeaderFromDom(grid, colIdx) {
+function measureHeaderFromDom(grid, column) {
 	const root = typeof grid.getContainerNode === "function" ? grid.getContainerNode() : null;
-	if (!root || typeof root.querySelector !== "function") {
+	if (!root || typeof root.querySelector !== "function" || !column) {
 		return 0;
 	}
-	// Measure the INNER `.slick-column-name` (just the name + the sort-indicator slot) and add
-	// `AUTOFIT_HEADER_CHROME_PX` for the padding. The outer `.slick-header-column` would include
-	// the 3-dot action menu icon, which is `display: none` off-hover but becomes visible (and
-	// therefore part of scrollWidth) during the dblclick interaction itself — using that outer
-	// measurement makes the column inflate by ~24 px every dblclick even when the content is
-	// comfortable in the current width.
-	const headerName = root.querySelector(`.slick-header-column:nth-child(${colIdx + 1}) .slick-column-name`);
+	const colId = String(column.id);
+	// SlickGrid 4 stamps the column id onto the header cell as `id="${gridUid}_${colId}"`. Match on
+	// the suffix so we hit the right header regardless of which pane (frozen / non-frozen) renders it.
+	// CSS attribute selectors don't escape regex-style metacharacters, so we use the CSS.escape
+	// equivalent for safety — column ids in this codebase are alphanumeric + underscore, but a
+	// user-supplied groupBy column name could contain `[` or `]`.
+	const escaped = typeof CSS !== "undefined" && typeof CSS.escape === "function" ? CSS.escape(colId) : colId;
+	const headerName = root.querySelector(`.slick-header-column[id$="_${escaped}"] .slick-column-name`);
 	if (!headerName || !headerName.scrollWidth) {
 		return 0;
 	}

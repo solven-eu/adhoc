@@ -180,6 +180,73 @@ describe("autoFitColumnWidth", () => {
 		// Only "abc" gets measured: 3 chars × 7 + 16 = 37 → floor to 40.
 		expect(w).toBe(AUTOFIT_MIN_WIDTH_PX);
 	});
+
+	// Regression for the "scroll-mode columns much narrower than expected" bug. With
+	// `frozenColumn: 1` SlickGrid renders TWO `.slick-header-columns` containers (left = frozen,
+	// right = the rest). The previous `:nth-child(N)` selector walked the whole subtree and picked
+	// the wrong header (e.g. column 1's autofit measured column 2's header text), so any column
+	// whose successor had a SHORTER header got under-measured. The fix routes the lookup via the
+	// column id, which is stamped on the header cell as `id="<gridUid>_<colId>"`.
+	test("frozen-pane DOM: header is matched by column id, not nth-child position", () => {
+		// Two non-frozen columns sit in the right pane. The first one ("Position") has a long
+		// header label; the second ("Shirt") is short. The buggy implementation would read the
+		// SECOND column's header when asked to measure the FIRST one (off-by-one across panes).
+		const headerByColId = {
+			id_col: 60,
+			Position: 220,
+			Shirt: 70,
+		};
+		const grid = {
+			getContainerNode: () => ({
+				querySelector: (sel) => {
+					// We get queries like `.slick-header-column[id$="_Position"] .slick-column-name`.
+					// Pull the colId out of the suffix and return a stub with the expected scrollWidth.
+					const m = sel.match(/_([A-Za-z0-9_]+)"\]/);
+					if (!m) return null;
+					const colId = m[1];
+					if (headerByColId[colId] == null) return null;
+					return { scrollWidth: headerByColId[colId] };
+				},
+			}),
+		};
+		// No rows — cells contribute nothing; the result is driven entirely by the header measurement
+		// + AUTOFIT_HEADER_CHROME_PX (42) + AUTOFIT_PADDING_PX (2).
+		const dataView = { getLength: () => 0, getItem: () => null };
+
+		const wPosition = autoFitColumnWidth(grid, dataView, { id: "Position", name: "Position", field: "Position" }, 1);
+		expect(wPosition).toBe(220 + 42 + AUTOFIT_PADDING_PX);
+
+		const wShirt = autoFitColumnWidth(grid, dataView, { id: "Shirt", name: "Shirt", field: "Shirt" }, 2);
+		expect(wShirt).toBe(70 + 42 + AUTOFIT_PADDING_PX);
+	});
+
+	test("frozen-pane DOM: column-id suffix with regex-special characters resolves via CSS.escape", () => {
+		// Column ids in this codebase are usually alphanumeric, but a groupBy expression like
+		// `value[USD]` could land in the id. `CSS.escape` is the safe way to embed it in an
+		// attribute selector. Verify the path runs without throwing and still resolves.
+		const headerByColId = {
+			"value[USD]": 130,
+		};
+		// Stub `CSS.escape` so the stubbed `globalThis.window` is honoured (the polyfill check
+		// `typeof CSS !== "undefined" && typeof CSS.escape === "function"` walks the global).
+		vi.stubGlobal("CSS", { escape: (s) => s.replace(/([\[\]])/g, "\\$1") });
+		const grid = {
+			getContainerNode: () => ({
+				querySelector: (sel) => {
+					// Selector should now embed the escaped id, e.g. `_value\[USD\]"]`.
+					const m = sel.match(/_(.+)"\]/);
+					if (!m) return null;
+					const escaped = m[1];
+					const raw = escaped.replace(/\\([\[\]])/g, "$1");
+					if (headerByColId[raw] == null) return null;
+					return { scrollWidth: headerByColId[raw] };
+				},
+			}),
+		};
+		const dataView = { getLength: () => 0, getItem: () => null };
+		const w = autoFitColumnWidth(grid, dataView, { id: "value[USD]", name: "value[USD]", field: "v" }, 1);
+		expect(w).toBe(130 + 42 + AUTOFIT_PADDING_PX);
+	});
 });
 
 // ---------------------------------------------------------------------------------------------
