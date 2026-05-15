@@ -57,7 +57,7 @@ import org.springframework.security.web.server.util.matcher.ServerWebExchangeMat
 import eu.solven.adhoc.app.IPivotableSpringProfiles;
 import eu.solven.adhoc.pivotable.account.fake_user.FakeUser;
 import eu.solven.adhoc.pivotable.webflux.security.oauth2.PivotableReactiveOAuth2UserService;
-import eu.solven.adhoc.pivotable.webnone.api.IPivotableLoginConstants;
+import eu.solven.adhoc.pivotable.webnone.api.PivotableLoginWebnoneController;
 import eu.solven.adhoc.pivotable.webnone.security.PivotableSocialWebnoneSecurity;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -102,7 +102,8 @@ public class PivotableSocialWebfluxSecurity {
 	// `-1` as this has to be used in priority aver the API securityFilterChain
 	@Order(Ordered.LOWEST_PRECEDENCE - 1)
 	@Bean
-	public SecurityWebFilterChain configureUi(ServerHttpSecurity http, Environment env) {
+	public SecurityWebFilterChain configureUi(ServerHttpSecurity http, ApplicationContext appContext) {
+		Environment env = appContext.getEnvironment();
 
 		boolean isFakeUser = env.acceptsProfiles(Profiles.of(IPivotableSpringProfiles.P_FAKEUSER));
 		if (isFakeUser) {
@@ -248,7 +249,7 @@ public class PivotableSocialWebfluxSecurity {
 					e.authenticationEntryPoint(authenticationEntryPoint);
 				});
 
-		if (env.getProperty(IPivotableLoginConstants.P_OAUTH2, Boolean.class, true)) {
+		if (PivotableLoginWebnoneController.isOAuth2Enabled(appContext)) {
 			commonConf = commonConf
 					// How to request prompt=consent for Github?
 					// https://docs.spring.io/spring-security/reference/servlet/oauth2/client/authorization-grants.html

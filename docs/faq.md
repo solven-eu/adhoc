@@ -99,19 +99,19 @@ e.g. `pivotable-unsafe` pulls in the OAuth2 demo wiring without you naming it ex
 
 ```mermaid
 graph LR
-    classDef leaf fill:#f5f5f5,stroke:#888;
-    pivotable-prdmode --> pivotable-server_defaults
-    pivotable-heroku --> pivotable-server_defaults
-    pivotable-unsafe --> pivotable-server_defaults
-    pivotable-unsafe --> pivotable-unsafe_fakeuser
-    pivotable-unsafe --> pivotable-inmemory
-    pivotable-unsafe --> pivotable-unsafe_external_oauth2
-    pivotable-unsafe_external_oauth2 --> pivotable-server_defaults
-    pivotable-unsafe_external_oauth2 --> pivotable-demo_external_oauth2
-    pivotable-server_defaults --> pivotable
-    pivotable-server_defaults --> pivotable-self_endpoint
-    pivotable-server_defaults --> pivotable-simple_datasets
-    class pivotable,pivotable-self_endpoint,pivotable-simple_datasets,pivotable-unsafe_fakeuser,pivotable-inmemory,pivotable-demo_external_oauth2 leaf;
+	classDef leaf fill:#f5f5f5,stroke:#888;
+	pivotable-prdmode --> pivotable-server_defaults
+	pivotable-heroku --> pivotable-server_defaults
+	pivotable-unsafe --> pivotable-server_defaults
+	pivotable-unsafe --> pivotable-unsafe_fakeuser
+	pivotable-unsafe --> pivotable-inmemory
+	pivotable-unsafe --> pivotable-unsafe_external_oauth2
+	pivotable-unsafe_external_oauth2 --> pivotable-server_defaults
+	pivotable-unsafe_external_oauth2 --> pivotable-demo_external_oauth2
+	pivotable-server_defaults --> pivotable
+	pivotable-server_defaults --> pivotable-self_endpoint
+	pivotable-server_defaults --> pivotable-simple_datasets
+	class pivotable,pivotable-self_endpoint,pivotable-simple_datasets,pivotable-unsafe_fakeuser,pivotable-inmemory,pivotable-demo_external_oauth2 leaf;
 ```
 
 Reading the graph: an arrow `A → B` means "activating `A` also activates `B`". Leaf nodes (grey)
