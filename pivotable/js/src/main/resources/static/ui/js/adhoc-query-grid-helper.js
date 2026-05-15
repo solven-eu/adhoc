@@ -211,12 +211,17 @@ const formatters = function (formatOptions, measureStats, parentSliceStats, pare
 
 		// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Data_structures
 		if (typeof value === "number") {
-			const color = measureStats ? heatmapColor(value, measureStats[columnDef.id]) : null;
+			// Two independent toggles in the Formatting Options modal — both default OFF, so a
+			// fresh page-load shows plain text. Each gate short-circuits its respective helper
+			// call so the disabled feature costs nothing.
+			const primaryOn = !!formatOptions.primaryHeatmap;
+			const secondaryOn = !!formatOptions.secondaryHeatmap;
+			const color = primaryOn && measureStats ? heatmapColor(value, measureStats[columnDef.id]) : null;
 			// Build the cell DOM whenever EITHER the primary heatmap colours it, OR the secondary
 			// heatmap has a bar to render (parent-slice stats define a fill). This keeps the
 			// secondary bar visible even when the primary heatmap is degenerate (single value or
 			// midpoint-equal — `heatmapColor` returns null then).
-			const hasSecondary = parentSliceStats && parentSliceStats[columnDef.id] && parentColumnNames && parentColumnNames.length > 0;
+			const hasSecondary = secondaryOn && parentSliceStats && parentSliceStats[columnDef.id] && parentColumnNames && parentColumnNames.length > 0;
 			if (color || hasSecondary) {
 				rtn.html = buildHeatmapCell(value, color, numberFormat.format(value), dataContext, columnDef);
 				rtn.toolTip = value;
@@ -293,10 +298,12 @@ const formatters = function (formatOptions, measureStats, parentSliceStats, pare
 
 		// Apply the primary + secondary heatmaps to percent-formatted cells the same way
 		// `measureFormatter` does — they share the same numeric semantics, and any measure whose
-		// name contains `%` is routed here.
+		// name contains `%` is routed here. Gated on the two independent toggles.
 		if (typeof value === "number") {
-			const color = measureStats ? heatmapColor(value, measureStats[columnDef.id]) : null;
-			const hasSecondary = parentSliceStats && parentSliceStats[columnDef.id] && parentColumnNames && parentColumnNames.length > 0;
+			const primaryOn = !!formatOptions.primaryHeatmap;
+			const secondaryOn = !!formatOptions.secondaryHeatmap;
+			const color = primaryOn && measureStats ? heatmapColor(value, measureStats[columnDef.id]) : null;
+			const hasSecondary = secondaryOn && parentSliceStats && parentSliceStats[columnDef.id] && parentColumnNames && parentColumnNames.length > 0;
 			if (color || hasSecondary) {
 				rtn.html = buildHeatmapCell(value, color, percentFormat.format(value), dataContext, columnDef);
 				rtn.toolTip = value;

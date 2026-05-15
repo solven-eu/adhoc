@@ -12,6 +12,7 @@ import AdhocQueryFavorite from "./adhoc-query-favorite.js";
 import AdhocQueryFavorites from "./adhoc-query-favorites.js";
 
 import { useUserStore } from "./store-user.js";
+import { finalizeActiveStages } from "./adhoc-query-grid-timings.js";
 
 // https://stackoverflow.com/questions/7616461/generate-a-hash-from-string-in-javascript
 String.prototype.hashCode = function () {
@@ -466,6 +467,14 @@ export default {
 					// visible on demand, not noisy by default.
 					props.tabularView.error = e.message;
 					props.tabularView.errorStack = /** @type {any} */ (e).stacktrace || null;
+					// Finalize every still-in-flight stage so the timings bar stops ticking. Without
+					// this, the `<stage>_startedAt` markers set before the error remained on
+					// `tabularView.timing` and the renderer (`hasActiveTiming` / `formatTimings`)
+					// kept computing `Date.now() - startedAt` on every tick — the "sending" bar
+					// then grew indefinitely until the next successful query overwrote the bag.
+					if (props.tabularView.timing) {
+						finalizeActiveStages(props.tabularView.timing);
+					}
 				} finally {
 					loadingV2.nbLoading--;
 
@@ -473,8 +482,17 @@ export default {
 						// Drop the queryResultId as it is too late to cancel it
 						latestQueryResultId.value = null;
 
-						props.tabularView.loading.sending = false;
-						props.tabularView.loading.downloading = false;
+						// Clear every loading flag the executor may have flipped during the round-trip.
+						// The previous version only cleared `sending` / `downloading`; an error during
+						// the polling loop could leave `executing` / `fetching` / `sleeping` true.
+						const loading = props.tabularView.loading;
+						if (loading) {
+							loading.sending = false;
+							loading.executing = false;
+							loading.fetching = false;
+							loading.sleeping = false;
+							loading.downloading = false;
+						}
 					}
 				}
 			}

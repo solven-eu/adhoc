@@ -122,6 +122,19 @@ export default {
 			maximumFractionDigits: 2,
 			// Default is 'auto'
 			// roundingPriority: 'morePrecision',
+
+			// Heatmaps are independently togglable, both OFF by default — the grid reads like a plain
+			// table on first render. Users opt into each from the Formatting Options modal.
+			//   - primaryHeatmap   : green→red cell-background gradient calibrated against the
+			//                        column's full min/max (via `heatmapColor()`).
+			//   - secondaryHeatmap : horizontal in-cell bar calibrated against the parent-slice
+			//                        group (via `secondaryHeatmapFill()`). Useful when a query has
+			//                        a hierarchical groupBy and you want to see each row's weight
+			//                        within its parent rather than against the whole column.
+			// When both are false, the measure/percent formatters skip all heatmap helpers entirely
+			// and return plain-text cells.
+			primaryHeatmap: false,
+			secondaryHeatmap: false,
 		});
 
 		let gridColumns = [];

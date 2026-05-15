@@ -1,4 +1,4 @@
-# server: the default configuration for a contestServer
+# Demo OAuth2 wiring with public credentials — opt-in via `pivotable-unsafe` (or directly).
 
 spring:
     security:
@@ -12,7 +12,8 @@ spring:
                         client-id: ${adhoc.pivotable.login.oauth2.google.clientId:NEEDS_TO_BE_DEFINED}
                         client-secret: ${adhoc.pivotable.login.oauth2.google.clientSecret:NEEDS_TO_BE_DEFINED}
 
-adhoc.pivotable.login.oauth2:
-    enabled: true
-    github.enabled: true
-    google.enabled: true
+# Default-value reference (kept commented — see docs/faq.md for the precedence rationale).
+# adhoc.pivotable.login.oauth2:
+#     enabled: true
+#     github.enabled: true
+#     google.enabled: true

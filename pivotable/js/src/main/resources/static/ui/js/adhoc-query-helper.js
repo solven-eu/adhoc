@@ -147,6 +147,40 @@ export default {
 		return queryModel;
 	},
 
+	/**
+	 * Return the current URL hash, decoded, ready to feed to {@link this.hashToQueryModel}.
+	 *
+	 * <p>Why not use {@code router.currentRoute.value.hash}? The watcher in adhoc-query.js
+	 * updates the URL on every model edit via {@code history.pushState(...)}, which BYPASSES
+	 * vue-router. So vue-router's reactive {@code currentRoute.value.hash} desyncs from the
+	 * real {@code window.location.hash} every time the user edits the model. On the
+	 * remount path (after a token expiry + re-login swaps {@code <LoginChip>} back to
+	 * {@code <AdhocQuery>}), vue-router reports its STALE last-known hash — often empty —
+	 * and the queryModel is "restored" from nothing. {@code window.location.hash} is the
+	 * authoritative source.
+	 *
+	 * <p>{@code window.location.hash} returns the URL-encoded form; vue-router
+	 * decodes its own {@code currentRoute.value.hash}. We mirror the decoded shape so
+	 * callers (notably {@link this.hashToQueryModel}) accept either source uniformly.
+	 *
+	 * @param {{ location?: { hash?: string } } | null | undefined} [windowLike] DI seam — defaults
+	 *     to the real {@code window} when omitted. Tests pass a stub.
+	 * @returns {string} the hash including the leading "#", or "" when no hash is present
+	 */
+	readUrlHash: function (windowLike) {
+		const w = windowLike || (typeof window !== "undefined" ? window : null);
+		const raw = w && w.location && w.location.hash;
+		if (!raw || !raw.startsWith("#")) {
+			return "";
+		}
+		try {
+			return "#" + decodeURIComponent(raw.substring(1));
+		} catch {
+			// Malformed URI — fall back to the raw form; hashToQueryModel will try-catch JSON.parse.
+			return raw;
+		}
+	},
+
 	hashToQueryModel: function (currentHashDecoded, queryModel) {
 		// Restore queryModel from URL hash
 		if (currentHashDecoded && currentHashDecoded.startsWith("#")) {

@@ -67,3 +67,55 @@ test("loadQueryModelFromHash - from 2 columns", () => {
 	expect(reloadedQueryModel.selectedColumns).toEqual({ c1: true });
 	expect(reloadedQueryModel.selectedColumnsOrdered).toEqual(["c1"]);
 });
+
+// ---------------------------------------------------------------------------------------------
+// readUrlHash — the authoritative URL-hash reader used by adhoc-query.js's hydration path.
+//
+// Regression: vue-router's `currentRoute.value.hash` can be stale on the remount-after-login
+// path (we use `history.pushState` to update the URL on every model edit, which bypasses
+// vue-router's internal state). `readUrlHash` reads `window.location.hash` directly — that's
+// always in sync with the real URL.
+// ---------------------------------------------------------------------------------------------
+test("readUrlHash: returns '' when window.location.hash is empty", () => {
+	expect(queryHelper.readUrlHash({ location: { hash: "" } })).toBe("");
+});
+
+test("readUrlHash: returns '' when there is no leading #", () => {
+	// Browsers never produce this shape, but defending against bogus input is cheap.
+	expect(queryHelper.readUrlHash({ location: { hash: "no-hash" } })).toBe("");
+});
+
+test("readUrlHash: returns '' when windowLike or its location is missing", () => {
+	expect(queryHelper.readUrlHash(null)).toBe("");
+	expect(queryHelper.readUrlHash(undefined)).toBe("");
+	expect(queryHelper.readUrlHash({})).toBe("");
+	expect(queryHelper.readUrlHash({ location: {} })).toBe("");
+});
+
+test("readUrlHash: decodes URL-encoded queryModel JSON", () => {
+	// `window.location.hash` returns the URL-encoded form; we decode so hashToQueryModel
+	// receives the same shape as vue-router's `currentRoute.value.hash` (which is already
+	// decoded). Round-trip via the helper functions below to construct a realistic fixture.
+	const original = queryHelper.makeQueryModel();
+	original.selectedColumns["Position"] = true;
+	original.selectedColumnsOrdered.push("Position");
+	const encodedHash = queryHelper.queryModelToHash(undefined, original);
+	// Sanity: queryModelToHash produces an encoded hash.
+	expect(encodedHash).toMatch(/^#%7B/);
+
+	const decoded = queryHelper.readUrlHash({ location: { hash: encodedHash } });
+	// After decoding, the leading `#` is preserved and the rest is plain JSON.
+	expect(decoded.startsWith("#{")).toBe(true);
+
+	// Round-trip: decoded form is what hashToQueryModel expects — no exception, model restored.
+	const restored = queryHelper.makeQueryModel();
+	queryHelper.hashToQueryModel(decoded, restored);
+	expect(restored.selectedColumns).toEqual({ Position: true });
+	expect(restored.selectedColumnsOrdered).toEqual(["Position"]);
+});
+
+test("readUrlHash: falls back to raw on a malformed URI sequence", () => {
+	// `decodeURIComponent` throws on a lone `%` — make sure the helper doesn't propagate that.
+	const raw = "#oops%invalid";
+	expect(queryHelper.readUrlHash({ location: { hash: raw } })).toBe(raw);
+});

@@ -51,6 +51,7 @@ import eu.solven.adhoc.pivotable.webflux.api.GreetingHandler;
 import eu.solven.adhoc.pivotable.webflux.api.PivotableLoginWebfluxController;
 import eu.solven.adhoc.pivotable.webflux.security.tokens.AccessTokenHandler;
 import eu.solven.adhoc.pivotable.webnone.api.GreetingController;
+import eu.solven.adhoc.pivotable.webnone.api.PivotableLoginWebnoneController;
 import eu.solven.pepper.spring.PepperResourceHelper;
 import eu.solven.pepper.unittest.ILogDisabler;
 import eu.solven.pepper.unittest.PepperTestHelper;
@@ -164,7 +165,7 @@ public class TestSecurity_WithoutAuth {
 
 	@Test
 	public void testLoginOptions() {
-		log.debug("About {}", PivotableLoginWebfluxController.class);
+		log.debug("About {}", PivotableLoginWebnoneController.class);
 
 		webTestClient
 

@@ -51,19 +51,50 @@ public class TestPivotableLoginWebnoneController {
 	final PivotableLoginWebnoneController controller;
 
 	{
+		controller = newControllerWith(env, clientRegistrationRepository);
+	}
+
+	/**
+	 * Build a controller wired to a custom environment + registration repo. Used by the OAuth2-toggle precedence tests,
+	 * which need a {@code AUTHORIZATION_CODE}-grant registration (so the controller actually emits a provider entry)
+	 * plus a fresh environment for the property toggles.
+	 *
+	 * @param customEnv
+	 *            the environment seen by the controller's `env.getProperty(...)` calls
+	 * @param repo
+	 *            the reactive registration repo (we mock both servlet + reactive lookups)
+	 * @return a controller wired to {@code customEnv} and {@code repo}
+	 */
+	private static PivotableLoginWebnoneController newControllerWith(MockEnvironment customEnv,
+			InMemoryReactiveClientRegistrationRepository repo) {
 		ApplicationContext appContext = Mockito.mock(ApplicationContext.class);
 
+		Mockito.when(appContext.getEnvironment()).thenReturn(customEnv);
+
 		// webflux
-		Mockito.when(appContext.getEnvironment()).thenReturn(env);
-		Mockito.doReturn(clientRegistrationRepository)
+		ObjectProvider<InMemoryClientRegistrationRepository> fluxBeanProvider = Mockito.mock(ObjectProvider.class);
+		Mockito.doReturn(fluxBeanProvider)
 				.when(appContext)
-				.getBean(InMemoryReactiveClientRegistrationRepository.class);
+				.getBeanProvider(InMemoryReactiveClientRegistrationRepository.class);
+		Mockito.doReturn(repo).when(fluxBeanProvider).getIfAvailable();
 
 		// webmvc
 		ObjectProvider<InMemoryClientRegistrationRepository> mvcBeanProvider = Mockito.mock(ObjectProvider.class);
 		Mockito.doReturn(mvcBeanProvider).when(appContext).getBeanProvider(InMemoryClientRegistrationRepository.class);
 
-		controller = new PivotableLoginWebnoneController(appContext);
+		return new PivotableLoginWebnoneController(appContext);
+	}
+
+	/** Build a typical AUTHORIZATION_CODE-grant registration matching the github/google shape. */
+	private static ClientRegistration authCodeRegistration(String registrationId) {
+		return ClientRegistration.withRegistrationId(registrationId)
+				.authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
+				.clientId(registrationId + "-client-id")
+				.clientSecret(registrationId + "-client-secret")
+				.authorizationUri("https://example.invalid/oauth2/authorize")
+				.tokenUri("https://example.invalid/oauth2/token")
+				.redirectUri("{baseUrl}/login/oauth2/code/{registrationId}")
+				.build();
 	}
 
 	@Test
@@ -93,5 +124,59 @@ public class TestPivotableLoginWebnoneController {
 		Assertions.assertThat(controller.loginProviders().get("map"))
 				.asInstanceOf(InstanceOfAssertFactories.MAP)
 				.hasSize(1);
+	}
+
+	/**
+	 * An {@code AUTHORIZATION_CODE}-grant registration shows up in the login providers by default — the Java fallback
+	 * in {@link PivotableLoginWebnoneController#loginProviders()} is
+	 * {@code env.getProperty("adhoc.pivotable.login.oauth2.enabled", Boolean.class, true)}.
+	 */
+	@Test
+	void testLoginProviders_oauth2DefaultTrue_registrationVisible() {
+		InMemoryReactiveClientRegistrationRepository repo =
+				new InMemoryReactiveClientRegistrationRepository(authCodeRegistration("github"));
+		MockEnvironment freshEnv = new MockEnvironment();
+		PivotableLoginWebnoneController c = newControllerWith(freshEnv, repo);
+
+		Assertions.assertThat(c.loginProviders().get("map"))
+				.asInstanceOf(InstanceOfAssertFactories.MAP)
+				.containsKey("github");
+	}
+
+	/**
+	 * Regression: a downstream user's {@code application.yml: adhoc.pivotable.login.oauth2.enabled:
+	 * false} MUST disable the buttons even when an AUTHORIZATION_CODE-grant registration is wired (e.g. by the
+	 * `pivotable-demo_external_oauth2` profile). Previously broken when the demo profile yaml carried `enabled: true`
+	 * itself, since profile yaml beats base yaml — the override was silently masked. After dropping the redundant yaml
+	 * lines, the only thing the user has to beat is the Java default {@code true}, which a base-yaml `false` does.
+	 */
+	@Test
+	void testLoginProviders_oauth2DisabledViaProperty_hidesRegistrations() {
+		InMemoryReactiveClientRegistrationRepository repo =
+				new InMemoryReactiveClientRegistrationRepository(authCodeRegistration("github"));
+		MockEnvironment freshEnv = new MockEnvironment();
+		freshEnv.setProperty(IPivotableLoginConstants.P_OAUTH2, "false");
+		PivotableLoginWebnoneController c = newControllerWith(freshEnv, repo);
+
+		Assertions.assertThat(c.loginProviders().get("map")).asInstanceOf(InstanceOfAssertFactories.MAP).isEmpty();
+	}
+
+	/**
+	 * Per-provider gate: {@code adhoc.pivotable.login.oauth2.<id>.enabled=false} suppresses that specific registration
+	 * while leaving the others visible. Used by deployments that want one provider but not another.
+	 */
+	@Test
+	void testLoginProviders_oauth2PerProviderDisabled_dropsOnlyThatProvider() {
+		InMemoryReactiveClientRegistrationRepository repo =
+				new InMemoryReactiveClientRegistrationRepository(authCodeRegistration("github"),
+						authCodeRegistration("google"));
+		MockEnvironment freshEnv = new MockEnvironment();
+		freshEnv.setProperty("adhoc.pivotable.login.oauth2.github.enabled", "false");
+		PivotableLoginWebnoneController c = newControllerWith(freshEnv, repo);
+
+		Assertions.assertThat(c.loginProviders().get("map"))
+				.asInstanceOf(InstanceOfAssertFactories.MAP)
+				.doesNotContainKey("github")
+				.containsKey("google");
 	}
 }

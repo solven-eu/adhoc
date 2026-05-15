@@ -8,10 +8,6 @@ spring:
 #    signing-key: NEEDS_TO_BE_DEFINED
 #    issuer-base-url: NEEDS_TO_BE_DEFINED
 
-adhoc.pivotable.login.oauth2:
-    # By default, OAuth2 is disabled
-    enabled: false
-
 # --- LOGGING ---
 
 logging:

@@ -112,6 +112,59 @@ export const formatTimings = function (timing, now) {
 };
 
 /**
+ * Sweep {@code timing} for any stage that is mid-flight (has {@code <stage>_startedAt} set but no finite
+ * {@code <stage>} final value) and:
+ * <ol>
+ *   <li>Set {@code <stage>} to {@code now - startedAt} so the duration up to "now" is recorded.</li>
+ *   <li>Delete {@code <stage>_startedAt} so {@link hasActiveTiming} no longer reports the stage as
+ *       active — i.e. the live-updating timings bar STOPS ticking.</li>
+ * </ol>
+ *
+ * <p>Called on the executor's error/cancel path to prevent the "sending" (or any other) counter
+ * from rising forever after a failed fetch. Without this, the executor's {@code finally} block only
+ * cleared the loading flags but left {@code timing.sending_startedAt} dangling — the timings bar
+ * kept reading it on every animation tick and computing {@code Date.now() - startedAt}, growing
+ * indefinitely.
+ *
+ * @param {TimingMap | null | undefined} timing the timing bag to mutate in place
+ * @param {Date | number} [now] defaults to {@code Date.now()}
+ */
+export const finalizeActiveStages = function (timing, now) {
+	if (!timing) {
+		return;
+	}
+	let nowMs;
+	if (typeof now === "number") {
+		nowMs = now;
+	} else if (now && typeof now.getTime === "function") {
+		nowMs = now.getTime();
+	} else {
+		nowMs = Date.now();
+	}
+	for (const key of Object.keys(timing)) {
+		if (!key.endsWith("_startedAt")) {
+			continue;
+		}
+		const stage = key.slice(0, -"_startedAt".length);
+		const startedAt = timing[key];
+		const ms = timing[stage];
+		const stageAlreadyFinalized = typeof ms === "number" && Number.isFinite(ms);
+		if (!stageAlreadyFinalized) {
+			let startMs;
+			if (typeof startedAt === "number") {
+				startMs = startedAt;
+			} else if (startedAt && typeof startedAt.getTime === "function") {
+				startMs = startedAt.getTime();
+			} else {
+				startMs = +startedAt;
+			}
+			timing[stage] = Math.max(0, nowMs - startMs);
+		}
+		delete timing[key];
+	}
+};
+
+/**
  * True when {@code timing} has at least one {@code <stage>_startedAt} key whose matching {@code <stage>} is not yet
  * a finite number — i.e. the view is mid-query and the timings bar should tick.
  *
@@ -131,4 +184,4 @@ export const hasActiveTiming = function (timing) {
 	return false;
 };
 
-export default { TIMING_ORDER, formatTimings, hasActiveTiming };
+export default { TIMING_ORDER, formatTimings, hasActiveTiming, finalizeActiveStages };
