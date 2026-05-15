@@ -26,7 +26,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
 
 import eu.solven.adhoc.pivotable.oauth2.resourceserver.PivotableResourceServerWebfluxConfiguration;
-import eu.solven.adhoc.pivotable.webflux.PivotableWebExceptionHandler;
+import eu.solven.adhoc.pivotable.webflux.PivotableWebfluxExceptionHandler;
 import eu.solven.adhoc.pivotable.webflux.account.JwtUserContextHolder;
 import eu.solven.adhoc.pivotable.webflux.api.PivotableLoginWebfluxController;
 import eu.solven.adhoc.pivotable.webnone.api.PivotableMetadataController;
@@ -55,7 +55,7 @@ import lombok.extern.slf4j.Slf4j;
 
 		JwtUserContextHolder.class,
 
-		PivotableWebExceptionHandler.class,
+		PivotableWebfluxExceptionHandler.class,
 
 })
 @Slf4j

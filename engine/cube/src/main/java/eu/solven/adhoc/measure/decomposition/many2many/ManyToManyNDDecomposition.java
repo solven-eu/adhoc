@@ -81,7 +81,13 @@ public class ManyToManyNDDecomposition implements IDecomposition {
 	/**
 	 * The column written by this decomposition.
 	 */
+	// TODO Same advanced scenario would need writing to multiple columns
 	public static final String K_OUTPUT = "group";
+
+	/**
+	 * The type of the output column
+	 */
+	public static final String K_OUTPUT_CLASS = "group-class";
 
 	final Map<String, ?> options;
 
@@ -272,18 +278,17 @@ public class ManyToManyNDDecomposition implements IDecomposition {
 
 	@Override
 	public Map<String, Class<?>> getColumnTypes() {
-		return ImmutableMap.<String, Class<?>>builder()
-				.put(AdhocMapPathGet.getRequiredString(options, K_OUTPUT), Object.class)
-				.build();
+		String outputColumn = AdhocMapPathGet.getRequiredString(options, K_OUTPUT);
+		Class<?> outputColumnClass =
+				AdhocMapPathGet.toClass(AdhocMapPathGet.getOptionalString(options, K_OUTPUT_CLASS));
+
+		return ImmutableMap.<String, Class<?>>builder().put(outputColumn, outputColumnClass).build();
 	}
 
 	@Override
 	public CoordinatesSample getCoordinates(String column, IValueMatcher valueMatcher, int limit) {
 		Set<?> groups = manyToManyDefinition.getMatchingGroups(valueMatcher);
-		return CoordinatesSample.builder()
-				.estimatedCardinality(CoordinatesSample.NO_ESTIMATION)
-				.coordinates(groups)
-				.build();
+		return CoordinatesSample.builder().estimatedCardinality(groups.size()).coordinates(groups).build();
 	}
 
 }

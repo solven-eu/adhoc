@@ -447,8 +447,13 @@ export default {
 						if (responseTabularView.view) {
 							onView(queryForApi, responseTabularView.view, stringifiedQuery, startDownloading);
 						} else {
-							// Typically happens on a failure
-							throw new Error("Query has state=" + responseTabularView.state);
+							// Typically happens on a failure. The server populates `errorMessage` + `stacktrace` on
+							// FAILED state (see QueryResultHolder.failed); fall back to the bare state label when
+							// neither is present (older server or a non-FAILED non-view state like DISCARDED).
+							const msg = responseTabularView.errorMessage || `Query has state=${responseTabularView.state}`;
+							const err = new Error(msg);
+							/** @type {any} */ (err).stacktrace = responseTabularView.stacktrace || null;
+							throw err;
 						}
 					}
 				} catch (e) {
@@ -456,8 +461,11 @@ export default {
 					sendQueryError.value = e.message;
 					// Surface the error on `tabularView` so the parent can render a prominent "query broken"
 					// banner over the grid. The grid intentionally keeps rendering the last successful view
-					// so the user retains context.
+					// so the user retains context. The full server-side stack (when available) is exposed
+					// separately so the parent template can put it inside a collapsible `<details>` block —
+					// visible on demand, not noisy by default.
 					props.tabularView.error = e.message;
+					props.tabularView.errorStack = /** @type {any} */ (e).stacktrace || null;
 				} finally {
 					loadingV2.nbLoading--;
 
@@ -496,6 +504,7 @@ export default {
 					// the user lands on a clean view, and clear any lingering error banner.
 					props.tabularView.view = null;
 					props.tabularView.error = "";
+					props.tabularView.errorStack = null;
 					sendQueryError.value = "";
 					return;
 				}

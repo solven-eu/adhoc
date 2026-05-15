@@ -593,9 +593,12 @@ export default {
 			// Statistics button from a previous render does not leak into a column whose
 			// current contract no longer warrants one (e.g. a measure column whose values
 			// turn out to be all-strings, leaving `s.count === 0` and producing no footerText).
+			// Also strip the alignment classes — a measure column that lost its numeric stats
+			// on a re-render should fall back to the default left alignment used by groupBys.
 			const columnElement = grid.getFooterRowColumn(column.id);
 			if (columnElement) {
 				columnElement.textContent = "";
+				columnElement.classList.remove("text-end", "font-monospace");
 			}
 
 			var footerText = null;
@@ -638,6 +641,15 @@ export default {
 			if (footerText) {
 				// https://github.com/6pac/SlickGrid/blob/master/examples/example-footer-totals.html
 				columnElement.textContent = footerText;
+				// Mirror the header alignment for measure columns — the header uses
+				// `text-end justify-content-end` so the column name sits on the right edge;
+				// applying `text-end font-monospace` to the footer cell makes "min … · max …"
+				// (and the Statistics affordance) line up with the numeric values above.
+				// groupBy / rowIndex footers keep the default left alignment since their
+				// `#: N` summary reads naturally from the left.
+				if (measureStats && measureStats[column.id]) {
+					columnElement.classList.add("text-end", "font-monospace");
+				}
 				// Append a Statistics affordance to MEASURE columns only, anchored next to
 				// min/max in the footer where the related summary numbers already live.
 				// `setAttribute("data-adhoc-stats-measure", ...)` lets the registered

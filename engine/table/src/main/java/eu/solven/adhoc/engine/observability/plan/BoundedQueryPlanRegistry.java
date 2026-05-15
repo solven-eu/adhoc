@@ -48,7 +48,8 @@ import lombok.extern.slf4j.Slf4j;
  * <li>{@link #lock(AdhocQueryId) Locked} sources sit in a separate map and are never evicted regardless of budget.
  * Their node count still contributes to {@link #totalNodeCount()} — pinning a 20k-node plan eats from the same budget
  * the LRU side competes for.</li>
- * <li>Thread-safe via a single {@code synchronized} on every public method.</li>
+ * <li>Thread-safe via {@code synchronized} blocks guarded by a private {@link #mutationLock} object. Every public
+ * method acquires it before touching {@link #sources} / {@link #locked} / {@link #currentNodeCount}.</li>
  * </ul>
  *
  * @author Benoit Lacelle

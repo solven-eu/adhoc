@@ -415,7 +415,13 @@
 				background: #842029;
 				color: #fff;
 			}
-			/* Progress bar underneath the spinner — driven by counted module fetches. */
+			/*
+			 * Indeterminate progress bar underneath the spinner. We do not know the total number
+			 * of resources upfront (would require patching window.fetch / XMLHttpRequest to count
+			 * outstanding requests), so the bar uses a sliding stripe to convey "loading is
+			 * happening" without claiming a percentage. The numeric label below counts completed
+			 * resources via a PerformanceObserver so the user still gets a concrete number.
+			 */
 			#adhoc-splash .splash-progress {
 				width: 16rem;
 				height: 0.4rem;
@@ -425,9 +431,17 @@
 			}
 			#adhoc-splash .splash-progress-bar {
 				height: 100%;
-				width: 0%;
+				width: 40%;
 				background: #0d6efd;
-				transition: width 0.15s ease-out;
+				animation: adhoc-splash-indeterminate 1.4s ease-in-out infinite;
+			}
+			@keyframes adhoc-splash-indeterminate {
+				0% {
+					transform: translateX(-100%);
+				}
+				100% {
+					transform: translateX(250%);
+				}
 			}
 			#adhoc-splash .splash-progress-label {
 				font-size: 0.75rem;
@@ -461,7 +475,7 @@
 			<div class="splash-progress" aria-hidden="true">
 				<div class="splash-progress-bar" id="adhoc-splash-bar"></div>
 			</div>
-			<div class="splash-progress-label" id="adhoc-splash-progress-label">0 / 0</div>
+			<div class="splash-progress-label" id="adhoc-splash-progress-label">0 resources loaded</div>
 			<div class="splash-error" id="adhoc-splash-error" role="alert">
 				<strong id="adhoc-splash-error-title">Pivotable failed to start.</strong>
 				<pre id="adhoc-splash-error-detail"></pre>
@@ -471,11 +485,11 @@
 		</div>
 		<script>
 			// Splash watchdog + progress tracker. Three jobs:
-			//   1. Count fetch / XHR / dynamic-import requests started since boot vs requests
-			//      finished, and update the splash progress bar accordingly. The total is a
-			//      moving target (each new fetch bumps it), so the bar represents "fraction of
-			//      currently-known requests that have completed". Good enough for a "things are
-			//      happening, here is the cadence" cue.
+			//   1. Count network resources loaded since boot via PerformanceObserver and update
+			//      the splash label accordingly. The bar itself is CSS-animated (indeterminate
+			//      stripe) — we don't know the total upfront and refuse to invent one. The
+			//      observer covers fetch, XHR, importmap, dynamic imports, stylesheets, images,
+			//      everything in the browser's Resource Timing buffer.
 			//   2. Watch for boot stalls — if app.mount() has not torn down the splash within
 			//      30s, surface "Pivotable failed to start" with a Reload button.
 			//   3. Capture any uncaught error / unhandledrejection and surface its message
@@ -483,64 +497,37 @@
 			//      eternal spinner. The same handlers stay installed after boot but become
 			//      no-ops once the splash is removed.
 			(function () {
-				let started = 0;
 				let finished = 0;
-				const bar = document.getElementById("adhoc-splash-bar");
 				const label = document.getElementById("adhoc-splash-progress-label");
 				const splash = document.getElementById("adhoc-splash");
 
 				const updateProgress = function () {
-					if (!bar || !label) return;
-					const pct = started === 0 ? 0 : Math.round((finished / started) * 100);
-					bar.style.width = pct + "%";
-					label.textContent = finished + " / " + started;
+					if (!label) return;
+					label.textContent = finished === 1 ? "1 resource loaded" : finished + " resources loaded";
 				};
+				updateProgress();
 
-				// Patch fetch — count starts when the call is made, finished when its promise settles.
-				const origFetch = window.fetch;
-				if (typeof origFetch === "function") {
-					window.fetch = function () {
-						started++;
-						updateProgress();
-						const p = origFetch.apply(this, arguments);
-						p.then(
-							() => {
-								finished++;
-								updateProgress();
-							},
-							() => {
-								finished++;
-								updateProgress();
-							},
-						);
-						return p;
-					};
-				}
-
-				// Patch XHR — only the SYNCHRONOUS bootstrap importmap fetch goes through here
-				// today, but the patch is symmetric with fetch so any future XHR is captured.
-				const OrigXHR = window.XMLHttpRequest;
-				if (typeof OrigXHR === "function") {
-					const PatchedXHR = function () {
-						const xhr = new OrigXHR();
-						const origSend = xhr.send;
-						xhr.send = function () {
-							started++;
+				// PerformanceObserver fires on every completed network resource. `buffered: true`
+				// replays entries that landed before the observer was attached, so the splash
+				// reflects everything the browser has loaded since the navigation started — not
+				// just from "now" onwards. Self-disconnects once the splash is gone so we don't
+				// keep observing after boot.
+				if (typeof PerformanceObserver === "function") {
+					try {
+						const observer = new PerformanceObserver((list, obs) => {
+							if (!document.body.contains(splash)) {
+								obs.disconnect();
+								return;
+							}
+							finished += list.getEntries().length;
 							updateProgress();
-							let done = false;
-							const finish = function () {
-								if (done) return;
-								done = true;
-								finished++;
-								updateProgress();
-							};
-							xhr.addEventListener("loadend", finish);
-							return origSend.apply(this, arguments);
-						};
-						return xhr;
-					};
-					PatchedXHR.prototype = OrigXHR.prototype;
-					window.XMLHttpRequest = PatchedXHR;
+						});
+						observer.observe({ type: "resource", buffered: true });
+					} catch (err) {
+						// Some older browsers reject `type: "resource"` even when PerformanceObserver exists.
+						// Fail silently — the splash spinner is still informative.
+						console.warn("Splash PerformanceObserver could not start:", err);
+					}
 				}
 
 				// Surface a visible error inside the splash. Idempotent — only the FIRST error

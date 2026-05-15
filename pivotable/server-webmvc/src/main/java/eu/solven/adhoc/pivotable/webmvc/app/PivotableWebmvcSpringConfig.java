@@ -30,6 +30,7 @@ import eu.solven.adhoc.pivotable.webmvc.PivotableWebmvcExceptionHandler;
 import eu.solven.adhoc.pivotable.webmvc.api.CubesController;
 import eu.solven.adhoc.pivotable.webmvc.api.PivotableClearController;
 import eu.solven.adhoc.pivotable.webmvc.api.PivotableEndpointsController;
+import eu.solven.adhoc.pivotable.webmvc.api.PivotablePlanController;
 import eu.solven.adhoc.pivotable.webmvc.api.PivotableQueryController;
 import eu.solven.adhoc.pivotable.webmvc.api.PivotableSpaController;
 import eu.solven.adhoc.pivotable.webmvc.chat.PivotableChatConfiguration;
@@ -51,6 +52,7 @@ import lombok.extern.slf4j.Slf4j;
 		CubesController.class,
 		PivotableEndpointsController.class,
 		PivotableQueryController.class,
+		PivotablePlanController.class,
 		PivotableClearController.class,
 		PivotableWebmvcExceptionHandler.class,
 

@@ -23,6 +23,7 @@
 package eu.solven.adhoc.pivotable.webflux.api;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -37,6 +38,7 @@ import eu.solven.adhoc.engine.observability.plan.QueryPlan;
 import eu.solven.adhoc.engine.observability.plan.QueryPlanSummary;
 import eu.solven.adhoc.pivotable.query.AsynchronousStatus;
 import eu.solven.adhoc.pivotable.query.PivotableAsynchronousQueriesManager;
+import eu.solven.adhoc.query.AdhocQueryId;
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
@@ -85,15 +87,34 @@ public class PivotablePlanHandler {
 	}
 
 	/**
-	 * Build the not-200 response — 404 for never-seen UUIDs, 204 + {@code Retry-After: 1} while the engine is still
-	 * planning, 204 for evicted/terminal-without-plan.
+	 * Composite-cube children — see {@code PivotablePlanController#getPlanChildren} for the full contract.
+	 *
+	 * @param serverRequest
+	 *            carrying the parent's {@code queryUuid} as a path variable
+	 * @return one summary per child plan, or the standard not-ready response
+	 */
+	public Mono<ServerResponse> getPlanChildren(ServerRequest serverRequest) {
+		UUID queryUuid = UUID.fromString(serverRequest.pathVariable("queryUuid"));
+		Optional<AdhocQueryId> parentId = registry.findIdByUuid(queryUuid);
+		if (parentId.isEmpty()) {
+			return notReadyResponse(queryUuid);
+		}
+		Instant now = Instant.now();
+		List<QueryPlanSummary> children =
+				registry.getChildrenOf(parentId.get()).stream().map(child -> QueryPlanSummary.of(child, now)).toList();
+		return ServerResponse.ok().contentType(MediaType.APPLICATION_JSON).body(BodyInserters.fromValue(children));
+	}
+
+	/**
+	 * Build the not-200 response. 404 is reserved for "the endpoint itself does not exist" (handled by Spring's default
+	 * mapping); known endpoints always return 204. The SPA reads {@code Retry-After} to decide between "wait + retry"
+	 * (queuing) and "stop polling" (terminal / unknown UUID).
 	 */
 	protected Mono<ServerResponse> notReadyResponse(UUID queryUuid) {
 		AsynchronousStatus status = asyncManager.getState(queryUuid);
 		return switch (status) {
-		case UNKNOWN -> ServerResponse.notFound().build();
 		case RUNNING -> ServerResponse.noContent().header(HttpHeaders.RETRY_AFTER, "1").build();
-		case SERVED, FAILED, DISCARDED -> ServerResponse.noContent().build();
+		case UNKNOWN, SERVED, FAILED, DISCARDED -> ServerResponse.noContent().build();
 		};
 	}
 }

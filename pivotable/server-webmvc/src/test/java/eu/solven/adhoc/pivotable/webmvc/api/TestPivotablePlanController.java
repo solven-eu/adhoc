@@ -23,6 +23,7 @@
 package eu.solven.adhoc.pivotable.webmvc.api;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -138,14 +139,16 @@ public class TestPivotablePlanController {
 	}
 
 	@Test
-	public void testSummary404WhenUuidUnknownToManager() {
-		// Manager has never seen the UUID → 404 (typo / stale link).
+	public void testSummary204WhenUuidUnknownToManager() {
+		// Manager has never seen the UUID → 204 (no Retry-After). 404 is reserved for "endpoint doesn't exist";
+		// an unknown UUID on a valid endpoint is still a valid no-content response.
 		BoundedQueryPlanRegistry registry = new BoundedQueryPlanRegistry(100);
 		PivotablePlanController controller =
 				new PivotablePlanController(stubManager(new AtomicReference<>(AsynchronousStatus.UNKNOWN)), registry);
 
 		ResponseEntity<QueryPlanSummary> response = controller.getPlanSummary(UUID.randomUUID());
-		Assertions.assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+		Assertions.assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+		Assertions.assertThat(response.getHeaders().getFirst(HttpHeaders.RETRY_AFTER)).isNull();
 	}
 
 	@Test
@@ -173,13 +176,82 @@ public class TestPivotablePlanController {
 	}
 
 	@Test
-	public void testSnapshot404WhenUuidUnknownToManager() {
+	public void testSnapshot204WhenUuidUnknownToManager() {
 		BoundedQueryPlanRegistry registry = new BoundedQueryPlanRegistry(100);
 		PivotablePlanController controller =
 				new PivotablePlanController(stubManager(new AtomicReference<>(AsynchronousStatus.UNKNOWN)), registry);
 
 		ResponseEntity<QueryPlan> response = controller.getPlanSnapshot(UUID.randomUUID());
-		Assertions.assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+		Assertions.assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+		Assertions.assertThat(response.getHeaders().getFirst(HttpHeaders.RETRY_AFTER)).isNull();
+	}
+
+	@Test
+	public void testChildren200ReturnsEmptyListForLeafQuery() {
+		// Parent registered, no children → 200 with []. This is the normal case for non-composite queries.
+		BoundedQueryPlanRegistry registry = new BoundedQueryPlanRegistry(100);
+		UUID parentUuid = UUID.randomUUID();
+		registry.registerSource(sourceOf(plan(adhocId(parentUuid))));
+
+		PivotablePlanController controller =
+				new PivotablePlanController(stubManager(new AtomicReference<>(AsynchronousStatus.SERVED)), registry);
+		ResponseEntity<List<QueryPlanSummary>> response = controller.getPlanChildren(parentUuid);
+
+		Assertions.assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+		Assertions.assertThat(response.getBody()).isNotNull().isEmpty();
+	}
+
+	@Test
+	public void testChildren200ReturnsOnePerChildForCompositeParent() {
+		// Composite parent + 2 sub-cube children. The registry's `getChildrenOf` matches by parent UUID — set each
+		// child's `parentQueryId` to the parent's UUID and assert both surface.
+		BoundedQueryPlanRegistry registry = new BoundedQueryPlanRegistry(100);
+		UUID parentUuid = UUID.randomUUID();
+		AdhocQueryId parentId = adhocId(parentUuid);
+		registry.registerSource(sourceOf(plan(parentId)));
+
+		AdhocQueryId childA = adhocId(UUID.randomUUID());
+		AdhocQueryId childB = adhocId(UUID.randomUUID());
+		registry.registerSource(sourceOf(childPlanOf(childA, parentUuid)));
+		registry.registerSource(sourceOf(childPlanOf(childB, parentUuid)));
+
+		PivotablePlanController controller =
+				new PivotablePlanController(stubManager(new AtomicReference<>(AsynchronousStatus.SERVED)), registry);
+		ResponseEntity<List<QueryPlanSummary>> response = controller.getPlanChildren(parentUuid);
+
+		Assertions.assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+		Assertions.assertThat(response.getBody()).hasSize(2);
+	}
+
+	@Test
+	public void testChildren204WhenParentUuidUnknown() {
+		BoundedQueryPlanRegistry registry = new BoundedQueryPlanRegistry(100);
+		PivotablePlanController controller =
+				new PivotablePlanController(stubManager(new AtomicReference<>(AsynchronousStatus.UNKNOWN)), registry);
+
+		ResponseEntity<List<QueryPlanSummary>> response = controller.getPlanChildren(UUID.randomUUID());
+		Assertions.assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+		Assertions.assertThat(response.getHeaders().getFirst(HttpHeaders.RETRY_AFTER)).isNull();
+	}
+
+	/** Build a plan whose parent is the given UUID. Mirrors {@link #plan} but sets a non-null parentQueryId. */
+	private static QueryPlan childPlanOf(AdhocQueryId id, UUID parentUuid) {
+		QueryPlanNode root = QueryPlanNode.builder()
+				.subject("root")
+				.operator(NodeOperator.CUBE_STEP)
+				.label("root")
+				.state(NodeState.DONE)
+				.build();
+		return QueryPlan.builder()
+				.queryId(id)
+				.parentQueryId(parentUuid)
+				.cubeName("test-cube")
+				.state(PlanState.DONE)
+				.submittedAt(Instant.parse("2026-05-14T00:00:00Z"))
+				.completedAt(Instant.parse("2026-05-14T00:00:01Z"))
+				.root(root)
+				.nodeCount(1)
+				.build();
 	}
 
 	@Test

@@ -161,8 +161,10 @@ public class TestLiveQueryPlanSource_MidFlight extends ATestDagInMemory {
 						.orElseThrow();
 		QueryPlan midFlight = registry.snapshot(queryId).orElseThrow();
 
-		// The plan is in flight (RUNNING/PENDING — not yet completed).
-		Assertions.assertThat(midFlight.getState()).isIn(PlanState.PENDING, PlanState.RUNNING);
+		// Once execution has started (markExecutionStarted was called before executeDag), the plan should report
+		// RUNNING — not PENDING, which would imply nothing has begun. PENDING + done-nodes-present produced the
+		// "Queued 2/3 steps" UX bug seen in https://imgur.com/… (badge said Queued while half the dag was done).
+		Assertions.assertThat(midFlight.getState()).isEqualTo(PlanState.RUNNING);
 		Assertions.assertThat(midFlight.getCompletedAt()).isNull();
 
 		// Count node states across the dag. We expect at least one DONE (the aggregator) and at least one PENDING

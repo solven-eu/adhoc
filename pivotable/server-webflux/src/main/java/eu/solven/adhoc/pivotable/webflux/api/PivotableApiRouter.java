@@ -240,6 +240,18 @@ public class PivotableApiRouter implements IPivotableRouteConstants {
 								.response(responseBuilder().responseCode("200").implementation(QueryPlan.class))
 								.response(responseBuilder().responseCode("204")
 										.description("No plan registered for that UUID")))
+				.GET(json(R_CUBE_PLAN_CHILDREN),
+						planHandler::getPlanChildren,
+						ops -> ops.operationId("getPlanChildren")
+								.parameter(parameterBuilder().name("queryUuid")
+										.description("UUID of the parent (composite) query")
+										.implementation(UUID.class)
+										.example("12345678-1234-1234-1234-123456789012"))
+								.response(responseBuilder().responseCode("200")
+										.description("List of child plan summaries; empty for a non-composite query")
+										.implementationArray(QueryPlanSummary.class))
+								.response(responseBuilder().responseCode("204")
+										.description("Parent UUID known but plan not yet ready, or evicted")))
 
 				.build();
 

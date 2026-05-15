@@ -244,17 +244,41 @@ public class PivotableQueryController implements IPivotableRouteConstants {
 		if (withView && optView.getOptView().isPresent()) {
 			ListBasedTabularView view = ListBasedTabularView.load(optView.getOptView().get());
 			return QueryResultHolder.served(optView.getState(), view);
-		} else {
-			AsynchronousStatus state = asynchronousQueriesManager.getState(queryUuid);
-
-			Optional<Duration> optRetryIn = getRetryIn(queryUuid, state);
-
-			if (optRetryIn.isPresent()) {
-				return QueryResultHolder.retry(state, optRetryIn.get());
-			} else {
-				return QueryResultHolder.discarded(state);
-			}
 		}
+
+		AsynchronousStatus state = optView.getState();
+		// On FAILED, surface the error info from the manager's StateAndView. Without this, the SPA's polling loop
+		// receives only `{state: "FAILED"}` and synthesises the useless `Query has state=FAILED` message — losing
+		// the actual exception that fired in the engine.
+		if (state == AsynchronousStatus.FAILED) {
+			String stack = optView.getStacktrace().orElse(null);
+			return QueryResultHolder.failed(state, summariseStack(stack), stack);
+		}
+
+		Optional<Duration> optRetryIn = getRetryIn(queryUuid, state);
+		if (optRetryIn.isPresent()) {
+			return QueryResultHolder.retry(state, optRetryIn.get());
+		}
+		return QueryResultHolder.discarded(state);
+	}
+
+	/**
+	 * Extract the first non-blank line of {@code stack} for use as a short error message. Returns {@code null} when
+	 * {@code stack} is {@code null} or empty, so {@link QueryResultHolder#failed} stays JSON-friendly (the field is
+	 * {@code @JsonInclude(NON_NULL)}).
+	 */
+	protected static String summariseStack(String stack) {
+		if (stack == null || stack.isBlank()) {
+			return null;
+		}
+		int newlineAt = stack.indexOf('\n');
+		String firstLine;
+		if (newlineAt >= 0) {
+			firstLine = stack.substring(0, newlineAt);
+		} else {
+			firstLine = stack;
+		}
+		return firstLine.strip();
 	}
 
 	@SuppressWarnings("checkstyle:MagicNumber")

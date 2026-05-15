@@ -157,6 +157,10 @@ public class LiveQueryPlanSource implements IPlanSource {
 	 */
 	public void markExecutionStarted(Instant at) {
 		if (executionStartedAt.compareAndSet(null, at)) {
+			// Flip PENDING → RUNNING in the same step. Without this, planState stays PENDING all the way until
+			// markCompleted(...), so a mid-flight snapshot reports state=PENDING while half the dag is DONE — the UI
+			// then renders the "Queued" badge for a query that is in fact running.
+			planState.compareAndSet(PlanState.PENDING, PlanState.RUNNING);
 			bumpVersion();
 		}
 	}

@@ -81,12 +81,13 @@ public interface IQueryPlanRegistry {
 	Optional<QueryPlan> get(AdhocQueryId queryId);
 
 	/**
-	 * Deep-copy snapshot — safe for read paths that may run concurrently with engine-side mutation. UI / poll handlers
-	 * should always go through this.
+	 * Fresh snapshot — safe for read paths that may run concurrently with engine-side mutation. UI / poll handlers
+	 * should always go through this. The implementation delegates to {@link IPlanSource#snapshot()}, which by contract
+	 * returns a tree that won't be mutated by the engine (live sources re-project the dag on each call).
 	 *
 	 * @param queryId
 	 *            the {@link AdhocQueryId} to look up
-	 * @return a deep-copied plan that will not be touched by further engine mutations, or empty if absent
+	 * @return a safe-to-share plan, or empty if absent
 	 */
 	Optional<QueryPlan> snapshot(AdhocQueryId queryId);
 
@@ -97,7 +98,7 @@ public interface IQueryPlanRegistry {
 	 *
 	 * @param parent
 	 *            the parent {@link AdhocQueryId}
-	 * @return the child plans (deep-copied — same safety guarantee as {@link #snapshot(AdhocQueryId)})
+	 * @return the child plans, each obtained via the same safe-to-share path as {@link #snapshot(AdhocQueryId)}
 	 */
 	List<QueryPlan> getChildrenOf(AdhocQueryId parent);
 

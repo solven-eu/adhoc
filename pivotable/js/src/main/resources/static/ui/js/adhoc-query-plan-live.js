@@ -1,97 +1,21 @@
 // @ts-check
 import { onBeforeUnmount, ref, watch } from "vue";
 
-// LiveView for an asynchronous query: polls /api/v1/cubes/queries/{queryUuid}/plan/summary at ~2 Hz. The server
-// distinguishes four states via HTTP code + Retry-After header:
-//   - 200            → plan registered; body is the summary.
-//   - 204 + Retry-After → Pivotable has the UUID but the engine hasn't yet registered a plan (queueing/planning).
-//                         Keep polling.
-//   - 204            → terminal — plan was evicted (only after the query finished and LRU flushed it). Stop.
-//   - 404            → the UUID was never seen by Pivotable (typo / stale link). Stop.
-// The 5xx / network-error path is treated as a transient blip — keep polling and let the next tick recover.
+import AdhocQueryPlanMermaidModal from "./adhoc-query-plan-mermaid-modal.js";
+import { fetchSummary, nextPollState } from "./adhoc-query-plan-poll.js";
+import { useUserStore } from "./store-user.js";
+
+// LiveView for an asynchronous query: polls /api/v1/cubes/queries/{queryUuid}/plan/summary at ~2 Hz. The pure
+// polling logic (`fetchSummary` + `nextPollState`) lives in `adhoc-query-plan-poll.js` so it can be Vitest-tested
+// without a DOM; this file wires it to a Vue component + Bootstrap modal trigger.
 
 const POLL_INTERVAL_MS = 500;
 
-/** @typedef {{state: string, totalNodes: number, doneNodes: number, pendingNodes: number, runningNodes: number, failedNodes: number, elapsedMs: number, startDelayMs: number, totalRowsOut: number, latestCompletedLabel: string | null}} PlanSummary */
-
-/** @typedef {"polling" | "queuing" | "gone" | "unknown" | "error" | "terminal"} PollStatus */
-
-/**
- * @typedef PollState
- * @property {PlanSummary | null} summary
- * @property {PollStatus} status
- */
-
-/**
- * @typedef {PlanSummary | "queuing" | "gone" | "unknown" | "error"} FetchResult
- *
- * @typedef PollOutcome
- * @property {PollState} state - new state to apply
- * @property {boolean} shouldStop - whether the caller should clear its polling timer
- */
-
-/**
- * @param {string} queryUuid
- * @returns {Promise<FetchResult>}
- */
-export async function fetchSummary(queryUuid) {
-	const url = `/api/v1/cubes/queries/${encodeURIComponent(queryUuid)}/plan/summary`;
-	try {
-		const response = await fetch(url, { headers: { Accept: "application/json" } });
-		if (response.status === 404) return "unknown";
-		if (response.status === 204) {
-			// Retry-After present = queuing (manager has the UUID, engine not yet ready). Absent = evicted.
-			return response.headers.get("Retry-After") ? "queuing" : "gone";
-		}
-		if (!response.ok) return "error";
-		return /** @type {PlanSummary} */ (await response.json());
-	} catch (e) {
-		console.error("Issue polling plan summary:", e);
-		return "error";
-	}
-}
-
-/**
- * Pure reducer for one poll tick. Separated from the component so the state-machine can be unit-tested without
- * mocking timers, the DOM, or `fetch`. The component just composes `fetchSummary` + `nextPollState` + a Vue
- * `ref` update.
- *
- * Transitions:
- * - `"unknown"` (404) → status `unknown`, shouldStop=true. UUID never seen; nothing to wait for.
- * - `"queuing"` (204 + Retry-After) → status `queuing`, shouldStop=false. Engine is planning; keep polling.
- * - `"gone"` (204 no Retry-After) → status `gone`, shouldStop=true. Plan was evicted post-termination.
- * - `"error"` (network glitch, 5xx) → status `error`, shouldStop=false. Keep last-known summary, keep polling —
- *   the next tick may recover.
- * - real `PlanSummary` with terminal state (DONE/FAILED) → status `terminal`, shouldStop=true.
- * - real `PlanSummary` mid-flight → status `polling`, shouldStop=false.
- *
- * @param {PollState} prev
- * @param {FetchResult} result
- * @returns {PollOutcome}
- */
-export function nextPollState(prev, result) {
-	if (result === "unknown") {
-		return { state: { summary: prev.summary, status: "unknown" }, shouldStop: true };
-	}
-	if (result === "queuing") {
-		return { state: { summary: prev.summary, status: "queuing" }, shouldStop: false };
-	}
-	if (result === "gone") {
-		return { state: { summary: prev.summary, status: "gone" }, shouldStop: true };
-	}
-	if (result === "error") {
-		// Preserve the last successful summary so the UI keeps showing useful info during a transient blip,
-		// instead of flashing back to a loading spinner.
-		return { state: { summary: prev.summary, status: "error" }, shouldStop: false };
-	}
-	const terminal = result.state === "DONE" || result.state === "FAILED";
-	return {
-		state: { summary: result, status: terminal ? "terminal" : "polling" },
-		shouldStop: terminal,
-	};
-}
+/** @typedef {import("./adhoc-query-plan-poll.js").PlanSummary} PlanSummary */
+/** @typedef {import("./adhoc-query-plan-poll.js").PollStatus} PollStatus */
 
 export default {
+	components: { AdhocQueryPlanMermaidModal },
 	props: {
 		queryUuid: {
 			type: String,
@@ -99,10 +23,22 @@ export default {
 		},
 	},
 	setup(props) {
+		const userStore = useUserStore();
+		// Bind once so the closure sees the same authenticated-fetch implementation every tick. The helper
+		// attaches the bearer token, handles 401 (flips needsToLogin → opens the login modal) and rejects URLs
+		// that already start with /api.
+		const authFetch = (url, options) => userStore.authenticatedFetch(url, options);
+
 		/** @type {import("vue").Ref<PlanSummary | null>} */
 		const summary = ref(null);
 		/** @type {import("vue").Ref<PollStatus>} */
 		const status = ref("polling");
+		// Controls the Mermaid detail modal. Toggled by the "Details" button; the modal emits an update
+		// when the user closes it (ESC, backdrop, ✕) so we know to allow a fresh open later.
+		const showPlanModal = ref(false);
+		const openPlanModal = () => {
+			showPlanModal.value = true;
+		};
 
 		/** @type {ReturnType<typeof setInterval> | null} */
 		let timer = null;
@@ -115,7 +51,7 @@ export default {
 		};
 
 		const tick = async () => {
-			const result = await fetchSummary(props.queryUuid);
+			const result = await fetchSummary(props.queryUuid, authFetch);
 			const outcome = nextPollState({ summary: summary.value, status: status.value }, result);
 			summary.value = outcome.state.summary;
 			status.value = outcome.state.status;
@@ -141,13 +77,17 @@ export default {
 
 		onBeforeUnmount(stop);
 
-		return { summary, status };
+		return { summary, status, showPlanModal, openPlanModal };
 	},
 	template: /* HTML */ `
 		<div class="adhoc-plan-live d-inline-flex align-items-center gap-2 small">
 			<template v-if="status === 'unknown'">
 				<i class="bi bi-exclamation-circle text-warning"></i>
 				<span class="text-warning">Unknown query id.</span>
+			</template>
+			<template v-else-if="status === 'unauthorized'">
+				<i class="bi bi-lock text-muted"></i>
+				<span class="text-muted">Log in to see the plan.</span>
 			</template>
 			<template v-else-if="status === 'gone'">
 				<i class="bi bi-question-circle text-muted"></i>
@@ -183,7 +123,17 @@ export default {
 				</span>
 
 				<span v-if="status === 'error'" class="text-warning"><i class="bi bi-exclamation-triangle"></i> network glitch</span>
+
+				<button
+					type="button"
+					class="btn btn-sm btn-link p-0 ms-1 text-decoration-none"
+					title="Show the query plan as a Mermaid graph"
+					@click="openPlanModal"
+				>
+					<i class="bi bi-diagram-3"></i> Details
+				</button>
 			</template>
 		</div>
+		<AdhocQueryPlanMermaidModal :queryUuid="queryUuid" v-model:show="showPlanModal" />
 	`,
 };

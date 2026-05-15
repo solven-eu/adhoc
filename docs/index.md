@@ -54,6 +54,7 @@ Pivotable is a referential implementation of a web application wrapping Adhoc ca
 
 ### Project reference
 
+- [HTTP API conventions](api.md) — Pivotable's status-code policy (404 ↔ 204), `Retry-After` semantics, plan endpoints, async-query lifecycle
 - [Module Dependencies](dependencies.md) — inter-module Maven dependency graph
 - [Debug / Investigations](debug.md) — debug/explain query options and automated documentation tools
 - [Testing](testing.md) — test pyramid (cube-level integration vs module unit tests), coverage attribution, JMH benchmarks, Playwright e2e

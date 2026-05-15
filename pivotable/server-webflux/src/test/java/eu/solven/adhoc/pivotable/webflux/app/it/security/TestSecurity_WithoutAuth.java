@@ -46,7 +46,7 @@ import org.springframework.test.web.reactive.server.StatusAssertions;
 import org.springframework.test.web.reactive.server.WebTestClient;
 
 import eu.solven.adhoc.app.IPivotableSpringProfiles;
-import eu.solven.adhoc.pivotable.webflux.PivotableWebExceptionHandler;
+import eu.solven.adhoc.pivotable.webflux.PivotableWebfluxExceptionHandler;
 import eu.solven.adhoc.pivotable.webflux.api.GreetingHandler;
 import eu.solven.adhoc.pivotable.webflux.api.PivotableLoginWebfluxController;
 import eu.solven.adhoc.pivotable.webflux.security.tokens.AccessTokenHandler;
@@ -202,7 +202,7 @@ public class TestSecurity_WithoutAuth {
 	public void testLoginUser() {
 		log.debug("About {}", PivotableLoginWebfluxController.class);
 
-		try (ILogDisabler logDisabler = PepperTestHelper.disableLog(PivotableWebExceptionHandler.class)) {
+		try (ILogDisabler logDisabler = PepperTestHelper.disableLog(PivotableWebfluxExceptionHandler.class)) {
 			webTestClient
 
 					.get()
@@ -314,7 +314,7 @@ public class TestSecurity_WithoutAuth {
 	public void testLoginToken() {
 		log.debug("About {}", GreetingHandler.class);
 
-		try (ILogDisabler logDisabler = PepperTestHelper.disableLog(PivotableWebExceptionHandler.class)) {
+		try (ILogDisabler logDisabler = PepperTestHelper.disableLog(PivotableWebfluxExceptionHandler.class)) {
 			webTestClient
 
 					.get()
@@ -368,7 +368,7 @@ public class TestSecurity_WithoutAuth {
 	public void testApiPrivate() {
 		log.debug("About {}", GreetingHandler.class);
 
-		try (ILogDisabler logDisabler = PepperTestHelper.disableLog(PivotableWebExceptionHandler.class)) {
+		try (ILogDisabler logDisabler = PepperTestHelper.disableLog(PivotableWebfluxExceptionHandler.class)) {
 			webTestClient
 
 					.get()
@@ -385,7 +385,7 @@ public class TestSecurity_WithoutAuth {
 	public void testApiPrivate_unknownRoute() {
 		log.debug("About {}", GreetingHandler.class);
 
-		try (ILogDisabler logDisabler = PepperTestHelper.disableLog(PivotableWebExceptionHandler.class)) {
+		try (ILogDisabler logDisabler = PepperTestHelper.disableLog(PivotableWebfluxExceptionHandler.class)) {
 			webTestClient
 
 					.get()
@@ -404,7 +404,7 @@ public class TestSecurity_WithoutAuth {
 	public void testApiPOSTWithCsrf() {
 		log.debug("About {}", GreetingController.class);
 
-		try (ILogDisabler logDisabler = PepperTestHelper.disableLog(PivotableWebExceptionHandler.class)) {
+		try (ILogDisabler logDisabler = PepperTestHelper.disableLog(PivotableWebfluxExceptionHandler.class)) {
 			webTestClient
 					// https://www.baeldung.com/spring-security-csrf
 					.mutateWith(SecurityMockServerConfigurers.csrf())
@@ -426,7 +426,7 @@ public class TestSecurity_WithoutAuth {
 	public void testApiPOSTWithoutCsrf() {
 		log.debug("About {}", GreetingController.class);
 
-		try (ILogDisabler logDisabler = PepperTestHelper.disableLog(PivotableWebExceptionHandler.class)) {
+		try (ILogDisabler logDisabler = PepperTestHelper.disableLog(PivotableWebfluxExceptionHandler.class)) {
 			StatusAssertions expectStatus = webTestClient.post()
 					.uri("/api/v1/hello")
 					.bodyValue("{}")
@@ -442,7 +442,7 @@ public class TestSecurity_WithoutAuth {
 	public void testMakeRefreshToken() {
 		log.debug("About {}", PivotableLoginWebfluxController.class);
 
-		try (ILogDisabler logDisabler = PepperTestHelper.disableLog(PivotableWebExceptionHandler.class)) {
+		try (ILogDisabler logDisabler = PepperTestHelper.disableLog(PivotableWebfluxExceptionHandler.class)) {
 			StatusAssertions expectStatus = webTestClient.get()
 					.uri("/api/login/v1/oauth2/token?refresh_token=true")
 					.accept(MediaType.APPLICATION_JSON)
@@ -458,7 +458,7 @@ public class TestSecurity_WithoutAuth {
 	public void testRefreshTokenToAccessToken() {
 		log.debug("About {}", AccessTokenHandler.class);
 
-		try (ILogDisabler logDisabler = PepperTestHelper.disableLog(PivotableWebExceptionHandler.class)) {
+		try (ILogDisabler logDisabler = PepperTestHelper.disableLog(PivotableWebfluxExceptionHandler.class)) {
 			StatusAssertions expectStatus = webTestClient.get()
 					.uri("/api/v1/oauth2/token")
 					.accept(MediaType.APPLICATION_JSON)

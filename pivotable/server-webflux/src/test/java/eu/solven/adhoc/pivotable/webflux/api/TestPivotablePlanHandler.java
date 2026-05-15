@@ -117,16 +117,17 @@ public class TestPivotablePlanHandler {
 	}
 
 	@Test
-	public void testSummary404WhenUuidUnknownToManager() {
+	public void testSummary204WhenUuidUnknownToManager() {
 		BoundedQueryPlanRegistry registry = new BoundedQueryPlanRegistry(100);
 		PivotablePlanHandler handler =
 				new PivotablePlanHandler(stubManager(new AtomicReference<>(AsynchronousStatus.UNKNOWN)), registry);
 		MockServerRequest request =
 				MockServerRequest.builder().pathVariable("queryUuid", UUID.randomUUID().toString()).build();
 
-		StepVerifier.create(handler.getPlanSummary(request))
-				.assertNext(response -> Assertions.assertThat(response.statusCode()).isEqualTo(HttpStatus.NOT_FOUND))
-				.verifyComplete();
+		StepVerifier.create(handler.getPlanSummary(request)).assertNext(response -> {
+			Assertions.assertThat(response.statusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+			Assertions.assertThat(response.headers().getFirst(HttpHeaders.RETRY_AFTER)).isNull();
+		}).verifyComplete();
 	}
 
 	@Test
@@ -158,15 +159,51 @@ public class TestPivotablePlanHandler {
 	}
 
 	@Test
-	public void testSnapshot404WhenUuidUnknownToManager() {
+	public void testChildren200ReturnsOnePerChild() {
+		BoundedQueryPlanRegistry registry = new BoundedQueryPlanRegistry(100);
+		UUID parentUuid = UUID.randomUUID();
+		AdhocQueryId parentId = AdhocQueryId.builder().cube("test-cube").queryId(parentUuid).build();
+		registry.registerSource(sourceOf(plan(parentId)));
+
+		// Child plan with its parentQueryId pointing to the parent's UUID.
+		QueryPlan childPlan = QueryPlan.builder()
+				.queryId(AdhocQueryId.builder().cube("test-cube").queryId(UUID.randomUUID()).build())
+				.parentQueryId(parentUuid)
+				.cubeName("test-cube")
+				.state(PlanState.DONE)
+				.submittedAt(Instant.parse("2026-05-14T00:00:00Z"))
+				.completedAt(Instant.parse("2026-05-14T00:00:01Z"))
+				.root(QueryPlanNode.builder()
+						.subject("root")
+						.operator(NodeOperator.CUBE_STEP)
+						.label("root")
+						.state(NodeState.DONE)
+						.build())
+				.nodeCount(1)
+				.build();
+		registry.registerSource(sourceOf(childPlan));
+
+		PivotablePlanHandler handler =
+				new PivotablePlanHandler(stubManager(new AtomicReference<>(AsynchronousStatus.SERVED)), registry);
+		MockServerRequest request =
+				MockServerRequest.builder().pathVariable("queryUuid", parentUuid.toString()).build();
+
+		StepVerifier.create(handler.getPlanChildren(request))
+				.assertNext(response -> Assertions.assertThat(response.statusCode()).isEqualTo(HttpStatus.OK))
+				.verifyComplete();
+	}
+
+	@Test
+	public void testSnapshot204WhenUuidUnknownToManager() {
 		BoundedQueryPlanRegistry registry = new BoundedQueryPlanRegistry(100);
 		PivotablePlanHandler handler =
 				new PivotablePlanHandler(stubManager(new AtomicReference<>(AsynchronousStatus.UNKNOWN)), registry);
 		MockServerRequest request =
 				MockServerRequest.builder().pathVariable("queryUuid", UUID.randomUUID().toString()).build();
 
-		StepVerifier.create(handler.getPlanSnapshot(request))
-				.assertNext(response -> Assertions.assertThat(response.statusCode()).isEqualTo(HttpStatus.NOT_FOUND))
-				.verifyComplete();
+		StepVerifier.create(handler.getPlanSnapshot(request)).assertNext(response -> {
+			Assertions.assertThat(response.statusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+			Assertions.assertThat(response.headers().getFirst(HttpHeaders.RETRY_AFTER)).isNull();
+		}).verifyComplete();
 	}
 }

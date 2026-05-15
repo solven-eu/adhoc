@@ -246,6 +246,7 @@ export default {
 			// Clear the error immediately. A successful re-query will re-clear it; clearing here too
 			// avoids a flash of the banner while the new query is in flight.
 			tabularView.error = "";
+			tabularView.errorStack = null;
 		};
 
 		const router = useRouter();
@@ -322,6 +323,21 @@ export default {
 		// `store-preferences.js:buildPayload`, so the preference survives page reloads.
 		const preferencesStore = usePreferencesStore();
 
+		// Shared model populated by AdhocQueryGrid and consumed by the LiveView strip below.
+		// `offscreenColumnsRight` is the number of data columns whose left edge sits past the
+		// visible viewport's right edge in scroll mode; `scrollToRightEnd` is the action assigned
+		// by the grid after mount, invoked by the chip click. Centralising the model here lets
+		// the chip render in the same row as <AdhocQueryPlanLive> instead of being trapped inside
+		// the grid container.
+		const gridShared = reactive({
+			offscreenColumnsRight: 0,
+			/** @type {(() => void) | null} */
+			scrollToRightEnd: null,
+		});
+		const onScrollToRightEnd = () => {
+			if (gridShared.scrollToRightEnd) gridShared.scrollToRightEnd();
+		};
+
 		return {
 			loading,
 			queryModel,
@@ -336,6 +352,9 @@ export default {
 			restoreLastSuccessfulQuery,
 
 			preferencesStore,
+
+			gridShared,
+			onScrollToRightEnd,
 		};
 	},
 	template: /* HTML */ `
@@ -362,24 +381,54 @@ export default {
 					mental context; this banner makes it impossible to miss that the underlying state is out-of-sync
 					with the displayed data.
 				-->
-				<div v-if="tabularView.error" class="alert alert-danger d-flex justify-content-between align-items-center sticky-top mb-2" role="alert">
-					<div>
-						<strong>Query is broken.</strong>
-						The grid below still shows the last successful result.
-						<div class="small">{{tabularView.error}}</div>
+				<div v-if="tabularView.error" class="alert alert-danger sticky-top mb-2" role="alert">
+					<div class="d-flex justify-content-between align-items-start">
+						<div class="flex-grow-1">
+							<strong>Query is broken.</strong>
+							The grid below still shows the last successful result.
+							<div class="small">{{tabularView.error}}</div>
+							<!--
+								Full server-side stack on demand. The <details> element keeps it tucked away by
+								default — the short message in .small above is enough for most users — and the
+								monospace <pre> preserves indentation when expanded. We disable text wrapping with
+								white-space:pre-wrap so long class names stay readable.
+							-->
+							<details v-if="tabularView.errorStack" class="mt-2">
+								<summary class="small text-decoration-underline" style="cursor:pointer">Server stack trace</summary>
+								<pre class="small mt-1 mb-0" style="white-space:pre-wrap;max-height:20rem;overflow:auto">{{tabularView.errorStack}}</pre>
+							</details>
+						</div>
+						<button
+							v-if="lastSuccessfulQuery"
+							type="button"
+							class="btn btn-sm btn-outline-dark ms-3"
+							@click="restoreLastSuccessfulQuery"
+							title="Drop the latest edits and restore the queryModel as it was for the last successful query"
+						>
+							Restore last successful query
+						</button>
 					</div>
-					<button
-						v-if="lastSuccessfulQuery"
-						type="button"
-						class="btn btn-sm btn-outline-dark ms-3"
-						@click="restoreLastSuccessfulQuery"
-						title="Drop the latest edits and restore the queryModel as it was for the last successful query"
-					>
-						Restore last successful query
-					</button>
 				</div>
-				<div v-if="tabularView.queryUuid" class="mt-2 mb-1">
+				<div v-if="tabularView.queryUuid" class="mt-2 mb-1 d-flex justify-content-between align-items-center gap-2">
 					<AdhocQueryPlanLive :queryUuid="tabularView.queryUuid" />
+					<!--
+						Scroll-mode discoverability hint: sits on the right of the LiveView strip so
+						it stays visible regardless of how far the user scrolled the table. The chip
+						is owned here (not inside the grid) so it doesn't get clipped by the grid's
+						overflow-x and remains aligned with the rest of the page chrome. The grid
+						populates gridShared after mount (count + the scroll-right action).
+					-->
+					<button
+						type="button"
+						v-if="gridShared.offscreenColumnsRight > 0"
+						@click="onScrollToRightEnd"
+						class="btn btn-sm btn-dark py-0 px-2"
+						style="font-size:0.75rem;"
+						:title="'Scroll the grid to reveal ' + gridShared.offscreenColumnsRight + ' column(s) hidden to the right'"
+					>
+						<i class="bi bi-arrow-right-circle"></i>
+						+{{gridShared.offscreenColumnsRight}} more
+					</button>
 				</div>
 				<AdhocQueryGrid
 					:tabularView="tabularView"
@@ -389,6 +438,7 @@ export default {
 					:cube="cube"
 					:endpointId="endpointId"
 					:cubeId="cubeId"
+					:gridShared="gridShared"
 				/>
 			</div>
 

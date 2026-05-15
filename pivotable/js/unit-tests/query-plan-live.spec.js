@@ -1,7 +1,7 @@
 // @ts-check
 import { expect, test } from "vitest";
 
-import { nextPollState } from "@/js/adhoc-query-plan-live.js";
+import { nextPollState } from "@/js/adhoc-query-plan-poll.js";
 
 // Pure reducer tests — no timers, no fetch, no DOM. Covers each transition in the four-state contract
 // (200 / 204+Retry-After / 204 / 404) plus the transient error path.
@@ -27,6 +27,14 @@ test("404/unknown stops the poller — the UUID was never seen by Pivotable", ()
 	const outcome = nextPollState(prev, "unknown");
 	expect(outcome.shouldStop).toBe(true);
 	expect(outcome.state.status).toBe("unknown");
+});
+
+test("401/unauthorized stops the poller — the login modal will be opened by authenticatedFetch", () => {
+	const prev = { summary: RUNNING_SUMMARY, status: /** @type {const} */ ("polling") };
+	const outcome = nextPollState(prev, "unauthorized");
+	expect(outcome.shouldStop).toBe(true);
+	expect(outcome.state.status).toBe("unauthorized");
+	expect(outcome.state.summary).toBe(RUNNING_SUMMARY); // keep the previous summary visible underneath
 });
 
 test("204+Retry-After (queuing) keeps polling — engine is still planning the query", () => {

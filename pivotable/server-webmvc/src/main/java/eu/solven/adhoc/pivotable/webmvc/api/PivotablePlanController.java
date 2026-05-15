@@ -23,6 +23,7 @@
 package eu.solven.adhoc.pivotable.webmvc.api;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -51,17 +52,17 @@ import lombok.RequiredArgsConstructor;
  * submitting).
  *
  * <p>
- * Response contract — distinct states require distinct HTTP signals so the SPA's polling loop can react correctly:
+ * Response contract — 404 is reserved for "the endpoint itself does not exist" (Spring handles those misroutes
+ * automatically). Every known endpoint always returns 200 or 204; the SPA reads {@code Retry-After} to decide between
+ * "still working" and "give up":
  * <ul>
- * <li><strong>404 Not Found</strong> — the Pivotable manager has never seen this UUID (typo / stale link). The SPA
- * should drop the LiveView, not retry.</li>
- * <li><strong>204 No Content + {@code Retry-After: 1}</strong> — the manager accepted the submission but the engine
- * hasn't yet registered the plan (queueing or planning). The SPA shows a "Queuing…" state and keeps polling.</li>
  * <li><strong>200 OK</strong> — engine has registered a plan; body is a {@link QueryPlanSummary} or full
  * {@link QueryPlan}. The SPA renders normally.</li>
- * <li><strong>204 No Content</strong> (no {@code Retry-After}) — the manager knows the UUID but the registry has
- * evicted the plan (only happens after the query has terminated and the LRU pool flushed it). The SPA shows "may have
- * been evicted" and stops polling.</li>
+ * <li><strong>204 No Content + {@code Retry-After: 1}</strong> — Pivotable accepted the submission but the engine
+ * hasn't yet registered the plan (queueing or planning). The SPA shows a "Queuing…" state and keeps polling.</li>
+ * <li><strong>204 No Content</strong> (no {@code Retry-After}) — no plan can be served for this UUID. May be because
+ * the UUID is unknown to Pivotable (typo / stale link), because the plan was evicted post-termination, or because the
+ * query has completed and its result has been served already. The SPA shows "no plan available" and stops polling.</li>
  * </ul>
  *
  * @author Benoit Lacelle
@@ -102,20 +103,50 @@ public class PivotablePlanController implements IPivotableRouteConstants {
 		return notReadyResponse(queryUuid);
 	}
 
+	/**
+	 * Composite-cube children — when the supplied UUID is the parent of one or more sub-cube executions, returns one
+	 * {@link QueryPlanSummary} per child. The contract mirrors the other plan endpoints:
+	 * <ul>
+	 * <li>200 with a (possibly empty) JSON array when the parent UUID is known to Pivotable AND its plan is in the
+	 * registry. An empty array is the normal case for a non-composite query.</li>
+	 * <li>204 + {@code Retry-After: 1} while Pivotable has the parent UUID but the engine has not yet registered the
+	 * parent plan — sub-cubes can't have been spawned yet either.</li>
+	 * <li>204 when the parent has been evicted post-termination.</li>
+	 * <li>404 when the parent UUID was never seen by Pivotable.</li>
+	 * </ul>
+	 *
+	 * @param queryUuid
+	 *            the parent's Pivotable UUID
+	 * @return one summary per child plan
+	 */
+	@GetMapping(value = R_CUBE_PLAN_CHILDREN, produces = MediaType.APPLICATION_JSON_VALUE)
+	public ResponseEntity<List<QueryPlanSummary>> getPlanChildren(@PathVariable("queryUuid") UUID queryUuid) {
+		Optional<AdhocQueryId> parentId = registry.findIdByUuid(queryUuid);
+		if (parentId.isEmpty()) {
+			return notReadyResponse(queryUuid);
+		}
+		// Parent is registered → collect children. Returns an empty list for non-composite queries; that's still 200.
+		Instant now = Instant.now();
+		List<QueryPlanSummary> children =
+				registry.getChildrenOf(parentId.get()).stream().map(child -> QueryPlanSummary.of(child, now)).toList();
+		return ResponseEntity.ok(children);
+	}
+
 	protected Optional<QueryPlan> lookupPlan(UUID queryUuid) {
 		return registry.findIdByUuid(queryUuid).flatMap(registry::snapshot);
 	}
 
 	/**
-	 * Build the not-200 response — distinguishes unknown UUID (404), queuing (204 + Retry-After), and evicted (204).
-	 * Used by both the summary and the snapshot endpoint, so the contract is uniform.
+	 * Build the not-200 response. 404 is reserved for "the endpoint itself does not exist" (Spring handles that
+	 * automatically when no controller matches the path); for known endpoints we always return 204 — the SPA reads the
+	 * {@code Retry-After} header to decide between "wait + retry" (queuing) and "stop polling" (terminal / unknown
+	 * UUID).
 	 */
 	protected <T> ResponseEntity<T> notReadyResponse(UUID queryUuid) {
 		AsynchronousStatus status = asyncManager.getState(queryUuid);
 		return switch (status) {
-		case UNKNOWN -> ResponseEntity.notFound().build();
 		case RUNNING -> ResponseEntity.noContent().header(HttpHeaders.RETRY_AFTER, "1").build();
-		case SERVED, FAILED, DISCARDED -> ResponseEntity.noContent().build();
+		case UNKNOWN, SERVED, FAILED, DISCARDED -> ResponseEntity.noContent().build();
 		};
 	}
 }

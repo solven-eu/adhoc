@@ -156,7 +156,7 @@ public class WorldCupPlayersSchema {
 		measures.add(Partitionor.builder()
 				.name("player_score")
 				.combinationKey(EventsScoreCombination.class.getName())
-				.groupBy(GroupByColumns.named("Player name"))
+				.groupBy(GroupByColumns.named("Player Name"))
 				.underlyings(ImmutableList.of("goal_count", "redcard_count", "match_count"))
 				.aggregationKey(AvgAggregation.KEY)
 				.build());
