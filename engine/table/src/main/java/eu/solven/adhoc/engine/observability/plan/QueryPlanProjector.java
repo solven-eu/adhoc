@@ -24,6 +24,7 @@ package eu.solven.adhoc.engine.observability.plan;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
@@ -106,6 +107,35 @@ public class QueryPlanProjector {
 			@Nullable Instant executionStartedAt,
 			PlanState planState,
 			@Nullable Instant completedAt) {
+		return project(dag,
+				queryId,
+				parentQueryId,
+				cubeName,
+				submittedAt,
+				executionStartedAt,
+				planState,
+				completedAt,
+				Collections.emptyMap());
+	}
+
+	/**
+	 * Project variant accepting a fragments map. The map is keyed by anchor subject; each value is the list of subtrees
+	 * to graft as additional children of any node whose {@code subject.equals(anchor)}. Subtrees are also walked
+	 * recursively so deeper anchors (e.g. a SQL leaf anchored on a TableQueryV4 that was itself grafted under a
+	 * TableQueryStep) attach transparently.
+	 *
+	 * @param fragments
+	 *            anchor → subtrees map; pass {@link Collections#emptyMap()} when no enrichment is available
+	 */
+	public QueryPlan project(QueryStepsDag dag,
+			AdhocQueryId queryId,
+			@Nullable UUID parentQueryId,
+			String cubeName,
+			Instant submittedAt,
+			@Nullable Instant executionStartedAt,
+			PlanState planState,
+			@Nullable Instant completedAt,
+			Map<Object, List<QueryPlanNode>> fragments) {
 		Map<ICubeQueryStep, SizeAndDuration> stepToCost = dag.getStepToCost();
 
 		// Memoize per-step node materialization to handle the DAG case where one step has multiple parents. We use
@@ -117,7 +147,7 @@ public class QueryPlanProjector {
 
 		List<QueryPlanNode> rootNodes = new ArrayList<>();
 		for (CubeQueryStep root : dag.getRoots()) {
-			rootNodes.add(materialize(root, dag, stepToCost, memo, stack));
+			rootNodes.add(materialize(root, dag, stepToCost, memo, stack, fragments));
 		}
 
 		// If there's more than one root, wrap them under a synthetic root carrying the plan-level metadata. With a
@@ -146,6 +176,8 @@ public class QueryPlanProjector {
 		if (rootNodes.size() > 1) {
 			nodeCount++;
 		}
+		// Fragments add to the node count too — walk the grafted subtrees to keep the eviction budget honest.
+		nodeCount += countFragmentNodes(fragments);
 
 		return QueryPlan.builder()
 				.queryId(queryId)
@@ -178,7 +210,8 @@ public class QueryPlanProjector {
 			QueryStepsDag dag,
 			Map<ICubeQueryStep, SizeAndDuration> stepToCost,
 			Map<CubeQueryStep, QueryPlanNode> memo,
-			Set<CubeQueryStep> stack) {
+			Set<CubeQueryStep> stack,
+			Map<Object, List<QueryPlanNode>> fragments) {
 		QueryPlanNode cached = memo.get(step);
 		if (cached != null) {
 			return cached;
@@ -199,8 +232,12 @@ public class QueryPlanProjector {
 			List<QueryPlanNode> children = new ArrayList<>();
 			for (DefaultEdge edge : dag.getInducedToInducer().outgoingEdgesOf(step)) {
 				CubeQueryStep child = Graphs.getOppositeVertex(dag.getInducedToInducer(), edge, step);
-				children.add(materialize(child, dag, stepToCost, memo, stack));
+				children.add(materialize(child, dag, stepToCost, memo, stack, fragments));
 			}
+
+			// Append any fragments anchored on this step (subject equality). Fragments arrive lazily from lower
+			// layers (table engine, table wrappers); see `IQueryPlanRegistry#publishFragment`.
+			appendFragments(children, step, fragments);
 
 			SizeAndDuration cost = stepToCost.get(step);
 			NodeState state;
@@ -228,6 +265,75 @@ public class QueryPlanProjector {
 			return node;
 		} finally {
 			stack.remove(step);
+		}
+	}
+
+	/**
+	 * Append fragments whose anchor equals {@code subject} as additional children, walking each grafted subtree so
+	 * deeper anchors (e.g. a SQL leaf anchored on a TableQueryV4 grafted under a TableQueryStep) resolve too.
+	 *
+	 * @param into
+	 *            mutable list of children to extend in place
+	 * @param subject
+	 *            the parent node's subject; fragments matching this value are appended
+	 * @param fragments
+	 *            anchor → subtrees map
+	 */
+	protected void appendFragments(List<QueryPlanNode> into,
+			Object subject,
+			Map<Object, List<QueryPlanNode>> fragments) {
+		List<QueryPlanNode> grafts = fragments.get(subject);
+		if (grafts == null || grafts.isEmpty()) {
+			return;
+		}
+		for (QueryPlanNode graft : grafts) {
+			into.add(graftRecursive(graft, fragments));
+		}
+	}
+
+	/**
+	 * Walk {@code subtree} top-down, applying further fragment grafts at every node whose subject is itself an anchor.
+	 * Returns a fresh {@link QueryPlanNode} with the augmented children — the original subtree (which lives in the
+	 * source's fragment map and is shared across snapshots) stays untouched.
+	 */
+	protected QueryPlanNode graftRecursive(QueryPlanNode subtree, Map<Object, List<QueryPlanNode>> fragments) {
+		List<QueryPlanNode> existing = subtree.getChildren();
+		List<QueryPlanNode> augmented = new ArrayList<>(existing.size() + 1);
+		for (QueryPlanNode child : existing) {
+			augmented.add(graftRecursive(child, fragments));
+		}
+		appendFragments(augmented, subtree.getSubject(), fragments);
+		if (augmented.size() == existing.size() && augmented.equals(existing)) {
+			// No fragments matched anywhere in this subtree — return the original to avoid spurious allocation.
+			return subtree;
+		}
+		return subtree.toBuilder().children(List.copyOf(augmented)).build();
+	}
+
+	/**
+	 * Count the total number of distinct {@link QueryPlanNode} instances reachable through the fragment map. Used by
+	 * {@link #project} to keep {@code QueryPlan.nodeCount} in sync with what the eviction policy sees. Deduplicates by
+	 * identity — a single fragment grafted under many anchors counts once.
+	 */
+	protected long countFragmentNodes(Map<Object, List<QueryPlanNode>> fragments) {
+		if (fragments.isEmpty()) {
+			return 0L;
+		}
+		Set<QueryPlanNode> seen = Collections.newSetFromMap(new java.util.IdentityHashMap<>());
+		for (List<QueryPlanNode> roots : fragments.values()) {
+			for (QueryPlanNode root : roots) {
+				countFragmentNodesRecursive(root, seen);
+			}
+		}
+		return seen.size();
+	}
+
+	private void countFragmentNodesRecursive(QueryPlanNode node, Set<QueryPlanNode> seen) {
+		if (!seen.add(node)) {
+			return;
+		}
+		for (QueryPlanNode child : node.getChildren()) {
+			countFragmentNodesRecursive(child, seen);
 		}
 	}
 }

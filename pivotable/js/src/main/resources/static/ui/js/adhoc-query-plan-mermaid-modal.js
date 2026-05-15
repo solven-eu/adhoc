@@ -3,7 +3,7 @@ import { onMounted, ref, watch } from "vue";
 import { Modal } from "bootstrap";
 import mermaid from "mermaid";
 
-import { planToMermaid } from "./adhoc-query-plan-mermaid.js";
+import { planToMermaid, collectSqlLeaves } from "./adhoc-query-plan-mermaid.js";
 import { useUserStore } from "./store-user.js";
 
 // Modal that renders the current plan as a Mermaid `graph TD` diagram. Fetches /plan/snapshot the
@@ -46,6 +46,16 @@ export default {
 		const mermaidSvg = ref("");
 		const isLoading = ref(false);
 		const errorText = ref("");
+		/** @type {import("vue").Ref<{label: string, sql: string}[]>} */
+		const sqlLeaves = ref([]);
+		/**
+		 * Maps an SQL string to the "Copied!" feedback flag for the corresponding row's button. Indexed by
+		 * the SQL itself (which is unique per row — `collectSqlLeaves` dedupes) so the flag survives a list
+		 * resort or filter without leaking to a different row.
+		 *
+		 * @type {import("vue").Ref<Record<string, boolean>>}
+		 */
+		const copiedFlags = ref({});
 
 		/** @type {Modal | null} */
 		let bootstrapModal = null;
@@ -57,6 +67,8 @@ export default {
 			isLoading.value = true;
 			errorText.value = "";
 			mermaidSvg.value = "";
+			sqlLeaves.value = [];
+			copiedFlags.value = {};
 			try {
 				// Use authenticatedFetch so the bearer is attached and a 401 flips
 				// userStore.needsToLogin (which opens the login modal). Plain fetch on `/api/**` is
@@ -87,6 +99,9 @@ export default {
 				const id = genSvgId();
 				const res = await mermaid.render(id, source);
 				mermaidSvg.value = res.svg;
+				// Collected AFTER the graph renders so a failure to render mermaid doesn't suppress the list —
+				// the user still sees the SQL queries that ran even if the diagram itself blew up.
+				sqlLeaves.value = collectSqlLeaves(plan);
 			} catch (e) {
 				// authenticatedFetch throws UserNeedsToLoginError when invoked while already logged
 				// out — it has already flipped needsToLogin to open the login modal. We just need to
@@ -137,7 +152,32 @@ export default {
 
 		const refresh = () => renderFromUuid(props.queryUuid);
 
-		return { mermaidSvg, isLoading, errorText, modalRef, refresh };
+		/**
+		 * Copy the SQL string to the clipboard and surface a transient "Copied!" feedback on the matching
+		 * button. Uses `navigator.clipboard.writeText` (the only API still in spec); falls back silently when
+		 * the page is not served from a secure context (`navigator.clipboard` is undefined under plain http).
+		 */
+		const copySql = async (sql) => {
+			try {
+				if (!navigator.clipboard || !navigator.clipboard.writeText) {
+					console.warn("navigator.clipboard not available (insecure context?) — SQL not copied");
+					return;
+				}
+				await navigator.clipboard.writeText(sql);
+				copiedFlags.value = { ...copiedFlags.value, [sql]: true };
+				// 1.5s is short enough that the user doesn't think the row is permanently "stuck" copied, long
+				// enough to notice the green tick. Reset by spreading the current map to drop just this key.
+				setTimeout(() => {
+					const next = { ...copiedFlags.value };
+					delete next[sql];
+					copiedFlags.value = next;
+				}, 1500);
+			} catch (e) {
+				console.error("Failed copying SQL to clipboard:", e);
+			}
+		};
+
+		return { mermaidSvg, isLoading, errorText, modalRef, refresh, sqlLeaves, copiedFlags, copySql };
 	},
 	template: /* HTML */ `
 		<div class="modal fade" tabindex="-1" aria-labelledby="planMermaidModalLabel" aria-hidden="true" :ref="(el) => (modalRef = el)">
@@ -159,6 +199,24 @@ export default {
 						</div>
 						<div v-if="errorText" class="alert alert-warning small">{{errorText}}</div>
 						<pre class="mermaid" v-html="mermaidSvg" />
+						<div v-if="sqlLeaves.length > 0" class="mt-3">
+							<h6 class="text-muted">SQL queries in this plan</h6>
+							<div v-for="(leaf, i) in sqlLeaves" :key="i" class="border rounded p-2 mb-2">
+								<div class="d-flex justify-content-between align-items-start gap-2">
+									<pre class="mb-0 small flex-grow-1" style="white-space: pre-wrap; word-break: break-all;">{{leaf.sql}}</pre>
+									<button
+										type="button"
+										class="btn btn-sm btn-outline-secondary flex-shrink-0"
+										@click="copySql(leaf.sql)"
+										:title="copiedFlags[leaf.sql] ? 'Copied!' : 'Copy to clipboard'"
+									>
+										<i v-if="copiedFlags[leaf.sql]" class="bi bi-check2 text-success"></i>
+										<i v-else class="bi bi-clipboard"></i>
+										<span class="ms-1">{{copiedFlags[leaf.sql] ? "Copied" : "Copy"}}</span>
+									</button>
+								</div>
+							</div>
+						</div>
 					</div>
 				</div>
 			</div>

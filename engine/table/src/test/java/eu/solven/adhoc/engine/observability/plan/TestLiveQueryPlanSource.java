@@ -160,4 +160,70 @@ public class TestLiveQueryPlanSource {
 		Assertions.assertThat(viaRegistry.getQueryId()).isEqualTo(source.getQueryId());
 		Assertions.assertThat(viaRegistry.getState()).isEqualTo(PlanState.PENDING);
 	}
+
+	@Test
+	public void testPublishFragmentAppearsInNextSnapshot() {
+		CubeQueryStep root = Mockito.mock(CubeQueryStep.class);
+		LiveQueryPlanSource source = buildSource(root, new ConcurrentHashMap<>());
+
+		QueryPlanNode v4 =
+				QueryPlanNode.builder().subject("v4-subject").operator(NodeOperator.TABLE_QUERY).label("v4").build();
+		long v0 = source.version();
+		source.publishFragment(root, v4);
+
+		QueryPlan plan = source.snapshot();
+		Assertions.assertThat(plan.getRoot().getChildren()).containsExactly(v4);
+		Assertions.assertThat(source.version()).isGreaterThan(v0);
+	}
+
+	@Test
+	public void testPublishFragmentDedupesOnSubjectEqualityWithinSameAnchor() {
+		CubeQueryStep root = Mockito.mock(CubeQueryStep.class);
+		LiveQueryPlanSource source = buildSource(root, new ConcurrentHashMap<>());
+
+		QueryPlanNode v4a =
+				QueryPlanNode.builder().subject("shared-subject").operator(NodeOperator.TABLE_QUERY).label("a").build();
+		QueryPlanNode v4b = QueryPlanNode.builder()
+				.subject("shared-subject")
+				.operator(NodeOperator.TABLE_QUERY)
+				.label("b (replaces a)")
+				.build();
+		source.publishFragment(root, v4a);
+		source.publishFragment(root, v4b);
+
+		QueryPlan plan = source.snapshot();
+		// Only the second fragment survives — the first was replaced because its subject collided.
+		Assertions.assertThat(plan.getRoot().getChildren()).containsExactly(v4b);
+	}
+
+	@Test
+	public void testPublishFragmentRoutedViaRegistry() {
+		CubeQueryStep root = Mockito.mock(CubeQueryStep.class);
+		LiveQueryPlanSource source = buildSource(root, new ConcurrentHashMap<>());
+
+		BoundedQueryPlanRegistry registry = new BoundedQueryPlanRegistry(100);
+		registry.registerSource(source);
+
+		QueryPlanNode v4 = QueryPlanNode.builder()
+				.subject("v4-via-registry")
+				.operator(NodeOperator.TABLE_QUERY)
+				.label("v4")
+				.build();
+		registry.publishFragment(source.getQueryId(), root, v4);
+
+		QueryPlan plan = registry.snapshot(source.getQueryId()).orElseThrow();
+		Assertions.assertThat(plan.getRoot().getChildren()).containsExactly(v4);
+	}
+
+	@Test
+	public void testPublishFragmentForUnknownQueryIdIsDropped() {
+		BoundedQueryPlanRegistry registry = new BoundedQueryPlanRegistry(100);
+		AdhocQueryId unknown = AdhocQueryId.builder().cube("not-registered").build();
+		QueryPlanNode v4 = QueryPlanNode.builder().subject("v4").operator(NodeOperator.TABLE_QUERY).label("v4").build();
+
+		// Must not throw — the production path expects the engine to drop fragments arriving after eviction or
+		// for unknown ids (e.g. a wrapper publishing during a unit test that never registered a source).
+		registry.publishFragment(unknown, new Object(), v4);
+		Assertions.assertThat(registry.snapshot(unknown)).isEmpty();
+	}
 }

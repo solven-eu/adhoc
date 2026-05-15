@@ -67,9 +67,11 @@ import eu.solven.adhoc.engine.observability.AdhocQueryMonitor;
 import eu.solven.adhoc.engine.observability.DagExplainer;
 import eu.solven.adhoc.engine.observability.DagExplainerForPerfs;
 import eu.solven.adhoc.engine.observability.SizeAndDuration;
+import eu.solven.adhoc.engine.observability.plan.IPlanFragmentSink;
 import eu.solven.adhoc.engine.observability.plan.IQueryPlanRegistry;
 import eu.solven.adhoc.engine.observability.plan.LiveQueryPlanSource;
 import eu.solven.adhoc.engine.observability.plan.NoopQueryPlanRegistry;
+import eu.solven.adhoc.engine.observability.plan.PlanFragmentScope;
 import eu.solven.adhoc.engine.observability.plan.PlanState;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.TableQueryStep;
@@ -165,11 +167,14 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 			IAdhocEventBus eventBus,
 			ITableQueryEngineFactory tableQueryEngine,
 			IQueryPlanRegistry queryPlanRegistry) {
-		if (tableQueryEngine == null) {
-			tableQueryEngine = TableQueryEngineFactory.builder().eventBus(eventBus).factories(factories).build();
-		}
 		if (queryPlanRegistry == null) {
 			queryPlanRegistry = NoopQueryPlanRegistry.INSTANCE;
+		}
+		if (tableQueryEngine == null) {
+			// The table engine reads its plan registry from `IQueryPod.getQueryPlanRegistry()` at call time —
+			// `execute(QueryPod)` injects this engine's registry into the pod just-in-time, so the factory
+			// itself does not need to carry it.
+			tableQueryEngine = TableQueryEngineFactory.builder().eventBus(eventBus).factories(factories).build();
 		}
 
 		this.factories = factories;
@@ -190,14 +195,19 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 
 	@Override
 	public ITabularView execute(QueryPod queryPod) {
+		// Inject this engine's registry into the pod so wrappers (especially JooqTableWrapper) can publish plan
+		// fragments at `streamSlices` time without needing to be built with a registry of their own. Pods reach this
+		// method from `StandardQueryPreparator` carrying the no-op default; we replace it here just-in-time so the
+		// registry lifecycle stays owned by the engine (one bean per VM, threaded into each query's pod).
+		QueryPod podWithRegistry = queryPod.toBuilder().queryPlanRegistry(queryPlanRegistry).build();
 		// Bind the query's customMarker AND options on thread scopes for the WHOLE execute() call — including
 		// planning (makeQueryStepsDag → ICalculatedCoordinate#getFilter) and row processing (executeDag →
 		// ICalculatedColumn#computeCoordinate). Extension points read them via CustomMarkerScope#current /
 		// QueryOptionsScope#current without us threading either through every internal API. Each composite sub-cube
 		// re-enters execute() and rebinds with its own (possibly transcoded) values — nesting works naturally
 		// through ScopedValue.
-		return CustomMarkerScope.runWith(queryPod.getQuery().getCustomMarker(),
-				() -> QueryOptionsScope.runWith(queryPod.getOptions(), () -> executeInScope(queryPod)));
+		return CustomMarkerScope.runWith(podWithRegistry.getQuery().getCustomMarker(),
+				() -> QueryOptionsScope.runWith(podWithRegistry.getOptions(), () -> executeInScope(podWithRegistry)));
 	}
 
 	protected ITabularView executeInScope(QueryPod queryPod) {
@@ -234,7 +244,13 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 			// Mark execution start right before the DAG runs — gap from submittedAt is the queueing/saturation delay
 			// surfaced by QueryPlanSummary#startDelayMs.
 			planSource.markExecutionStarted(java.time.Instant.now());
-			ITabularView tabularView = PodExecutors.runScoped(queryPod, () -> executeDag(queryPod, queryStepsDag));
+			// Bind the per-query plan-fragment sink so engine extensions (calculated columns, combinators, routing
+			// measures, …) can call `PlanFragmentScope.current().publish(...)` without having to learn the
+			// `(registry, queryId)` pair. The sink degrades to a no-op when the registry is the singleton — extensions
+			// pay nothing when nobody is watching.
+			IPlanFragmentSink fragmentSink = PlanFragmentScope.sinkFor(queryPlanRegistry, queryPod.getQueryId());
+			ITabularView tabularView = PlanFragmentScope.runWith(fragmentSink,
+					() -> PodExecutors.runScoped(queryPod, () -> executeDag(queryPod, queryStepsDag)));
 
 			if (queryPod.isDebugOrExplain()) {
 				explainDagPerfs(queryPod, queryStepsDag);

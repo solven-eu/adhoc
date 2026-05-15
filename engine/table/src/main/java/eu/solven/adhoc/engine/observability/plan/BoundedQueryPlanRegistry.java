@@ -223,6 +223,30 @@ public class BoundedQueryPlanRegistry implements IQueryPlanRegistry {
 	}
 
 	@Override
+	public void publishFragment(AdhocQueryId queryId, Object anchor, QueryPlanNode subtree) {
+		Objects.requireNonNull(queryId, "queryId");
+		Objects.requireNonNull(anchor, "anchor");
+		Objects.requireNonNull(subtree, "subtree");
+		synchronized (mutationLock) {
+			IPlanSource source = lookup(queryId);
+			if (source instanceof LiveQueryPlanSource live) {
+				live.publishFragment(anchor, subtree);
+			} else if (source == null) {
+				// Fragment for a queryId we don't know about — either the source was never registered (e.g. a unit
+				// test driving the table engine without a CubeQueryEngine), or it's already been evicted. Either
+				// way, dropping is correct: there's nothing to graft onto.
+				log.debug("Dropping fragment for unknown queryId={}", queryId);
+			} else {
+				// A non-Live IPlanSource — fragments don't have a place to land. Defensive log; the production path
+				// only registers LiveQueryPlanSource so this branch is unreachable today.
+				log.warn("Cannot publish fragment onto non-Live source for queryId={}: {}",
+						queryId,
+						source.getClass().getSimpleName());
+			}
+		}
+	}
+
+	@Override
 	public Optional<AdhocQueryId> findIdByUuid(UUID queryUuid) {
 		Objects.requireNonNull(queryUuid, "queryUuid");
 		synchronized (mutationLock) {

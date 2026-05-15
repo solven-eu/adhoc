@@ -177,4 +177,41 @@ public interface IQueryPlanRegistry {
 	default Optional<AdhocQueryId> findIdByUuid(UUID queryUuid) {
 		return Optional.empty();
 	}
+
+	/**
+	 * Publish a fragment of the plan tree for {@code queryId}. {@code subtree} is grafted as an additional child of
+	 * every node whose {@link QueryPlanNode#getSubject() subject} equals {@code anchor} in subsequent snapshots. Used
+	 * by lower layers (table engine, table wrappers) to enrich a primary plan with lazily-discovered detail (the
+	 * secondary table-side DAG, the rendered native query, …) without holding a reference to the source.
+	 *
+	 * <p>
+	 * Subject-equality is the join key — {@code ACubeQueryStep}'s value-equals contract makes the cube-side
+	 * {@code CubeQueryStep} node and the table-side {@code TableQueryStep} fragment match naturally when they carry the
+	 * same aggregator, filter, groupBy and customMarker.
+	 *
+	 * <p>
+	 * Idempotent within a single anchor: publishing a fragment whose {@link QueryPlanNode#getSubject() root subject}
+	 * collides with a previously-published one for the same anchor replaces it rather than appending. Different
+	 * subjects under the same anchor stack as siblings — that's how a TableQueryStep can have both a TableQueryV4 child
+	 * and (later) some other observation grafted underneath.
+	 *
+	 * <p>
+	 * Defaults to a no-op so registries that do not care about live enrichment (e.g. {@link NoopQueryPlanRegistry})
+	 * accept the call without surfacing any extra dependency on callers.
+	 *
+	 * @param queryId
+	 *            the {@link AdhocQueryId} the fragment belongs to. When no source is registered for this id, the
+	 *            fragment is dropped silently — same shape as a late {@code TableStepIsCompleted} event arriving after
+	 *            the source has been evicted.
+	 * @param anchor
+	 *            the subject value to match against existing nodes' {@code subject}. Must be non-null and implement a
+	 *            stable {@code equals}/{@code hashCode}.
+	 * @param subtree
+	 *            the fragment to graft. The root node's children are folded under the anchor; deeper grafting (e.g. SQL
+	 *            leaf under a TableQueryV4 that was itself grafted) happens transparently — the projector walks the
+	 *            grafted tree like any other.
+	 */
+	default void publishFragment(AdhocQueryId queryId, Object anchor, QueryPlanNode subtree) {
+		// drop
+	}
 }

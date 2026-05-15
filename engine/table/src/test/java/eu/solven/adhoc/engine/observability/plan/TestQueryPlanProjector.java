@@ -220,4 +220,110 @@ public class TestQueryPlanProjector {
 		// Node count: leaf counted once + 2 roots + synthetic root = 4.
 		Assertions.assertThat(plan.getNodeCount()).isEqualTo(4);
 	}
+
+	// --- Fragment grafting -------------------------------------------------------------------
+
+	/**
+	 * A fragment published under a node's {@code subject} appears as an additional child in the next snapshot. The
+	 * original cube DAG children stay present — fragments add, never replace.
+	 */
+	@Test
+	public void testProject_singleFragmentGraftsAsAdditionalChild() {
+		CubeQueryStep root = Mockito.mock(CubeQueryStep.class);
+		Mockito.when(root.toString()).thenReturn("root-step");
+		QueryStepsDag dag = oneRootDag(root, new ConcurrentHashMap<>());
+
+		// Fragment with a custom subject mimicking a `TableQueryV4` reference.
+		Object v4Subject = new Object();
+		QueryPlanNode v4Node =
+				QueryPlanNode.builder().subject(v4Subject).operator(NodeOperator.TABLE_QUERY).label("v4").build();
+		java.util.Map<Object, java.util.List<QueryPlanNode>> fragments =
+				java.util.Map.of(root, java.util.List.of(v4Node));
+
+		QueryPlan plan = new QueryPlanProjector().project(dag,
+				newId(),
+				null,
+				"test-cube",
+				Instant.parse("2026-05-14T00:00:00Z"),
+				null,
+				PlanState.PENDING,
+				null,
+				fragments);
+
+		Assertions.assertThat(plan.getRoot().getChildren()).containsExactly(v4Node);
+		// Node count: root + 1 fragment = 2.
+		Assertions.assertThat(plan.getNodeCount()).isEqualTo(2);
+	}
+
+	/**
+	 * Two fragments anchored on the same node stack as siblings. Subject-based dedup is by individual fragment subject
+	 * — different subjects ARE different fragments and must not collapse.
+	 */
+	@Test
+	public void testProject_multipleFragmentsUnderSameAnchorAreSiblings() {
+		CubeQueryStep root = Mockito.mock(CubeQueryStep.class);
+		Mockito.when(root.toString()).thenReturn("root-step");
+		QueryStepsDag dag = oneRootDag(root, new ConcurrentHashMap<>());
+
+		QueryPlanNode v4a =
+				QueryPlanNode.builder().subject("v4-a").operator(NodeOperator.TABLE_QUERY).label("a").build();
+		QueryPlanNode v4b =
+				QueryPlanNode.builder().subject("v4-b").operator(NodeOperator.TABLE_QUERY).label("b").build();
+		java.util.Map<Object, java.util.List<QueryPlanNode>> fragments =
+				java.util.Map.of(root, java.util.List.of(v4a, v4b));
+
+		QueryPlan plan = new QueryPlanProjector().project(dag,
+				newId(),
+				null,
+				"test-cube",
+				Instant.parse("2026-05-14T00:00:00Z"),
+				null,
+				PlanState.PENDING,
+				null,
+				fragments);
+
+		Assertions.assertThat(plan.getRoot().getChildren()).containsExactly(v4a, v4b);
+	}
+
+	/**
+	 * Deeper anchors resolve recursively: a fragment grafted under the cube root can itself host fragments anchored on
+	 * its own subject. This is exactly how the SQL-leaf graft works on top of the table-engine TABLE_QUERY graft.
+	 */
+	@Test
+	public void testProject_deepFragmentChainGraftsRecursively() {
+		CubeQueryStep root = Mockito.mock(CubeQueryStep.class);
+		Mockito.when(root.toString()).thenReturn("root-step");
+		QueryStepsDag dag = oneRootDag(root, new ConcurrentHashMap<>());
+
+		Object v4Subject = new Object();
+		QueryPlanNode v4Node =
+				QueryPlanNode.builder().subject(v4Subject).operator(NodeOperator.TABLE_QUERY).label("v4").build();
+		QueryPlanNode sqlLeaf = QueryPlanNode.builder()
+				.subject("sql-leaf-subject")
+				.operator(NodeOperator.TABLE_QUERY)
+				.label("sql")
+				.details(java.util.Map.of("language", "sql", "sql", "select 1"))
+				.build();
+		java.util.Map<Object, java.util.List<QueryPlanNode>> fragments =
+				java.util.Map.of(root, java.util.List.of(v4Node), v4Subject, java.util.List.of(sqlLeaf));
+
+		QueryPlan plan = new QueryPlanProjector().project(dag,
+				newId(),
+				null,
+				"test-cube",
+				Instant.parse("2026-05-14T00:00:00Z"),
+				null,
+				PlanState.PENDING,
+				null,
+				fragments);
+
+		// Tree: root → v4Node → sqlLeaf. The v4Node was a fragment; its child slot is filled lazily via the second
+		// fragment anchored on its subject.
+		QueryPlanNode v4Projected = plan.getRoot().getChildren().get(0);
+		Assertions.assertThat(v4Projected.getSubject()).isSameAs(v4Subject);
+		Assertions.assertThat(v4Projected.getChildren()).hasSize(1);
+		Assertions.assertThat(v4Projected.getChildren().get(0).getDetails()).containsEntry("language", "sql");
+		// Node count: root + v4 + sql = 3.
+		Assertions.assertThat(plan.getNodeCount()).isEqualTo(3);
+	}
 }

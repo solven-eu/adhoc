@@ -25,6 +25,8 @@ package eu.solven.adhoc.table;
 import eu.solven.adhoc.column.IColumnsManager;
 import eu.solven.adhoc.engine.cache.IQueryStepCache;
 import eu.solven.adhoc.engine.context.IIsCancellable;
+import eu.solven.adhoc.engine.observability.plan.IQueryPlanRegistry;
+import eu.solven.adhoc.engine.observability.plan.NoopQueryPlanRegistry;
 import eu.solven.adhoc.engine.step.IWhereGroupByQuery;
 import eu.solven.adhoc.factories.IHasExecutorAndSliceFactory;
 import eu.solven.adhoc.measure.forest.IMeasureResolver;
@@ -78,5 +80,16 @@ public interface IQueryPod extends IHasOptionsAndExecutorService, IHasExecutorAn
 	IQueryPod asTableQuery();
 
 	IQueryStepCache getQueryStepCache();
+
+	/**
+	 * @return the {@link IQueryPlanRegistry} the engine is publishing plan fragments into for the query this pod
+	 *         serves. Table wrappers use it to publish lazily-discovered detail (rendered native query, per-row pruning
+	 *         decisions, etc.) anchored on the table-side step they receive. The default is
+	 *         {@link NoopQueryPlanRegistry#INSTANCE} — wrappers can publish unconditionally and pay nothing when no
+	 *         registry is wired.
+	 */
+	default IQueryPlanRegistry getQueryPlanRegistry() {
+		return NoopQueryPlanRegistry.INSTANCE;
+	}
 
 }

@@ -28,6 +28,9 @@ import org.mockito.Mockito;
 
 import eu.solven.adhoc.column.IColumnsManager;
 import eu.solven.adhoc.engine.context.QueryPod;
+import eu.solven.adhoc.engine.observability.plan.BoundedQueryPlanRegistry;
+import eu.solven.adhoc.engine.observability.plan.IQueryPlanRegistry;
+import eu.solven.adhoc.engine.observability.plan.NoopQueryPlanRegistry;
 import eu.solven.adhoc.engine.query.CubeQuery;
 import eu.solven.adhoc.measure.forest.MeasureForest;
 import eu.solven.adhoc.table.InMemoryTable;
@@ -70,6 +73,35 @@ public class TestQueryPod {
 
 		Assertions.assertThat(queryContext.getExecutorService().getClass().getName())
 				.isEqualTo("com.google.common.util.concurrent.DirectExecutorService");
+	}
+
+	/**
+	 * Regression for "TableQueryV4 visible in plan but no SQL leaf": the hand-written {@code QueryPodBuilder} overrides
+	 * Lombok's {@code @Default} handling for several fields (workaround for
+	 * https://stackoverflow.com/questions/47883931). When a new {@code @Default} field is added, the custom
+	 * {@code build()} must explicitly read from the matching builder field — otherwise
+	 * {@code pod.toBuilder().queryPlanRegistry(real).build()} silently drops the value and the wrapper sees
+	 * {@link NoopQueryPlanRegistry} at {@code streamSlices} time even when the engine wired a real registry.
+	 */
+	@Test
+	public void testToBuilderPreservesQueryPlanRegistry() {
+		InMemoryTable table = InMemoryTable.builder().build();
+		IQueryPlanRegistry real = new BoundedQueryPlanRegistry(10);
+
+		QueryPod podWithRegistry = QueryPod.forTable(table).toBuilder().queryPlanRegistry(real).build();
+		Assertions.assertThat(podWithRegistry.getQueryPlanRegistry()).isSameAs(real);
+
+		// Round-trip: a second toBuilder()→build() with no further setter must KEEP the registry. This is the
+		// exact path `QueryPod.withTable(...)` / `asTableQuery()` take.
+		QueryPod roundTripped = podWithRegistry.toBuilder().build();
+		Assertions.assertThat(roundTripped.getQueryPlanRegistry()).isSameAs(real);
+	}
+
+	@Test
+	public void testBuilderDefaultsToNoopRegistry() {
+		InMemoryTable table = InMemoryTable.builder().build();
+		QueryPod pod = QueryPod.forTable(table);
+		Assertions.assertThat(pod.getQueryPlanRegistry()).isSameAs(NoopQueryPlanRegistry.INSTANCE);
 	}
 
 	@Test

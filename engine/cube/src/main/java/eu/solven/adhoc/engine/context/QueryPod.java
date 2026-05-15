@@ -42,6 +42,8 @@ import eu.solven.adhoc.column.IColumnsManager;
 import eu.solven.adhoc.engine.CubeQueryEngine;
 import eu.solven.adhoc.engine.cache.GuavaQueryStepCache;
 import eu.solven.adhoc.engine.cache.IQueryStepCache;
+import eu.solven.adhoc.engine.observability.plan.IQueryPlanRegistry;
+import eu.solven.adhoc.engine.observability.plan.NoopQueryPlanRegistry;
 import eu.solven.adhoc.engine.query.CubeQuery;
 import eu.solven.adhoc.engine.step.ICubeQuery;
 import eu.solven.adhoc.factories.AdhocFactoriesUnsafe;
@@ -108,6 +110,17 @@ public class QueryPod implements IQueryPod {
 	@NonNull
 	@Default
 	IQueryStepCache queryStepCache = IQueryStepCache.noCache();
+
+	/**
+	 * Plan registry the engine is publishing fragments into for this query. Defaults to the no-op singleton so call
+	 * paths that build their own pod without an explicit registry (most tests, ad-hoc users) keep working unchanged.
+	 * Populated by {@link CubeQueryEngine} so wrappers that receive this pod (e.g. {@code JooqTableWrapper}) can
+	 * publish rendered native queries through {@link IQueryPod#getQueryPlanRegistry()} without having to be built with
+	 * a registry of their own.
+	 */
+	@NonNull
+	@Default
+	IQueryPlanRegistry queryPlanRegistry = NoopQueryPlanRegistry.INSTANCE;
 
 	/**
 	 * Once turned to not-null, can not be nulled again.
@@ -244,6 +257,9 @@ public class QueryPod implements IQueryPod {
 		// queryStepCache is problematic as it has @Default
 		IQueryStepCache queryStepCache;
 
+		// queryPlanRegistry is problematic as it has @Default — same workaround as the other @Default fields.
+		IQueryPlanRegistry queryPlanRegistry;
+
 		public QueryPodBuilder columnsManager(IColumnsManager columnsManager) {
 			this.columnsManager = columnsManager;
 
@@ -258,6 +274,12 @@ public class QueryPod implements IQueryPod {
 
 		public QueryPodBuilder queryStepCache(IQueryStepCache queryStepCache) {
 			this.queryStepCache = queryStepCache;
+
+			return this;
+		}
+
+		public QueryPodBuilder queryPlanRegistry(IQueryPlanRegistry queryPlanRegistry) {
+			this.queryPlanRegistry = queryPlanRegistry;
 
 			return this;
 		}
@@ -290,6 +312,9 @@ public class QueryPod implements IQueryPod {
 			if (queryStepCache == null) {
 				queryStepCache = GuavaQueryStepCache.withSize(1);
 			}
+			if (queryPlanRegistry == null) {
+				queryPlanRegistry = NoopQueryPlanRegistry.INSTANCE;
+			}
 
 			return new QueryPod(query,
 					queryId,
@@ -298,7 +323,8 @@ public class QueryPod implements IQueryPod {
 					sliceFactory,
 					columnsManager,
 					executorService,
-					queryStepCache);
+					queryStepCache,
+					queryPlanRegistry);
 		}
 	}
 

@@ -74,6 +74,11 @@ import eu.solven.adhoc.engine.dag.IAdhocDag;
 import eu.solven.adhoc.engine.observability.DagExplainer;
 import eu.solven.adhoc.engine.observability.DagExplainerForPerfs;
 import eu.solven.adhoc.engine.observability.SizeAndDuration;
+import eu.solven.adhoc.engine.observability.plan.IQueryPlanRegistry;
+import eu.solven.adhoc.engine.observability.plan.NodeOperator;
+import eu.solven.adhoc.engine.observability.plan.NodeState;
+import eu.solven.adhoc.engine.observability.plan.NodeStats;
+import eu.solven.adhoc.engine.observability.plan.QueryPlanNode;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.TableQueryStep;
 import eu.solven.adhoc.engine.tabular.inducer.ITableQueryInducer;
@@ -406,18 +411,40 @@ public class TableQueryEngine implements ITableQueryEngine {
 			TableQueryV4 tableQuery) {
 		eventBus.post(TableStepIsEvaluating.builder().tableQuery(tableQuery).source(this).build());
 
+		// Plan fragment: publish a TableQueryV4 node anchored on every source TableQueryStep that contributed to
+		// this merged query. Stats stay empty until completion (the QueryPlanNode setters fire below). The same
+		// `v4Node` instance is reused across all source anchors so the projector renders it as one shared child
+		// (the equals contract of TableQueryV4 plus identity-aware deduplication on the read side).
+		QueryPlanNode v4Node = QueryPlanNode.builder()
+				.subject(tableQuery)
+				.operator(NodeOperator.TABLE_QUERY)
+				.label(String.valueOf(tableQuery))
+				.state(NodeState.RUNNING)
+				.build();
+		Set<TableQueryStep> sourceSteps = collectSourceSteps(tableQueries, tableQuery);
+		IQueryPlanRegistry registry = queryPod.getQueryPlanRegistry();
+		for (TableQueryStep sourceStep : sourceSteps) {
+			registry.publishFragment(queryPod.getQueryId(), sourceStep, v4Node);
+		}
+
 		IStopwatch stopWatch = factories.getStopwatchFactory().createStarted();
 
 		Map<TableQueryStep, ICuboid> stepToValues =
 				processOneTableQueryV4(sinkExecutionFeedback, tableQueries, tableQuery);
 
 		Duration elapsed = stopWatch.elapsed();
+		long nbCells = stepToValues.values().stream().mapToLong(ICuboid::size).sum();
 		eventBus.post(TableStepIsCompleted.builder()
 				.tableQuery(tableQuery)
-				.nbCells(stepToValues.values().stream().mapToLong(ICuboid::size).sum())
+				.nbCells(nbCells)
 				.source(this)
 				.duration(elapsed)
 				.build());
+
+		// Mutate the V4 node in-place so subsequent snapshots see the final stats. The plan model already mutates
+		// state/stats in place for cube-side nodes (see QueryPlanNode#setState/setStats); same contract here.
+		v4Node.setState(NodeState.DONE);
+		v4Node.setStats(NodeStats.builder().rowsOut(nbCells).elapsedMs(Math.max(0L, elapsed.toMillis())).build());
 
 		eventBus.post(AdhocLogEvent.builder()
 				.debug(queryPod.isDebug())
@@ -428,6 +455,28 @@ public class TableQueryEngine implements ITableQueryEngine {
 				.build());
 
 		return stepToValues;
+	}
+
+	/**
+	 * Collect the distinct {@link TableQueryStep}s that {@code tableQuery} produces records for, via the secondary DAG
+	 * exposed by {@link IHasTableQueryForSteps#forEachCubeQuerySteps}. Used as fragment anchors so the plan-tree
+	 * projector grafts the TableQueryV4 node under every cube-side step that demanded it.
+	 *
+	 * <p>
+	 * Returns a {@link java.util.LinkedHashSet} so iteration order matches the source DAG's traversal order — the
+	 * fragment-publication loop then publishes deterministically, which keeps plan snapshots stable across runs.
+	 */
+	protected Set<TableQueryStep> collectSourceSteps(IHasTableQueryForSteps tableQueries, TableQueryV4 tableQuery) {
+		Set<TableQueryStep> sourceSteps = new java.util.LinkedHashSet<>();
+		try {
+			tableQueries.forEachCubeQuerySteps(tableQuery, filterOptimizerSupplier.get())
+					.forEach(saa -> sourceSteps.add(saa.step()));
+		} catch (RuntimeException e) {
+			// Defensive: a misbehaving inducer should not break query execution. The fragment graft will simply
+			// not happen — the cube DAG still snapshots correctly via the existing projection path.
+			log.debug("forEachCubeQuerySteps failed for {} — skipping plan-fragment publication", tableQuery, e);
+		}
+		return sourceSteps;
 	}
 
 	protected Map<TableQueryStep, ICuboid> processOneTableQueryV4(ISinkExecutionFeedback sinkExecutionFeedback,
