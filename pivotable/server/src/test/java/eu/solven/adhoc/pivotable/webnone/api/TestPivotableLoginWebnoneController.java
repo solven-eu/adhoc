@@ -69,9 +69,14 @@ public class TestPivotableLoginWebnoneController {
 			InMemoryReactiveClientRegistrationRepository repo) {
 		ApplicationContext appContext = Mockito.mock(ApplicationContext.class);
 
-		// webflux
 		Mockito.when(appContext.getEnvironment()).thenReturn(customEnv);
-		Mockito.doReturn(repo).when(appContext).getBean(InMemoryReactiveClientRegistrationRepository.class);
+
+		// webflux
+		ObjectProvider<InMemoryClientRegistrationRepository> fluxBeanProvider = Mockito.mock(ObjectProvider.class);
+		Mockito.doReturn(fluxBeanProvider)
+				.when(appContext)
+				.getBeanProvider(InMemoryReactiveClientRegistrationRepository.class);
+		Mockito.doReturn(repo).when(fluxBeanProvider).getIfAvailable();
 
 		// webmvc
 		ObjectProvider<InMemoryClientRegistrationRepository> mvcBeanProvider = Mockito.mock(ObjectProvider.class);

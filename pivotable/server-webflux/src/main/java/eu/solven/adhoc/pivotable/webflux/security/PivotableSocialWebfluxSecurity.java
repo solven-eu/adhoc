@@ -94,7 +94,7 @@ public class PivotableSocialWebfluxSecurity {
 	/**
 	 * 
 	 * @param http
-	 * @param env
+	 * @param appContext
 	 * @return a {@link SecurityWebFilterChain} related to social identity providers.
 	 */
 	// https://github.com/ch4mpy/spring-addons/tree/master/samples/tutorials/resource-server_with_ui
