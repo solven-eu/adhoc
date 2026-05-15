@@ -23,7 +23,10 @@
 package eu.solven.adhoc.pivotable.webnone.api;
 
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.TreeMap;
 import java.util.stream.StreamSupport;
 
@@ -39,6 +42,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
 import eu.solven.adhoc.app.IPivotableSpringProfiles;
@@ -64,42 +68,33 @@ public class PivotableLoginWebnoneController {
 	public Map<String, ?> loginProviders() {
 		Map<String, Object> registrationIdToDetails = new TreeMap<>();
 
-		final Environment env = appContext.getEnvironment();
+		if (isOAuth2Enabled(appContext)) {
+			Iterable<ClientRegistration> clientRegistrationRepository = getEnabledClientRegistration();
 
-		if (appContext.getEnvironment().getProperty(IPivotableLoginConstants.P_OAUTH2, Boolean.class, true)) {
-			Iterable<ClientRegistration> clientRegistrationRepository = getClientRegistration();
+			clientRegistrationRepository.forEach(r -> {
+				// Typically 'github' or 'google'
+				String registrationId = r.getRegistrationId();
+				String loginUrl = "/oauth2/authorization/%s".formatted(registrationId);
 
-			StreamSupport.stream(clientRegistrationRepository.spliterator(), false)
-					.filter(registration -> AuthorizationGrantType.AUTHORIZATION_CODE
-							.equals(registration.getAuthorizationGrantType()))
-					// e.g. `-Dadhoc.pivotable.login.oauth2.github.enabled=true`
-					// Enabling custom deactivation as Pivotable may bring some default
-					.filter(registration -> env.getProperty("adhoc.pivotable.login.oauth2.%s.enabled"
-							.formatted(registration.getRegistrationId()), Boolean.class, true))
-					.forEach(r -> {
-						// Typically 'github' or 'google'
-						String registrationId = r.getRegistrationId();
-						String loginUrl = "/oauth2/authorization/%s".formatted(registrationId);
+				Map<String, String> details = new LinkedHashMap<>();
 
-						Map<String, String> details = new LinkedHashMap<>();
+				details.put("type", "oauth2");
+				details.put("registration_id", registrationId);
+				details.put("login_url", loginUrl);
 
-						details.put("type", "oauth2");
-						details.put("registration_id", registrationId);
-						details.put("login_url", loginUrl);
+				if (PivotableOAuth2UserWebnoneService.PROVIDERID_GOOGLE.equals(registrationId)) {
+					// https://developers.google.com/identity/branding-guidelines?hl=fr
+					details.put("button_img", "/ui/img/google-web_light_sq_ctn.svg");
+				} else if (PivotableOAuth2UserWebnoneService.PROVIDERID_GITHUB.equals(registrationId)) {
+					// https://github.com/logos
+					details.put("button_img", "/ui/img/GitHub_Logo.png");
+				}
 
-						if (PivotableOAuth2UserWebnoneService.PROVIDERID_GOOGLE.equals(registrationId)) {
-							// https://developers.google.com/identity/branding-guidelines?hl=fr
-							details.put("button_img", "/ui/img/google-web_light_sq_ctn.svg");
-						} else if (PivotableOAuth2UserWebnoneService.PROVIDERID_GITHUB.equals(registrationId)) {
-							// https://github.com/logos
-							details.put("button_img", "/ui/img/GitHub_Logo.png");
-						}
-
-						registrationIdToDetails.put(registrationId, details);
-					});
+				registrationIdToDetails.put(registrationId, details);
+			});
 		}
 
-		if (env.acceptsProfiles(Profiles.of(IPivotableSpringProfiles.P_FAKEUSER))) {
+		if (appContext.getEnvironment().acceptsProfiles(Profiles.of(IPivotableSpringProfiles.P_FAKEUSER))) {
 			registrationIdToDetails.put(IPivotableSpringProfiles.P_FAKEUSER,
 					ImmutableMap.builder()
 							.put("type", "basic")
@@ -111,19 +106,66 @@ public class PivotableLoginWebnoneController {
 		return Map.of("map", registrationIdToDetails, "list", registrationIdToDetails.values());
 	}
 
-	protected Iterable<ClientRegistration> getClientRegistration() {
+	public static boolean isOAuth2Enabled(ApplicationContext appContext) {
+		Boolean oauth2Enabled = isOAuth2RootAllowed(appContext.getEnvironment());
+		if (!oauth2Enabled) {
+			// Explicitly disabled
+			return false;
+		}
+
+		List<ClientRegistration> clientRegistrationRepository = getEnabledClientRegistration(appContext);
+
+		// Now ensure there is at least one provider available (given default conf has none available)
+		return !clientRegistrationRepository.isEmpty();
+	}
+
+	private static boolean isOAuth2RootAllowed(Environment env) {
+		return env.getProperty(IPivotableLoginConstants.P_OAUTH2, Boolean.class, true);
+	}
+
+	protected Iterable<ClientRegistration> getEnabledClientRegistration() {
+		return getEnabledClientRegistration(appContext);
+	}
+
+	protected static Iterable<ClientRegistration> getAllClientRegistration(ApplicationContext appContext) {
+		if (!isOAuth2RootAllowed(appContext.getEnvironment())) {
+			return ImmutableList.of();
+		}
+
 		// Support both servlet (WebMVC) and reactive (WebFlux) client registration repositories
 		// BEWARE If the following fails, you probably lacks some oauth2 registrations, as suggested in
 		// application-pivotable-demo_external_oauth2.yml
-		Iterable<ClientRegistration> clientRegistrationRepository;
-		InMemoryClientRegistrationRepository servletRepo =
-				appContext.getBeanProvider(InMemoryClientRegistrationRepository.class).getIfAvailable();
-		if (servletRepo != null) {
-			clientRegistrationRepository = servletRepo;
+		Optional<? extends Iterable<ClientRegistration>> optClientRegistrations =
+				List.of(InMemoryClientRegistrationRepository.class, InMemoryReactiveClientRegistrationRepository.class)
+						.stream()
+						.map(c -> appContext.getBeanProvider(c))
+						.map(a -> a.getIfAvailable())
+						.filter(Objects::nonNull)
+						.findFirst();
+
+		if (optClientRegistrations.isEmpty()) {
+			log.info("Not a single `Iterable<ClientRegistration>`. You may want to set explicitly {}=false",
+					IPivotableLoginConstants.P_OAUTH2);
+			return ImmutableList.of();
 		} else {
-			clientRegistrationRepository = appContext.getBean(InMemoryReactiveClientRegistrationRepository.class);
+			return optClientRegistrations.get();
 		}
-		return clientRegistrationRepository;
+	}
+
+	protected static List<ClientRegistration> getEnabledClientRegistration(ApplicationContext appContext) {
+		return filterEnabled(appContext.getEnvironment(), getAllClientRegistration(appContext));
+	}
+
+	private static List<ClientRegistration> filterEnabled(Environment env,
+			Iterable<ClientRegistration> allClientRegistration) {
+		return StreamSupport.stream(allClientRegistration.spliterator(), false)
+				.filter(registration -> AuthorizationGrantType.AUTHORIZATION_CODE
+						.equals(registration.getAuthorizationGrantType()))
+				// e.g. `-Dadhoc.pivotable.login.oauth2.github.enabled=true`
+				// Enabling custom deactivation as Pivotable may bring some default
+				.filter(registration -> env.getProperty("adhoc.pivotable.login.oauth2.%s.enabled"
+						.formatted(registration.getRegistrationId()), Boolean.class, true))
+				.collect(ImmutableList.toImmutableList());
 	}
 
 }

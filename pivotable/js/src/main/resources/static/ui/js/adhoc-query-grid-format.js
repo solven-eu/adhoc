@@ -65,6 +65,22 @@ export default {
 					v-model.number="formatOptions.roundingPriority"
 				/>
 			</div>
+			<!--
+				Heatmap toggles. Off by default. Independent flags:
+				  - primaryHeatmap   : whole-column min/max background gradient.
+				  - secondaryHeatmap : per-parent-group in-cell bar (only meaningful when the
+				                       query has a hierarchical groupBy).
+				Both applied in adhoc-query-grid-helper.js where the formatter reads
+				formatOptions.primaryHeatmap / .secondaryHeatmap before invoking the helpers.
+			-->
+			<div class="form-check form-switch mt-2">
+				<input class="form-check-input" type="checkbox" role="switch" id="formatPrimaryHeatmap" v-model="formatOptions.primaryHeatmap" />
+				<label class="form-check-label" for="formatPrimaryHeatmap">Primary heatmap (colour cells by column min→max)</label>
+			</div>
+			<div class="form-check form-switch">
+				<input class="form-check-input" type="checkbox" role="switch" id="formatSecondaryHeatmap" v-model="formatOptions.secondaryHeatmap" />
+				<label class="form-check-label" for="formatSecondaryHeatmap">Secondary heatmap (bar inside each cell, by parent group)</label>
+			</div>
 		</form>
 	`,
 };

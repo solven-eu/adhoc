@@ -77,7 +77,7 @@ public class AdhocUnsafe {
 				Executors.newThreadPerTaskExecutor(Thread.ofVirtual().name("adhoc-vt-", 0).factory()));
 		// Recreate FJP so tests starting a fresh state get a non-shutdown pool
 		// asyncMode is false as stack-based seems better for our DAG usages.
-		adhocCpuPool = new ForkJoinPool(parallelism, new NamingForkJoinWorkerThreadFactory("adhoc-cpu-"), null, false);
+		adhocCpuPool = new ForkJoinPool(parallelism, new NamingForkJoinWorkerThreadFactory("adhoc-fjp-"), null, false);
 	}
 
 	public static void reloadProperties() {
