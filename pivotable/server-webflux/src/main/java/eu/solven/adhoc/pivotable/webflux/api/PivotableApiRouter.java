@@ -39,6 +39,8 @@ import org.springframework.web.reactive.function.server.ServerResponse;
 import eu.solven.adhoc.beta.schema.ColumnStatistics;
 import eu.solven.adhoc.beta.schema.TargetedCubeQuery;
 import eu.solven.adhoc.dataframe.tabular.ListBasedTabularView;
+import eu.solven.adhoc.engine.observability.plan.QueryPlan;
+import eu.solven.adhoc.engine.observability.plan.QueryPlanSummary;
 import eu.solven.adhoc.pivotable.api.IPivotableApiConstants;
 import eu.solven.adhoc.pivotable.cube.PivotableCubeMetadata;
 import eu.solven.adhoc.pivotable.endpoint.PivotableAdhocEndpointMetadata;
@@ -81,7 +83,8 @@ public class PivotableApiRouter implements IPivotableRouteConstants {
 	@SuppressWarnings("checkstyle:MethodLength")
 	@Bean
 	public RouterFunction<ServerResponse> apiRoutes(PivotableEndpointsHandler endpointsHandler,
-			PivotableQueryHandler queryHandler) {
+			PivotableQueryHandler queryHandler,
+			PivotablePlanHandler planHandler) {
 
 		var endpointId = parameterBuilder().name("endpoint_id")
 				.description("Search for a specific endpointId")
@@ -216,6 +219,39 @@ public class PivotableApiRouter implements IPivotableRouteConstants {
 										.example("false"))
 								.response(
 										responseBuilder().responseCode("200").implementation(QueryResultHolder.class)))
+
+				.GET(json(R_CUBE_PLAN_SUMMARY),
+						planHandler::getPlanSummary,
+						ops -> ops.operationId("getPlanSummary")
+								.parameter(parameterBuilder().name("queryUuid")
+										.description("UUID portion of an AdhocQueryId")
+										.implementation(UUID.class)
+										.example("12345678-1234-1234-1234-123456789012"))
+								.response(responseBuilder().responseCode("200").implementation(QueryPlanSummary.class))
+								.response(responseBuilder().responseCode("204")
+										.description("No plan registered for that UUID")))
+				.GET(json(R_CUBE_PLAN_SNAPSHOT),
+						planHandler::getPlanSnapshot,
+						ops -> ops.operationId("getPlanSnapshot")
+								.parameter(parameterBuilder().name("queryUuid")
+										.description("UUID portion of an AdhocQueryId")
+										.implementation(UUID.class)
+										.example("12345678-1234-1234-1234-123456789012"))
+								.response(responseBuilder().responseCode("200").implementation(QueryPlan.class))
+								.response(responseBuilder().responseCode("204")
+										.description("No plan registered for that UUID")))
+				.GET(json(R_CUBE_PLAN_CHILDREN),
+						planHandler::getPlanChildren,
+						ops -> ops.operationId("getPlanChildren")
+								.parameter(parameterBuilder().name("queryUuid")
+										.description("UUID of the parent (composite) query")
+										.implementation(UUID.class)
+										.example("12345678-1234-1234-1234-123456789012"))
+								.response(responseBuilder().responseCode("200")
+										.description("List of child plan summaries; empty for a non-composite query")
+										.implementationArray(QueryPlanSummary.class))
+								.response(responseBuilder().responseCode("204")
+										.description("Parent UUID known but plan not yet ready, or evicted")))
 
 				.build();
 

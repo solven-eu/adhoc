@@ -105,7 +105,11 @@ public class PivotableAsynchronousQueriesManager implements IHasCache, Disposabl
 
 		queryIdToState.put(queryId, AsynchronousStatus.RUNNING);
 
-		ListenableFuture<ITabularView> future = schema.executeAsync(queryOnSchema.getCube(), queryOnSchema.getQuery());
+		// Bind the pre-generated UUID into the engine via SubmittedQueryIdScope so the engine's AdhocQueryId.queryId
+		// matches the UUID we surface to the SPA. The scope is read by AdhocQueryIds.from inside the preparator, which
+		// runs synchronously on this thread before the future is submitted — so the binding flows in correctly.
+		ListenableFuture<ITabularView> future = eu.solven.adhoc.query.SubmittedQueryIdScope.runWith(queryId,
+				() -> schema.executeAsync(queryOnSchema.getCube(), queryOnSchema.getQuery()));
 		queryIdToFuture.put(queryId, future);
 
 		future.addListener(() -> {

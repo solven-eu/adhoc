@@ -42,7 +42,7 @@ import eu.solven.adhoc.pivotable.api.IPivotableApiConstants;
 import eu.solven.adhoc.pivotable.endpoint.PivotableAdhocEndpointMetadata;
 import eu.solven.adhoc.pivotable.greeting.Greeting;
 import eu.solven.adhoc.pivotable.oauth2.authorizationserver.PivotableTokenService;
-import eu.solven.adhoc.pivotable.webflux.PivotableWebExceptionHandler;
+import eu.solven.adhoc.pivotable.webflux.PivotableWebfluxExceptionHandler;
 import eu.solven.adhoc.pivotable.webflux.api.GreetingHandler;
 import eu.solven.adhoc.pivotable.webflux.app.PivotableServerWebfluxApplication;
 import eu.solven.adhoc.pivotable.webflux.endpoint.PivotableEndpointsHandler;
@@ -122,7 +122,7 @@ public class TestPivotableApiRouter {
 	public void testSearchGames_gameId_undefined() {
 		log.debug("About {}", PivotableEndpointsHandler.class);
 
-		try (ILogDisabler logDisabler = PepperTestHelper.disableLog(PivotableWebExceptionHandler.class)) {
+		try (ILogDisabler logDisabler = PepperTestHelper.disableLog(PivotableWebfluxExceptionHandler.class)) {
 			webTestClient.get()
 
 					.uri(v1 + "/endpoints?endpoint_id=undefined")

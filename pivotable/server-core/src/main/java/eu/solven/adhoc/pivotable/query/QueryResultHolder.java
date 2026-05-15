@@ -52,6 +52,20 @@ public class QueryResultHolder {
 
 	Duration retryIn;
 
+	/**
+	 * Short human-readable error message when {@link #state} is {@link AsynchronousStatus#FAILED}. Typically the
+	 * underlying exception's message + class name. The SPA renders this prominently in the "Query is broken" banner so
+	 * the user can see what went wrong without opening devtools.
+	 */
+	String errorMessage;
+
+	/**
+	 * Full server-side stack trace when {@link #state} is {@link AsynchronousStatus#FAILED}. The SPA tucks this inside
+	 * a collapsible {@code <details>} block under the error banner — visible on demand without overwhelming the default
+	 * view.
+	 */
+	String stacktrace;
+
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	public Long getRetryInMs() {
 		// Make it easier in language like Javascript to get the retry duration
@@ -67,6 +81,23 @@ public class QueryResultHolder {
 
 	public static QueryResultHolder retry(AsynchronousStatus state, Duration retryIn) {
 		return QueryResultHolder.builder().state(state).retryIn(retryIn).build();
+	}
+
+	/**
+	 * Build a FAILED holder carrying the error information needed by the SPA. Both fields are nullable; the SPA falls
+	 * back gracefully when one is missing.
+	 *
+	 * @param state
+	 *            the state — should be {@link AsynchronousStatus#FAILED}, but the factory doesn't enforce it so it can
+	 *            be reused for any error-carrying state
+	 * @param errorMessage
+	 *            short human-readable description
+	 * @param stacktrace
+	 *            full stack trace (may be {@code null})
+	 * @return a FAILED-shaped holder
+	 */
+	public static QueryResultHolder failed(AsynchronousStatus state, String errorMessage, String stacktrace) {
+		return QueryResultHolder.builder().state(state).errorMessage(errorMessage).stacktrace(stacktrace).build();
 	}
 
 	// May have been cancelled, or done but result is discarded

@@ -34,6 +34,15 @@ export const AUTOFIT_HEADER_CHROME_PX = 42;
 /** Floor for the computed width — narrower than this and the resize handle becomes hard to grab. */
 export const AUTOFIT_MIN_WIDTH_PX = 40;
 
+/**
+ * Cap applied when auto-sizing columns during the fit→scroll transition. SlickGrid's scroll mode lets
+ * any column take as much horizontal real-estate as the content needs; for wide cells (long text,
+ * 20-character measure names) the natural content width can easily exceed the viewport, making the
+ * scroll-mode grid effectively single-column. 300 px is wide enough for typical labels (~40 chars in
+ * a 14 px font) yet keeps a multi-column horizontal layout in view.
+ */
+export const SCROLL_MODE_AUTOFIT_CAP_PX = 300;
+
 /** Strip HTML tags from a rendered cell value so the canvas measure reflects the visible text only.
  *  Cell formatters in this codebase often emit `<span>` / `<i>` wrappers; without this strip, the angle
  *  brackets count towards the measured width and produce ridiculous results.

@@ -48,7 +48,7 @@ import eu.solven.adhoc.pivotable.account.login.IPivotableTestConstants;
 import eu.solven.adhoc.pivotable.app.PivotableJackson;
 import eu.solven.adhoc.pivotable.login.AccessTokenWrapper;
 import eu.solven.adhoc.pivotable.login.RefreshTokenWrapper;
-import eu.solven.adhoc.pivotable.webflux.PivotableWebExceptionHandler;
+import eu.solven.adhoc.pivotable.webflux.PivotableWebfluxExceptionHandler;
 import eu.solven.adhoc.pivotable.webflux.api.GreetingHandler;
 import eu.solven.adhoc.pivotable.webflux.api.PivotableLoginWebfluxController;
 import eu.solven.adhoc.pivotable.webflux.api.PivotableQueryHandler;
@@ -435,7 +435,7 @@ public class TestSecurity_WithOAuth2_asOAuth2User {
 	public void testRefreshTokenToAccessToken() {
 		log.debug("About {}", AccessTokenHandler.class);
 
-		try (ILogDisabler logDisabler = PepperTestHelper.disableLog(PivotableWebExceptionHandler.class)) {
+		try (ILogDisabler logDisabler = PepperTestHelper.disableLog(PivotableWebfluxExceptionHandler.class)) {
 			getWebTestClient()
 
 					.get()

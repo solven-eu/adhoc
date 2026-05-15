@@ -10,7 +10,7 @@ import AdhocMeasureStatsModal from "./adhoc-query-grid-stats-modal.js";
 import { SlickGrid, SlickDataView } from "slickgrid";
 
 import gridHelper from "./adhoc-query-grid-helper.js";
-import { autoFitColumnWidth } from "./adhoc-query-grid-autofit.js";
+import { autoFitColumnWidth, SCROLL_MODE_AUTOFIT_CAP_PX } from "./adhoc-query-grid-autofit.js";
 import { isLoading as isLoadingHelper, loadingPercent as loadingPercentHelper, loadingMessage as loadingMessageHelper } from "./adhoc-query-grid-loading.js";
 
 import { usePreferencesStore } from "./store-preferences.js";
@@ -56,6 +56,15 @@ export default {
 		cubeId: {
 			type: String,
 			default: "",
+		},
+		// Shared model owned by the parent (<AdhocQuery>): the grid pushes the scroll-mode
+		// offscreen-columns count and a `scrollToRightEnd` action into it, so the parent can
+		// render the "+N more" chip in the LiveView strip rather than inside the grid container
+		// (where it would be clipped by the grid's own overflow). Optional to keep the grid
+		// usable in isolation (e.g. tests).
+		gridShared: {
+			type: Object,
+			default: null,
 		},
 	},
 	setup(props) {
@@ -177,8 +186,70 @@ export default {
 		//             = 100 px before viewport-scaling").
 		const WEIGHT_BASE_PX = 100;
 		const columnWidthMemo = new Map();
+		// True while the layout-toggle handler is mutating columns (adding/removing the phantom column,
+		// reapplying memo widths, running the scroll-mode autofit). The `onColumnsResized` subscriber
+		// returns early under this flag — without it, the intermediate widths emitted by SlickGrid mid-
+		// transition would leak into the wrong bucket. Concretely: when toggling fit→scroll, SlickGrid
+		// emits onColumnsResized with the prior fit-mode widths *after* preferencesStore.gridLayout has
+		// already flipped to "scroll", so the resize subscriber would persist those (tiny) fit widths
+		// into the SCROLL bucket. The next fit→scroll transition would then find the SCROLL bucket
+		// non-empty, skip the autofit pass, and rehydrate the tiny widths instead.
+		let isApplyingLayoutToggle = false;
+		// Snapshot of the last full render's footer inputs. SlickGrid's `setColumns(...)` clears the
+		// footer row DOM, so any toggle path that calls setColumns (phantom add/remove, width
+		// reapplication, autofit) must re-run `gridHelper.updateFooters` afterwards. The layout
+		// toggle handler intentionally avoids `resyncData` for perf, so we keep this snapshot
+		// instead. Populated at the end of every non-empty `resyncData` pass; consumed by the
+		// layout watcher below.
+		/** @type {{ columnNames: string[], view: any, measureStats: any, formatOptions: any } | null} */
+		let lastFooterSnapshot = null;
+
+		// Count of data columns whose left edge starts past the visible viewport's right edge —
+		// i.e. how many columns the user could reveal by scrolling right. Drives a small floating
+		// chip overlayed in the top-right of the grid so the user knows the table is wider than
+		// what they see. Always 0 in fit mode (no horizontal scroll). Updated on horizontal scroll,
+		// column resize, layout toggle, and after every resync.
+		const recomputeOffscreenColumns = () => {
+			if (!grid) return;
+			const setCount = (n) => {
+				if (props.gridShared) props.gridShared.offscreenColumnsRight = n;
+			};
+			if (preferencesStore.gridLayout !== "scroll") {
+				setCount(0);
+				return;
+			}
+			const viewport = typeof grid.getViewportNode === "function" ? grid.getViewportNode() : null;
+			if (!viewport) {
+				setCount(0);
+				return;
+			}
+			const viewportRight = viewport.scrollLeft + viewport.clientWidth;
+			let cumulative = 0;
+			let count = 0;
+			// Skip the frozen rowIndex column (id "id") and the invisible phantom — they aren't
+			// part of the "more columns to discover" affordance the chip is meant to advertise.
+			for (const col of grid.getColumns()) {
+				if (col.id === "__phantom_trailing" || col.id === "id") continue;
+				if (cumulative >= viewportRight) count++;
+				cumulative += col.width || 0;
+			}
+			setCount(count);
+		};
+		const scrollToRightEnd = () => {
+			if (!grid || typeof grid.getViewportNode !== "function") return;
+			const viewport = grid.getViewportNode();
+			if (!viewport) return;
+			viewport.scrollLeft = viewport.scrollWidth;
+		};
+		// TEMP: disabled while we evaluate whether scroll-mode auto-defaults work better without
+		// the persisted-widths layer. Flip back to `true` to re-enable hydrating column widths
+		// from preferences. When false, the memo stays empty, which means: in scroll mode the
+		// fit→scroll autofit (`min(SCROLL_MODE_AUTOFIT_CAP_PX, fitWidth)`) runs on every toggle
+		// instead of being short-circuited by a non-empty bucket.
+		const HYDRATE_WIDTHS_FROM_PREFS = false;
 		const hydrateColumnWidthMemo = () => {
 			columnWidthMemo.clear();
+			if (!HYDRATE_WIDTHS_FROM_PREFS) return;
 			const mode = preferencesStore.gridLayout;
 			const persisted = preferencesStore.getCubeColumnWidths(props.endpointId, props.cubeId, mode);
 			for (const [colId, v] of Object.entries(persisted || {})) {
@@ -465,15 +536,45 @@ export default {
 
 			if (isScrollLayout && newColumnIds.length > 0) {
 				if (memoWasEmptyBefore) {
-					// Initial load: defer to SlickGrid's header-text-based autosize. It doesn't rely
-					// on rendered cell widths, so it produces sensible columns even before the
-					// canvas has its first paint. Wrapped in a try/catch because SlickGrid versions
-					// occasionally differ on this method's availability.
-					try {
-						grid.autosizeColumns();
-					} catch (e) {
-						console.warn("autosizeColumns() unavailable on this SlickGrid version", e);
-					}
+					// Initial scroll-mode load: SlickGrid's `grid.autosizeColumns()` is a no-op
+					// here (its viewport-balancing branch only runs when forceFitColumns is true),
+					// so columns would stay at the default ~80 px. Instead, defer one frame so
+					// cells are in the DOM and `autoFitColumnWidth` can measure them, then apply
+					// `min(SCROLL_MODE_AUTOFIT_CAP_PX, naturalContentWidth)` per column — same
+					// strategy as the fit→scroll watcher above.
+					requestAnimationFrame(() => {
+						if (!grid) return;
+						const cols = grid.getColumns();
+						const dataCols = cols.filter((c) => c.id !== "__phantom_trailing");
+						let dirty = false;
+						dataCols.forEach((col, idx) => {
+							const natural = autoFitColumnWidth(grid, dataView, col, idx);
+							if (natural <= 0) return;
+							const capped = Math.min(SCROLL_MODE_AUTOFIT_CAP_PX, natural);
+							if (col.width !== capped) {
+								col.width = capped;
+								dirty = true;
+							}
+						});
+						if (dirty) {
+							grid.setColumns(cols);
+							if (typeof grid.updateCanvasWidth === "function") grid.updateCanvasWidth(true);
+							// `setColumns` clears the footer row DOM — re-populate from the snapshot
+							// captured at the end of the synchronous `resyncData` pass above. Without
+							// this the footer is empty on a fresh F5 in scroll mode.
+							if (lastFooterSnapshot) {
+								gridHelper.updateFooters(
+									grid,
+									lastFooterSnapshot.columnNames,
+									lastFooterSnapshot.view.coordinates,
+									lastFooterSnapshot.view.values,
+									lastFooterSnapshot.measureStats,
+									lastFooterSnapshot.formatOptions,
+								);
+							}
+						}
+						recomputeOffscreenColumns();
+					});
 				} else {
 					// Subsequent resync (e.g. user added a measure or groupBy column). Per-column
 					// auto-fit for the new columns only; existing columns keep their memoed width.
@@ -514,6 +615,11 @@ export default {
 			}
 
 			gridHelper.updateFooters(grid, columnNames, view.coordinates, view.values, measureStats, formatOptions);
+			// Snapshot for the layout-toggle watcher (see `isApplyingLayoutToggle` comment). The
+			// `view` reference is the same object the watcher sees via props, but capturing it
+			// explicitly insulates us from a later swap mid-toggle.
+			lastFooterSnapshot = { columnNames, view, measureStats, formatOptions };
+			recomputeOffscreenColumns();
 
 			dataView.getItemMetadata = (row) => {
 				return metadata[row] && metadata[row].attributes ? metadata[row] : (metadata[row] = { attributes: { "data-row": row }, ...metadata[row] });
@@ -597,6 +703,11 @@ export default {
 			// the user's per-cube widths survive page reloads.
 			if (grid.onColumnsResized && typeof grid.onColumnsResized.subscribe === "function") {
 				grid.onColumnsResized.subscribe(() => {
+					// Skip persistence while the layout-toggle handler is rewriting columns — those
+					// intermediate widths belong to the prior mode (SlickGrid re-emits with the old
+					// widths *after* gridLayout has already flipped), so persisting them would write
+					// them into the new mode's bucket.
+					if (isApplyingLayoutToggle) return;
 					const cols = grid.getColumns().filter((c) => c.id !== "__phantom_trailing");
 					if (cols.length === 0) return;
 					const mode = preferencesStore.gridLayout;
@@ -622,7 +733,23 @@ export default {
 					if (props.endpointId && props.cubeId) {
 						preferencesStore.setCubeColumnWidths(props.endpointId, props.cubeId, mode, persistedValues);
 					}
+					// User-driven resize may reveal / hide columns at the right edge.
+					recomputeOffscreenColumns();
 				});
+			}
+
+			// Update the "N columns offscreen" chip whenever the user scrolls horizontally. SlickGrid
+			// exposes `onScroll` once the grid is constructed.
+			if (grid.onScroll && typeof grid.onScroll.subscribe === "function") {
+				grid.onScroll.subscribe(() => {
+					recomputeOffscreenColumns();
+				});
+			}
+			// Publish the scroll-right action onto the shared model so the parent's chip click
+			// can invoke it. Done once after mount; the function captures `grid` by closure so
+			// it stays valid for the component's lifetime.
+			if (props.gridShared) {
+				props.gridShared.scrollToRightEnd = scrollToRightEnd;
 			}
 
 			// Register the watch once the grid is mounted and initialized.
@@ -657,40 +784,97 @@ export default {
 			// mode toggle, so a full resync is wasted work.
 			watch(
 				() => preferencesStoreForResize.gridLayout,
-				(newLayout) => {
+				(newLayout, oldLayout) => {
 					if (!grid) return;
-					const wantPhantom = newLayout === "scroll";
-					grid.setOptions({ forceFitColumns: !wantPhantom });
-					const cols = grid.getColumns();
-					const hasPhantom = cols.length > 0 && cols[cols.length - 1].id === "__phantom_trailing";
-					if (wantPhantom && !hasPhantom) {
-						const containerEl = document.getElementById(props.domId);
-						const viewportWidth = containerEl ? containerEl.clientWidth : 600;
-						cols.push(buildPhantomColumn(viewportWidth));
-						grid.setColumns(cols);
-					} else if (!wantPhantom && hasPhantom) {
-						cols.pop();
-						grid.setColumns(cols);
-					}
-					// Re-hydrate the memo from the bucket that matches the new mode — scroll-mode
-					// widths and fit-mode widths/weights live in separate per-cube buckets so the
-					// user can have different sizings per mode without one bleeding into the other.
-					hydrateColumnWidthMemo();
-					// Apply the freshly-hydrated widths to the columns currently in the grid.
-					const restored = grid.getColumns();
-					let dirty = false;
-					for (const col of restored) {
-						if (col.id === "__phantom_trailing") continue;
-						const w = columnWidthMemo.get(col.id);
-						if (typeof w === "number" && w > 0 && col.width !== w) {
-							col.width = w;
-							dirty = true;
+					// Guard the entire body — see `isApplyingLayoutToggle` comment. SlickGrid emits
+					// onColumnsResized at multiple points below (setOptions, setColumns); without the
+					// guard each emission would persist to the new mode's bucket, polluting it with
+					// the prior mode's widths.
+					isApplyingLayoutToggle = true;
+					try {
+						const wantPhantom = newLayout === "scroll";
+						grid.setOptions({ forceFitColumns: !wantPhantom });
+						const cols = grid.getColumns();
+						const hasPhantom = cols.length > 0 && cols[cols.length - 1].id === "__phantom_trailing";
+						if (wantPhantom && !hasPhantom) {
+							const containerEl = document.getElementById(props.domId);
+							const viewportWidth = containerEl ? containerEl.clientWidth : 600;
+							cols.push(buildPhantomColumn(viewportWidth));
+							grid.setColumns(cols);
+						} else if (!wantPhantom && hasPhantom) {
+							cols.pop();
+							grid.setColumns(cols);
 						}
+						// Re-hydrate the memo from the bucket that matches the new mode — scroll-mode
+						// widths and fit-mode widths/weights live in separate per-cube buckets so the
+						// user can have different sizings per mode without one bleeding into the other.
+						hydrateColumnWidthMemo();
+						// Apply the freshly-hydrated widths to the columns currently in the grid.
+						const restored = grid.getColumns();
+						let dirty = false;
+						for (const col of restored) {
+							if (col.id === "__phantom_trailing") continue;
+							const w = columnWidthMemo.get(col.id);
+							if (typeof w === "number" && w > 0 && col.width !== w) {
+								col.width = w;
+								dirty = true;
+							}
+						}
+						if (dirty) {
+							grid.setColumns(restored);
+						}
+						// First-time fit→scroll transition with no prior user widths in scroll mode: cap
+						// each data column at `min(SCROLL_MODE_AUTOFIT_CAP_PX, fitWidth)`. Reading the
+						// CURRENT fit-mode pixel width (rather than recomputing a natural content width)
+						// keeps narrow columns at their fitted size and only clamps the wide ones — the
+						// user keeps the rough balance they had in fit mode, just without any single
+						// column running past 300 px.
+						// We intentionally do NOT update columnWidthMemo or persist these widths: the
+						// user's "preferred" widths must reflect user interaction only. If the user
+						// later resizes a column, the resize subscriber will pick that up and persist
+						// normally.
+						if (oldLayout === "fit" && newLayout === "scroll" && columnWidthMemo.size === 0) {
+							// Measure each column's NATURAL content width via `autoFitColumnWidth`
+							// (header text + sampled cell widths from the rendered DOM) and cap at
+							// SCROLL_MODE_AUTOFIT_CAP_PX. We must NOT use `col.width` here — in fit
+							// mode SlickGrid's `forceFitColumns` distributes the viewport evenly
+							// across columns, so every `col.width` is `viewport/N` and carries no
+							// content information (all columns end up at the same ~80-90 px in
+							// scroll mode, far smaller than they should be).
+							const dataCols = grid.getColumns().filter((c) => c.id !== "__phantom_trailing");
+							let autofitDirty = false;
+							dataCols.forEach((col, idx) => {
+								const natural = autoFitColumnWidth(grid, dataView, col, idx);
+								if (natural <= 0) return;
+								const capped = Math.min(SCROLL_MODE_AUTOFIT_CAP_PX, natural);
+								if (col.width !== capped) {
+									col.width = capped;
+									autofitDirty = true;
+								}
+							});
+							if (autofitDirty) {
+								grid.setColumns(grid.getColumns());
+							}
+						}
+						grid.resizeCanvas();
+						// `setColumns` clears the footer row DOM, so any non-resync path that touched
+						// the columns above must re-populate it. Use the snapshot captured at the end
+						// of the most recent `resyncData` pass — the underlying data hasn't changed,
+						// only the visual mode has.
+						if (lastFooterSnapshot) {
+							gridHelper.updateFooters(
+								grid,
+								lastFooterSnapshot.columnNames,
+								lastFooterSnapshot.view.coordinates,
+								lastFooterSnapshot.view.values,
+								lastFooterSnapshot.measureStats,
+								lastFooterSnapshot.formatOptions,
+							);
+						}
+					} finally {
+						isApplyingLayoutToggle = false;
 					}
-					if (dirty) {
-						grid.setColumns(restored);
-					}
-					grid.resizeCanvas();
+					recomputeOffscreenColumns();
 				},
 			);
 

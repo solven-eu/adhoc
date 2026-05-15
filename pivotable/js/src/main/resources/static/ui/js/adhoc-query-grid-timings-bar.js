@@ -2,18 +2,20 @@
 import { computed, ref, watch, onBeforeUnmount } from "vue";
 
 import { formatTimings, hasActiveTiming } from "./adhoc-query-grid-timings.js";
+import AdhocQueryGridTimingsModal from "./adhoc-query-grid-timings-modal.js";
 
-// Small presentational component rendering the per-stage timings strip under the grid. Accepts
-// the full `tabularView` and derives its own { entries, total, anyActive } view via
-// `formatTimings()`. Renders nothing when no timings are available (first render, cached views).
-// Muted styling + explicit "Performance" label make it obvious these are operational,
-// non-functional metrics.
+// Small presentational component rendering a compact performance summary under the grid.
 //
-// While any stage is in-flight (see `_startedAt` sibling keys in `timing`), the component ticks
-// a `now` reference on a 100 ms interval so the active stage shows a growing duration rather
-// than sitting at its last-rendered value. The interval is torn down as soon as every stage has
-// a final duration, so an idle grid pays nothing.
+// Display policy:
+//   - While a stage is active: show ONLY that stage's live duration. Keeps the bar quiet during
+//     query execution and focuses the user's eye on what is currently happening.
+//   - When idle (all stages finished): show only the total. The per-stage breakdown is one click
+//     away in the modal.
+// Click the bar to open the full per-stage timing breakdown in a modal. The previous design
+// listed every stage inline, which became noisy at runtime (six entries with constantly ticking
+// digits) and was hard to read on narrow viewports.
 export default {
+	components: { AdhocQueryGridTimingsModal },
 	props: {
 		tabularView: {
 			type: Object,
@@ -25,6 +27,7 @@ export default {
 		// Fires when anyActive transitions from false→true or true→false. Start/stop the tick
 		// accordingly. The 100 ms cadence is fine-grained enough for the digits to feel live
 		// but cheap in compute.
+		/** @type {ReturnType<typeof setInterval> | null} */
 		let intervalId = null;
 		const anyActive = computed(() => hasActiveTiming(props.tabularView && props.tabularView.timing));
 		watch(
@@ -47,29 +50,39 @@ export default {
 		});
 
 		const timings = computed(() => formatTimings(props.tabularView && props.tabularView.timing, now.value));
-		return { timings };
+
+		// The single stage currently in-flight (or null when idle). Bar shows just this entry
+		// while non-null; falls back to the total otherwise.
+		const activeEntry = computed(() => {
+			if (!timings.value) return null;
+			return timings.value.entries.find((e) => e.active) || null;
+		});
+
+		const showModal = ref(false);
+		const openModal = () => {
+			showModal.value = true;
+		};
+
+		return { timings, activeEntry, showModal, openModal };
 	},
 	template: /* HTML */ `
 		<!--
-			d-flex + flex-wrap so the per-stage entries wrap onto a second line when the screen is narrow.
-			Without flex-wrap the entries stay on one line because Vue collapses the inter-span whitespace,
-			leaving the browser no breakable point. gap-2 replaces the previous me-2 so the spacing applies
-			both horizontally and (after wrap) vertically.
+			The whole line is a button so the entire chip is the click target — easier to hit
+			than a tiny icon and keeps the interaction discoverable. The btn-link class strips
+			the button chrome so it still looks like a passive metrics line.
 		-->
-		<div
+		<button
 			v-if="timings"
-			class="small text-muted mt-1 d-flex flex-wrap align-items-baseline gap-2"
-			title="Operational metrics — not part of the query result"
+			type="button"
+			class="btn btn-link btn-sm p-0 small text-muted mt-1 text-decoration-none"
+			title="Click to see the per-stage breakdown"
+			@click="openModal"
 		>
-			<span><i class="bi bi-speedometer2 me-1"></i><span class="fw-semibold">Performance:</span></span>
-			<span v-for="(entry, i) in timings.entries" :key="entry.stage">
-				<span v-if="entry.active" class="text-primary fw-semibold">{{entry.stage}}={{entry.ms}}ms…</span>
-				<span v-else>{{entry.stage}}={{entry.ms}}ms</span>
-				<span v-if="i < timings.entries.length - 1">,</span>
-			</span>
-			<span :class="{'text-primary': timings.anyActive}"
-				>({{timings.anyActive ? 'elapsed' : 'total'}}: {{timings.total}}ms<span v-if="timings.anyActive">…</span>)</span
-			>
-		</div>
+			<i class="bi bi-speedometer2 me-1"></i>
+			<span class="fw-semibold">Performance:</span>
+			<span v-if="activeEntry" class="text-primary ms-1 fw-semibold">{{activeEntry.stage}}={{activeEntry.ms}}ms…</span>
+			<span v-else class="ms-1">total: {{timings.total}}ms</span>
+		</button>
+		<AdhocQueryGridTimingsModal :tabularView="tabularView" v-model:show="showModal" />
 	`,
 };

@@ -31,12 +31,14 @@ import java.util.Optional;
 
 import eu.solven.pepper.mappath.MapPathGet;
 import lombok.experimental.UtilityClass;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Similar to {@link MapPathGet}, with some Adhoc customizations.
  * 
  * @author Benoit Lacelle
  */
+@Slf4j
 @UtilityClass
 public class AdhocMapPathGet {
 
@@ -125,5 +127,18 @@ public class AdhocMapPathGet {
 	 */
 	public static String minimizingDistance(Collection<String> options, String key) {
 		return options.stream().min(Comparator.comparing(s -> SmileEditDistance.levenshtein(s, key))).orElse("?");
+	}
+
+	public static Class<?> toClass(Optional<String> optClassName) {
+		return optClassName.<Class<?>>map(rawClass -> {
+			try {
+				return Class.forName(rawClass);
+			} catch (ClassNotFoundException e) {
+				// BEWARE In case of class-loading issues, we prefer a log than a failure
+				// The rational is we prefer not breaking the loading on a dependency update
+				log.warn("Issue loading className={}", rawClass, e);
+				return Object.class;
+			}
+		}).orElse(Object.class);
 	}
 }

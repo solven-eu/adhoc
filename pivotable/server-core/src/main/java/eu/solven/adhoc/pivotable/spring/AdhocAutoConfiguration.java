@@ -29,6 +29,8 @@ import org.springframework.context.annotation.Bean;
 
 import eu.solven.adhoc.engine.CubeQueryEngine;
 import eu.solven.adhoc.engine.ICubeQueryEngine;
+import eu.solven.adhoc.engine.observability.plan.BoundedQueryPlanRegistry;
+import eu.solven.adhoc.engine.observability.plan.IQueryPlanRegistry;
 import eu.solven.adhoc.eventbus.IAdhocEventBus;
 import eu.solven.adhoc.eventbus.UnsafeAdhocEventBusHelpers;
 import eu.solven.adhoc.factories.AdhocFactories;
@@ -54,6 +56,9 @@ import lombok.extern.slf4j.Slf4j;
 @AutoConfiguration
 @Slf4j
 public class AdhocAutoConfiguration {
+
+	/** Default cap on the in-memory plan registry — enough for ~10 simultaneous 20k-step plans. */
+	private static final long DEFAULT_PLAN_REGISTRY_NODE_BUDGET = 200_000L;
 
 	@Bean
 	@ConditionalOnMissingBean({ IAdhocEventBus.class,
@@ -143,9 +148,29 @@ public class AdhocAutoConfiguration {
 				.build();
 	}
 
+	/**
+	 * In-memory plan registry, capped by total live node count. Pivotable's UI Live View polls this to render an "what
+	 * is the query doing right now" indicator. The default cap of 200k nodes is large enough to retain a handful of
+	 * 20k-step plans simultaneously without unbounded growth.
+	 *
+	 * @return a {@link BoundedQueryPlanRegistry}; users can override with their own bean (e.g. a no-op for production
+	 *         setups that don't need the feature).
+	 */
+	@Bean
+	@ConditionalOnMissingBean(IQueryPlanRegistry.class)
+	public IQueryPlanRegistry queryPlanRegistry() {
+		return new BoundedQueryPlanRegistry(DEFAULT_PLAN_REGISTRY_NODE_BUDGET);
+	}
+
 	@Bean
 	@ConditionalOnMissingBean(ICubeQueryEngine.class)
-	public ICubeQueryEngine adhocQueryEngine(IAdhocEventBus eventBus, IAdhocFactories adhocFactories) {
-		return CubeQueryEngine.builder().eventBus(eventBus).factories(adhocFactories).build();
+	public ICubeQueryEngine adhocQueryEngine(IAdhocEventBus eventBus,
+			IAdhocFactories adhocFactories,
+			IQueryPlanRegistry queryPlanRegistry) {
+		return CubeQueryEngine.builder()
+				.eventBus(eventBus)
+				.factories(adhocFactories)
+				.queryPlanRegistry(queryPlanRegistry)
+				.build();
 	}
 }

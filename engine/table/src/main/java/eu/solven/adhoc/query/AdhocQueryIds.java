@@ -43,6 +43,10 @@ public class AdhocQueryIds {
 		String queryHash = Integer.toHexString(query.toString().hashCode());
 		AdhocQueryId.AdhocQueryIdBuilder builder = AdhocQueryId.builder().queryHash(queryHash).cube(cubeOrTable);
 
+		// When the caller has pre-generated a tracking UUID (typically Pivotable's async-query manager), adopt it so
+		// the engine's queryId matches the UUID surfaced over the HTTP / Live View boundary.
+		SubmittedQueryIdScope.current().ifPresent(builder::queryId);
+
 		if (query instanceof IHasParentQueryId hasParentQueryId) {
 			builder.parentQueryId(hasParentQueryId.getParentQueryId().getQueryId());
 		}

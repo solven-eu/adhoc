@@ -59,7 +59,7 @@ import tools.jackson.databind.ObjectMapper;
 @Order(-2)
 @Slf4j
 // https://stackoverflow.com/questions/51931178/error-handling-in-webflux-with-routerfunction
-public class PivotableWebExceptionHandler implements WebExceptionHandler {
+public class PivotableWebfluxExceptionHandler implements WebExceptionHandler {
 
 	final ObjectMapper objectMapper = AdhocJackson.makeObjectMapper("json");
 

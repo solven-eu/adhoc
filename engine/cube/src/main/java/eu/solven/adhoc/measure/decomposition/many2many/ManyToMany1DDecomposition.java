@@ -74,10 +74,9 @@ public class ManyToMany1DDecomposition implements IDecomposition {
 	 * The column used as elements: the underlying measure is expressed on this column
 	 */
 	public static final String K_INPUT = "element";
-	/**
-	 * The column written by this decomposition.
-	 */
-	public static final String K_OUTPUT = "group";
+
+	public static final String K_OUTPUT = ManyToManyNDDecomposition.K_OUTPUT;
+	public static final String K_OUTPUT_CLASS = ManyToManyNDDecomposition.K_OUTPUT_CLASS;
 
 	final Map<String, ?> options;
 
@@ -283,24 +282,25 @@ public class ManyToMany1DDecomposition implements IDecomposition {
 		return underlyingFilter;
 	}
 
+	// Duplicated with ManyToManyNDDecomposition
+	@SuppressWarnings("CPD-START")
 	protected Set<?> elementsMatchingGroups(IValueMatcher valueMatcher) {
 		return manyToManyDefinition.getElementsMatchingGroups(valueMatcher);
 	}
 
 	@Override
 	public Map<String, Class<?>> getColumnTypes() {
-		return ImmutableMap.<String, Class<?>>builder()
-				.put(AdhocMapPathGet.getRequiredString(options, K_OUTPUT), Object.class)
-				.build();
+		String outputColumn = AdhocMapPathGet.getRequiredString(options, K_OUTPUT);
+		Class<?> outputColumnClass =
+				AdhocMapPathGet.toClass(AdhocMapPathGet.getOptionalString(options, K_OUTPUT_CLASS));
+
+		return ImmutableMap.<String, Class<?>>builder().put(outputColumn, outputColumnClass).build();
 	}
 
 	@Override
 	public CoordinatesSample getCoordinates(String column, IValueMatcher valueMatcher, int limit) {
 		Set<Object> groups = manyToManyDefinition.getGroups(valueMatcher);
-		return CoordinatesSample.builder()
-				.estimatedCardinality(CoordinatesSample.NO_ESTIMATION)
-				.coordinates(groups)
-				.build();
+		return CoordinatesSample.builder().estimatedCardinality(groups.size()).coordinates(groups).build();
 	}
 
 }

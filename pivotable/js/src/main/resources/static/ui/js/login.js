@@ -66,7 +66,17 @@ export default {
 			<div v-else-if="isLoggedOut" class="card shadow-sm">
 				<div class="card-body">
 					<h5 class="card-title mb-3 text-center">Sign in to Pivotable</h5>
-					<LoginOptions />
+					<!--
+						\`:modal="true"\` reuses the inline-BASIC branch in login-providers.js: BASIC
+						renders as an in-page \`@click.prevent\` that swaps to the LoginBasic form
+						below the provider list. Without this flag, BASIC renders as an \`<a href>\`
+						pointing at /html/login/basic — a same-origin URL that the browser
+						short-circuits as a full document load, triggering the "Loading
+						Pivotable" splash. The flag is named for the *modal embedding* the
+						behavior was first wired for, but the underlying mechanic (inline form
+						instead of href-navigation) is what we want on this route too.
+					-->
+					<LoginOptions :modal="true" />
 				</div>
 			</div>
 			<div v-else class="d-flex align-items-center justify-content-center gap-2 py-4 text-muted">

@@ -36,7 +36,9 @@ import eu.solven.adhoc.pivotable.query.AsynchronousStatus;
 public class TestPivotableQueryHandler {
 	PivotableSchemaRegistry schemaRegistry = null;
 	AdhocCubesRegistry cubesRegistry = null;
-	PivotableQueryHandler handler = new PivotableQueryHandler(schemaRegistry, cubesRegistry);
+	PivotableQueryHandler handler = new PivotableQueryHandler(schemaRegistry,
+			cubesRegistry,
+			new eu.solven.adhoc.pivotable.query.PivotableAsynchronousQueriesManager());
 
 	@Test
 	public void testBackoff() {

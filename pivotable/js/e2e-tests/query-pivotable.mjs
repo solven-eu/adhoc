@@ -45,7 +45,11 @@ export default {
 		await page.getByRole("link", { name: /pivotable-unsafe_fakeuser/ }).click();
 		await page.getByRole("button", { name: /^Login$/i }).click();
 
-		await expect(page.getByText(/Welcome Fake User/)).toBeVisible();
+		// The login chip now opens an in-SPA Bootstrap modal instead of routing to /html/login,
+		// so the post-login user lands back on whatever page hosted the chip (typically `/`).
+		// The previous "Welcome Fake User" assertion targeted the /html/login card; the new
+		// stable signal across every host page is the navbar's "Logged in as <name>" entry.
+		await expect(page.getByText(/Logged in as Fake User/)).toBeVisible();
 	},
 
 	addColumn: addColumn,

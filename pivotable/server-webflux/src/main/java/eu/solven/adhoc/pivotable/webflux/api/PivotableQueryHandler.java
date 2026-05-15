@@ -75,8 +75,8 @@ import reactor.core.scheduler.Schedulers;
 public class PivotableQueryHandler {
 	final PivotableSchemaRegistry schemaRegistry;
 	final AdhocCubesRegistry cubesRegistry;
-
-	final PivotableAsynchronousQueriesManager asynchronousQueriesManager = new PivotableAsynchronousQueriesManager();
+	// Shared with PivotablePlanHandler so the LiveView can ask the same manager "have you seen this UUID?"
+	final PivotableAsynchronousQueriesManager asynchronousQueriesManager;
 
 	public static final MediaType ARROW_STREAM_MEDIA_TYPE =
 			MediaType.parseMediaType("application/vnd.apache.arrow.stream");
@@ -208,19 +208,43 @@ public class PivotableQueryHandler {
 
 			QueryResultHolder body = QueryResultHolder.served(optView.getState(), view);
 			return ServerResponse.ok().contentType(MediaType.APPLICATION_JSON).body(BodyInserters.fromValue(body));
-		} else {
-			AsynchronousStatus state = asynchronousQueriesManager.getState(queryId);
-
-			Optional<Duration> optRetryIn = getRetryIn(queryId, state);
-
-			if (optRetryIn.isPresent()) {
-				QueryResultHolder body = QueryResultHolder.retry(state, optRetryIn.get());
-				return ServerResponse.ok().contentType(MediaType.APPLICATION_JSON).body(BodyInserters.fromValue(body));
-			} else {
-				QueryResultHolder body = QueryResultHolder.discarded(state);
-				return ServerResponse.ok().contentType(MediaType.APPLICATION_JSON).body(BodyInserters.fromValue(body));
-			}
 		}
+
+		AsynchronousStatus state = optView.getState();
+		// On FAILED, surface the engine's error info (first line + full stack) so the SPA can render it instead of
+		// the unhelpful "Query has state=FAILED" placeholder it synthesises when only the state is available.
+		if (state == AsynchronousStatus.FAILED) {
+			String stack = optView.getStacktrace().orElse(null);
+			QueryResultHolder body = QueryResultHolder.failed(state, summariseStack(stack), stack);
+			return ServerResponse.ok().contentType(MediaType.APPLICATION_JSON).body(BodyInserters.fromValue(body));
+		}
+
+		Optional<Duration> optRetryIn = getRetryIn(queryId, state);
+		QueryResultHolder body;
+		if (optRetryIn.isPresent()) {
+			body = QueryResultHolder.retry(state, optRetryIn.get());
+		} else {
+			body = QueryResultHolder.discarded(state);
+		}
+		return ServerResponse.ok().contentType(MediaType.APPLICATION_JSON).body(BodyInserters.fromValue(body));
+	}
+
+	/**
+	 * Extract the first non-blank line of {@code stack} for use as a short error message. Returns {@code null} when
+	 * {@code stack} is null/empty so the field stays absent from the JSON response (NON_NULL serialisation).
+	 */
+	protected static String summariseStack(String stack) {
+		if (stack == null || stack.isBlank()) {
+			return null;
+		}
+		int newlineAt = stack.indexOf('\n');
+		String firstLine;
+		if (newlineAt >= 0) {
+			firstLine = stack.substring(0, newlineAt);
+		} else {
+			firstLine = stack;
+		}
+		return firstLine.strip();
 	}
 
 	@SuppressWarnings("checkstyle:MagicNumber")

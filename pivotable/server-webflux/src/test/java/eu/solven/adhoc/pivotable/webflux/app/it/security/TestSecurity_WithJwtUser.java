@@ -45,7 +45,7 @@ import eu.solven.adhoc.app.IPivotableSpringProfiles;
 import eu.solven.adhoc.pivotable.account.fake_user.RandomUser;
 import eu.solven.adhoc.pivotable.login.AccessTokenWrapper;
 import eu.solven.adhoc.pivotable.oauth2.authorizationserver.PivotableTokenService;
-import eu.solven.adhoc.pivotable.webflux.PivotableWebExceptionHandler;
+import eu.solven.adhoc.pivotable.webflux.PivotableWebfluxExceptionHandler;
 import eu.solven.adhoc.pivotable.webflux.api.GreetingHandler;
 import eu.solven.adhoc.pivotable.webflux.api.PivotableLoginWebfluxController;
 import eu.solven.adhoc.pivotable.webflux.security.tokens.AccessTokenHandler;
@@ -146,7 +146,7 @@ public class TestSecurity_WithJwtUser {
 	public void testLoginUser() {
 		log.debug("About {}", PivotableLoginWebfluxController.class);
 
-		try (ILogDisabler logDisabler = PepperTestHelper.disableLog(PivotableWebExceptionHandler.class)) {
+		try (ILogDisabler logDisabler = PepperTestHelper.disableLog(PivotableWebfluxExceptionHandler.class)) {
 			loggedInClient()
 
 					.get()
@@ -164,7 +164,7 @@ public class TestSecurity_WithJwtUser {
 	public void testLoginToken() {
 		log.debug("About {}", PivotableLoginWebfluxController.class);
 
-		try (ILogDisabler logDisabler = PepperTestHelper.disableLog(PivotableWebExceptionHandler.class)) {
+		try (ILogDisabler logDisabler = PepperTestHelper.disableLog(PivotableWebfluxExceptionHandler.class)) {
 			loggedInClient()
 
 					.get()
@@ -262,7 +262,7 @@ public class TestSecurity_WithJwtUser {
 	public void testMakeRefreshToken() {
 		log.debug("About {}", PivotableLoginWebfluxController.class);
 
-		try (ILogDisabler logDisabler = PepperTestHelper.disableLog(PivotableWebExceptionHandler.class)) {
+		try (ILogDisabler logDisabler = PepperTestHelper.disableLog(PivotableWebfluxExceptionHandler.class)) {
 			StatusAssertions expectStatus = loggedInClient()
 
 					.get()
