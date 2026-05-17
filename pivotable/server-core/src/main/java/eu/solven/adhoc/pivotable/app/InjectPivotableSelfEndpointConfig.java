@@ -65,10 +65,12 @@ public class InjectPivotableSelfEndpointConfig {
 	@Bean
 	public IAdhocSchema registerSelfSchema(ApplicationContext appContext,
 			ICubeQueryEngine engine,
+			eu.solven.adhoc.engine.observability.plan.IQueryPlanRegistry queryPlanRegistry,
 			PivotableSchemaRegistry schemaRegistry) {
 		Environment env = appContext.getEnvironment();
 
-		AdhocSchemaBuilder schemaBuilder = AdhocSchema.builder().engine(engine).env(env);
+		AdhocSchemaBuilder schemaBuilder =
+				AdhocSchema.builder().engine(engine).env(env).queryPlanRegistry(queryPlanRegistry);
 
 		// Apply customizers
 		appContext.getBeansOfType(IAdhocSchemaCustomizer.class).values().forEach(customizer -> {

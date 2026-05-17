@@ -19,6 +19,7 @@ import { Modal } from "bootstrap";
 import { computeMeasureStats, computeParentSliceStats, heatmapColor, secondaryHeatmapFill } from "./adhoc-query-grid-heatmap.js";
 import { headerNameWithCopyIcon, registerCopyNameDelegation } from "./adhoc-query-grid-clipboard.js";
 import { registerHeaderResizeAutoFit } from "./adhoc-query-grid-autofit.js";
+import { extractCellText, isCopyShortcut } from "./adhoc-query-grid-copy-cell.js";
 
 // https://github.com/SortableJS/Sortable/issues/1229#issuecomment-521951729
 window.Sortable = Sortable;
@@ -840,6 +841,18 @@ export default {
 	},
 
 	registerEventSubscribers(grid, dataView, currentSortCol, clickedCell) {
+		// SlickGrid's `createColumnFooter` hardcodes the footer-cell className and ignores
+		// `column.footerCssClass` (unlike `headerCssClass` / `cssClass` for header / body), so the
+		// phantom column's footer cell would NOT carry our `.slick-footer-phantom` marker out of the
+		// box. Stamp it ourselves from the per-cell rendered event — SlickGrid fires this
+		// synchronously inside `createColumnFooter` after each footer cell is created, so our class
+		// lands BEFORE the layout pass reads styles.
+		grid.onFooterRowCellRendered.subscribe(function (e, args) {
+			if (args.column && args.column.id === "__phantom_trailing" && args.node) {
+				args.node.classList.add("slick-footer-phantom");
+			}
+		});
+
 		// https://github.com/6pac/SlickGrid/wiki/DataView#sorting
 		{
 			// TODO Refactor this with `gridHelper.sortRows`
@@ -940,6 +953,45 @@ export default {
 				clickedCell.value = item;
 
 				openCellModal(clickedCell.value);
+			});
+
+			// Single-click cell tracking for the Ctrl/Cmd+C copy-cell shortcut. We capture (row, columnId)
+			// rather than the rendered value so the keyboard handler can re-read the dataView at copy-time
+			// (covers the live-update case: a cell whose value mutates between click and Ctrl+C still
+			// copies the CURRENT value, not the stale click-time snapshot).
+			/** @type {{ row: number, columnId: string|number } | null} */
+			let lastClickedCell = null;
+			grid.onClick.subscribe(function (e, args) {
+				const cols = grid.getColumns();
+				if (args.cell < 0 || args.cell >= cols.length) return;
+				lastClickedCell = { row: args.row, columnId: cols[args.cell].id };
+			});
+
+			// Ctrl+C / Cmd+C on a clicked cell copies its value. We listen on `grid.onKeyDown` rather than
+			// `document.addEventListener("keydown", …)` so the shortcut only fires when the grid has focus —
+			// pressing Ctrl+C while typing into the search box or with a text selection elsewhere keeps the
+			// browser's default behaviour. `isCopyShortcut` additionally guards against editable targets.
+			grid.onKeyDown.subscribe(function (e) {
+				const ev = e && /** @type {any} */ (e).originalEvent ? /** @type {any} */ (e).originalEvent : e;
+				if (!isCopyShortcut(/** @type {any} */ (ev))) return;
+				if (!lastClickedCell) return;
+				const item = dataView.getItem(lastClickedCell.row);
+				if (!item) return;
+				const text = extractCellText(item[lastClickedCell.columnId]);
+				if (!text) return;
+				if (!navigator.clipboard || !navigator.clipboard.writeText) {
+					console.warn("navigator.clipboard not available (insecure context?) — cell value not copied");
+					return;
+				}
+				navigator.clipboard.writeText(text).catch((err) => {
+					console.error("Failed copying cell value via Ctrl+C:", err);
+				});
+				// Prevent the browser's default copy from also running — without preventDefault, a stray
+				// text selection on the page would override our writeText with the selection's content.
+				if (ev && typeof ev.preventDefault === "function") ev.preventDefault();
+				if (e && typeof (/** @type {any} */ (e).stopPropagation) === "function") {
+					/** @type {any} */ (e).stopPropagation();
+				}
 			});
 		}
 

@@ -24,8 +24,11 @@ package eu.solven.adhoc.engine.observability.plan;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 import org.jspecify.annotations.Nullable;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import eu.solven.adhoc.query.AdhocQueryId;
 import lombok.Builder;
@@ -47,11 +50,33 @@ import lombok.experimental.NonFinal;
  * {@link AdhocQueryId} disambiguates same-shaped subjects across different executions and lives at the
  * {@link QueryPlan} level, not on the node.
  *
+ * <p>
+ * Two lifecycles share this type:
+ * <ul>
+ * <li><strong>Fragment</strong> — what publishers (table engine, table wrappers, calculated columns) build and hand to
+ * {@link IQueryPlanRegistry#publishFragment(AdhocQueryId, Object, QueryPlanNode)}. Fragments may carry a
+ * {@link #children} subtree the projector grafts into the plan, and their {@link #id} is the empty default string.</li>
+ * <li><strong>Plan node</strong> — what consumers read from {@link QueryPlan#getNodes()}. The projector assigns each
+ * unique subject a stable {@link #id} ({@code "n0"}, {@code "n1"}, …); connectivity lives in
+ * {@link QueryPlan#getEdges()}; {@link #children} is always empty. {@code children} is marked {@link JsonIgnore} so the
+ * wire shape never emits it.</li>
+ * </ul>
+ *
  * @author Benoit Lacelle
  */
 @Value
 @Builder(toBuilder = true)
 public class QueryPlanNode {
+	/**
+	 * Stable id assigned by {@code QueryPlanProjector} when this node is placed in the plan's
+	 * {@link QueryPlan#getNodes()} list ({@code "n0"}, {@code "n1"}, …). Defaults to the empty string for
+	 * publisher-side fragments — the projector overwrites at assembly time via {@code toBuilder().id(...).build()}.
+	 * Consumers reading {@link QueryPlan} can trust that every {@link #id} is non-empty and unique within the plan.
+	 */
+	@NonNull
+	@Builder.Default
+	String id = "";
+
 	/**
 	 * The functional object this node represents (a {@code CubeQueryStep}, {@code TableQueryStep}, etc.). Provides
 	 * identity (hashCode/equals) and a human-readable {@code toString} for the log renderer. Polymorphic on purpose —
@@ -74,11 +99,17 @@ public class QueryPlanNode {
 	String label;
 
 	/**
-	 * Child nodes — the steps this node depends on. Read-only view; build via {@code toBuilder} when assembling a plan.
-	 * A given child may appear under multiple parents (DAG-style); equality of children is by their subjects.
+	 * Publisher-side subtree of child fragments. Used by callers building a fragment for
+	 * {@code IQueryPlanRegistry.publishFragment}: a publisher may submit a node whose {@code children} carry a small
+	 * pre-built tree the projector grafts into the plan. In nodes obtained from {@link QueryPlan#getNodes()} this is
+	 * always empty — the projector flattens the fragment tree into the plan's {@code nodes}/{@code edges} lists and the
+	 * empty {@code children} list is the marker of "post-projection, connectivity is in edges". Marked
+	 * {@link JsonIgnore} so the wire shape never emits the field (the API only exposes the flat
+	 * {@code nodes}/{@code edges} form).
 	 */
 	@Builder.Default
 	@NonNull
+	@JsonIgnore
 	List<QueryPlanNode> children = Collections.emptyList();
 
 	/**
@@ -121,5 +152,5 @@ public class QueryPlanNode {
 	 */
 	@Builder.Default
 	@NonNull
-	java.util.Map<String, String> details = Collections.emptyMap();
+	Map<String, String> details = Collections.emptyMap();
 }

@@ -36,7 +36,6 @@ import com.google.common.util.concurrent.ListenableFuture;
 
 import eu.solven.adhoc.ATestDagInMemory;
 import eu.solven.adhoc.dataframe.tabular.ITabularView;
-import eu.solven.adhoc.engine.CubeQueryEngine;
 import eu.solven.adhoc.engine.query.CubeQuery;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.measure.combination.ICombination;
@@ -76,14 +75,10 @@ public class TestLiveQueryPlanSource_MidFlight extends ATestDagInMemory {
 	BoundedQueryPlanRegistry registry = new BoundedQueryPlanRegistry(10_000);
 
 	@Override
-	public CubeQueryEngine engine() {
-		// Override the default engine() so our registry is wired in. We rebuild from scratch each time the test
-		// asks for the engine — cube() is itself memoised, so this only runs once per test.
-		return CubeQueryEngine.builder()
-				.eventBus(eventBus())
-				.factories(makeFactories())
-				.queryPlanRegistry(registry)
-				.build();
+	protected eu.solven.adhoc.engine.context.IQueryPreparator queryPreparator() {
+		// Thread the registry into the preparator — the engine no longer carries one. Pods produced by this
+		// preparator carry `registry`, which is what the projector and table-engine fragment publishers read.
+		return eu.solven.adhoc.engine.context.StandardQueryPreparator.builder().queryPlanRegistry(registry).build();
 	}
 
 	@BeforeEach
@@ -167,11 +162,11 @@ public class TestLiveQueryPlanSource_MidFlight extends ATestDagInMemory {
 		Assertions.assertThat(midFlight.getState()).isEqualTo(PlanState.RUNNING);
 		Assertions.assertThat(midFlight.getCompletedAt()).isNull();
 
-		// Count node states across the dag. We expect at least one DONE (the aggregator) and at least one PENDING
-		// (the combinator, blocked on the latch). The exact tree shape depends on the dag builder, so we count rather
+		// Count node states across the graph. We expect at least one DONE (the aggregator) and at least one PENDING
+		// (the combinator, blocked on the latch). The exact dag shape depends on the dag builder, so we count rather
 		// than walking by name.
-		long doneNodes = countNodes(midFlight.getRoot(), NodeState.DONE);
-		long pendingNodes = countNodes(midFlight.getRoot(), NodeState.PENDING);
+		long doneNodes = countNodes(midFlight, NodeState.DONE);
+		long pendingNodes = countNodes(midFlight, NodeState.PENDING);
 		Assertions.assertThat(doneNodes)
 				.as("At least one DONE node mid-flight (aggregator has finished)")
 				.isGreaterThanOrEqualTo(1);
@@ -187,7 +182,7 @@ public class TestLiveQueryPlanSource_MidFlight extends ATestDagInMemory {
 		QueryPlan terminal = registry.snapshot(queryId).orElseThrow();
 		Assertions.assertThat(terminal.getState()).isEqualTo(PlanState.DONE);
 		Assertions.assertThat(terminal.getCompletedAt()).isNotNull();
-		Assertions.assertThat(countNodes(terminal.getRoot(), NodeState.PENDING))
+		Assertions.assertThat(countNodes(terminal, NodeState.PENDING))
 				.as("No PENDING node should remain once the query has completed")
 				.isZero();
 	}
@@ -229,32 +224,19 @@ public class TestLiveQueryPlanSource_MidFlight extends ATestDagInMemory {
 	 * that don't know the engine-generated UUID upfront.
 	 */
 	private AdhocQueryId anyKnownId() {
-		Assertions.assertThat(registry.sources.size() + registry.locked.size())
+		Assertions.assertThat(registry.planCount())
 				.as("Registry should hold exactly one plan during the test")
 				.isEqualTo(1);
-		return registry.sources.keySet()
+		// `sources` is a Guava Cache whose `asMap()` view exposes the live key set without forcing eviction; `locked`
+		// is a ConcurrentMap. Either may hold the single plan depending on whether the test pinned it.
+		return registry.sources.asMap()
+				.keySet()
 				.stream()
 				.findFirst()
 				.orElseGet(() -> registry.locked.keySet().iterator().next());
 	}
 
-	private static long countNodes(QueryPlanNode root, NodeState state) {
-		java.util.ArrayDeque<QueryPlanNode> stack = new java.util.ArrayDeque<>();
-		java.util.LinkedHashSet<Object> visited = new java.util.LinkedHashSet<>();
-		stack.push(root);
-		long count = 0;
-		while (!stack.isEmpty()) {
-			QueryPlanNode node = stack.pop();
-			if (!visited.add(node.getSubject())) {
-				continue;
-			}
-			if (node.getState() == state) {
-				count++;
-			}
-			for (QueryPlanNode child : node.getChildren()) {
-				stack.push(child);
-			}
-		}
-		return count;
+	private static long countNodes(QueryPlan plan, NodeState state) {
+		return plan.getNodes().stream().filter(n -> n.getState() == state).count();
 	}
 }

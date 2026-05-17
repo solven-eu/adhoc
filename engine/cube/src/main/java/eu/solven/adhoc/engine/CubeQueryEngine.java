@@ -70,7 +70,6 @@ import eu.solven.adhoc.engine.observability.SizeAndDuration;
 import eu.solven.adhoc.engine.observability.plan.IPlanFragmentSink;
 import eu.solven.adhoc.engine.observability.plan.IQueryPlanRegistry;
 import eu.solven.adhoc.engine.observability.plan.LiveQueryPlanSource;
-import eu.solven.adhoc.engine.observability.plan.NoopQueryPlanRegistry;
 import eu.solven.adhoc.engine.observability.plan.PlanFragmentScope;
 import eu.solven.adhoc.engine.observability.plan.PlanState;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
@@ -152,35 +151,19 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 	@Getter
 	ITableQueryEngineFactory tableQueryEngine;
 
-	/**
-	 * Registry for {@link eu.solven.adhoc.engine.observability.plan.QueryPlan} observability — drives the Live View use
-	 * case. Defaults to {@link NoopQueryPlanRegistry#INSTANCE} so callers that don't care pay nothing. Applications
-	 * wiring a real registry (Pivotable's server) inject a {@code BoundedQueryPlanRegistry} here.
-	 */
-	@NonNull
-	@Default
-	@Getter
-	@SuppressWarnings("PMD.UnusedAssignment")
-	final IQueryPlanRegistry queryPlanRegistry = NoopQueryPlanRegistry.INSTANCE;
-
 	protected CubeQueryEngine(IAdhocFactories factories,
 			IAdhocEventBus eventBus,
-			ITableQueryEngineFactory tableQueryEngine,
-			IQueryPlanRegistry queryPlanRegistry) {
-		if (queryPlanRegistry == null) {
-			queryPlanRegistry = NoopQueryPlanRegistry.INSTANCE;
-		}
+			ITableQueryEngineFactory tableQueryEngine) {
 		if (tableQueryEngine == null) {
-			// The table engine reads its plan registry from `IQueryPod.getQueryPlanRegistry()` at call time —
-			// `execute(QueryPod)` injects this engine's registry into the pod just-in-time, so the factory
-			// itself does not need to carry it.
+			// The table engine reads its plan registry from `IQueryPod.getQueryPlanRegistry()` at call time. The
+			// registry is set on the pod by `StandardQueryPreparator` at construction; the engine never needs to
+			// hold a reference of its own.
 			tableQueryEngine = TableQueryEngineFactory.builder().eventBus(eventBus).factories(factories).build();
 		}
 
 		this.factories = factories;
 		this.eventBus = eventBus;
 		this.tableQueryEngine = tableQueryEngine;
-		this.queryPlanRegistry = queryPlanRegistry;
 	}
 
 	@Override
@@ -195,19 +178,18 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 
 	@Override
 	public ITabularView execute(QueryPod queryPod) {
-		// Inject this engine's registry into the pod so wrappers (especially JooqTableWrapper) can publish plan
-		// fragments at `streamSlices` time without needing to be built with a registry of their own. Pods reach this
-		// method from `StandardQueryPreparator` carrying the no-op default; we replace it here just-in-time so the
-		// registry lifecycle stays owned by the engine (one bean per VM, threaded into each query's pod).
-		QueryPod podWithRegistry = queryPod.toBuilder().queryPlanRegistry(queryPlanRegistry).build();
 		// Bind the query's customMarker AND options on thread scopes for the WHOLE execute() call — including
 		// planning (makeQueryStepsDag → ICalculatedCoordinate#getFilter) and row processing (executeDag →
 		// ICalculatedColumn#computeCoordinate). Extension points read them via CustomMarkerScope#current /
 		// QueryOptionsScope#current without us threading either through every internal API. Each composite sub-cube
 		// re-enters execute() and rebinds with its own (possibly transcoded) values — nesting works naturally
 		// through ScopedValue.
-		return CustomMarkerScope.runWith(podWithRegistry.getQuery().getCustomMarker(),
-				() -> QueryOptionsScope.runWith(podWithRegistry.getOptions(), () -> executeInScope(podWithRegistry)));
+		//
+		// The pod's `queryPlanRegistry` is already populated by `StandardQueryPreparator` (or its
+		// {@link NoopQueryPlanRegistry} default). The engine does not modify the pod here — it consumes what
+		// the preparator built.
+		return CustomMarkerScope.runWith(queryPod.getQuery().getCustomMarker(),
+				() -> QueryOptionsScope.runWith(queryPod.getOptions(), () -> executeInScope(queryPod)));
 	}
 
 	protected ITabularView executeInScope(QueryPod queryPod) {
@@ -224,12 +206,15 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 			// Register a live plan source so pollers (UI Live View, programmatic monitors) can observe this query
 			// as it runs. Free when nobody reads: the registry just holds a reference to the dag the engine is
 			// already mutating in place; full plan projection happens only on `snapshot()`. The default
-			// `NoopQueryPlanRegistry` discards the registration, so callers that don't care pay nothing.
+			// `NoopQueryPlanRegistry` discards the registration, so callers that don't care pay nothing. The
+			// registry comes from the pod — `StandardQueryPreparator` set it; the engine does not own it.
+			IQueryPlanRegistry queryPlanRegistry = queryPod.getQueryPlanRegistry();
 			planSource = LiveQueryPlanSource.builder()
 					.dag(queryStepsDag)
 					.queryId(queryPod.getQueryId())
 					.parentQueryId(queryPod.getQueryId().getParentQueryId())
 					.cubeName(queryPod.getQueryId().getCube())
+					.cubeQueryDetails(cubeQueryDetails(queryPod.getQuery()))
 					.submittedAt(java.time.Instant.now())
 					.build();
 			queryPlanRegistry.registerSource(planSource);
@@ -332,6 +317,39 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 
 	protected DagExplainerForPerfs makeDagExplainerForPerfs() {
 		return DagExplainerForPerfs.builder().eventBus(eventBus).build();
+	}
+
+	/**
+	 * Structured per-property view of the submitted {@link eu.solven.adhoc.engine.step.ICubeQuery} for the plan
+	 * registry's top-level {@code CUBE_QUERY} node label. Mirrors
+	 * {@link eu.solven.adhoc.engine.step.ACubeQueryStep#toDetails()} on the per-step side so the SPA's multi-line label
+	 * rendering uses one consistent shape across the whole plan tree. Conditional inclusion mirrors {@code toString}:
+	 * matchAll filter, grand-total groupBy, null customMarker and empty options are omitted.
+	 *
+	 * @return ordered map (LinkedHashMap) so the property order observed in the SPA matches the order a reader expects:
+	 *         measures first, then filter, groupBy, customMarker, options
+	 */
+	protected Map<String, String> cubeQueryDetails(eu.solven.adhoc.engine.step.ICubeQuery query) {
+		Map<String, String> details = new LinkedHashMap<>();
+		details.put("measures",
+				query.getMeasures()
+						.stream()
+						.map(IMeasure::getName)
+						.collect(java.util.stream.Collectors.joining(", ", "[", "]")));
+		if (!query.getFilter().isMatchAll()) {
+			details.put("filter", String.valueOf(query.getFilter()));
+		}
+		if (!query.getGroupBy().isGrandTotal()) {
+			details.put("groupBy", String.valueOf(query.getGroupBy()));
+		}
+		Object customMarker = query.getCustomMarker();
+		if (customMarker != null) {
+			details.put("customMarker", String.valueOf(customMarker));
+		}
+		if (!query.getOptions().isEmpty()) {
+			details.put("options", String.valueOf(query.getOptions()));
+		}
+		return details;
 	}
 
 	@VisibleForTesting

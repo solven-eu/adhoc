@@ -1,5 +1,5 @@
 // @ts-check
-import { provide } from "vue";
+import { provide, ref } from "vue";
 
 import AdhocColumnChip from "./adhoc-column-chip.js";
 import queryHelper from "./adhoc-query-helper.js";
@@ -145,6 +145,49 @@ export default {
 			window.open(url, "_blank", "noopener");
 		};
 
+		/**
+		 * Maps a column name to a `true` flag that briefly flips on after the user clicks the row's copy
+		 * button — the icon swaps to a green tick + "Copied" label for 1.5 s. Keyed by column so flashing
+		 * one row's flag does not disturb the others if the user clicks multiple rows in quick succession.
+		 *
+		 * @type {import("vue").Ref<Record<string, boolean>>}
+		 */
+		const copiedFlags = ref({});
+
+		/**
+		 * Copy {@code coordinate} to the system clipboard and surface "Copied" feedback on the row keyed by
+		 * {@code column}. Mirrors the SQL-copy button in `adhoc-query-plan-mermaid-modal.js`: uses
+		 * {@code navigator.clipboard.writeText} (the only API still in spec), no-ops with a console warning
+		 * when the page is not in a secure context (`navigator.clipboard` is undefined under plain http).
+		 *
+		 * <p>{@code coordinate} can be any rendered cell value — string, number, boolean, even {@code null}.
+		 * We coerce via {@code String(coordinate)} so the user always gets some textual content; the cell
+		 * value's own toString is whatever SlickGrid's formatter rendered, which matches what they see in
+		 * the cell.
+		 *
+		 * @param {string} column the column name (used as the key for the feedback flag)
+		 * @param {unknown} coordinate the value to copy
+		 */
+		const copyCellValue = async (column, coordinate) => {
+			try {
+				if (!navigator.clipboard || !navigator.clipboard.writeText) {
+					console.warn("navigator.clipboard not available (insecure context?) — cell value not copied");
+					return;
+				}
+				await navigator.clipboard.writeText(coordinate == null ? "" : String(coordinate));
+				copiedFlags.value = { ...copiedFlags.value, [column]: true };
+				// 1.5 s mirrors the SQL-modal feedback. Reset just this key so concurrent flashes on other
+				// rows stay independent.
+				setTimeout(() => {
+					const next = { ...copiedFlags.value };
+					delete next[column];
+					copiedFlags.value = next;
+				}, 1500);
+			} catch (e) {
+				console.error("Failed copying cell value to clipboard:", e);
+			}
+		};
+
 		return {
 			applyEqualsFilter,
 			applyNotEqualsFilter,
@@ -153,6 +196,8 @@ export default {
 			addMeasure,
 			drillthroughThisCell,
 			drillthroughThisCellNewTab,
+			copiedFlags,
+			copyCellValue,
 		};
 	},
 	template: /* HTML */ `
@@ -167,6 +212,20 @@ export default {
 						<ul>
 							<li v-for="(coordinate, column) in clickedCell">
 								<AdhocColumnChip :name="column" />: {{ coordinate }}
+								<!--
+									Copy chip — same shape as the SQL-copy button in adhoc-query-plan-mermaid-modal.js:
+									clipboard icon flipping to a green tick + "Copied" feedback for 1.5 s. One per row
+									so column-coordinate and measure-value rows both get it (the iteration is the same).
+								-->
+								<button
+									type="button"
+									class="btn btn-sm btn-outline-secondary ms-1"
+									@click="copyCellValue(column, coordinate)"
+									:title="copiedFlags[column] ? 'Copied!' : 'Copy value to clipboard'"
+								>
+									<i v-if="copiedFlags[column]" class="bi bi-check2 text-success" aria-hidden="true"></i>
+									<i v-else class="bi bi-clipboard" aria-hidden="true"></i>
+								</button>
 								<span v-if="columnIsFilterable(column)">
 									<button type="button" class="btn" @click="applyEqualsFilter(column, coordinate)">
 										<i class="bi bi-filter-circle" aria-hidden="true"></i>

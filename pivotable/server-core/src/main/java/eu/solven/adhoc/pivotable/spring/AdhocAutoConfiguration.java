@@ -164,13 +164,11 @@ public class AdhocAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean(ICubeQueryEngine.class)
-	public ICubeQueryEngine adhocQueryEngine(IAdhocEventBus eventBus,
-			IAdhocFactories adhocFactories,
-			IQueryPlanRegistry queryPlanRegistry) {
-		return CubeQueryEngine.builder()
-				.eventBus(eventBus)
-				.factories(adhocFactories)
-				.queryPlanRegistry(queryPlanRegistry)
-				.build();
+	public ICubeQueryEngine adhocQueryEngine(IAdhocEventBus eventBus, IAdhocFactories adhocFactories) {
+		// {@link IQueryPlanRegistry} is no longer threaded into the engine — the preparator (built by
+		// {@link AdhocSchema}) sets it on the {@code QueryPod}, and the engine reads it from there. Callers that
+		// register a custom registry bean get it threaded through {@link IAdhocSchemaCustomizer} (see Pivotable's
+		// {@code InjectPivotableSelfEndpointConfig}).
+		return CubeQueryEngine.builder().eventBus(eventBus).factories(adhocFactories).build();
 	}
 }

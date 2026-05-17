@@ -31,7 +31,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.ATestDagInMemory;
-import eu.solven.adhoc.engine.CubeQueryEngine;
 import eu.solven.adhoc.engine.query.CubeQuery;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.measure.combination.ICombination;
@@ -64,12 +63,8 @@ public class TestPlanFragmentScope_Extensions extends ATestDagInMemory {
 	BoundedQueryPlanRegistry registry = new BoundedQueryPlanRegistry(10_000);
 
 	@Override
-	public CubeQueryEngine engine() {
-		return CubeQueryEngine.builder()
-				.eventBus(eventBus())
-				.factories(makeFactories())
-				.queryPlanRegistry(registry)
-				.build();
+	protected eu.solven.adhoc.engine.context.IQueryPreparator queryPreparator() {
+		return eu.solven.adhoc.engine.context.StandardQueryPreparator.builder().queryPlanRegistry(registry).build();
 	}
 
 	@BeforeEach
@@ -102,8 +97,8 @@ public class TestPlanFragmentScope_Extensions extends ATestDagInMemory {
 		AdhocQueryId queryId = registry.findIdByUuid(submittedUuid).orElseThrow();
 		QueryPlan plan = registry.snapshot(queryId).orElseThrow();
 
-		// Walk the tree for a leaf with our combinator's marker. Operator is OTHER (extension-defined).
-		QueryPlanNode leaf = findLeaf(plan.getRoot(), node -> node.getDetails().containsKey("combinator-name"));
+		// Scan the flat nodes list for our combinator's marker. Operator is OTHER (extension-defined).
+		QueryPlanNode leaf = findLeaf(plan, node -> node.getDetails().containsKey("combinator-name"));
 		Assertions.assertThat(leaf)
 				.as("Combinator must have published its plan-fragment leaf via PlanFragmentScope.current()")
 				.isNotNull();
@@ -128,7 +123,7 @@ public class TestPlanFragmentScope_Extensions extends ATestDagInMemory {
 		AdhocQueryId queryId = registry.findIdByUuid(submittedUuid).orElseThrow();
 		QueryPlan plan = registry.snapshot(queryId).orElseThrow();
 
-		QueryPlanNode sqlLeaf = findLeaf(plan.getRoot(), node -> "sql".equals(node.getDetails().get("language")));
+		QueryPlanNode sqlLeaf = findLeaf(plan, node -> "sql".equals(node.getDetails().get("language")));
 		Assertions.assertThat(sqlLeaf)
 				.as("Combinator's SQL-style leaf should appear when the publish call runs with a non-null sql")
 				.isNotNull();
@@ -157,36 +152,18 @@ public class TestPlanFragmentScope_Extensions extends ATestDagInMemory {
 		QueryPlan plan = registry.snapshot(queryId).orElseThrow();
 
 		// The dedup contract: even if combine() ran N times, only ONE leaf with this combinator-name is grafted.
-		long matchingLeaves = countLeaves(plan.getRoot(), node -> node.getDetails().containsKey("combinator-name"));
+		long matchingLeaves = countLeaves(plan, node -> node.getDetails().containsKey("combinator-name"));
 		Assertions.assertThat(matchingLeaves)
 				.as("PlanFragmentScope leaf with stable subject must dedup across multiple combine() invocations")
 				.isEqualTo(1L);
 	}
 
-	private static QueryPlanNode findLeaf(QueryPlanNode root, java.util.function.Predicate<QueryPlanNode> matcher) {
-		if (matcher.test(root)) {
-			return root;
-		}
-		for (QueryPlanNode child : root.getChildren()) {
-			QueryPlanNode hit = findLeaf(child, matcher);
-			if (hit != null) {
-				return hit;
-			}
-		}
-		return null;
+	private static QueryPlanNode findLeaf(QueryPlan plan, java.util.function.Predicate<QueryPlanNode> matcher) {
+		return plan.getNodes().stream().filter(matcher).findFirst().orElse(null);
 	}
 
-	private static long countLeaves(QueryPlanNode root, java.util.function.Predicate<QueryPlanNode> matcher) {
-		long count;
-		if (matcher.test(root)) {
-			count = 1L;
-		} else {
-			count = 0L;
-		}
-		for (QueryPlanNode child : root.getChildren()) {
-			count += countLeaves(child, matcher);
-		}
-		return count;
+	private static long countLeaves(QueryPlan plan, java.util.function.Predicate<QueryPlanNode> matcher) {
+		return plan.getNodes().stream().filter(matcher).count();
 	}
 
 	/**

@@ -53,6 +53,10 @@ import eu.solven.adhoc.dataframe.filter.MoreFilterHelpers;
 import eu.solven.adhoc.dataframe.row.ITabularRecord;
 import eu.solven.adhoc.dataframe.row.ITabularRecordStream;
 import eu.solven.adhoc.dataframe.row.TabularRecordOverMaps;
+import eu.solven.adhoc.engine.observability.plan.IQueryPlanRegistry;
+import eu.solven.adhoc.engine.observability.plan.NodeOperator;
+import eu.solven.adhoc.engine.observability.plan.NodeState;
+import eu.solven.adhoc.engine.observability.plan.QueryPlanNode;
 import eu.solven.adhoc.engine.tabular.AdhocExceptionAsMeasureValueHelper;
 import eu.solven.adhoc.eventbus.AdhocLogEvent;
 import eu.solven.adhoc.eventbus.IAdhocEventBus;
@@ -192,6 +196,17 @@ public class ColumnsManager implements IColumnsManager {
 		TranscodedResult transcoded = transcodeQuery(query, transcodingContext, transcodedFilter, nonPushdownColumns);
 		TableQueryV4 transcodedQuery = transcoded.getTranscodedQuery();
 
+		// Publish a plan-fragment edge from the ORIGINAL TableQueryV4 to the TRANSCODED one. The cube-side
+		// `TableQueryEngine` already published a TABLE_QUERY node anchored on the original V4 (subject = original);
+		// `JooqTableWrapper.publishSqlFragment` will publish the SQL leaf anchored on the transcoded V4. Without this
+		// bridge, the projector's `appendFragments(_, v4Node.subject = originalV4, …)` lookup misses the SQL leaf
+		// because `originalV4.equals(transcodedV4)` is false whenever an aliaser renames any column (Lombok @Value
+		// equality includes the per-groupBy column names). The bridge node carries the transcoded V4 as its subject
+		// so `graftRecursive` walks one more level and finds the SQL leaf. Skipped when the transcoding is identity
+		// (no aliaser configured / no rename relevant to this query) — there `originalV4.equals(transcodedV4)` holds
+		// and the existing single-hop graft works without a redundant bridge node.
+		publishTranscodingEdge(queryPod, query, transcodedQuery, transcodingContext.isIdentity());
+
 		if (queryPod.isDebug()) {
 			eventBus.post(AdhocLogEvent.builder()
 					.debug(true)
@@ -228,6 +243,37 @@ public class ColumnsManager implements IColumnsManager {
 		}
 
 		return transcodeRows(transcodingContext, tabularRecordStream, nonPushdownFilter, transcoded);
+	}
+
+	/**
+	 * Publish the original → transcoded V4 bridge fragment. See call-site comment in
+	 * {@link #openStreamInternal(IQueryPod, TableQueryV4, boolean)} for why this is needed.
+	 *
+	 * @param identity
+	 *            whether the {@link AliasingContext} is identity. When {@code true},
+	 *            {@code original.equals(transcoded)} holds (both V4s carry the same column names), so the SQL leaf
+	 *            grafts onto the original V4 directly via {@code equals}-based map lookup — no bridge needed. We still
+	 *            skip even when the two happen to be structurally equal but the context is non-identity, because the
+	 *            projector's lookup is value-equality anyway.
+	 */
+	protected void publishTranscodingEdge(IQueryPod queryPod,
+			TableQueryV4 original,
+			TableQueryV4 transcoded,
+			boolean identity) {
+		if (identity) {
+			return;
+		}
+		IQueryPlanRegistry registry = queryPod.getQueryPlanRegistry();
+		if (registry == null) {
+			return;
+		}
+		QueryPlanNode bridge = QueryPlanNode.builder()
+				.subject(transcoded)
+				.operator(NodeOperator.TABLE_QUERY)
+				.label(String.valueOf(transcoded))
+				.state(NodeState.DONE)
+				.build();
+		registry.publishFragment(queryPod.getQueryId(), original, bridge);
 	}
 
 	/**

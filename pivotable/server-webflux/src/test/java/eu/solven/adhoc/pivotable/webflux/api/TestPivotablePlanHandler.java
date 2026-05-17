@@ -85,6 +85,7 @@ public class TestPivotablePlanHandler {
 
 	private static QueryPlan plan(AdhocQueryId id) {
 		QueryPlanNode root = QueryPlanNode.builder()
+				.id("n0")
 				.subject("root")
 				.operator(NodeOperator.CUBE_STEP)
 				.label("root")
@@ -96,7 +97,8 @@ public class TestPivotablePlanHandler {
 				.state(PlanState.DONE)
 				.submittedAt(Instant.parse("2026-05-14T00:00:00Z"))
 				.completedAt(Instant.parse("2026-05-14T00:00:01Z"))
-				.root(root)
+				.rootId("n0")
+				.nodes(java.util.List.of(root))
 				.nodeCount(1)
 				.build();
 	}
@@ -166,6 +168,13 @@ public class TestPivotablePlanHandler {
 		registry.registerSource(sourceOf(plan(parentId)));
 
 		// Child plan with its parentQueryId pointing to the parent's UUID.
+		QueryPlanNode childRoot = QueryPlanNode.builder()
+				.id("n0")
+				.subject("root")
+				.operator(NodeOperator.CUBE_STEP)
+				.label("root")
+				.state(NodeState.DONE)
+				.build();
 		QueryPlan childPlan = QueryPlan.builder()
 				.queryId(AdhocQueryId.builder().cube("test-cube").queryId(UUID.randomUUID()).build())
 				.parentQueryId(parentUuid)
@@ -173,12 +182,8 @@ public class TestPivotablePlanHandler {
 				.state(PlanState.DONE)
 				.submittedAt(Instant.parse("2026-05-14T00:00:00Z"))
 				.completedAt(Instant.parse("2026-05-14T00:00:01Z"))
-				.root(QueryPlanNode.builder()
-						.subject("root")
-						.operator(NodeOperator.CUBE_STEP)
-						.label("root")
-						.state(NodeState.DONE)
-						.build())
+				.rootId("n0")
+				.nodes(java.util.List.of(childRoot))
 				.nodeCount(1)
 				.build();
 		registry.registerSource(sourceOf(childPlan));

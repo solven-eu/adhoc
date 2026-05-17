@@ -25,6 +25,8 @@ import AdhocQueryWizardColumnFilterModalSingleton from "./adhoc-query-wizard-col
 import AdhocQueryChatbot from "./adhoc-query-chatbot.js";
 import AdhocQueryPlanLive from "./adhoc-query-plan-live.js";
 
+import { defaultExecutorBus } from "./adhoc-executor-bus.js";
+
 export default {
 	// https://vuejs.org/guide/components/registration#local-registration
 	components: {
@@ -127,6 +129,17 @@ export default {
 		// collapses), the Submit block returns to its normal position below the wizard.
 		const accordionState = reactive({ isOpen: false });
 		provide("accordionState", accordionState);
+
+		// Shared "executor live state" bag. Owned by this component (the common ancestor of the
+		// executor and the grid). The executor — receiving `executorBus` as a prop — writes its
+		// live state into this object (`isQueryInFlight`, `isSameAsLastQuery`, `autoQuery`,
+		// `submitQuery`). The grid-controls reads it back via inject("executorBus"). The bus
+		// MUST live here because the grid is a sibling of the executor, so provide/inject in the
+		// executor itself cannot reach the grid subtree. Keep this fact in the comment — past
+		// versions tried provide() in the executor and got an always-truthy inject default,
+		// which made the Refresh button render a permanent "Refreshing…" spinner.
+		const executorBus = reactive(defaultExecutorBus());
+		provide("executorBus", executorBus);
 
 		// Bootstrap 5 dispatches native CustomEvents that bubble, so one document-level listener
 		// covers every accordion inside the wizard. We scope via `closest("#accordionWizard")`
@@ -360,6 +373,8 @@ export default {
 
 			gridShared,
 			onScrollToRightEnd,
+
+			executorBus,
 		};
 	},
 	template: /* HTML */ `
@@ -376,7 +391,14 @@ export default {
 				</div>
 
 				<div class="row">
-					<AdhocQueryExecutor :endpointId="endpointId" :cubeId="cubeId" :queryModel="queryModel" :tabularView="tabularView" :loading="loading" />
+					<AdhocQueryExecutor
+						:endpointId="endpointId"
+						:cubeId="cubeId"
+						:queryModel="queryModel"
+						:tabularView="tabularView"
+						:loading="loading"
+						:executorBus="executorBus"
+					/>
 				</div>
 			</div>
 			<div :class="preferencesStore.wizardHidden ? 'col-12' : 'col-9'">

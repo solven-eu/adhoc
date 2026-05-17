@@ -34,6 +34,9 @@ import eu.solven.adhoc.query.AdhocQueryId;
  * Tests {@link QueryPlanSummary#of}. The summarizer counts node states + sums rowsOut + tracks the most-recently
  * completed node — the building blocks of a "this query has been running 2.4s, 12/40 steps done, last finished
  * combinator k1" status line.
+ *
+ * <p>
+ * Hand-builds {@link QueryPlan}s in graph form (flat nodes list + edges list) — same shape the projector produces.
  */
 public class TestQueryPlanSummary {
 
@@ -41,41 +44,50 @@ public class TestQueryPlanSummary {
 		return AdhocQueryId.builder().cube("test-cube").build();
 	}
 
+	/**
+	 * Convenience: build a node with id pre-set. The projector assigns ids; tests can pre-assign them since the
+	 * summarizer doesn't depend on id format, only on per-node state / stats.
+	 */
+	private static QueryPlanNode node(String id, String subject, NodeOperator op, NodeState state, NodeStats stats) {
+		return QueryPlanNode.builder()
+				.id(id)
+				.subject(subject)
+				.operator(op)
+				.label(subject)
+				.state(state)
+				.stats(stats)
+				.build();
+	}
+
+	private static QueryPlanNode node(String id, String subject, NodeOperator op, NodeState state) {
+		return node(id, subject, op, state, NodeStats.empty());
+	}
+
 	@Test
 	public void testCountsByStateAndRowsOut() {
-		QueryPlanNode leaf1 = QueryPlanNode.builder()
-				.subject("leaf1")
-				.operator(NodeOperator.TABLE_QUERY)
-				.label("leaf1")
-				.state(NodeState.DONE)
-				.stats(NodeStats.builder().rowsOut(100L).completedAt(Instant.parse("2026-05-14T00:00:05Z")).build())
-				.build();
-		QueryPlanNode leaf2 = QueryPlanNode.builder()
-				.subject("leaf2")
-				.operator(NodeOperator.TABLE_QUERY)
-				.label("leaf2")
-				.state(NodeState.DONE)
-				.stats(NodeStats.builder().rowsOut(50L).completedAt(Instant.parse("2026-05-14T00:00:07Z")).build())
-				.build();
-		QueryPlanNode pending = QueryPlanNode.builder()
-				.subject("pending")
-				.operator(NodeOperator.CUBE_STEP)
-				.label("pending-step")
-				.state(NodeState.PENDING)
-				.build();
-		QueryPlanNode root = QueryPlanNode.builder()
-				.subject("root")
-				.operator(NodeOperator.CUBE_STEP)
-				.label("root")
-				.state(NodeState.PENDING)
-				.children(List.of(leaf1, leaf2, pending))
-				.build();
+		QueryPlanNode leaf1 = node("n1",
+				"leaf1",
+				NodeOperator.TABLE_QUERY,
+				NodeState.DONE,
+				NodeStats.builder().rowsOut(100L).completedAt(Instant.parse("2026-05-14T00:00:05Z")).build());
+		QueryPlanNode leaf2 = node("n2",
+				"leaf2",
+				NodeOperator.TABLE_QUERY,
+				NodeState.DONE,
+				NodeStats.builder().rowsOut(50L).completedAt(Instant.parse("2026-05-14T00:00:07Z")).build());
+		QueryPlanNode pending = node("n3", "pending", NodeOperator.CUBE_STEP, NodeState.PENDING);
+		QueryPlanNode root = node("n0", "root", NodeOperator.CUBE_STEP, NodeState.PENDING);
+
 		QueryPlan plan = QueryPlan.builder()
 				.queryId(newId())
 				.cubeName("test-cube")
 				.submittedAt(Instant.parse("2026-05-14T00:00:00Z"))
 				.state(PlanState.RUNNING)
-				.root(root)
+				.rootId("n0")
+				.nodes(List.of(root, leaf1, leaf2, pending))
+				.edges(List.of(QueryPlanEdge.builder().parentId("n0").childId("n1").build(),
+						QueryPlanEdge.builder().parentId("n0").childId("n2").build(),
+						QueryPlanEdge.builder().parentId("n0").childId("n3").build()))
 				.nodeCount(4)
 				.build();
 
@@ -94,19 +106,15 @@ public class TestQueryPlanSummary {
 
 	@Test
 	public void testCompletedAtIsUsedWhenAvailable() {
-		QueryPlanNode root = QueryPlanNode.builder()
-				.subject("root")
-				.operator(NodeOperator.CUBE_STEP)
-				.label("root")
-				.state(NodeState.DONE)
-				.build();
+		QueryPlanNode root = node("n0", "root", NodeOperator.CUBE_STEP, NodeState.DONE);
 		QueryPlan plan = QueryPlan.builder()
 				.queryId(newId())
 				.cubeName("test-cube")
 				.submittedAt(Instant.parse("2026-05-14T00:00:00Z"))
 				.completedAt(Instant.parse("2026-05-14T00:00:03Z"))
 				.state(PlanState.DONE)
-				.root(root)
+				.rootId("n0")
+				.nodes(List.of(root))
 				.nodeCount(1)
 				.build();
 
@@ -118,18 +126,14 @@ public class TestQueryPlanSummary {
 	@Test
 	public void testStartDelayWhenQueued() {
 		// executionStartedAt == null → still queued; startDelayMs grows with `now`.
-		QueryPlanNode root = QueryPlanNode.builder()
-				.subject("root")
-				.operator(NodeOperator.CUBE_STEP)
-				.label("root")
-				.state(NodeState.PENDING)
-				.build();
+		QueryPlanNode root = node("n0", "root", NodeOperator.CUBE_STEP, NodeState.PENDING);
 		QueryPlan plan = QueryPlan.builder()
 				.queryId(newId())
 				.cubeName("test-cube")
 				.submittedAt(Instant.parse("2026-05-14T00:00:00Z"))
 				.state(PlanState.PENDING)
-				.root(root)
+				.rootId("n0")
+				.nodes(List.of(root))
 				.nodeCount(1)
 				.build();
 
@@ -140,19 +144,15 @@ public class TestQueryPlanSummary {
 	@Test
 	public void testStartDelayWhenStarted() {
 		// executionStartedAt set → frozen value, independent of `now`.
-		QueryPlanNode root = QueryPlanNode.builder()
-				.subject("root")
-				.operator(NodeOperator.CUBE_STEP)
-				.label("root")
-				.state(NodeState.RUNNING)
-				.build();
+		QueryPlanNode root = node("n0", "root", NodeOperator.CUBE_STEP, NodeState.RUNNING);
 		QueryPlan plan = QueryPlan.builder()
 				.queryId(newId())
 				.cubeName("test-cube")
 				.submittedAt(Instant.parse("2026-05-14T00:00:00Z"))
 				.executionStartedAt(Instant.parse("2026-05-14T00:00:02Z"))
 				.state(PlanState.RUNNING)
-				.root(root)
+				.rootId("n0")
+				.nodes(List.of(root))
 				.nodeCount(1)
 				.build();
 
@@ -162,48 +162,32 @@ public class TestQueryPlanSummary {
 
 	@Test
 	public void testSharedChildNotCountedTwice() {
-		// DAG-style: a leaf seen from two parents must only count once.
-		QueryPlanNode leaf = QueryPlanNode.builder()
-				.subject("leaf")
-				.operator(NodeOperator.TABLE_QUERY)
-				.label("leaf")
-				.state(NodeState.DONE)
-				.stats(NodeStats.builder().rowsOut(20L).build())
-				.build();
-		QueryPlanNode parentA = QueryPlanNode.builder()
-				.subject("parentA")
-				.operator(NodeOperator.CUBE_STEP)
-				.label("parentA")
-				.state(NodeState.DONE)
-				.children(List.of(leaf))
-				.build();
-		QueryPlanNode parentB = QueryPlanNode.builder()
-				.subject("parentB")
-				.operator(NodeOperator.CUBE_STEP)
-				.label("parentB")
-				.state(NodeState.DONE)
-				.children(List.of(leaf))
-				.build();
-		QueryPlanNode root = QueryPlanNode.builder()
-				.subject("root")
-				.operator(NodeOperator.CUBE_STEP)
-				.label("root")
-				.state(NodeState.DONE)
-				.children(List.of(parentA, parentB))
-				.build();
+		// DAG-style: a leaf seen from two parents only appears once in `nodes` (the projector dedup) — and the
+		// summarizer iterates `nodes` directly, so the count naturally matches.
+		QueryPlanNode leaf =
+				node("n3", "leaf", NodeOperator.TABLE_QUERY, NodeState.DONE, NodeStats.builder().rowsOut(20L).build());
+		QueryPlanNode parentA = node("n1", "parentA", NodeOperator.CUBE_STEP, NodeState.DONE);
+		QueryPlanNode parentB = node("n2", "parentB", NodeOperator.CUBE_STEP, NodeState.DONE);
+		QueryPlanNode root = node("n0", "root", NodeOperator.CUBE_STEP, NodeState.DONE);
+
 		QueryPlan plan = QueryPlan.builder()
 				.queryId(newId())
 				.cubeName("test-cube")
 				.submittedAt(Instant.parse("2026-05-14T00:00:00Z"))
 				.state(PlanState.DONE)
-				.root(root)
+				.rootId("n0")
+				.nodes(List.of(root, parentA, parentB, leaf))
+				.edges(List.of(QueryPlanEdge.builder().parentId("n0").childId("n1").build(),
+						QueryPlanEdge.builder().parentId("n0").childId("n2").build(),
+						QueryPlanEdge.builder().parentId("n1").childId("n3").build(),
+						QueryPlanEdge.builder().parentId("n2").childId("n3").build()))
 				.nodeCount(4)
 				.build();
 
 		QueryPlanSummary summary = QueryPlanSummary.of(plan, Instant.parse("2026-05-14T00:00:10Z"));
 
-		// Root + parentA + parentB + leaf (counted once despite two parents).
+		// Root + parentA + parentB + leaf — 4 distinct nodes, leaf counted once despite two incoming edges.
 		Assertions.assertThat(summary.getTotalNodes()).isEqualTo(4);
-		Assertions.assertThat(summary.getTotalRowsOut()).isEqualTo(20L); // leaf's rowsOut, not 40
+		Assertions.assertThat(summary.getTotalRowsOut()).isEqualTo(20L);
 	}
 }

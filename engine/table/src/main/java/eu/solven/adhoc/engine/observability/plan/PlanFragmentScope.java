@@ -26,6 +26,7 @@ import java.util.concurrent.Callable;
 import java.util.function.Supplier;
 
 import eu.solven.adhoc.query.AdhocQueryId;
+import lombok.experimental.UtilityClass;
 
 /**
  * Thread-scoped binding of the per-query {@link IPlanFragmentSink}. Mirrors the shape of {@code SubmittedQueryIdScope}
@@ -62,13 +63,9 @@ import eu.solven.adhoc.query.AdhocQueryId;
  *
  * @author Benoit Lacelle
  */
+@UtilityClass
 public final class PlanFragmentScope {
-
-	private static final ScopedValue<IPlanFragmentSink> CURRENT = ScopedValue.newInstance();
-
-	private PlanFragmentScope() {
-		// Utility class with static helpers only.
-	}
+	private static final ScopedValue<IPlanFragmentSink> CURRENT_SINK = ScopedValue.newInstance();
 
 	/**
 	 * Binds {@code sink} for the duration of {@code body}.
@@ -91,7 +88,7 @@ public final class PlanFragmentScope {
 		} else {
 			bound = sink;
 		}
-		return ScopedValue.where(CURRENT, bound).call(body::call);
+		return ScopedValue.where(CURRENT_SINK, bound).call(body::call);
 	}
 
 	/**
@@ -119,8 +116,8 @@ public final class PlanFragmentScope {
 	 * @return the bound sink for the current scope, or {@link IPlanFragmentSink#NOOP} when no scope is active.
 	 */
 	public static IPlanFragmentSink current() {
-		if (CURRENT.isBound()) {
-			return CURRENT.get();
+		if (CURRENT_SINK.isBound()) {
+			return CURRENT_SINK.get();
 		}
 		return IPlanFragmentSink.NOOP;
 	}

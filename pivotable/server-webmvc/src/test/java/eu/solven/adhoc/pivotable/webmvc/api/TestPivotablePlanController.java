@@ -92,6 +92,7 @@ public class TestPivotablePlanController {
 
 	private static QueryPlan plan(AdhocQueryId id) {
 		QueryPlanNode root = QueryPlanNode.builder()
+				.id("n0")
 				.subject("root")
 				.operator(NodeOperator.CUBE_STEP)
 				.label("root")
@@ -103,7 +104,8 @@ public class TestPivotablePlanController {
 				.state(PlanState.DONE)
 				.submittedAt(Instant.parse("2026-05-14T00:00:00Z"))
 				.completedAt(Instant.parse("2026-05-14T00:00:01Z"))
-				.root(root)
+				.rootId("n0")
+				.nodes(java.util.List.of(root))
 				.nodeCount(1)
 				.build();
 	}
@@ -237,6 +239,7 @@ public class TestPivotablePlanController {
 	/** Build a plan whose parent is the given UUID. Mirrors {@link #plan} but sets a non-null parentQueryId. */
 	private static QueryPlan childPlanOf(AdhocQueryId id, UUID parentUuid) {
 		QueryPlanNode root = QueryPlanNode.builder()
+				.id("n0")
 				.subject("root")
 				.operator(NodeOperator.CUBE_STEP)
 				.label("root")
@@ -249,7 +252,8 @@ public class TestPivotablePlanController {
 				.state(PlanState.DONE)
 				.submittedAt(Instant.parse("2026-05-14T00:00:00Z"))
 				.completedAt(Instant.parse("2026-05-14T00:00:01Z"))
-				.root(root)
+				.rootId("n0")
+				.nodes(java.util.List.of(root))
 				.nodeCount(1)
 				.build();
 	}

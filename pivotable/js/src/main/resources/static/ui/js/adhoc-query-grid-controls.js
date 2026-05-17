@@ -5,6 +5,7 @@ import AdhocGridFormatModal from "./adhoc-query-grid-format-modal.js";
 import AdhocGridExportCsv from "./adhoc-query-grid-export-csv.js";
 
 import { usePreferencesStore } from "./store-preferences.js";
+import { defaultExecutorBus } from "./adhoc-executor-bus.js";
 
 // Grid-level control strip shown at the bottom of the grid column: Export dropdown, Formatting
 // Options modal, and the full-screen-grid toggle (hide the wizard to let the grid use the full
@@ -43,22 +44,20 @@ export default {
 		const toggleGridLayout = function () {
 			preferencesStore.gridLayout = preferencesStore.gridLayout === "scroll" ? "fit" : "scroll";
 		};
-		// Provided by AdhocQueryExecutor — the Submit trigger + auto-query state + in-flight signal +
-		// "is the in-flight query identical to the displayed one" signal (used to differentiate
-		// Refreshing vs Querying labels). Defaults are no-ops so this component still mounts cleanly in
-		// test contexts that don't include the executor.
-		const submitQuery = inject("submitQuery", () => {});
-		const autoQuery = inject("autoQuery", { value: false });
-		const isQueryInFlight = inject("isQueryInFlight", { value: false });
-		const isSameAsLastQuery = inject("isSameAsLastQuery", { value: false });
+		// Provided by AdhocQuery (the common ancestor of the executor and the grid). The executor
+		// writes its live state into this reactive bag; we read it back here. The bag is a single
+		// object rather than four separate provides because:
+		//  - provide/inject only flows down to descendants, so the executor cannot provide directly
+		//    (the grid is a sibling, not a descendant). The parent owns the bus.
+		//  - a plain object with reactive properties unwraps naturally in templates without ref/.value
+		//    juggling, and the default below is a safe shape (all flags false, no-op submit) — so the
+		//    component still renders correctly if mounted outside the AdhocQuery scope.
+		const executorBus = inject("executorBus", defaultExecutorBus());
 		return {
 			preferencesStore,
 			toggleWizardHidden,
 			toggleGridLayout,
-			submitQuery,
-			autoQuery,
-			isQueryInFlight,
-			isSameAsLastQuery,
+			executorBus,
 		};
 	},
 	template: /* HTML */ `
@@ -75,14 +74,14 @@ export default {
 				v-if="preferencesStore.wizardHidden"
 				type="button"
 				class="btn btn-outline-primary btn-sm"
-				:class="isQueryInFlight ? 'adhoc-busy' : ''"
-				@click="submitQuery"
-				:disabled="isQueryInFlight"
-				:title="isQueryInFlight ? 'A query is already running' : 'Re-run the current query'"
+				:class="executorBus.isQueryInFlight ? 'adhoc-busy' : ''"
+				@click="executorBus.submitQuery"
+				:disabled="executorBus.isQueryInFlight"
+				:title="executorBus.isQueryInFlight ? 'A query is already running' : 'Re-run the current query'"
 			>
-				<span v-if="isQueryInFlight">
+				<span v-if="executorBus.isQueryInFlight">
 					<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
-					{{ isSameAsLastQuery ? "Refreshing…" : "Querying…" }}
+					{{ executorBus.isSameAsLastQuery ? "Refreshing…" : "Querying…" }}
 				</span>
 				<span v-else><i class="bi bi-arrow-clockwise me-1"></i> Refresh</span>
 			</button>

@@ -92,13 +92,19 @@ public interface IPlanFragmentSink {
 			NodeOperator operator,
 			String label,
 			Map<String, String> details) {
+		Map<String, String> resolvedDetails;
+		if (details == null) {
+			resolvedDetails = Collections.emptyMap();
+		} else {
+			resolvedDetails = details;
+		}
 		publish(anchor,
 				QueryPlanNode.builder()
 						.subject(leafKey)
 						.operator(operator)
 						.label(label)
 						.state(NodeState.DONE)
-						.details(details == null ? Collections.emptyMap() : details)
+						.details(resolvedDetails)
 						.build());
 	}
 }

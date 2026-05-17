@@ -59,6 +59,8 @@ import eu.solven.adhoc.engine.context.IImplicitOptions;
 import eu.solven.adhoc.engine.context.IQueryPreparator;
 import eu.solven.adhoc.engine.context.SpringImplicitOptions;
 import eu.solven.adhoc.engine.context.StandardQueryPreparator;
+import eu.solven.adhoc.engine.observability.plan.IQueryPlanRegistry;
+import eu.solven.adhoc.engine.observability.plan.NoopQueryPlanRegistry;
 import eu.solven.adhoc.engine.query.CubeQuery;
 import eu.solven.adhoc.engine.step.ICubeQuery;
 import eu.solven.adhoc.filter.ISliceFilter;
@@ -90,6 +92,16 @@ public class AdhocSchema implements IAdhocSchema, IAdhocSchemaRegistrer {
 	@Builder.Default
 	@NonNull
 	final ICubeQueryEngine engine = CubeQueryEngine.builder().build();
+
+	/**
+	 * Registry threaded into the {@link IQueryPreparator} this schema builds — the prepared
+	 * {@link eu.solven.adhoc.engine.context.QueryPod} then carries the registry to wherever fragments need to be
+	 * published. Defaults to {@link NoopQueryPlanRegistry#INSTANCE}; Pivotable's auto-config injects a {@code
+	 * BoundedQueryPlanRegistry}.
+	 */
+	@Builder.Default
+	@NonNull
+	final IQueryPlanRegistry queryPlanRegistry = NoopQueryPlanRegistry.INSTANCE;
 
 	@Builder.Default
 	@NonNull
@@ -193,7 +205,10 @@ public class AdhocSchema implements IAdhocSchema, IAdhocSchemaRegistrer {
 	}
 
 	private IQueryPreparator makeQueryPreparator() {
-		return StandardQueryPreparator.builder().implicitOptions(makeImplicitOptions()).build();
+		return StandardQueryPreparator.builder()
+				.implicitOptions(makeImplicitOptions())
+				.queryPlanRegistry(queryPlanRegistry)
+				.build();
 	}
 
 	protected IImplicitOptions makeImplicitOptions() {

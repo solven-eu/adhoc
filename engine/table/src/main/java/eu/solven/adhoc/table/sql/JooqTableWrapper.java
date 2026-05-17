@@ -98,8 +98,15 @@ import lombok.extern.slf4j.Slf4j;
 @AllArgsConstructor
 @Slf4j
 @ToString(of = "name")
-// @SuppressWarnings("PMD.GodClass")
+@SuppressWarnings("PMD.GodClass")
 public class JooqTableWrapper implements ITableWrapper, IHasCache, IHasHealthDetails {
+
+	/**
+	 * Max character count for the SQL-leaf {@code label} preview. Long enough to convey the shape (SELECT/UPDATE, the
+	 * aggregator name, and one or two column names) yet short enough to fit in a Mermaid graph node without exploding
+	 * the diagram width. Full SQL stays in {@code details.sql} for the modal's copy-to-clipboard button.
+	 */
+	static final int SQL_LABEL_MAX_CHARS = 80;
 
 	@NonNull
 	final String name;
@@ -274,13 +281,6 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache, IHasHealthDet
 				.build();
 		registry.publishFragment(queryPod.getQueryId(), anchor, leaf);
 	}
-
-	/**
-	 * Max character count for the SQL-leaf {@code label}. Long enough to convey the shape (SELECT/UPDATE, the
-	 * aggregator name, and one or two column names) yet short enough to fit in a Mermaid graph node without exploding
-	 * the diagram width. Full SQL stays available in {@code details.sql}.
-	 */
-	static final int SQL_LABEL_MAX_CHARS = 80;
 
 	// Stable value-equals subject for a SQL leaf, scoped to (anchor, language). Two SQL leaves with the same anchor
 	// and language collapse to one in the fragment map (the publishFragment dedup keys on subject equality).

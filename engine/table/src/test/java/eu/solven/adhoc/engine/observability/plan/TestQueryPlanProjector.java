@@ -24,7 +24,10 @@ package eu.solven.adhoc.engine.observability.plan;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 import org.assertj.core.api.Assertions;
 import org.jgrapht.graph.DefaultEdge;
@@ -38,6 +41,9 @@ import eu.solven.adhoc.engine.dag.IAdhocDag;
 import eu.solven.adhoc.engine.observability.SizeAndDuration;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.ICubeQueryStep;
+import eu.solven.adhoc.filter.ISliceFilter;
+import eu.solven.adhoc.model.measure.ReferencedMeasure;
+import eu.solven.adhoc.model.query.IGroupBy;
 import eu.solven.adhoc.query.AdhocQueryId;
 
 /**
@@ -45,6 +51,10 @@ import eu.solven.adhoc.query.AdhocQueryId;
  * {@code Graph} surface is too rich to mock methodically (the projector + {@link GraphHelpers#getRoots} reach into
  * {@code inDegreeOf}, {@code getEdgeSource}, etc.). Real graphs are clearer and exercise the same code path the engine
  * does.
+ *
+ * <p>
+ * The plan model is now graph-shaped ({@code rootId} + flat {@code nodes} / {@code edges} lists), so these tests walk
+ * connectivity via {@link #childrenOf} rather than {@code plan.getRoot().getChildren()}.
  */
 public class TestQueryPlanProjector {
 
@@ -53,8 +63,7 @@ public class TestQueryPlanProjector {
 	}
 
 	/** Build a single-vertex dag wrapped in a QueryStepsDag. */
-	private static QueryStepsDag oneRootDag(CubeQueryStep root,
-			java.util.Map<ICubeQueryStep, SizeAndDuration> stepToCost) {
+	private static QueryStepsDag oneRootDag(CubeQueryStep root, Map<ICubeQueryStep, SizeAndDuration> stepToCost) {
 		IAdhocDag<CubeQueryStep> graph = GraphHelpers.makeGraph();
 		graph.addVertex(root);
 		return QueryStepsDag.builder()
@@ -63,6 +72,43 @@ public class TestQueryPlanProjector {
 				.explicit(root)
 				.stepToCost(stepToCost)
 				.build();
+	}
+
+	/**
+	 * Resolve the {@link QueryPlanNode} carrying the given id. Throws if absent (test fixtures should always find one).
+	 */
+	private static QueryPlanNode nodeById(QueryPlan plan, String id) {
+		return plan.getNodes().stream().filter(n -> n.getId().equals(id)).findFirst().orElseThrow();
+	}
+
+	/** Children of {@code parentId} resolved through {@link QueryPlan#getEdges()}. Preserves edge-emission order. */
+	private static List<QueryPlanNode> childrenOf(QueryPlan plan, String parentId) {
+		Map<String, QueryPlanNode> byId =
+				plan.getNodes().stream().collect(Collectors.toMap(QueryPlanNode::getId, n -> n));
+		return plan.getEdges()
+				.stream()
+				.filter(e -> e.getParentId().equals(parentId))
+				.map(e -> byId.get(e.getChildId()))
+				.toList();
+	}
+
+	private static QueryPlanNode rootNode(QueryPlan plan) {
+		return nodeById(plan, plan.getRootId());
+	}
+
+	@Test
+	public void testToDetails() {
+		CubeQueryStep step = CubeQueryStep.builder()
+				.measure(ReferencedMeasure.ref("a"))
+				.filter(ISliceFilter.MATCH_ALL)
+				.groupBy(IGroupBy.GRAND_TOTAL)
+				.customMarker("someCustomMarker")
+				.build();
+
+		Assertions.assertThat(QueryPlanProjector.toDetails(step))
+				.hasSize(2)
+				.containsEntry("measure", "ReferencedMeasure(ref=a)")
+				.containsEntry("customMarker", "someCustomMarker");
 	}
 
 	@Test
@@ -83,10 +129,17 @@ public class TestQueryPlanProjector {
 
 		Assertions.assertThat(plan.getQueryId()).isEqualTo(queryId);
 		Assertions.assertThat(plan.getState()).isEqualTo(PlanState.PENDING);
-		Assertions.assertThat(plan.getRoot().getSubject()).isSameAs(root);
-		Assertions.assertThat(plan.getRoot().getState()).isEqualTo(NodeState.PENDING);
-		Assertions.assertThat(plan.getRoot().getStats()).isEqualTo(NodeStats.empty());
-		Assertions.assertThat(plan.getRoot().getChildren()).isEmpty();
+		// The root is always a CUBE_QUERY wrapper (single source of truth for the registry's unit of work). The
+		// materialized cube-step sits one level deeper, reached via an edge from the wrapper.
+		Assertions.assertThat(rootNode(plan).getOperator()).isEqualTo(NodeOperator.CUBE_QUERY);
+		List<QueryPlanNode> rootChildren = childrenOf(plan, plan.getRootId());
+		Assertions.assertThat(rootChildren).hasSize(1);
+		QueryPlanNode stepNode = rootChildren.get(0);
+		Assertions.assertThat(stepNode.getSubject()).isSameAs(root);
+		Assertions.assertThat(stepNode.getState()).isEqualTo(NodeState.PENDING);
+		Assertions.assertThat(stepNode.getStats()).isEqualTo(NodeStats.empty());
+		// Cube-step has no outgoing edges → no children.
+		Assertions.assertThat(childrenOf(plan, stepNode.getId())).isEmpty();
 	}
 
 	@Test
@@ -106,13 +159,14 @@ public class TestQueryPlanProjector {
 				PlanState.DONE,
 				Instant.parse("2026-05-14T00:00:01Z"));
 
-		Assertions.assertThat(plan.getRoot().getState()).isEqualTo(NodeState.DONE);
-		Assertions.assertThat(plan.getRoot().getStats().getRowsOut()).isEqualTo(42L);
-		Assertions.assertThat(plan.getRoot().getStats().getElapsedMs()).isEqualTo(123L);
+		QueryPlanNode stepNode = childrenOf(plan, plan.getRootId()).get(0);
+		Assertions.assertThat(stepNode.getState()).isEqualTo(NodeState.DONE);
+		Assertions.assertThat(stepNode.getStats().getRowsOut()).isEqualTo(42L);
+		Assertions.assertThat(stepNode.getStats().getElapsedMs()).isEqualTo(123L);
 	}
 
 	@Test
-	public void testParentChildEdgesPropagatedAsChildren() {
+	public void testParentChildEdgesPropagatedAsEdges() {
 		CubeQueryStep root = Mockito.mock(CubeQueryStep.class, "root");
 		CubeQueryStep leaf = Mockito.mock(CubeQueryStep.class, "leaf");
 		IAdhocDag<CubeQueryStep> graph = GraphHelpers.makeGraph();
@@ -136,10 +190,13 @@ public class TestQueryPlanProjector {
 				PlanState.PENDING,
 				null);
 
-		Assertions.assertThat(plan.getRoot().getSubject()).isSameAs(root);
-		Assertions.assertThat(plan.getRoot().getChildren()).hasSize(1);
-		Assertions.assertThat(plan.getRoot().getChildren().get(0).getSubject()).isSameAs(leaf);
-		Assertions.assertThat(plan.getNodeCount()).isEqualTo(2);
+		QueryPlanNode stepNode = childrenOf(plan, plan.getRootId()).get(0);
+		Assertions.assertThat(stepNode.getSubject()).isSameAs(root);
+		List<QueryPlanNode> stepChildren = childrenOf(plan, stepNode.getId());
+		Assertions.assertThat(stepChildren).hasSize(1);
+		Assertions.assertThat(stepChildren.get(0).getSubject()).isSameAs(leaf);
+		// Node count: root + leaf + CUBE_QUERY wrapper = 3.
+		Assertions.assertThat(plan.getNodeCount()).isEqualTo(3);
 	}
 
 	@Test
@@ -182,8 +239,9 @@ public class TestQueryPlanProjector {
 
 	@Test
 	public void testSharedChildNotDuplicated() {
-		// Both roots fan-out to the same leaf. The projector memoizes so the leaf becomes ONE QueryPlanNode that
-		// both parents point at (DAG property; otherwise a deep merge graph would explode the node count).
+		// Both roots fan-out to the same leaf. The projector dedupes by subject equality so the leaf becomes ONE
+		// {@link QueryPlanNode} that two edges point at — DAG property; otherwise a deep merge graph would explode
+		// the node count.
 		CubeQueryStep rootA = Mockito.mock(CubeQueryStep.class, "rootA");
 		CubeQueryStep rootB = Mockito.mock(CubeQueryStep.class, "rootB");
 		CubeQueryStep leaf = Mockito.mock(CubeQueryStep.class, "leaf");
@@ -211,14 +269,18 @@ public class TestQueryPlanProjector {
 				PlanState.PENDING,
 				null);
 
-		// Synthetic root wraps the two real roots.
-		Assertions.assertThat(plan.getRoot().getChildren()).hasSize(2);
-		QueryPlanNode rootAnode = plan.getRoot().getChildren().get(0);
-		QueryPlanNode rootBnode = plan.getRoot().getChildren().get(1);
-		// Each real root has the same single leaf child — the SAME QueryPlanNode instance (memoized).
-		Assertions.assertThat(rootAnode.getChildren().get(0)).isSameAs(rootBnode.getChildren().get(0));
-		// Node count: leaf counted once + 2 roots + synthetic root = 4.
+		Assertions.assertThat(rootNode(plan).getOperator()).isEqualTo(NodeOperator.CUBE_QUERY);
+		List<QueryPlanNode> rootChildren = childrenOf(plan, plan.getRootId());
+		Assertions.assertThat(rootChildren).hasSize(2);
+		// Each real root has the same single leaf child — same id, dedup'd by subject.
+		QueryPlanNode rootAleaf = childrenOf(plan, rootChildren.get(0).getId()).get(0);
+		QueryPlanNode rootBleaf = childrenOf(plan, rootChildren.get(1).getId()).get(0);
+		Assertions.assertThat(rootAleaf.getId()).isEqualTo(rootBleaf.getId());
+		// Node count: leaf counted once + 2 roots + CUBE_QUERY wrapper = 4.
 		Assertions.assertThat(plan.getNodeCount()).isEqualTo(4);
+		// The leaf has exactly TWO incoming edges (one per root) — the DAG fan-in.
+		Assertions.assertThat(plan.getEdges().stream().filter(e -> e.getChildId().equals(rootAleaf.getId())).count())
+				.isEqualTo(2L);
 	}
 
 	// --- Fragment grafting -------------------------------------------------------------------
@@ -237,8 +299,7 @@ public class TestQueryPlanProjector {
 		Object v4Subject = new Object();
 		QueryPlanNode v4Node =
 				QueryPlanNode.builder().subject(v4Subject).operator(NodeOperator.TABLE_QUERY).label("v4").build();
-		java.util.Map<Object, java.util.List<QueryPlanNode>> fragments =
-				java.util.Map.of(root, java.util.List.of(v4Node));
+		Map<Object, List<QueryPlanNode>> fragments = Map.of(root, List.of(v4Node));
 
 		QueryPlan plan = new QueryPlanProjector().project(dag,
 				newId(),
@@ -250,9 +311,12 @@ public class TestQueryPlanProjector {
 				null,
 				fragments);
 
-		Assertions.assertThat(plan.getRoot().getChildren()).containsExactly(v4Node);
-		// Node count: root + 1 fragment = 2.
-		Assertions.assertThat(plan.getNodeCount()).isEqualTo(2);
+		QueryPlanNode stepNode = childrenOf(plan, plan.getRootId()).get(0);
+		List<QueryPlanNode> stepChildren = childrenOf(plan, stepNode.getId());
+		Assertions.assertThat(stepChildren).hasSize(1);
+		Assertions.assertThat(stepChildren.get(0).getSubject()).isSameAs(v4Subject);
+		// Node count: root + 1 fragment + CUBE_QUERY wrapper = 3.
+		Assertions.assertThat(plan.getNodeCount()).isEqualTo(3);
 	}
 
 	/**
@@ -269,8 +333,7 @@ public class TestQueryPlanProjector {
 				QueryPlanNode.builder().subject("v4-a").operator(NodeOperator.TABLE_QUERY).label("a").build();
 		QueryPlanNode v4b =
 				QueryPlanNode.builder().subject("v4-b").operator(NodeOperator.TABLE_QUERY).label("b").build();
-		java.util.Map<Object, java.util.List<QueryPlanNode>> fragments =
-				java.util.Map.of(root, java.util.List.of(v4a, v4b));
+		Map<Object, List<QueryPlanNode>> fragments = Map.of(root, List.of(v4a, v4b));
 
 		QueryPlan plan = new QueryPlanProjector().project(dag,
 				newId(),
@@ -282,7 +345,10 @@ public class TestQueryPlanProjector {
 				null,
 				fragments);
 
-		Assertions.assertThat(plan.getRoot().getChildren()).containsExactly(v4a, v4b);
+		QueryPlanNode stepNode = childrenOf(plan, plan.getRootId()).get(0);
+		List<Object> graftSubjects =
+				childrenOf(plan, stepNode.getId()).stream().map(QueryPlanNode::getSubject).toList();
+		Assertions.assertThat(graftSubjects).containsExactly("v4-a", "v4-b");
 	}
 
 	/**
@@ -302,10 +368,9 @@ public class TestQueryPlanProjector {
 				.subject("sql-leaf-subject")
 				.operator(NodeOperator.TABLE_QUERY)
 				.label("sql")
-				.details(java.util.Map.of("language", "sql", "sql", "select 1"))
+				.details(Map.of("language", "sql", "sql", "select 1"))
 				.build();
-		java.util.Map<Object, java.util.List<QueryPlanNode>> fragments =
-				java.util.Map.of(root, java.util.List.of(v4Node), v4Subject, java.util.List.of(sqlLeaf));
+		Map<Object, List<QueryPlanNode>> fragments = Map.of(root, List.of(v4Node), v4Subject, List.of(sqlLeaf));
 
 		QueryPlan plan = new QueryPlanProjector().project(dag,
 				newId(),
@@ -317,13 +382,58 @@ public class TestQueryPlanProjector {
 				null,
 				fragments);
 
-		// Tree: root → v4Node → sqlLeaf. The v4Node was a fragment; its child slot is filled lazily via the second
-		// fragment anchored on its subject.
-		QueryPlanNode v4Projected = plan.getRoot().getChildren().get(0);
+		// Chain: CUBE_QUERY wrapper → cube-step root → v4Node → sqlLeaf. The v4Node was a fragment; its child slot
+		// is filled lazily via the second fragment anchored on its subject.
+		QueryPlanNode stepNode = childrenOf(plan, plan.getRootId()).get(0);
+		QueryPlanNode v4Projected = childrenOf(plan, stepNode.getId()).get(0);
 		Assertions.assertThat(v4Projected.getSubject()).isSameAs(v4Subject);
-		Assertions.assertThat(v4Projected.getChildren()).hasSize(1);
-		Assertions.assertThat(v4Projected.getChildren().get(0).getDetails()).containsEntry("language", "sql");
-		// Node count: root + v4 + sql = 3.
-		Assertions.assertThat(plan.getNodeCount()).isEqualTo(3);
+		List<QueryPlanNode> v4Children = childrenOf(plan, v4Projected.getId());
+		Assertions.assertThat(v4Children).hasSize(1);
+		Assertions.assertThat(v4Children.get(0).getDetails()).containsEntry("language", "sql");
+		// Node count: root + v4 + sql + CUBE_QUERY wrapper = 4.
+		Assertions.assertThat(plan.getNodeCount()).isEqualTo(4);
+	}
+
+	/**
+	 * Regression: a fragment whose root subject is its own anchor used to send the projector into an infinite recursion
+	 * (graftRecursive → appendFragments → graftRecursive of the same node, repeated forever). The new graph-form
+	 * projector handles this naturally — the {@code subjectToId} map dedupes on re-entry, so the self-referential
+	 * fragment is allocated once and gets no extra incoming edge from itself.
+	 */
+	@Test
+	public void testProject_fragmentWhoseSubjectIsItsOwnAnchorDoesNotLoop() {
+		CubeQueryStep root = Mockito.mock(CubeQueryStep.class);
+		Mockito.when(root.toString()).thenReturn("root-step");
+		QueryStepsDag dag = oneRootDag(root, new ConcurrentHashMap<>());
+
+		// Fragment anchored on `root` AND with subject = root → would loop on the old tree-walking projector.
+		QueryPlanNode selfRefFragment = QueryPlanNode.builder()
+				.subject(root)
+				.operator(NodeOperator.TABLE_STEP)
+				.label("induced-loop-trigger")
+				.build();
+		Map<Object, List<QueryPlanNode>> fragments = Map.of(root, List.of(selfRefFragment));
+
+		// If the dedup regresses, this call hangs forever. The assertions below confirm the projector returned
+		// with a finite graph.
+		QueryPlan plan = new QueryPlanProjector().project(dag,
+				newId(),
+				null,
+				"test-cube",
+				Instant.parse("2026-05-14T00:00:00Z"),
+				null,
+				PlanState.PENDING,
+				null,
+				fragments);
+
+		QueryPlanNode stepNode = childrenOf(plan, plan.getRootId()).get(0);
+		// The self-referential fragment shares its subject with the cube step, so the projector emits a SINGLE node
+		// for both. The cube-step node IS the fragment node — no separate child gets allocated.
+		Assertions.assertThat(stepNode.getSubject()).isSameAs(root);
+		// And: no edge from the node to itself (would be a true cycle).
+		Assertions.assertThat(plan.getEdges()
+				.stream()
+				.anyMatch(e -> e.getParentId().equals(stepNode.getId()) && e.getChildId().equals(stepNode.getId())))
+				.isFalse();
 	}
 }

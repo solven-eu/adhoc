@@ -79,6 +79,7 @@ import eu.solven.adhoc.engine.observability.plan.NodeOperator;
 import eu.solven.adhoc.engine.observability.plan.NodeState;
 import eu.solven.adhoc.engine.observability.plan.NodeStats;
 import eu.solven.adhoc.engine.observability.plan.QueryPlanNode;
+import eu.solven.adhoc.engine.observability.plan.QueryPlanProjector;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.TableQueryStep;
 import eu.solven.adhoc.engine.tabular.inducer.ITableQueryInducer;
@@ -161,6 +162,19 @@ public class TableQueryEngine implements ITableQueryEngine {
 	final ITableQueryInducer inducer;
 
 	final Supplier<Set<String>> generatedColumnsSupplier = Suppliers.memoize(this::computeGeneratedColumns);
+
+	/**
+	 * Plan-fragment cache of the {@link NodeOperator#TABLE_QUERY} {@link QueryPlanNode}s built by
+	 * {@link #processOneTableQuery}. Keyed by the {@link TableQueryV4} the V4 represents so
+	 * {@link #publishInducedFragments} can reach the same QueryPlanNode instance — induced steps then have it as a
+	 * direct child rather than going through a placeholder whose subject would be a raw {@link TableQueryStep} (Jackson
+	 * trips on {@code TableQueryStep#getTransverseCache} when {@code crossStepsCache} was never set, which is the case
+	 * for the steps produced by the table-side optimizer's {@code splitInduced}).
+	 *
+	 * <p>
+	 * One entry per merged V4 — the same node is shared across every source step that contributed to the merge.
+	 */
+	final ConcurrentMap<TableQueryV4, QueryPlanNode> v4Nodes = new ConcurrentHashMap<>();
 
 	final Supplier<IFilterOptimizer> filterOptimizerSupplier = Suppliers.memoize(() -> {
 		if (getTableQueryFactory() instanceof IHasFilterOptimizer hasFilterOptimizer) {
@@ -320,8 +334,111 @@ public class TableQueryEngine implements ITableQueryEngine {
 			}
 		}
 
+		// Publish the induced TableQuerySteps so the cube-side projector can graft them as
+		// TABLE_STEP children of the matching CubeQueryStep nodes. Inducers are already published
+		// per V4 in `processOneTableQuery`; without this call, induced steps (steps whose values
+		// are derived from an inducer's results via roll-up, never hitting the DB themselves)
+		// appear as leaves in the cube-side projection with no visible link to the TABLE_QUERY
+		// that actually served them.
+		publishInducedFragments(withShared);
+
 		transferSizeAndCost(withShared, executionFeedfack);
 		return stepToValues;
+	}
+
+	/**
+	 * Publish a {@link QueryPlanNode} fragment for every induced {@link TableQueryStep} — i.e. every step in the
+	 * table-side DAG that is NOT itself an inducer (those are already published as anchors of the merged
+	 * {@code TABLE_QUERY} V4 nodes in {@link #processOneTableQuery}). Each fragment is anchored on the induced step's
+	 * subject and carries one subject-only child per inducer, so the projector's recursive grafting chains down to the
+	 * inducer's V4 (and through to its SQL leaf).
+	 *
+	 * <p>
+	 * Without this, the cube-side projector — which materializes a single {@code CUBE_STEP} for every {@code
+	 * CubeQueryStep} in the cube DAG — sees the induced step as a childless leaf. The cube step that wraps a derived
+	 * groupBy (e.g. {@code groupBy=(Coach Name)} derived from an inducer at {@code groupBy=(Coach Name, MatchID)}) then
+	 * renders disconnected from any {@code TABLE_QUERY}, even though it was served via roll-up of the inducer's
+	 * results.
+	 *
+	 * @param dag
+	 *            the table-side DAG returned by {@code splitInduced}, with {@code stepToCost} already populated by
+	 *            {@link #walkUpInducedDag}
+	 */
+	protected void publishInducedFragments(SplitTableQueries dag) {
+		IQueryPlanRegistry registry = queryPod.getQueryPlanRegistry();
+		if (registry == null) {
+			return;
+		}
+		for (TableQueryStep induced : dag.getInduceds()) {
+			List<TableQueryStep> inducers = dag.getInducers(induced);
+			if (inducers.isEmpty()) {
+				// Sink with no outgoing edges — shouldn't happen for an induced step (would mean nothing serves it),
+				// but skip defensively rather than emit a dangling fragment.
+				continue;
+			}
+
+			// Resolve each inducer's V4 plan node from the cache populated by `processOneTableQuery`. Reusing the
+			// SAME `v4Node` instance (rather than a placeholder whose subject would be a raw TableQueryStep) avoids
+			// two problems:
+			// - Jackson serialization: a TableQueryStep subject would trigger `getTransverseCache()`, which throws
+			// `IllegalStateException("Missing call to setCrossStepsCache")` for the table-side step instances
+			// produced by the optimizer's `splitInduced` (those never had setCrossStepsCache called on them).
+			// - DAG sharing on the SPA side: the same v4Node instance is shared between the inducer's cube-step
+			// graft and the induced step's graft, so the SPA can recognise it as one V4 feeding multiple cube
+			// branches rather than rendering duplicate boxes.
+			List<QueryPlanNode> v4Children = new ArrayList<>(inducers.size());
+			for (TableQueryStep inducer : inducers) {
+				TableQueryV4 v4 = dag.getStepToTables().get(inducer);
+				if (v4 == null) {
+					// Defensive — inducers should always map to a V4 (that's the definition of an inducer); but if
+					// the optimizer ever produces an inducer with no V4, skip rather than NPE.
+					continue;
+				}
+				QueryPlanNode v4Node = v4Nodes.get(v4);
+				if (v4Node == null) {
+					// Same defensive guard — `processOneTableQuery` should always have published this V4 before
+					// `publishInducedFragments` runs, but skip rather than NPE if ordering ever changes.
+					continue;
+				}
+				v4Children.add(v4Node);
+			}
+			if (v4Children.isEmpty()) {
+				continue;
+			}
+
+			SizeAndDuration cost = dag.getStepToCost().get(induced);
+			NodeState state;
+			NodeStats stats;
+			if (cost == null) {
+				state = NodeState.PENDING;
+				stats = NodeStats.empty();
+			} else {
+				state = NodeState.DONE;
+				stats = NodeStats.builder()
+						.rowsOut(cost.getSize())
+						.elapsedMs(Math.max(0L, cost.getDuration().toMillis()))
+						.build();
+			}
+
+			// IMPORTANT: subject MUST NOT be `induced` itself. The fragment is anchored on `induced`
+			// via `publishFragment`; if the fragment's own subject equals its anchor, the projector's
+			// `appendFragments(_, fragment.subject, fragments)` recursion call finds the SAME
+			// fragment back and loops forever. Use a fresh marker object that nothing else anchors
+			// on. The marker is identity-based, so SPA-side dedup (which uses subject equality)
+			// won't conflate it with anything else.
+			Object syntheticSubject = new Object();
+			QueryPlanNode inducedNode = QueryPlanNode.builder()
+					.subject(syntheticSubject)
+					.operator(NodeOperator.TABLE_STEP)
+					.label(String.valueOf(induced.getMeasure()))
+					.details(QueryPlanProjector.toDetails(induced))
+					.children(List.copyOf(v4Children))
+					.state(state)
+					.stats(stats)
+					.build();
+
+			registry.publishFragment(queryPod.getQueryId(), induced, inducedNode);
+		}
 	}
 
 	public static SplitTableQueries waitAndMergeSharedNodes(SplitTableQueries withoutShared,
@@ -421,6 +538,9 @@ public class TableQueryEngine implements ITableQueryEngine {
 				.label(String.valueOf(tableQuery))
 				.state(NodeState.RUNNING)
 				.build();
+		// Cache the v4Node so `publishInducedFragments` can attach it directly under each induced step
+		// (avoids creating a TableQueryStep-subject placeholder that Jackson can't serialize).
+		v4Nodes.put(tableQuery, v4Node);
 		Set<TableQueryStep> sourceSteps = collectSourceSteps(tableQueries, tableQuery);
 		IQueryPlanRegistry registry = queryPod.getQueryPlanRegistry();
 		for (TableQueryStep sourceStep : sourceSteps) {

@@ -29,7 +29,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.IAdhocTestConstants;
-import eu.solven.adhoc.engine.CubeQueryEngine;
 import eu.solven.adhoc.engine.observability.plan.BoundedQueryPlanRegistry;
 import eu.solven.adhoc.engine.observability.plan.NodeOperator;
 import eu.solven.adhoc.engine.observability.plan.QueryPlan;
@@ -60,12 +59,10 @@ public class TestDagCubeQuery_DuckDB_SqlFragment extends ATestDagDuckDb implemen
 	BoundedQueryPlanRegistry registry = new BoundedQueryPlanRegistry(10_000);
 
 	@Override
-	public CubeQueryEngine engine() {
-		return CubeQueryEngine.builder()
-				.eventBus(eventBus())
-				.factories(makeFactories())
-				.queryPlanRegistry(registry)
-				.build();
+	protected eu.solven.adhoc.engine.context.IQueryPreparator queryPreparator() {
+		// Thread the registry into the preparator — the engine no longer carries one. Pods produced by this
+		// preparator carry `registry`, and the engine reads it from `queryPod.getQueryPlanRegistry()`.
+		return eu.solven.adhoc.engine.context.StandardQueryPreparator.builder().queryPlanRegistry(registry).build();
 	}
 
 	@Override
@@ -102,10 +99,14 @@ public class TestDagCubeQuery_DuckDB_SqlFragment extends ATestDagDuckDb implemen
 		AdhocQueryId queryId = registry.findIdByUuid(submittedUuid).orElseThrow();
 		QueryPlan plan = registry.snapshot(queryId).orElseThrow();
 
-		// Find a TABLE_QUERY node that itself has a TABLE_QUERY child carrying the SQL details — the table-engine
-		// publishes the parent fragment (anchored on TableQueryStep), the wrapper publishes the leaf (anchored on
-		// the TableQueryV4). The two-layer chain is exactly the design specified in CHANGES.MD.
-		QueryPlanNode sqlLeaf = findSqlLeaf(plan.getRoot());
+		// Find a TABLE_QUERY node carrying the SQL details — the table-engine publishes the parent fragment
+		// (anchored on TableQueryStep), the wrapper publishes the leaf (anchored on the TableQueryV4). The plan is
+		// graph-shaped, so a flat scan over `plan.getNodes()` matches the SQL leaf without needing a DFS.
+		QueryPlanNode sqlLeaf = plan.getNodes()
+				.stream()
+				.filter(n -> n.getOperator() == NodeOperator.TABLE_QUERY && n.getDetails().containsKey("sql"))
+				.findFirst()
+				.orElse(null);
 		Assertions.assertThat(sqlLeaf)
 				.as("Expected a SQL leaf grafted under the TABLE_QUERY node — JooqTableWrapper.publishSqlFragment")
 				.isNotNull();
@@ -131,21 +132,4 @@ public class TestDagCubeQuery_DuckDB_SqlFragment extends ATestDagDuckDb implemen
 		}
 	}
 
-	/**
-	 * Depth-first search for the SQL-leaf node. The leaf is identified by its `details.sql` entry — we don't try to
-	 * match on operator / subject because the wrapper uses an internal sentinel subject we don't want to leak into the
-	 * test.
-	 */
-	private static QueryPlanNode findSqlLeaf(QueryPlanNode node) {
-		if (node.getOperator() == NodeOperator.TABLE_QUERY && node.getDetails().containsKey("sql")) {
-			return node;
-		}
-		for (QueryPlanNode child : node.getChildren()) {
-			QueryPlanNode hit = findSqlLeaf(child);
-			if (hit != null) {
-				return hit;
-			}
-		}
-		return null;
-	}
 }

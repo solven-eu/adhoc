@@ -74,13 +74,41 @@ public class TestLiveQueryPlanSource {
 		ConcurrentHashMap<ICubeQueryStep, SizeAndDuration> costs = new ConcurrentHashMap<>();
 		LiveQueryPlanSource source = buildSource(root, costs);
 
-		// Initial snapshot: no costs → PENDING.
-		Assertions.assertThat(source.snapshot().getRoot().getState()).isEqualTo(NodeState.PENDING);
+		// Initial snapshot: no costs → the materialized step (CUBE_QUERY wrapper's only outgoing edge) is PENDING.
+		Assertions.assertThat(stepNodeOf(source.snapshot()).getState()).isEqualTo(NodeState.PENDING);
 
-		// Engine writes to the map → next snapshot sees DONE with the recorded stats.
+		// Engine writes to the map → next snapshot sees DONE with the recorded stats on the step.
 		costs.put(root, SizeAndDuration.builder().size(10L).duration(Duration.ofMillis(5)).build());
-		Assertions.assertThat(source.snapshot().getRoot().getState()).isEqualTo(NodeState.DONE);
-		Assertions.assertThat(source.snapshot().getRoot().getStats().getRowsOut()).isEqualTo(10L);
+		Assertions.assertThat(stepNodeOf(source.snapshot()).getState()).isEqualTo(NodeState.DONE);
+		Assertions.assertThat(stepNodeOf(source.snapshot()).getStats().getRowsOut()).isEqualTo(10L);
+	}
+
+	/** First child of the CUBE_QUERY wrapper — the cube-step root. Resolves through the plan's edge list. */
+	private static QueryPlanNode stepNodeOf(QueryPlan plan) {
+		java.util.Map<String, QueryPlanNode> byId =
+				plan.getNodes().stream().collect(java.util.stream.Collectors.toMap(QueryPlanNode::getId, n -> n));
+		String childId = plan.getEdges()
+				.stream()
+				.filter(e -> e.getParentId().equals(plan.getRootId()))
+				.findFirst()
+				.orElseThrow()
+				.getChildId();
+		return byId.get(childId);
+	}
+
+	/**
+	 * Children of the cube-step (the CUBE_QUERY wrapper's only child) — typically a single fragment graft. Used to
+	 * assert that {@code publishFragment} → {@code snapshot} round-trip wires the graft as an edge from the step.
+	 */
+	private static java.util.List<QueryPlanNode> stepChildrenOf(QueryPlan plan) {
+		QueryPlanNode step = stepNodeOf(plan);
+		java.util.Map<String, QueryPlanNode> byId =
+				plan.getNodes().stream().collect(java.util.stream.Collectors.toMap(QueryPlanNode::getId, n -> n));
+		return plan.getEdges()
+				.stream()
+				.filter(e -> e.getParentId().equals(step.getId()))
+				.map(e -> byId.get(e.getChildId()))
+				.toList();
 	}
 
 	@Test
@@ -92,7 +120,8 @@ public class TestLiveQueryPlanSource {
 		QueryPlan b = source.snapshot();
 		Assertions.assertThat(a).isEqualTo(b);
 		Assertions.assertThat(a).isNotSameAs(b);
-		Assertions.assertThat(a.getRoot()).isNotSameAs(b.getRoot());
+		// Each snapshot returns a fresh nodes list — equal by value, different instances.
+		Assertions.assertThat(a.getNodes()).isNotSameAs(b.getNodes());
 	}
 
 	@Test
@@ -172,7 +201,10 @@ public class TestLiveQueryPlanSource {
 		source.publishFragment(root, v4);
 
 		QueryPlan plan = source.snapshot();
-		Assertions.assertThat(plan.getRoot().getChildren()).containsExactly(v4);
+		// The fragment hangs off the materialized step, which is the CUBE_QUERY wrapper's single child.
+		Assertions.assertThat(stepChildrenOf(plan))
+				.extracting(QueryPlanNode::getSubject)
+				.containsExactly(v4.getSubject());
 		Assertions.assertThat(source.version()).isGreaterThan(v0);
 	}
 
@@ -192,8 +224,12 @@ public class TestLiveQueryPlanSource {
 		source.publishFragment(root, v4b);
 
 		QueryPlan plan = source.snapshot();
-		// Only the second fragment survives — the first was replaced because its subject collided.
-		Assertions.assertThat(plan.getRoot().getChildren()).containsExactly(v4b);
+		// Only the second fragment survives — the first was replaced because its subject collided. Fragments hang
+		// off the materialized step (the CUBE_QUERY wrapper's single child). Match by label since both fragments
+		// share the same subject.
+		Assertions.assertThat(stepChildrenOf(plan))
+				.extracting(QueryPlanNode::getLabel)
+				.containsExactly("b (replaces a)");
 	}
 
 	@Test
@@ -212,7 +248,10 @@ public class TestLiveQueryPlanSource {
 		registry.publishFragment(source.getQueryId(), root, v4);
 
 		QueryPlan plan = registry.snapshot(source.getQueryId()).orElseThrow();
-		Assertions.assertThat(plan.getRoot().getChildren()).containsExactly(v4);
+		// Fragment hangs off the materialized step (the CUBE_QUERY wrapper's single child).
+		Assertions.assertThat(stepChildrenOf(plan))
+				.extracting(QueryPlanNode::getSubject)
+				.containsExactly(v4.getSubject());
 	}
 
 	@Test

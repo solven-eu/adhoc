@@ -1,5 +1,5 @@
 // @ts-check
-import { computed, ref, reactive, watch, inject, provide } from "vue";
+import { computed, ref, reactive, watch, watchEffect, inject } from "vue";
 
 import { Collapse } from "bootstrap";
 
@@ -66,6 +66,16 @@ export default {
 		tabularView: {
 			type: Object,
 			required: true,
+		},
+		// Shared reactive bag owned by AdhocQuery (the common parent of this executor and the grid).
+		// We write our live state into it (`isQueryInFlight`, `isSameAsLastQuery`, `autoQuery`,
+		// `submitQuery`) so the grid-controls — a sibling, not a descendant, so provide/inject in
+		// this component would not reach it — can read it back. Optional so this component still
+		// mounts when used in isolation (tests).
+		executorBus: {
+			type: Object,
+			required: false,
+			default: null,
 		},
 	},
 	computed: {
@@ -581,13 +591,18 @@ export default {
 			}
 		});
 
-		// Provide the trigger + status to descendants (notably the AdhocGridControls strip) so they can
-		// surface a Refresh button that mirrors Submit's effect when the wizard is hidden. Keep these out
-		// of `props` — they are intra-AdhocQuery wiring, not a public component contract.
-		provide("submitQuery", submitQuery);
-		provide("autoQuery", autoQuery);
-		provide("isQueryInFlight", isQueryInFlight);
-		provide("isSameAsLastQuery", isSameAsLastQuery);
+		// Sync live state into the parent-owned `executorBus` so the grid-controls (a sibling of this
+		// component) can read it. provide/inject does NOT work here: it flows down to descendants
+		// only, and the grid-controls is reached via the parent's other branch — see AdhocQuery for
+		// the `provide("executorBus", ...)` call that makes the bus visible to the grid subtree.
+		if (props.executorBus) {
+			props.executorBus.submitQuery = submitQuery;
+			watchEffect(() => {
+				props.executorBus.isQueryInFlight = isQueryInFlight.value;
+				props.executorBus.isSameAsLastQuery = isSameAsLastQuery.value;
+				props.executorBus.autoQuery = autoQuery.value;
+			});
+		}
 
 		return {
 			queryJson,

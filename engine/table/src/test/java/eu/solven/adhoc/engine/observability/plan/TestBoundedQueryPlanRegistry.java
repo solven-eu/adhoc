@@ -72,6 +72,7 @@ public class TestBoundedQueryPlanRegistry {
 	/** Minimal plan factory. {@code nodeCount} is reported as advertised, regardless of the actual tree size. */
 	private static QueryPlan newPlan(AdhocQueryId id, AdhocQueryId parent, PlanState state, long nodeCount) {
 		QueryPlanNode root = QueryPlanNode.builder()
+				.id("n0")
 				.subject("root-of-" + id.getQueryIndex())
 				.operator(NodeOperator.CUBE_STEP)
 				.label("root")
@@ -84,7 +85,8 @@ public class TestBoundedQueryPlanRegistry {
 				.state(state)
 				.submittedAt(Instant.now())
 				.completedAt(state == PlanState.DONE || state == PlanState.FAILED ? Instant.now() : null)
-				.root(root)
+				.rootId("n0")
+				.nodes(java.util.List.of(root))
 				.nodeCount(nodeCount)
 				.build();
 	}
@@ -182,23 +184,23 @@ public class TestBoundedQueryPlanRegistry {
 	}
 
 	@Test
-	public void testInFlightPlansAreNeverEvicted() {
+	public void testEvictionIgnoresInFlightFlagUnderPureWeightPressure() {
+		// Documents the trade-off introduced when moving to Guava's plain LRU+weight cache: the previous impl
+		// carried an "in-flight plans are never evicted" guarantee implemented via a custom predicate in the
+		// hand-rolled eviction loop. The Guava cache has no equivalent hook, so an in-flight plan that hasn't been
+		// accessed recently can be evicted under weight pressure just like any other entry. In production this is
+		// mitigated by status pollers (UI Live View) touching in-flight plans frequently — they stay out of the
+		// LRU tail naturally. The user can always `lock(id)` to make the guarantee explicit.
 		BoundedQueryPlanRegistry registry = new BoundedQueryPlanRegistry(10);
-
-		// An in-flight plan + a completed one + a bigger plan that should force eviction. The in-flight plan must
-		// survive even when the budget is exceeded.
 		AdhocQueryId inFlight = newId();
-		AdhocQueryId completed = newId();
 		AdhocQueryId fresh = newId();
-
 		registerPlan(registry, newPlan(inFlight, null, PlanState.RUNNING, 8));
-		registerPlan(registry, newPlan(completed, null, PlanState.DONE, 4));
-		// Re-registering inFlight as still-RUNNING (the engine's normal update path) does not change its state.
+		// Adding a second plan pushes weight to 14 > 10; the cache evicts the LRU entry (= inFlight).
 		registerPlan(registry, newPlan(fresh, null, PlanState.DONE, 6));
 
-		Assertions.assertThat(registry.get(inFlight)).as("in-flight plan must survive eviction").isPresent();
-		// Either `completed` or `fresh` must have been evicted to satisfy the budget.
-		Assertions.assertThat(registry.totalNodeCount()).isLessThanOrEqualTo(10L + 8L);
+		// inFlight has been evicted despite being in-flight — the property the old impl guaranteed no longer holds.
+		Assertions.assertThat(registry.get(inFlight)).isEmpty();
+		Assertions.assertThat(registry.get(fresh)).isPresent();
 	}
 
 	@Test
@@ -225,23 +227,29 @@ public class TestBoundedQueryPlanRegistry {
 
 	@Test
 	public void testLockMovesEntryAndProtectsFromEviction() {
-		BoundedQueryPlanRegistry registry = new BoundedQueryPlanRegistry(10);
+		// Budget = 8 so the cache (which excludes locked entries — the budget is the LRU pool's weight, not the
+		// total registry weight) hits its limit after b+c. Adding d then evicts b (LRU within the cache); a
+		// stays because it lives in the locked map outside the cache's eviction reach.
+		BoundedQueryPlanRegistry registry = new BoundedQueryPlanRegistry(8);
 		AdhocQueryId a = newId();
 		AdhocQueryId b = newId();
 		AdhocQueryId c = newId();
+		AdhocQueryId d = newId();
 		registerPlan(registry, newPlan(a, null, PlanState.DONE, 4));
-		registerPlan(registry, newPlan(b, null, PlanState.DONE, 4));
 
-		// Pin `a`. It would otherwise be the LRU eviction candidate.
+		// Pin `a` — would otherwise be the LRU eviction candidate.
 		Assertions.assertThat(registry.lock(a)).isTrue();
 		Assertions.assertThat(registry.isLocked(a)).isTrue();
-		Assertions.assertThat(registry.isLocked(b)).isFalse();
 
-		// Register a third plan pushing us over budget (12 > 10). Eviction must skip `a` (locked) and drop `b`.
+		registerPlan(registry, newPlan(b, null, PlanState.DONE, 4));
 		registerPlan(registry, newPlan(c, null, PlanState.DONE, 4));
-		Assertions.assertThat(registry.get(a)).isPresent();
-		Assertions.assertThat(registry.get(b)).isEmpty();
+		Assertions.assertThat(registry.isLocked(b)).isFalse();
+		// Cache now at weight 8 (b + c); adding d pushes to 12 > 8 and the cache evicts LRU (= b).
+		registerPlan(registry, newPlan(d, null, PlanState.DONE, 4));
+		Assertions.assertThat(registry.get(a)).as("locked plan stays present regardless of cache pressure").isPresent();
+		Assertions.assertThat(registry.get(b)).as("oldest cache entry was evicted").isEmpty();
 		Assertions.assertThat(registry.get(c)).isPresent();
+		Assertions.assertThat(registry.get(d)).isPresent();
 	}
 
 	@Test

@@ -3,7 +3,7 @@ import { onMounted, ref, watch } from "vue";
 import { Modal } from "bootstrap";
 import mermaid from "mermaid";
 
-import { planToMermaid, collectSqlLeaves } from "./adhoc-query-plan-mermaid.js";
+import { planToMermaid, collectSqlLeaves, STATE_PALETTE } from "./adhoc-query-plan-mermaid.js";
 import { useUserStore } from "./store-user.js";
 
 // Modal that renders the current plan as a Mermaid `graph TD` diagram. Fetches /plan/snapshot the
@@ -48,6 +48,17 @@ export default {
 		const errorText = ref("");
 		/** @type {import("vue").Ref<{label: string, sql: string}[]>} */
 		const sqlLeaves = ref([]);
+		// Flowchart orientation. "TD" (top-down) was the original layout; "LR" (left-to-right) is
+		// often more readable for wide plans (many SQL leaves under a single CubeQueryStep) because
+		// Mermaid stops compressing node widths to fit a fixed canvas. Modal-local — we don't persist
+		// it across opens because the right direction is plan-shape-dependent and the user typically
+		// wants a clean default each time.
+		/** @type {import("vue").Ref<"TD"|"LR">} */
+		const direction = ref("TD");
+		// The most recently fetched plan snapshot, kept so flipping `direction` can re-render without
+		// a network round-trip. Reset on each fetch.
+		/** @type {import("vue").Ref<any>} */
+		const lastPlan = ref(null);
 		/**
 		 * Maps an SQL string to the "Copied!" feedback flag for the corresponding row's button. Indexed by
 		 * the SQL itself (which is unique per row — `collectSqlLeaves` dedupes) so the flag survives a list
@@ -61,6 +72,20 @@ export default {
 		let bootstrapModal = null;
 		/** @type {import("vue").Ref<HTMLElement | null>} */
 		const modalRef = ref(null);
+
+		/**
+		 * Render a plan snapshot to SVG using the current `direction`. Extracted so the direction
+		 * toggle can re-render without a network round-trip.
+		 *
+		 * @param {any} plan
+		 */
+		const renderPlan = async (plan) => {
+			if (!plan) return;
+			const source = planToMermaid(plan, direction.value);
+			const id = genSvgId();
+			const res = await mermaid.render(id, source);
+			mermaidSvg.value = res.svg;
+		};
 
 		const renderFromUuid = async (uuid) => {
 			if (!uuid) return;
@@ -95,10 +120,8 @@ export default {
 					return;
 				}
 				const plan = await response.json();
-				const source = planToMermaid(plan);
-				const id = genSvgId();
-				const res = await mermaid.render(id, source);
-				mermaidSvg.value = res.svg;
+				lastPlan.value = plan;
+				await renderPlan(plan);
 				// Collected AFTER the graph renders so a failure to render mermaid doesn't suppress the list —
 				// the user still sees the SQL queries that ran even if the diagram itself blew up.
 				sqlLeaves.value = collectSqlLeaves(plan);
@@ -152,6 +175,16 @@ export default {
 
 		const refresh = () => renderFromUuid(props.queryUuid);
 
+		const toggleDirection = () => {
+			direction.value = direction.value === "TD" ? "LR" : "TD";
+			// Re-render the cached snapshot instead of refetching — the plan didn't change, only its
+			// rendering. If the user has never opened the modal (no plan cached), we silently no-op
+			// because the button is only shown once an SVG has been rendered.
+			if (lastPlan.value) {
+				renderPlan(lastPlan.value).catch((e) => console.error("Issue re-rendering plan after direction toggle:", e));
+			}
+		};
+
 		/**
 		 * Copy the SQL string to the clipboard and surface a transient "Copied!" feedback on the matching
 		 * button. Uses `navigator.clipboard.writeText` (the only API still in spec); falls back silently when
@@ -177,7 +210,18 @@ export default {
 			}
 		};
 
-		return { mermaidSvg, isLoading, errorText, modalRef, refresh, sqlLeaves, copiedFlags, copySql };
+		// `STATE_PALETTE` is the same source of truth that `planToMermaid` uses to emit its
+		// `classDef` lines, so the legend swatches can't drift from the colours Mermaid paints.
+		// Convert the record into an array so the template's `v-for` doesn't depend on the key
+		// iteration order of the underlying object (more explicit, easier to reason about).
+		const stateLegend = /** @type {const} */ (["done", "running", "pending", "failed"]).map((key) => ({
+			key,
+			fill: STATE_PALETTE[key].fill,
+			stroke: STATE_PALETTE[key].stroke,
+			label: STATE_PALETTE[key].label,
+		}));
+
+		return { mermaidSvg, isLoading, errorText, modalRef, refresh, sqlLeaves, copiedFlags, copySql, direction, toggleDirection, stateLegend };
 	},
 	template: /* HTML */ `
 		<div class="modal fade" tabindex="-1" aria-labelledby="planMermaidModalLabel" aria-hidden="true" :ref="(el) => (modalRef = el)">
@@ -186,6 +230,22 @@ export default {
 					<div class="modal-header">
 						<h5 class="modal-title" id="planMermaidModalLabel">Query plan</h5>
 						<div class="ms-auto d-flex gap-2 align-items-center">
+							<!--
+								Flowchart-direction toggle. The icon flips between a "down arrow" (currently TD,
+								click to switch to LR) and a "right arrow" (currently LR, click to switch to TD)
+								so the next state is immediately readable from the glyph. Disabled while loading
+								because the cached lastPlan may not yet be populated.
+							-->
+							<button
+								type="button"
+								class="btn btn-sm btn-outline-secondary"
+								@click="toggleDirection"
+								:disabled="isLoading"
+								:title="direction === 'TD' ? 'Switch to left-to-right layout' : 'Switch to top-down layout'"
+							>
+								<i :class="direction === 'TD' ? 'bi bi-arrow-down' : 'bi bi-arrow-right'"></i>
+								{{ direction === "TD" ? "Top-down" : "Left-to-right" }}
+							</button>
 							<button type="button" class="btn btn-sm btn-outline-secondary" @click="refresh" :disabled="isLoading">
 								<i class="bi bi-arrow-clockwise"></i> Refresh
 							</button>
@@ -199,6 +259,21 @@ export default {
 						</div>
 						<div v-if="errorText" class="alert alert-warning small">{{errorText}}</div>
 						<pre class="mermaid" v-html="mermaidSvg" />
+						<!--
+							Legend — explains the per-state node colours (same palette used by Mermaid's
+							classDef lines, sourced from STATE_PALETTE so swatches and chart cannot drift).
+							Only shown once the SVG is rendered: an empty diagram has nothing to legend.
+						-->
+						<div v-if="mermaidSvg" class="d-flex flex-wrap gap-3 align-items-center small text-muted mt-2">
+							<span>Legend:</span>
+							<span v-for="entry in stateLegend" :key="entry.key" class="d-inline-flex align-items-center gap-1">
+								<span
+									aria-hidden="true"
+									:style="'display:inline-block;width:14px;height:14px;border-radius:3px;background:' + entry.fill + ';border:1px solid ' + entry.stroke + ';'"
+								></span>
+								{{ entry.label }}
+							</span>
+						</div>
 						<div v-if="sqlLeaves.length > 0" class="mt-3">
 							<h6 class="text-muted">SQL queries in this plan</h6>
 							<div v-for="(leaf, i) in sqlLeaves" :key="i" class="border rounded p-2 mb-2">

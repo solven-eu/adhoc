@@ -30,6 +30,12 @@ package eu.solven.adhoc.engine.observability.plan;
  * @author Benoit Lacelle
  */
 public enum NodeOperator {
+	/**
+	 * The submitted {@code CubeQuery} itself. Sits at the top of every plan; its children are the N root
+	 * {@code CubeQueryStep}s produced by the planner. Distinct from {@link #CUBE_STEP} because it represents the
+	 * user-facing query, not an internal step.
+	 */
+	CUBE_QUERY,
 	/** A {@code CubeQueryStep} — measure-side composition (combinator, dispatchor, transformator, …). */
 	CUBE_STEP,
 	/** A measure reference (leaf in the cube layer pointing at a named measure). */

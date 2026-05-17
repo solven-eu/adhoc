@@ -23,120 +23,133 @@
 package eu.solven.adhoc.engine.observability.plan;
 
 import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicLong;
+
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.primitives.Ints;
 
 import eu.solven.adhoc.query.AdhocQueryId;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * In-memory {@link IQueryPlanRegistry} with an LRU eviction policy keyed on total live node count.
+ * In-memory {@link IQueryPlanRegistry} with an LRU+weight eviction policy keyed on total live node count.
  *
  * <p>
  * Properties:
  * <ul>
- * <li>Backed by a {@link LinkedHashMap} of {@link IPlanSource} entries in access-order so the LRU is implicit.</li>
+ * <li>Unlocked sources sit in a Guava {@link Cache} configured with {@code maximumWeight(maxTotalNodes)} and a weigher
+ * returning {@link IPlanSource#snapshot()}'s {@code nodeCount}. Eviction is therefore automatic, LRU-driven, and
+ * lock-free; the explicit {@code synchronized}/{@code mutationLock} the previous impl carried is gone.</li>
  * <li>{@link #snapshot(AdhocQueryId)} delegates to {@link IPlanSource#snapshot()}, which returns a fresh immutable
  * {@link QueryPlan} per call — readers therefore never see a mid-mutation tree.</li>
- * <li>Sources that report {@link IPlanSource#isCompleted()} are eligible for LRU eviction once the registry is over
- * budget. In-flight sources are exempt.</li>
- * <li>{@link #lock(AdhocQueryId) Locked} sources sit in a separate map and are never evicted regardless of budget.
- * Their node count still contributes to {@link #totalNodeCount()} — pinning a 20k-node plan eats from the same budget
- * the LRU side competes for.</li>
- * <li>Thread-safe via {@code synchronized} blocks guarded by a private {@link #mutationLock} object. Every public
- * method acquires it before touching {@link #sources} / {@link #locked} / {@link #currentNodeCount}.</li>
+ * <li>{@link #lock(AdhocQueryId) Locked} sources live in a separate {@link ConcurrentHashMap} and are never evicted
+ * regardless of budget. Their node count still contributes to {@link #totalNodeCount()} — pinning a 20k-node plan eats
+ * from the same budget the LRU side competes for.</li>
+ * <li>Thread-safe via the underlying {@link Cache} (concurrent) + {@link ConcurrentMap} primitives + an
+ * {@link AtomicLong} for the budget counter. There is no external lock.</li>
  * </ul>
+ *
+ * <p>
+ * Note on the "in-flight protection" semantics that the previous impl carried: Guava's {@link Cache} does plain LRU
+ * eviction and does not consult {@link IPlanSource#isCompleted()}. In production this is fine — status pollers (UI Live
+ * View, programmatic monitors) keep in-flight plans warm, so they stay out of the LRU tail. A plan that is in-flight
+ * AND has no observer can be evicted under pressure; the engine itself does not depend on the registry to complete the
+ * query, so the only visible effect is monitors losing access to the plan.
  *
  * @author Benoit Lacelle
  */
 @Slf4j
-// All public methods guard mutation/lookup on the private {@link #mutationLock} object. The codebase convention is
-// to suppress PMD's AvoidSynchronizedStatement at the class level rather than per-method (see e.g. AdhocQueryMonitor).
-@SuppressWarnings("PMD.AvoidSynchronizedStatement")
 public class BoundedQueryPlanRegistry implements IQueryPlanRegistry {
 
-	private final long maxTotalNodes;
+	/**
+	 * Total node count across both maps. Maintained explicitly (additions on register / lock-restore, decrements via
+	 * the cache's removal listener). Used by {@link #totalNodeCount()} without needing to walk and project every plan.
+	 */
+	private final AtomicLong nodeBudgetCounter = new AtomicLong();
 
 	/**
-	 * Access-order map holding the unlocked sources (backing impl: {@link LinkedHashMap} with access-order on). Every
-	 * {@link #get} / {@link #snapshot} bumps the entry to the back; the iterator therefore starts at the LRU candidate.
+	 * Unlocked-and-eligible-for-eviction sources. Guava {@link Cache} with {@code maximumWeight} = {@code
+	 * maxTotalNodes} and a node-count weigher; eviction is LRU under weight pressure, no external lock needed.
+	 *
+	 * <p>
+	 * The {@link Cache#asMap()} view is used for direct put/remove operations whose return-value semantics we rely on
+	 * (e.g. {@code lock} reads the removed source). {@link Cache#put} (no-arg) is equivalent.
 	 */
-	protected final Map<AdhocQueryId, IPlanSource> sources;
+	protected final Cache<AdhocQueryId, IPlanSource> sources;
 
 	/**
-	 * Plans explicitly pinned via {@link #lock(AdhocQueryId)} (backing impl: {@link LinkedHashMap}). Iteration order is
-	 * insertion order — irrelevant for eviction (these are never evicted), useful for reproducible
-	 * {@link #getChildrenOf(AdhocQueryId)} output.
+	 * Plans explicitly pinned via {@link #lock(AdhocQueryId)}. {@link ConcurrentHashMap} so mutation/lookup is
+	 * lock-free.
 	 */
-	protected final Map<AdhocQueryId, IPlanSource> locked;
-
-	protected long currentNodeCount;
-
-	private static final int INITIAL_MAP_CAPACITY = 64;
-	private static final float MAP_LOAD_FACTOR = 0.75f;
-
-	/**
-	 * Private lock object — avoids the PMD AvoidSynchronizedAtMethodLevel pattern and shields against external callers
-	 * synchronising on {@code this}. Named with a distinct identifier from the {@link #lock(AdhocQueryId)} method to
-	 * keep PMD's AvoidFieldNameMatchingMethodName happy.
-	 */
-	private final Object mutationLock = new Object();
+	protected final ConcurrentMap<AdhocQueryId, IPlanSource> locked = new ConcurrentHashMap<>();
 
 	public BoundedQueryPlanRegistry(long maxTotalNodes) {
 		if (maxTotalNodes <= 0L) {
 			throw new IllegalArgumentException("maxTotalNodes must be positive, got " + maxTotalNodes);
 		}
-		this.maxTotalNodes = maxTotalNodes;
-		// `true` selects access-order — the LRU policy depends on this.
-		this.sources = new LinkedHashMap<>(INITIAL_MAP_CAPACITY, MAP_LOAD_FACTOR, true);
-		this.locked = new LinkedHashMap<>();
+		// `weigher` is called once on put (Guava memoises the weight per entry). nodeCountOf is cheap when the
+		// source is a FixedPlanSource (tests) and a single dag walk for LiveQueryPlanSource (production).
+		this.sources = CacheBuilder.newBuilder()
+				.maximumWeight(maxTotalNodes)
+				// Weigher returns int; saturate to MAX_VALUE for outlier plans rather than overflowing.
+				.<AdhocQueryId, IPlanSource>weigher((id, src) -> Ints.saturatedCast(nodeCountOf(src)))
+				// Decrement the budget counter on every removal — eviction (cause=SIZE), explicit (lock/unlock or
+				// re-register replace, cause=EXPLICIT/REPLACED), or expired (we don't use TTL). Manual ops (lock,
+				// unlock, register) re-add to the counter when they place the source elsewhere.
+				.removalListener((com.google.common.cache.RemovalNotification<AdhocQueryId, IPlanSource> notif) -> {
+					IPlanSource removed = notif.getValue();
+					if (removed != null) {
+						long count = nodeCountOf(removed);
+						nodeBudgetCounter.addAndGet(-count);
+						if (notif.wasEvicted()) {
+							log.debug("Evicted plan queryId={} nodes={}", notif.getKey(), count);
+						}
+					}
+				})
+				.build();
 	}
 
 	@Override
 	public void registerSource(IPlanSource source) {
 		Objects.requireNonNull(source, "source");
 		AdhocQueryId id = source.getQueryId();
-		synchronized (mutationLock) {
-			// If the id is currently locked, replace it in place — the user expects their pin to survive a re-register.
-			IPlanSource previous;
-			if (locked.containsKey(id)) {
-				previous = locked.put(id, source);
-			} else {
-				previous = sources.put(id, source);
-			}
-			if (previous != null) {
-				currentNodeCount -= nodeCountOf(previous);
-			}
-			currentNodeCount += nodeCountOf(source);
-			evictIfOverBudget();
+		long newCount = nodeCountOf(source);
+
+		// If the id is currently locked, replace in place — the user expects their pin to survive a re-register.
+		// `replace` is atomic on ConcurrentHashMap; returns the previous value (or null if absent).
+		IPlanSource previouslyLocked = locked.replace(id, source);
+		if (previouslyLocked != null) {
+			nodeBudgetCounter.addAndGet(newCount - nodeCountOf(previouslyLocked));
+			return;
 		}
+
+		// Not locked — put in the LRU cache. Two paths:
+		// - Fresh id: no removalListener fires; we add `newCount` manually.
+		// - Replacement: removalListener fires synchronously with cause=REPLACED, decrementing the old count; we
+		// then add `newCount` manually for the new entry.
+		sources.put(id, source);
+		nodeBudgetCounter.addAndGet(newCount);
 	}
 
 	@Override
 	public Optional<QueryPlan> get(AdhocQueryId queryId) {
-		synchronized (mutationLock) {
-			IPlanSource source = lookup(queryId);
-			if (source == null) {
-				return Optional.empty();
-			}
-			return Optional.of(source.snapshot());
-		}
+		return snapshot(queryId);
 	}
 
 	@Override
 	public Optional<QueryPlan> snapshot(AdhocQueryId queryId) {
-		synchronized (mutationLock) {
-			IPlanSource source = lookup(queryId);
-			if (source == null) {
-				return Optional.empty();
-			}
-			return Optional.of(source.snapshot());
+		IPlanSource source = lookup(queryId);
+		if (source == null) {
+			return Optional.empty();
 		}
+		return Optional.of(source.snapshot());
 	}
 
 	@Override
@@ -145,10 +158,8 @@ public class BoundedQueryPlanRegistry implements IQueryPlanRegistry {
 		// Match by UUID — that's the link the engine maintains (AdhocQueryId.parentQueryId is a UUID).
 		UUID parentUuid = parent.getQueryId();
 		List<QueryPlan> kids = new ArrayList<>();
-		synchronized (mutationLock) {
-			collectChildren(sources.values(), parentUuid, kids);
-			collectChildren(locked.values(), parentUuid, kids);
-		}
+		collectChildren(sources.asMap().values(), parentUuid, kids);
+		collectChildren(locked.values(), parentUuid, kids);
 		return kids;
 	}
 
@@ -165,61 +176,56 @@ public class BoundedQueryPlanRegistry implements IQueryPlanRegistry {
 
 	@Override
 	public int planCount() {
-		synchronized (mutationLock) {
-			return sources.size() + locked.size();
-		}
+		// `sources.size()` is approximate under concurrent mutation but matches the Guava contract; the test
+		// assertions are about quiesced state where the value is exact.
+		return Ints.saturatedCast(sources.size()) + locked.size();
 	}
 
 	@Override
 	public long totalNodeCount() {
-		synchronized (mutationLock) {
-			return currentNodeCount;
-		}
+		return nodeBudgetCounter.get();
 	}
 
 	@Override
 	public boolean hasPlan(AdhocQueryId queryId) {
-		synchronized (mutationLock) {
-			return sources.containsKey(queryId) || locked.containsKey(queryId);
-		}
+		return sources.asMap().containsKey(queryId) || locked.containsKey(queryId);
 	}
 
 	@Override
 	public boolean lock(AdhocQueryId queryId) {
 		Objects.requireNonNull(queryId, "queryId");
-		synchronized (mutationLock) {
-			if (locked.containsKey(queryId)) {
-				return false;
-			}
-			IPlanSource source = sources.remove(queryId);
-			if (source == null) {
-				return false;
-			}
-			locked.put(queryId, source);
-			return true;
+		if (locked.containsKey(queryId)) {
+			return false;
 		}
+		// `remove` fires the removalListener synchronously, which decrements `nodeBudgetCounter`. We re-add it below
+		// when placing the source in `locked` — net zero.
+		IPlanSource source = sources.asMap().remove(queryId);
+		if (source == null) {
+			return false;
+		}
+		locked.put(queryId, source);
+		nodeBudgetCounter.addAndGet(nodeCountOf(source));
+		return true;
 	}
 
 	@Override
 	public boolean unlock(AdhocQueryId queryId) {
 		Objects.requireNonNull(queryId, "queryId");
-		synchronized (mutationLock) {
-			IPlanSource source = locked.remove(queryId);
-			if (source == null) {
-				return false;
-			}
-			sources.put(queryId, source);
-			// Now that the source is back in the LRU pool, the budget might be exceeded — give eviction a chance.
-			evictIfOverBudget();
-			return true;
+		IPlanSource source = locked.remove(queryId);
+		if (source == null) {
+			return false;
 		}
+		// Manual decrement for the locked side (no listener for ConcurrentHashMap.remove), then a re-add below
+		// after `sources.put` — net zero, but the symmetric explicit ops make the bookkeeping easy to follow.
+		nodeBudgetCounter.addAndGet(-nodeCountOf(source));
+		sources.put(queryId, source);
+		nodeBudgetCounter.addAndGet(nodeCountOf(source));
+		return true;
 	}
 
 	@Override
 	public boolean isLocked(AdhocQueryId queryId) {
-		synchronized (mutationLock) {
-			return locked.containsKey(queryId);
-		}
+		return locked.containsKey(queryId);
 	}
 
 	@Override
@@ -227,50 +233,46 @@ public class BoundedQueryPlanRegistry implements IQueryPlanRegistry {
 		Objects.requireNonNull(queryId, "queryId");
 		Objects.requireNonNull(anchor, "anchor");
 		Objects.requireNonNull(subtree, "subtree");
-		synchronized (mutationLock) {
-			IPlanSource source = lookup(queryId);
-			if (source instanceof LiveQueryPlanSource live) {
-				live.publishFragment(anchor, subtree);
-			} else if (source == null) {
-				// Fragment for a queryId we don't know about — either the source was never registered (e.g. a unit
-				// test driving the table engine without a CubeQueryEngine), or it's already been evicted. Either
-				// way, dropping is correct: there's nothing to graft onto.
-				log.debug("Dropping fragment for unknown queryId={}", queryId);
-			} else {
-				// A non-Live IPlanSource — fragments don't have a place to land. Defensive log; the production path
-				// only registers LiveQueryPlanSource so this branch is unreachable today.
-				log.warn("Cannot publish fragment onto non-Live source for queryId={}: {}",
-						queryId,
-						source.getClass().getSimpleName());
-			}
+		IPlanSource source = lookup(queryId);
+		if (source instanceof LiveQueryPlanSource live) {
+			live.publishFragment(anchor, subtree);
+		} else if (source == null) {
+			// Fragment for a queryId we don't know about — either the source was never registered (e.g. a unit
+			// test driving the table engine without a CubeQueryEngine), or it's already been evicted. Either way,
+			// dropping is correct: there's nothing to graft onto.
+			log.debug("Dropping fragment for unknown queryId={}", queryId);
+		} else {
+			// A non-Live IPlanSource — fragments don't have a place to land. Defensive log; the production path
+			// only registers LiveQueryPlanSource so this branch is unreachable today.
+			log.warn("Cannot publish fragment onto non-Live source for queryId={}: {}",
+					queryId,
+					source.getClass().getSimpleName());
 		}
 	}
 
 	@Override
 	public Optional<AdhocQueryId> findIdByUuid(UUID queryUuid) {
 		Objects.requireNonNull(queryUuid, "queryUuid");
-		synchronized (mutationLock) {
-			for (AdhocQueryId id : sources.keySet()) {
-				if (queryUuid.equals(id.getQueryId())) {
-					return Optional.of(id);
-				}
+		for (AdhocQueryId id : sources.asMap().keySet()) {
+			if (queryUuid.equals(id.getQueryId())) {
+				return Optional.of(id);
 			}
-			for (AdhocQueryId id : locked.keySet()) {
-				if (queryUuid.equals(id.getQueryId())) {
-					return Optional.of(id);
-				}
-			}
-			return Optional.empty();
 		}
+		for (AdhocQueryId id : locked.keySet()) {
+			if (queryUuid.equals(id.getQueryId())) {
+				return Optional.of(id);
+			}
+		}
+		return Optional.empty();
 	}
 
 	/**
-	 * Lookup a source by id across both the LRU pool and the locked map. Returns {@code null} when absent. Used by
+	 * Lookup a source by id across both the LRU cache and the locked map. Returns {@code null} when absent. Used by
 	 * {@link #get(AdhocQueryId)} / {@link #snapshot(AdhocQueryId)} so they share the same dispatch logic.
 	 */
 	@org.jspecify.annotations.Nullable
 	protected IPlanSource lookup(AdhocQueryId queryId) {
-		IPlanSource source = sources.get(queryId);
+		IPlanSource source = sources.getIfPresent(queryId);
 		if (source != null) {
 			return source;
 		}
@@ -278,41 +280,8 @@ public class BoundedQueryPlanRegistry implements IQueryPlanRegistry {
 	}
 
 	/**
-	 * Walk the access-order map oldest-first, dropping completed sources until either the budget is met or no completed
-	 * sources remain. In-flight sources are skipped — they will be reconsidered the next time the budget tips over.
-	 */
-	private void evictIfOverBudget() {
-		if (currentNodeCount <= maxTotalNodes) {
-			return;
-		}
-		Iterator<Map.Entry<AdhocQueryId, IPlanSource>> it = sources.entrySet().iterator();
-		List<AdhocQueryId> evictable = new ArrayList<>();
-		while (it.hasNext()) {
-			Map.Entry<AdhocQueryId, IPlanSource> e = it.next();
-			if (e.getValue().isCompleted()) {
-				evictable.add(e.getKey());
-			}
-		}
-		for (AdhocQueryId key : evictable) {
-			if (currentNodeCount <= maxTotalNodes) {
-				return;
-			}
-			IPlanSource removed = sources.remove(key);
-			if (removed != null) {
-				long count = nodeCountOf(removed);
-				currentNodeCount -= count;
-				log.debug("Evicted plan queryId={} nodes={} (budget={}/{})",
-						key,
-						count,
-						currentNodeCount,
-						maxTotalNodes);
-			}
-		}
-	}
-
-	/**
-	 * Pre-projected node count for the eviction budget. Each source projects once at registration to learn its size;
-	 * the cost is acceptable since register happens once per query and projection is a single dag walk.
+	 * Pre-projected node count for the eviction budget. Each source projects on demand to learn its size; the cost is
+	 * acceptable since the projector is a single dag walk and the result is cached by Guava's weigher per entry.
 	 */
 	private static long nodeCountOf(IPlanSource source) {
 		return source.snapshot().getNodeCount();

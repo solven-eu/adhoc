@@ -29,7 +29,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.ATestDagInMemory;
-import eu.solven.adhoc.engine.CubeQueryEngine;
 import eu.solven.adhoc.engine.query.CubeQuery;
 import eu.solven.adhoc.model.measure.Aggregator;
 import eu.solven.adhoc.query.AdhocQueryId;
@@ -51,12 +50,8 @@ public class TestLiveQueryPlanSource_TableFragments extends ATestDagInMemory {
 	BoundedQueryPlanRegistry registry = new BoundedQueryPlanRegistry(10_000);
 
 	@Override
-	public CubeQueryEngine engine() {
-		return CubeQueryEngine.builder()
-				.eventBus(eventBus())
-				.factories(makeFactories())
-				.queryPlanRegistry(registry)
-				.build();
+	protected eu.solven.adhoc.engine.context.IQueryPreparator queryPreparator() {
+		return eu.solven.adhoc.engine.context.StandardQueryPreparator.builder().queryPlanRegistry(registry).build();
 	}
 
 	@BeforeEach
@@ -79,43 +74,21 @@ public class TestLiveQueryPlanSource_TableFragments extends ATestDagInMemory {
 		QueryPlan plan = registry.snapshot(queryId).orElseThrow();
 		Assertions.assertThat(plan.getState()).isEqualTo(PlanState.DONE);
 
-		// Walk the tree, looking for at least one TABLE_QUERY node. The exact tree shape depends on the cube DAG
-		// (single measure → single root → single leaf), but the fragment must appear under SOME node.
-		long tableQueryNodes = countByOperator(plan.getRoot(), NodeOperator.TABLE_QUERY);
+		// Flat scan over the graph's nodes — at least one TABLE_QUERY node must be present (the fragment the
+		// engine published for the executed merged query).
+		long tableQueryNodes =
+				plan.getNodes().stream().filter(n -> n.getOperator() == NodeOperator.TABLE_QUERY).count();
 		Assertions.assertThat(tableQueryNodes)
 				.as("Engine should have published at least one TABLE_QUERY fragment per table query executed")
 				.isGreaterThanOrEqualTo(1);
 
 		// And the table-query fragment carries the merged-query stats (rowsOut > 0 after completion).
-		QueryPlanNode tableQueryNode = findFirstByOperator(plan.getRoot(), NodeOperator.TABLE_QUERY);
-		Assertions.assertThat(tableQueryNode).isNotNull();
+		QueryPlanNode tableQueryNode = plan.getNodes()
+				.stream()
+				.filter(n -> n.getOperator() == NodeOperator.TABLE_QUERY)
+				.findFirst()
+				.orElseThrow();
 		Assertions.assertThat(tableQueryNode.getState()).isEqualTo(NodeState.DONE);
 		Assertions.assertThat(tableQueryNode.getStats().getRowsOut()).isPositive();
-	}
-
-	private long countByOperator(QueryPlanNode node, NodeOperator op) {
-		long c;
-		if (node.getOperator() == op) {
-			c = 1L;
-		} else {
-			c = 0L;
-		}
-		for (QueryPlanNode child : node.getChildren()) {
-			c += countByOperator(child, op);
-		}
-		return c;
-	}
-
-	private QueryPlanNode findFirstByOperator(QueryPlanNode node, NodeOperator op) {
-		if (node.getOperator() == op) {
-			return node;
-		}
-		for (QueryPlanNode child : node.getChildren()) {
-			QueryPlanNode hit = findFirstByOperator(child, op);
-			if (hit != null) {
-				return hit;
-			}
-		}
-		return null;
 	}
 }

@@ -71,6 +71,16 @@ public class LiveQueryPlanSource implements IPlanSource {
 	@NonNull
 	private final String cubeName;
 
+	/**
+	 * Structured per-property view of the submitted {@code CubeQuery} (measures / filter / groupBy / customMarker /
+	 * options). Populated by the engine when the source is registered, so the projector can render it as the top-level
+	 * {@code CUBE_QUERY} node without depending on the cube-package {@code CubeQuery} type. Empty when the caller has
+	 * no structured view to offer — the projector then degrades to a bare top-level node with no detail breakdown.
+	 */
+	@NonNull
+	@Default
+	private final Map<String, String> cubeQueryDetails = Collections.emptyMap();
+
 	@NonNull
 	private final Instant submittedAt;
 
@@ -141,6 +151,7 @@ public class LiveQueryPlanSource implements IPlanSource {
 				queryId,
 				parentQueryId,
 				cubeName,
+				cubeQueryDetails,
 				submittedAt,
 				executionStartedAt.get(),
 				planState.get(),
