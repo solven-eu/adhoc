@@ -34,6 +34,8 @@ import com.google.common.util.concurrent.MoreExecutors;
 import eu.solven.adhoc.column.IColumnsManager;
 import eu.solven.adhoc.column.generated_column.IMayHaveColumnGenerator;
 import eu.solven.adhoc.engine.cache.IQueryStepCache;
+import eu.solven.adhoc.engine.observability.plan.IQueryPlanRegistry;
+import eu.solven.adhoc.engine.observability.plan.NoopQueryPlanRegistry;
 import eu.solven.adhoc.engine.query.CubeQuery;
 import eu.solven.adhoc.engine.step.ICubeQuery;
 import eu.solven.adhoc.factories.AdhocFactoriesUnsafe;
@@ -97,6 +99,20 @@ public class StandardQueryPreparator implements IQueryPreparator {
 	@Default
 	IQueryStepCache queryStepCache = IQueryStepCache.noCache();
 
+	/**
+	 * The {@link IQueryPlanRegistry} the prepared {@link QueryPod} carries — the engine, lower-layer table wrappers and
+	 * any extension publishing plan fragments pull it from {@code queryPod.getQueryPlanRegistry()}. Defaults to
+	 * {@link NoopQueryPlanRegistry#INSTANCE} so callers that don't observe the plan pay nothing.
+	 *
+	 * <p>
+	 * Lives on the preparator (not on {@code CubeQueryEngine}) so the engine never has to rebuild a {@link QueryPod}
+	 * just to inject the registry. The previous design did {@code queryPod.toBuilder().queryPlanRegistry(...).build()}
+	 * inside {@code CubeQueryEngine.execute}, which violated "the engine consumes the pod, the preparator builds it".
+	 */
+	@NonNull
+	@Default
+	final IQueryPlanRegistry queryPlanRegistry = NoopQueryPlanRegistry.INSTANCE;
+
 	@Override
 	@SuppressWarnings("PMD.CloseResource")
 	public QueryPod prepareQuery(ITableWrapper table,
@@ -121,6 +137,7 @@ public class StandardQueryPreparator implements IQueryPreparator {
 				.executorService(executorService)
 				.queryStepCache(getQueryStepCache(preparedQuery))
 				.sliceFactory(sliceFactory)
+				.queryPlanRegistry(queryPlanRegistry)
 				.build();
 
 		// Filtering the forest is useful for edge-cases like:

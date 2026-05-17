@@ -125,4 +125,30 @@ public class Dispatchor
 		}
 	}
 
+	@Override
+	public String toString() {
+		// Skip empty `tags` and `combinationOptions`: most Combinators use defaults, and printing `tags=[]`
+		// or `combinationOptions={}` is noise that drowns the meaningful fields in EXPLAIN logs and exception
+		// messages.
+		StringBuilder sb = new StringBuilder("Dispatchor(name=").append(name);
+		if (!tags.isEmpty()) {
+			sb.append(", tags=").append(tags);
+		}
+		sb.append(", underlying=").append(underlying);
+
+		{
+			sb.append(", aggregationKey=").append(aggregationKey);
+			if (!aggregationOptions.isEmpty()) {
+				sb.append(", aggregationOptions=").append(aggregationOptions);
+			}
+		}
+		{
+			sb.append(", decompositionKey=").append(decompositionKey);
+			if (!decompositionOptions.isEmpty()) {
+				sb.append(", decompositionOptions=").append(decompositionOptions);
+			}
+		}
+		return sb.append(')').toString();
+	}
+
 }

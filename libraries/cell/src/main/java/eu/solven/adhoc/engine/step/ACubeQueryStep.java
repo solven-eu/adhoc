@@ -30,6 +30,7 @@ import java.util.concurrent.ConcurrentMap;
 
 import org.jspecify.annotations.Nullable;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.base.MoreObjects;
 import com.google.common.base.MoreObjects.ToStringHelper;
 import com.google.common.collect.ImmutableSet;
@@ -77,6 +78,8 @@ public abstract class ACubeQueryStep implements ICubeQueryStep {
 	@Nullable
 	private final Object customMarker;
 	private final ImmutableSet<IQueryOption> options;
+	// `@JsonIgnore` is useful as planSnapshot may publish the cubeQueryStep over JSON
+	@JsonIgnore
 	private final ConcurrentMap<Object, Object> cache;
 
 	@SuppressWarnings("checkstyle:AvoidInlineConditionals")
@@ -112,6 +115,8 @@ public abstract class ACubeQueryStep implements ICubeQueryStep {
 		setCrossStepsCache(transverseCache);
 	}
 
+	// `@JsonIgnore` is useful as planSnapshot may publish the cubeQueryStep over JSON
+	@JsonIgnore
 	@Override
 	public ConcurrentMap<Object, Object> getTransverseCache() {
 		ConcurrentMap<Object, Object> transverseCache =

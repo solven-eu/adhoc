@@ -23,7 +23,12 @@
 package eu.solven.adhoc.engine.observability.plan;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -65,6 +70,16 @@ public class LiveQueryPlanSource implements IPlanSource {
 
 	@NonNull
 	private final String cubeName;
+
+	/**
+	 * Structured per-property view of the submitted {@code CubeQuery} (measures / filter / groupBy / customMarker /
+	 * options). Populated by the engine when the source is registered, so the projector can render it as the top-level
+	 * {@code CUBE_QUERY} node without depending on the cube-package {@code CubeQuery} type. Empty when the caller has
+	 * no structured view to offer — the projector then degrades to a bare top-level node with no detail breakdown.
+	 */
+	@NonNull
+	@Default
+	private final Map<String, String> cubeQueryDetails = Collections.emptyMap();
 
 	@NonNull
 	private final Instant submittedAt;
@@ -110,6 +125,21 @@ public class LiveQueryPlanSource implements IPlanSource {
 	@Builder.Default
 	private final AtomicReference<@Nullable Instant> executionStartedAt = new AtomicReference<>();
 
+	/**
+	 * Fragments published via {@link IQueryPlanRegistry#publishFragment(AdhocQueryId, Object, QueryPlanNode)}. Keyed by
+	 * anchor (the subject the projector will match against existing nodes); each anchor accumulates a list of subtrees,
+	 * deduplicated by the subtree's root subject so that re-publishing the same fragment (e.g. a wrapper re-rendering
+	 * identical SQL) replaces rather than appends.
+	 *
+	 * <p>
+	 * {@link ConcurrentHashMap} is sufficient — writes happen on the engine's per-tableQuery worker threads, reads
+	 * happen on the snapshot path. The per-anchor list is replaced atomically on every write (copy-on-write), so
+	 * readers never see a torn list.
+	 */
+	@NonNull
+	@Builder.Default
+	private final Map<Object, List<QueryPlanNode>> fragmentsByAnchor = new ConcurrentHashMap<>();
+
 	@Override
 	public AdhocQueryId getQueryId() {
 		return queryId;
@@ -121,10 +151,25 @@ public class LiveQueryPlanSource implements IPlanSource {
 				queryId,
 				parentQueryId,
 				cubeName,
+				cubeQueryDetails,
 				submittedAt,
 				executionStartedAt.get(),
 				planState.get(),
-				completedAt.get());
+				completedAt.get(),
+				snapshotFragments());
+	}
+
+	/**
+	 * Return a deep-enough snapshot of the fragment map for the projector to use without seeing concurrent mutations
+	 * mid-walk. Each per-anchor list is already copy-on-write (replaced wholesale on every write), so a single read of
+	 * each entry gives us a stable {@link List} reference for the duration of this snapshot.
+	 */
+	protected Map<Object, List<QueryPlanNode>> snapshotFragments() {
+		if (fragmentsByAnchor.isEmpty()) {
+			return Collections.emptyMap();
+		}
+		// Copy the entry references; the lists themselves are immutable views (replaced on write).
+		return Map.copyOf(fragmentsByAnchor);
 	}
 
 	@Override
@@ -178,6 +223,40 @@ public class LiveQueryPlanSource implements IPlanSource {
 	public void markCompleted(PlanState state, Instant at) {
 		planState.set(state);
 		completedAt.set(at);
+		bumpVersion();
+	}
+
+	/**
+	 * Publish a fragment under {@code anchor}. Called by the registry on behalf of any layer that wants to enrich the
+	 * plan (typically the table engine and table wrappers). Deduplicates fragments whose subtree root carries the same
+	 * {@code subject} as a previously published one for the same anchor — replaces rather than appends so a wrapper
+	 * re-rendering identical SQL on a retry doesn't grow the fragment list unboundedly.
+	 *
+	 * @param anchor
+	 *            the subject value the projector will match against existing nodes when grafting
+	 * @param subtree
+	 *            the fragment to graft; its {@code subject} is used as the dedup key within the anchor's list
+	 */
+	public void publishFragment(Object anchor, QueryPlanNode subtree) {
+		// Copy-on-write list update so concurrent readers see either the old list or the new list, never a torn one.
+		// `compute` is atomic on ConcurrentHashMap, so two threads racing on the same anchor serialise here.
+		fragmentsByAnchor.compute(anchor, (a, existing) -> {
+			List<QueryPlanNode> base;
+			if (existing == null) {
+				base = List.of();
+			} else {
+				base = existing;
+			}
+			List<QueryPlanNode> next = new ArrayList<>(base.size() + 1);
+			Object incomingSubject = subtree.getSubject();
+			for (QueryPlanNode prev : base) {
+				if (!prev.getSubject().equals(incomingSubject)) {
+					next.add(prev);
+				}
+			}
+			next.add(subtree);
+			return Collections.unmodifiableList(next);
+		});
 		bumpVersion();
 	}
 }

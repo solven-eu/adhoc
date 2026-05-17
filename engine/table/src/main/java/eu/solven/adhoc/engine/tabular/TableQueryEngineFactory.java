@@ -115,7 +115,13 @@ public class TableQueryEngineFactory implements ITableQueryEngineFactory {
 	protected ITableQueryEngine bootstrap(IQueryPod queryPod,
 			ITableQueryFactory optimizer,
 			ITableQueryInducer inducer) {
-		return new TableQueryEngine(factories, eventBus, queryPod, optimizer, inducer);
+		return TableQueryEngine.builder()
+				.factories(factories)
+				.eventBus(eventBus)
+				.queryPod(queryPod)
+				.tableQueryFactory(optimizer)
+				.inducer(inducer)
+				.build();
 	}
 
 }

@@ -23,22 +23,27 @@
 package eu.solven.adhoc.engine.step;
 
 import java.time.LocalDate;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 
+import eu.solven.adhoc.filter.AndFilter;
 import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.model.measure.IMeasure;
+import eu.solven.adhoc.model.measure.ReferencedMeasure;
 import eu.solven.adhoc.model.query.IGroupBy;
+import eu.solven.adhoc.model.query.groupby.GroupByColumns;
 import eu.solven.adhoc.options.StandardQueryOptions;
+import eu.solven.adhoc.util.AdhocUnsafe;
+import eu.solven.pepper.unittest.PepperJackson3TestHelper;
 
 public class TestCubeQueryStep {
 	@Test
@@ -200,15 +205,104 @@ public class TestCubeQueryStep {
 		Assertions.assertThat((Optional) editKeepCustom.optCustomMarker()).contains("someCustomMarker");
 	}
 
-	@Disabled("TODO")
 	@Test
 	public void testToString() {
+		AdhocUnsafe.resetDeterministicQueryIds();
+
 		CubeQueryStep stepHasCustom = CubeQueryStep.builder()
-				.measure(Mockito.mock(IMeasure.class))
+				.measure(ReferencedMeasure.ref("a"))
 				.filter(ISliceFilter.MATCH_ALL)
 				.groupBy(IGroupBy.GRAND_TOTAL)
 				.customMarker(Optional.of("someCustomMarker"))
 				.build();
-		Assertions.assertThat(stepHasCustom).hasToString("");
+		Assertions.assertThat(stepHasCustom)
+				.hasToString("CubeQueryStep{id=0, measure=ReferencedMeasure(ref=a), customMarker=someCustomMarker}");
+	}
+
+	@Test
+	public void testJackson() {
+		AdhocUnsafe.resetDeterministicQueryIds();
+
+		CubeQueryStep step = CubeQueryStep.builder()
+				.measure(ReferencedMeasure.ref("a"))
+				.filter(AndFilter.and("a", "a1"))
+				.groupBy(GroupByColumns.named("c", "d"))
+				.customMarker(Optional.of("someCustomMarker"))
+				.cache(new ConcurrentHashMap<>(Map.of("cachedKey", "cachedValue")))
+				.build();
+
+		String asString = PepperJackson3TestHelper.asString(step);
+		Assertions.assertThat(asString).isEqualToNormalizingNewlines("""
+				{
+				  "customMarker" : "someCustomMarker",
+				  "filter" : {
+				    "type" : "column",
+				    "column" : "a",
+				    "valueMatcher" : "a1"
+				  },
+				  "groupBy" : {
+				    "columns" : [ "c", "d" ]
+				  },
+				  "id" : 0,
+				  "measure" : "a",
+				  "options" : [ ]
+				}""");
+	}
+
+	@Test
+	public void testHashcodeEquals_noTransverseCache() {
+		AdhocUnsafe.resetDeterministicQueryIds();
+
+		CubeQueryStep stepL = CubeQueryStep.builder()
+				.measure(ReferencedMeasure.ref("a"))
+				.filter(AndFilter.and("a", "a1"))
+				.groupBy(GroupByColumns.named("c", "d"))
+				.customMarker(Optional.of("someCustomMarker"))
+				.cache(new ConcurrentHashMap<>(Map.of("cachedKey", "cachedValue")))
+				.build();
+
+		CubeQueryStep stepR = CubeQueryStep.builder()
+				.measure(ReferencedMeasure.ref("a"))
+				.filter(AndFilter.and("a", "a1"))
+				.groupBy(GroupByColumns.named("c", "d"))
+				.customMarker(Optional.of("someCustomMarker"))
+				.cache(new ConcurrentHashMap<>(Map.of("cachedKey", "cachedValue")))
+				.build();
+
+		Assertions.assertThat(stepL).hasSameHashCodeAs(stepR).isEqualTo(stepR);
+	}
+
+	@Test
+	public void testHashcodeEquals_withTransverseCache() {
+		AdhocUnsafe.resetDeterministicQueryIds();
+
+		ConcurrentMap<Object, Object> transverseCache = new ConcurrentHashMap<>();
+
+		CubeQueryStep stepL = CubeQueryStep.builder()
+				.measure(ReferencedMeasure.ref("a"))
+				.filter(AndFilter.and("a", "a1"))
+				.groupBy(GroupByColumns.named("c", "d"))
+				.customMarker(Optional.of("someCustomMarker"))
+				.cache(new ConcurrentHashMap<>(Map.of("cachedKey", "cachedValue")))
+				.build();
+		stepL.setCrossStepsCache(transverseCache);
+
+		CubeQueryStep stepR = CubeQueryStep.builder()
+				.measure(ReferencedMeasure.ref("a"))
+				.filter(AndFilter.and("a", "a1"))
+				.groupBy(GroupByColumns.named("c", "d"))
+				.customMarker(Optional.of("someCustomMarker"))
+				.cache(new ConcurrentHashMap<>(Map.of("cachedKey", "cachedValue")))
+				.build();
+		stepR.setCrossStepsCache(transverseCache);
+
+		// Compare before modifying cache
+		Assertions.assertThat(stepL).hasSameHashCodeAs(stepR).isEqualTo(stepR);
+
+		// Modify both cache and tranverseCache
+		transverseCache.put("transverseKey", "transverseValue");
+		stepL.getCache().put("notTransverseKey", "notTransverseValue");
+
+		Assertions.assertThat(stepL).hasSameHashCodeAs(stepR).isEqualTo(stepR);
 	}
 }

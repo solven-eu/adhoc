@@ -67,10 +67,12 @@ import eu.solven.adhoc.engine.observability.AdhocQueryMonitor;
 import eu.solven.adhoc.engine.observability.DagExplainer;
 import eu.solven.adhoc.engine.observability.DagExplainerForPerfs;
 import eu.solven.adhoc.engine.observability.SizeAndDuration;
+import eu.solven.adhoc.engine.observability.plan.IPlanFragmentSink;
 import eu.solven.adhoc.engine.observability.plan.IQueryPlanRegistry;
 import eu.solven.adhoc.engine.observability.plan.LiveQueryPlanSource;
-import eu.solven.adhoc.engine.observability.plan.NoopQueryPlanRegistry;
+import eu.solven.adhoc.engine.observability.plan.PlanFragmentScope;
 import eu.solven.adhoc.engine.observability.plan.PlanState;
+import eu.solven.adhoc.engine.observability.plan.QueryPlanProjector;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.TableQueryStep;
 import eu.solven.adhoc.engine.tabular.ITableQueryEngineFactory;
@@ -150,32 +152,19 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 	@Getter
 	ITableQueryEngineFactory tableQueryEngine;
 
-	/**
-	 * Registry for {@link eu.solven.adhoc.engine.observability.plan.QueryPlan} observability — drives the Live View use
-	 * case. Defaults to {@link NoopQueryPlanRegistry#INSTANCE} so callers that don't care pay nothing. Applications
-	 * wiring a real registry (Pivotable's server) inject a {@code BoundedQueryPlanRegistry} here.
-	 */
-	@NonNull
-	@Default
-	@Getter
-	@SuppressWarnings("PMD.UnusedAssignment")
-	final IQueryPlanRegistry queryPlanRegistry = NoopQueryPlanRegistry.INSTANCE;
-
 	protected CubeQueryEngine(IAdhocFactories factories,
 			IAdhocEventBus eventBus,
-			ITableQueryEngineFactory tableQueryEngine,
-			IQueryPlanRegistry queryPlanRegistry) {
+			ITableQueryEngineFactory tableQueryEngine) {
 		if (tableQueryEngine == null) {
+			// The table engine reads its plan registry from `IQueryPod.getQueryPlanRegistry()` at call time. The
+			// registry is set on the pod by `StandardQueryPreparator` at construction; the engine never needs to
+			// hold a reference of its own.
 			tableQueryEngine = TableQueryEngineFactory.builder().eventBus(eventBus).factories(factories).build();
-		}
-		if (queryPlanRegistry == null) {
-			queryPlanRegistry = NoopQueryPlanRegistry.INSTANCE;
 		}
 
 		this.factories = factories;
 		this.eventBus = eventBus;
 		this.tableQueryEngine = tableQueryEngine;
-		this.queryPlanRegistry = queryPlanRegistry;
 	}
 
 	@Override
@@ -214,12 +203,15 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 			// Register a live plan source so pollers (UI Live View, programmatic monitors) can observe this query
 			// as it runs. Free when nobody reads: the registry just holds a reference to the dag the engine is
 			// already mutating in place; full plan projection happens only on `snapshot()`. The default
-			// `NoopQueryPlanRegistry` discards the registration, so callers that don't care pay nothing.
+			// `NoopQueryPlanRegistry` discards the registration, so callers that don't care pay nothing. The
+			// registry comes from the pod — `StandardQueryPreparator` set it; the engine does not own it.
+			IQueryPlanRegistry queryPlanRegistry = queryPod.getQueryPlanRegistry();
 			planSource = LiveQueryPlanSource.builder()
 					.dag(queryStepsDag)
 					.queryId(queryPod.getQueryId())
 					.parentQueryId(queryPod.getQueryId().getParentQueryId())
 					.cubeName(queryPod.getQueryId().getCube())
+					.cubeQueryDetails(QueryPlanProjector.toDetails(queryPod.getQuery()))
 					.submittedAt(java.time.Instant.now())
 					.build();
 			queryPlanRegistry.registerSource(planSource);
@@ -234,7 +226,13 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 			// Mark execution start right before the DAG runs — gap from submittedAt is the queueing/saturation delay
 			// surfaced by QueryPlanSummary#startDelayMs.
 			planSource.markExecutionStarted(java.time.Instant.now());
-			ITabularView tabularView = PodExecutors.runScoped(queryPod, () -> executeDag(queryPod, queryStepsDag));
+			// Bind the per-query plan-fragment sink so engine extensions (calculated columns, combinators, routing
+			// measures, …) can call `PlanFragmentScope.current().publish(...)` without having to learn the
+			// `(registry, queryId)` pair. The sink degrades to a no-op when the registry is the singleton — extensions
+			// pay nothing when nobody is watching.
+			IPlanFragmentSink fragmentSink = PlanFragmentScope.sinkFor(queryPlanRegistry, queryPod.getQueryId());
+			ITabularView tabularView = PlanFragmentScope.runWith(fragmentSink,
+					() -> PodExecutors.runScoped(queryPod, () -> executeDag(queryPod, queryStepsDag)));
 
 			if (queryPod.isDebugOrExplain()) {
 				explainDagPerfs(queryPod, queryStepsDag);

@@ -62,6 +62,11 @@ import eu.solven.adhoc.dataframe.stream.SuppliedTabularRecordConsumingStream;
 import eu.solven.adhoc.engine.cancel.CancellationHelpers;
 import eu.solven.adhoc.engine.cancel.CancelledQueryException;
 import eu.solven.adhoc.engine.observability.IHasHealthDetails;
+import eu.solven.adhoc.engine.observability.plan.IQueryPlanRegistry;
+import eu.solven.adhoc.engine.observability.plan.NodeOperator;
+import eu.solven.adhoc.engine.observability.plan.NodeState;
+import eu.solven.adhoc.engine.observability.plan.NoopQueryPlanRegistry;
+import eu.solven.adhoc.engine.observability.plan.QueryPlanNode;
 import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.filter.value.IValueMatcher;
 import eu.solven.adhoc.model.column.IAdhocColumn;
@@ -93,8 +98,15 @@ import lombok.extern.slf4j.Slf4j;
 @AllArgsConstructor
 @Slf4j
 @ToString(of = "name")
-// @SuppressWarnings("PMD.GodClass")
+@SuppressWarnings("PMD.GodClass")
 public class JooqTableWrapper implements ITableWrapper, IHasCache, IHasHealthDetails {
+
+	/**
+	 * Max character count for the SQL-leaf {@code label} preview. Long enough to convey the shape (SELECT/UPDATE, the
+	 * aggregator name, and one or two column names) yet short enough to fit in a Mermaid graph node without exploding
+	 * the diagram width. Full SQL stays in {@code details.sql} for the modal's copy-to-clipboard button.
+	 */
+	static final int SQL_LABEL_MAX_CHARS = 80;
 
 	@NonNull
 	final String name;
@@ -181,6 +193,7 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache, IHasHealthDet
 		QueryWithLeftover resultQuery = makeQueryFactory().prepareRowsQuery(tableQuery);
 
 		traceQuery(tableQuery.isDebugOrExplain(), tableQuery.isDebug(), resultQuery);
+		publishSqlFragment(queryPod, tableQuery, resultQuery);
 
 		// streamRows guarantees one record per source row; slices are not deduplicated by definition.
 		return wrapStream(queryPod, mergedGroupBy, resultQuery, tableQuery, /* distinctSlices */ false);
@@ -194,9 +207,84 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache, IHasHealthDet
 		QueryWithLeftover resultQuery = makeQueryFactory().prepareSliceQuery(tableQuery);
 
 		traceQuery(tableQuery.isDebugOrExplain(), tableQuery.isDebug(), resultQuery);
+		publishSqlFragment(queryPod, tableQuery, resultQuery);
 
 		boolean distinctSlices = areDistinctSliced(tableQuery, resultQuery);
 		return wrapStream(queryPod, mergedGroupBy, resultQuery, tableQuery, distinctSlices);
+	}
+
+	/**
+	 * Publish a SQL-leaf {@link QueryPlanNode} fragment anchored on {@code tableQuery}, so the plan-tree projector
+	 * grafts it under the corresponding TABLE_QUERY node previously published by {@code TableQueryEngine}. The registry
+	 * is pulled from {@code queryPod.getQueryPlanRegistry()} at call time — the wrapper itself stays stateless w.r.t.
+	 * the live registry, so callers building the wrapper without one (production wiring used to use the 2-arg ctor,
+	 * third-party adapters, &c.) still get plan enrichment as long as the engine put a real registry on the pod. No-op
+	 * when the pod carries {@link NoopQueryPlanRegistry#INSTANCE} or when the rendered query is empty / unavailable.
+	 *
+	 * <p>
+	 * The rendered text uses {@link ParamType#INLINED} — matches the {@code [EXPLAIN]} log format and is the
+	 * representation a human reader expects in the plan view. Parameterised mode (e.g. {@link ParamType#NAMED}) would
+	 * be useful for replaying queries against a different backend but is not what observability needs today.
+	 *
+	 * <p>
+	 * The leaf carries the SQL in {@code details.sql} and the language tag in {@code details.language="sql"}. Other
+	 * wrappers (DuckDB, ClickHouse-specific, …) can later publish their native representation under the same shape with
+	 * different language tags.
+	 *
+	 * @param queryPod
+	 *            provides the {@code queryId} the fragment belongs to and the registry to publish into
+	 * @param anchor
+	 *            the table-query value that the engine used to anchor the TABLE_QUERY node — the SQL leaf grafts under
+	 *            that subject (a {@code TableQueryV4} for slice queries, a {@code TableQueryV3} for row-stream queries)
+	 * @param resultQuery
+	 *            the jOOQ-rendered query carrying the {@code ResultQuery} we serialise to SQL
+	 */
+	protected void publishSqlFragment(IQueryPod queryPod, Object anchor, QueryWithLeftover resultQuery) {
+		IQueryPlanRegistry registry = queryPod.getQueryPlanRegistry();
+		if (registry == NoopQueryPlanRegistry.INSTANCE) {
+			// Cheap short-circuit — most production tests and ad-hoc usage don't wire a real registry.
+			return;
+		}
+		String sql;
+		try {
+			sql = toSQL(resultQuery.getQuery());
+		} catch (RuntimeException e) {
+			// Defensive: a render failure should not abort the actual query execution. Log + skip.
+			log.debug("Failed rendering SQL for plan fragment", e);
+			return;
+		}
+		if (sql == null || sql.isBlank()) {
+			return;
+		}
+		// The leaf's subject is a stable per-(anchor, language) sentinel so re-publication (e.g. a retry) replaces
+		// rather than appends. We use a tiny record so equals/hashCode is value-based.
+		Object leafSubject = new SqlLeafSubject(anchor, "sql");
+		// Surface a SHORT SQL preview in the label so the Pivotable Mermaid graph stays readable. The full SQL
+		// is preserved in `details.sql` for renderers that can show it (the modal lists each query with a
+		// copy-to-clipboard button). Whitespace runs are collapsed first (jOOQ pretty-prints long queries onto
+		// multiple lines) and the result is capped at SQL_LABEL_MAX_CHARS with a Unicode ellipsis so the truncation
+		// is visually obvious. Cap-as-bytes would be wrong if SQL ever embedded surrogates; chars-based is enough
+		// because we control the source (jOOQ output).
+		String oneLine = sql.replaceAll("\\s+", " ").trim();
+		String labelPreview;
+		if (oneLine.length() <= SQL_LABEL_MAX_CHARS) {
+			labelPreview = oneLine;
+		} else {
+			labelPreview = oneLine.substring(0, SQL_LABEL_MAX_CHARS) + "…";
+		}
+		QueryPlanNode leaf = QueryPlanNode.builder()
+				.subject(leafSubject)
+				.operator(NodeOperator.TABLE_QUERY)
+				.label(labelPreview)
+				.state(NodeState.DONE)
+				.details(Map.of("language", "sql", "sql", sql))
+				.build();
+		registry.publishFragment(queryPod.getQueryId(), anchor, leaf);
+	}
+
+	// Stable value-equals subject for a SQL leaf, scoped to (anchor, language). Two SQL leaves with the same anchor
+	// and language collapse to one in the fragment map (the publishFragment dedup keys on subject equality).
+	private record SqlLeafSubject(Object anchor, String language) {
 	}
 
 	protected void validateGroupBys(IQueryPod queryPod, Set<IGroupBy> groupBys, Object tableQueryForLog) {

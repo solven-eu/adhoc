@@ -15,9 +15,40 @@ class NetworkError extends Error {
 
 const prefix = "/api/v1";
 
+// Pending auto-retry handle for `loadMetadata`. Module-level instead of in the store state so the
+// pinia state stays JSON-serializable (it is persisted to localStorage in some setups) and the
+// TypeScript-via-JSDoc gate stays clean — `setTimeout` returns `number | NodeJS.Timeout`, which
+// is awkward to type alongside the rest of the AdhocStoreState shape.
+/** @type {ReturnType<typeof setTimeout> | null} */
+let metadataRetryTimer = null;
+
+/**
+ * Capped exponential backoff schedule used when `loadMetadata` keeps failing. Exported as a pure
+ * function so the policy can be unit-tested without spinning up pinia, fetch or timers.
+ *
+ * @param {number} attempt 1-indexed attempt number (the count after which the failure happened).
+ * @returns {number} delay in ms to wait before the next attempt — 2s, 5s, 10s, 30s, then 60s cap.
+ */
+export function backoffDelayMs(attempt) {
+	const schedule = [2000, 5000, 10000, 30000, 60000];
+	const idx = Math.max(0, Math.min(attempt - 1, schedule.length - 1));
+	return schedule[idx];
+}
+
+/**
+ * @typedef BackendStatus
+ * @property {"idle"|"loading"|"ok"|"error"} phase last observed phase of the public-metadata probe.
+ * `idle` until the first call, then `loading`/`ok`/`error`. Auto-retries on `error` (see `loadMetadata`).
+ * @property {number|null} http HTTP status (e.g. 502) when phase is `error` and the failure produced a response; null on network-layer failures.
+ * @property {string|null} message human-readable description of the failure ("Bad Gateway", "Failed to fetch"); null when phase is `ok`/`idle`/`loading`.
+ * @property {number} attempt number of attempts so far (including the in-flight or last one) — drives backoff.
+ * @property {number|null} retryAt epoch-ms at which the next auto-retry will fire (when phase is `error`); null otherwise.
+ */
+
 /**
  * @typedef AdhocStoreState
  * @property {Record<string, any>} metadata server-public metadata payload — populated by `loadMetadata`
+ * @property {BackendStatus} backendStatus tracks the public-metadata health probe. Used by `BackendStatusBanner` to surface "backend unreachable" UI.
  * @property {Record<string, any>} accounts account-id → account record, lazily filled by `loadAccount`
  * @property {number} nbAccountFetching count of in-flight account loads (for spinners)
  * @property {Record<string, any>} endpoints endpoint-id → endpoint descriptor; grown by `loadEndpoints` / local-only registrations
@@ -39,6 +70,7 @@ export const useAdhocStore = defineStore("adhoc", {
 		/** @type {AdhocStoreState} */ ({
 			// Various metadata to enrich the UX
 			metadata: {},
+			backendStatus: { phase: "idle", http: null, message: null, attempt: 0, retryAt: null },
 
 			// May load other accounts, for multi-accounts scenarios (e.g. query sharing)
 			accounts: {},
@@ -170,22 +202,72 @@ export const useAdhocStore = defineStore("adhoc", {
 
 		async loadMetadata() {
 			const store = this;
+			const url = prefix + "/public/metadata";
 
-			async function fetchFromUrl(url) {
-				const response = await fetch(url);
-				if (!response.ok) {
-					throw new NetworkError("Rejected request for url" + url, url, response);
-				}
-
-				const responseJson = await response.json();
-				const metadata = responseJson;
-
-				store.$patch((state) => {
-					state.metadata = metadata;
-				});
+			// Cancel a pending auto-retry — a fresh call supersedes it (e.g. manual retry click).
+			if (metadataRetryTimer) {
+				clearTimeout(metadataRetryTimer);
+				metadataRetryTimer = null;
 			}
 
-			return fetchFromUrl(prefix + "/public/metadata");
+			store.$patch((state) => {
+				state.backendStatus.phase = "loading";
+				state.backendStatus.attempt += 1;
+				state.backendStatus.retryAt = null;
+			});
+
+			try {
+				const response = await fetch(url);
+				if (!response.ok) {
+					// HTTP-layer failure (typically 502/503/504 when the backend is down or restarting).
+					store.$patch((state) => {
+						state.backendStatus.phase = "error";
+						state.backendStatus.http = response.status;
+						state.backendStatus.message = response.statusText || "HTTP " + response.status;
+					});
+					store._scheduleMetadataRetry();
+					return;
+				}
+
+				const metadata = await response.json();
+				store.$patch((state) => {
+					state.metadata = metadata;
+					state.backendStatus.phase = "ok";
+					state.backendStatus.http = null;
+					state.backendStatus.message = null;
+					state.backendStatus.attempt = 0;
+				});
+			} catch (e) {
+				// Network-layer failure (DNS, TCP, CORS, JSON parse). `fetch` throws TypeError here.
+				store.$patch((state) => {
+					state.backendStatus.phase = "error";
+					state.backendStatus.http = null;
+					state.backendStatus.message = (e && e.message) || "Network error";
+				});
+				store._scheduleMetadataRetry();
+			}
+		},
+
+		/**
+		 * Schedule the next auto-retry of `loadMetadata` using a capped exponential backoff
+		 * (2s, 5s, 10s, 30s, then 60s for every subsequent attempt). Side-effect: writes the
+		 * target epoch-ms into `backendStatus.retryAt` so the banner can render a countdown.
+		 *
+		 * <p>private: invoked only from the failure branches of `loadMetadata`.
+		 */
+		_scheduleMetadataRetry() {
+			const store = this;
+			const delayMs = backoffDelayMs(store.backendStatus.attempt);
+			const retryAt = Date.now() + delayMs;
+
+			store.$patch((state) => {
+				state.backendStatus.retryAt = retryAt;
+			});
+
+			metadataRetryTimer = setTimeout(() => {
+				metadataRetryTimer = null;
+				store.loadMetadata();
+			}, delayMs);
 		},
 
 		async loadAccount(accountId) {

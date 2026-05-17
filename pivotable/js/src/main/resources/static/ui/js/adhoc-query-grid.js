@@ -10,7 +10,7 @@ import AdhocMeasureStatsModal from "./adhoc-query-grid-stats-modal.js";
 import { SlickGrid, SlickDataView } from "slickgrid";
 
 import gridHelper from "./adhoc-query-grid-helper.js";
-import { autoFitColumnWidth, SCROLL_MODE_AUTOFIT_CAP_PX } from "./adhoc-query-grid-autofit.js";
+import { applyInitialScrollAutofit, autoFitColumnWidth, SCROLL_MODE_AUTOFIT_CAP_PX } from "./adhoc-query-grid-autofit.js";
 import { isLoading as isLoadingHelper, loadingPercent as loadingPercentHelper, loadingMessage as loadingMessageHelper } from "./adhoc-query-grid-loading.js";
 
 import { usePreferencesStore } from "./store-preferences.js";
@@ -160,11 +160,13 @@ export default {
 				selectable: false,
 				cssClass: "slick-cell-phantom",
 				headerCssClass: "slick-header-phantom",
-				// Stamp a footer class too — SlickGrid's footer row renders one cell per column by
-				// default, so without this the phantom gets a fully-styled (border + background)
-				// footer cell at the right end of the grid which spoils the "invisible trailing
-				// column" effect.
-				footerCssClass: "slick-footer-phantom",
+				// NB: there's no `footerCssClass: ...` here on purpose. SlickGrid's
+				// `createColumnFooter` (slick.grid.js) hardcodes the footer-cell className and does
+				// NOT honour `column.footerCssClass` — unlike `cssClass` (body) and `headerCssClass`
+				// (header) which both work. The phantom's footer cell is stamped with
+				// `slick-footer-phantom` from the `onFooterRowCellRendered` subscriber in
+				// `gridHelper.registerEventSubscribers` instead, which is where SlickGrid lets us
+				// hook each footer-cell DOM node after creation.
 				formatter: () => "",
 			};
 		}
@@ -534,47 +536,29 @@ export default {
 
 			grid.setColumns(gridColumns);
 
+			// Populate the dataView BEFORE running per-column autofit. `autoFitColumnWidth` measures
+			// each cell's formatter output via Canvas2D, but it pulls the rows out of dataView — so
+			// if dataView is empty at measurement time, every cell contributes 0 and the column
+			// shrinks down to just `header_text + chrome` (~50 px). This was the bug behind "columns
+			// shrunk on initial scroll-mode load vs after fit→scroll toggle": the autofit ran before
+			// setItems, dataView reported `getLength() === 0`, only the header chrome budget made it
+			// into the width. Pulling setItems up here keeps the autofit measurement honest.
+			dataView.getItemMetadata = (row) => {
+				return metadata[row] && metadata[row].attributes ? metadata[row] : (metadata[row] = { attributes: { "data-row": row }, ...metadata[row] });
+			};
+			dataView.beginUpdate();
+			dataView.setItems(data.array);
+			dataView.endUpdate();
+
 			if (isScrollLayout && newColumnIds.length > 0) {
 				if (memoWasEmptyBefore) {
-					// Initial scroll-mode load: SlickGrid's `grid.autosizeColumns()` is a no-op
-					// here (its viewport-balancing branch only runs when forceFitColumns is true),
-					// so columns would stay at the default ~80 px. Instead, defer one frame so
-					// cells are in the DOM and `autoFitColumnWidth` can measure them, then apply
-					// `min(SCROLL_MODE_AUTOFIT_CAP_PX, naturalContentWidth)` per column — same
-					// strategy as the fit→scroll watcher above.
-					requestAnimationFrame(() => {
-						if (!grid) return;
-						const cols = grid.getColumns();
-						const dataCols = cols.filter((c) => c.id !== "__phantom_trailing");
-						let dirty = false;
-						dataCols.forEach((col, idx) => {
-							const natural = autoFitColumnWidth(grid, dataView, col, idx);
-							if (natural <= 0) return;
-							const capped = Math.min(SCROLL_MODE_AUTOFIT_CAP_PX, natural);
-							if (col.width !== capped) {
-								col.width = capped;
-								dirty = true;
-							}
-						});
-						if (dirty) {
-							grid.setColumns(cols);
-							if (typeof grid.updateCanvasWidth === "function") grid.updateCanvasWidth(true);
-							// `setColumns` clears the footer row DOM — re-populate from the snapshot
-							// captured at the end of the synchronous `resyncData` pass above. Without
-							// this the footer is empty on a fresh F5 in scroll mode.
-							if (lastFooterSnapshot) {
-								gridHelper.updateFooters(
-									grid,
-									lastFooterSnapshot.columnNames,
-									lastFooterSnapshot.view.coordinates,
-									lastFooterSnapshot.view.values,
-									lastFooterSnapshot.measureStats,
-									lastFooterSnapshot.formatOptions,
-								);
-							}
-						}
-						recomputeOffscreenColumns();
-					});
+					// Initial scroll-mode load: autofit EVERY data column synchronously. Same shape as
+					// the fit→scroll toggle watcher. The autofit needs dataView populated (just done
+					// above) so cell measurements aren't all 0. The extracted helper
+					// `applyInitialScrollAutofit` is unit-tested in `grid-autofit.spec.js` —
+					// keeping the call in-line minimises the risk of regressing the contract.
+					applyInitialScrollAutofit(grid, dataView, gridColumns, SCROLL_MODE_AUTOFIT_CAP_PX);
+					grid.setColumns(gridColumns);
 				} else {
 					// Subsequent resync (e.g. user added a measure or groupBy column). Per-column
 					// auto-fit for the new columns only; existing columns keep their memoed width.
@@ -608,8 +592,9 @@ export default {
 				}
 			}
 
-			// Snapshot every column's current width back into the memo so the next resync restores
-			// even the columns we just auto-sized (instead of resizing them again).
+			// Snapshot every column's CURRENT width into the memo so the next resync restores even
+			// the columns we just auto-sized — runs AFTER autofit, so the memo gets the autofit
+			// widths rather than the pre-autofit defaults.
 			for (const col of gridColumns) {
 				columnWidthMemo.set(col.id, col.width);
 			}
@@ -620,15 +605,6 @@ export default {
 			// explicitly insulates us from a later swap mid-toggle.
 			lastFooterSnapshot = { columnNames, view, measureStats, formatOptions };
 			recomputeOffscreenColumns();
-
-			dataView.getItemMetadata = (row) => {
-				return metadata[row] && metadata[row].attributes ? metadata[row] : (metadata[row] = { attributes: { "data-row": row }, ...metadata[row] });
-			};
-
-			// https://github.com/6pac/SlickGrid/wiki/DataView#batching-updates
-			dataView.beginUpdate();
-			dataView.setItems(data.array);
-			dataView.endUpdate();
 
 			gridMetadata.nb_rows = data.array.length;
 
@@ -776,6 +752,21 @@ export default {
 					}
 				},
 			);
+
+			// Heatmap toggles (Formatting modal). The measure / percent formatters in
+			// `adhoc-query-grid-helper.js` read `formatOptions.primaryHeatmap` /
+			// `formatOptions.secondaryHeatmap` on every cell render (reactive Vue proxy captured by
+			// closure), so the underlying state is already current — we just need SlickGrid to
+			// re-paint. Previously, the toggle only took effect after the next Submit because no
+			// invalidation was fired; that's the symptom this watcher fixes. `[() => …, () => …]`
+			// (multi-source watch) lets a single handler cover both flags without the
+			// double-invalidate that two separate watchers would produce when a programmatic
+			// "reset both" path flips them in the same tick.
+			watch([() => formatOptions.primaryHeatmap, () => formatOptions.secondaryHeatmap], () => {
+				if (!grid) return;
+				grid.invalidateAllRows();
+				grid.render();
+			});
 
 			// Layout toggle (fit ↔ scroll): light path that ONLY flips the option, adds/removes
 			// the phantom trailing column, and re-applies widths. The previous implementation called

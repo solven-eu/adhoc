@@ -30,7 +30,6 @@ import org.assertj.core.api.Assertions;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.DirectedMultigraph;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
 import eu.solven.adhoc.engine.QueryStepsDag;
 import eu.solven.adhoc.engine.dag.GraphHelpers;
@@ -70,34 +69,63 @@ public class TestLiveQueryPlanSource {
 
 	@Test
 	public void testSnapshotReflectsCurrentStepToCost() {
-		CubeQueryStep root = Mockito.mock(CubeQueryStep.class);
+		CubeQueryStep root = CubeQueryStep.builder().measure("mRoot").build();
 		ConcurrentHashMap<ICubeQueryStep, SizeAndDuration> costs = new ConcurrentHashMap<>();
 		LiveQueryPlanSource source = buildSource(root, costs);
 
-		// Initial snapshot: no costs → PENDING.
-		Assertions.assertThat(source.snapshot().getRoot().getState()).isEqualTo(NodeState.PENDING);
+		// Initial snapshot: no costs → the materialized step (CUBE_QUERY wrapper's only outgoing edge) is PENDING.
+		Assertions.assertThat(stepNodeOf(source.snapshot()).getState()).isEqualTo(NodeState.PENDING);
 
-		// Engine writes to the map → next snapshot sees DONE with the recorded stats.
+		// Engine writes to the map → next snapshot sees DONE with the recorded stats on the step.
 		costs.put(root, SizeAndDuration.builder().size(10L).duration(Duration.ofMillis(5)).build());
-		Assertions.assertThat(source.snapshot().getRoot().getState()).isEqualTo(NodeState.DONE);
-		Assertions.assertThat(source.snapshot().getRoot().getStats().getRowsOut()).isEqualTo(10L);
+		Assertions.assertThat(stepNodeOf(source.snapshot()).getState()).isEqualTo(NodeState.DONE);
+		Assertions.assertThat(stepNodeOf(source.snapshot()).getStats().getRowsOut()).isEqualTo(10L);
+	}
+
+	/** First child of the CUBE_QUERY wrapper — the cube-step root. Resolves through the plan's edge list. */
+	private static QueryPlanNode stepNodeOf(QueryPlan plan) {
+		java.util.Map<String, QueryPlanNode> byId =
+				plan.getNodes().stream().collect(java.util.stream.Collectors.toMap(QueryPlanNode::getId, n -> n));
+		String childId = plan.getEdges()
+				.stream()
+				.filter(e -> e.getParentId().equals(plan.getRootId()))
+				.findFirst()
+				.orElseThrow()
+				.getChildId();
+		return byId.get(childId);
+	}
+
+	/**
+	 * Children of the cube-step (the CUBE_QUERY wrapper's only child) — typically a single fragment graft. Used to
+	 * assert that {@code publishFragment} → {@code snapshot} round-trip wires the graft as an edge from the step.
+	 */
+	private static java.util.List<QueryPlanNode> stepChildrenOf(QueryPlan plan) {
+		QueryPlanNode step = stepNodeOf(plan);
+		java.util.Map<String, QueryPlanNode> byId =
+				plan.getNodes().stream().collect(java.util.stream.Collectors.toMap(QueryPlanNode::getId, n -> n));
+		return plan.getEdges()
+				.stream()
+				.filter(e -> e.getParentId().equals(step.getId()))
+				.map(e -> byId.get(e.getChildId()))
+				.toList();
 	}
 
 	@Test
 	public void testSnapshotReturnsFreshTreePerCall() {
-		CubeQueryStep root = Mockito.mock(CubeQueryStep.class);
+		CubeQueryStep root = CubeQueryStep.builder().measure("mRoot").build();
 		LiveQueryPlanSource source = buildSource(root, new ConcurrentHashMap<>());
 
 		QueryPlan a = source.snapshot();
 		QueryPlan b = source.snapshot();
 		Assertions.assertThat(a).isEqualTo(b);
 		Assertions.assertThat(a).isNotSameAs(b);
-		Assertions.assertThat(a.getRoot()).isNotSameAs(b.getRoot());
+		// Each snapshot returns a fresh nodes list — equal by value, different instances.
+		Assertions.assertThat(a.getNodes()).isNotSameAs(b.getNodes());
 	}
 
 	@Test
 	public void testVersionStartsAtZeroAndBumps() {
-		CubeQueryStep root = Mockito.mock(CubeQueryStep.class);
+		CubeQueryStep root = CubeQueryStep.builder().measure("mRoot").build();
 		LiveQueryPlanSource source = buildSource(root, new ConcurrentHashMap<>());
 
 		Assertions.assertThat(source.version()).isZero();
@@ -108,7 +136,7 @@ public class TestLiveQueryPlanSource {
 
 	@Test
 	public void testIsCompletedTracksPlanState() {
-		CubeQueryStep root = Mockito.mock(CubeQueryStep.class);
+		CubeQueryStep root = CubeQueryStep.builder().measure("mRoot").build();
 		LiveQueryPlanSource source = buildSource(root, new ConcurrentHashMap<>());
 
 		Assertions.assertThat(source.isCompleted()).isFalse();
@@ -124,7 +152,7 @@ public class TestLiveQueryPlanSource {
 
 	@Test
 	public void testMarkCompletedBumpsVersion() {
-		CubeQueryStep root = Mockito.mock(CubeQueryStep.class);
+		CubeQueryStep root = CubeQueryStep.builder().measure("mRoot").build();
 		LiveQueryPlanSource source = buildSource(root, new ConcurrentHashMap<>());
 
 		long v0 = source.version();
@@ -134,7 +162,7 @@ public class TestLiveQueryPlanSource {
 
 	@Test
 	public void testMarkExecutionStartedIsIdempotentAndFlowsToSnapshot() {
-		CubeQueryStep root = Mockito.mock(CubeQueryStep.class);
+		CubeQueryStep root = CubeQueryStep.builder().measure("mRoot").build();
 		LiveQueryPlanSource source = buildSource(root, new ConcurrentHashMap<>());
 
 		Assertions.assertThat(source.snapshot().getExecutionStartedAt()).isNull();
@@ -150,7 +178,7 @@ public class TestLiveQueryPlanSource {
 
 	@Test
 	public void testLiveSourceCanBeRegisteredInRegistry() {
-		CubeQueryStep root = Mockito.mock(CubeQueryStep.class);
+		CubeQueryStep root = CubeQueryStep.builder().measure("mRoot").build();
 		LiveQueryPlanSource source = buildSource(root, new ConcurrentHashMap<>());
 
 		BoundedQueryPlanRegistry registry = new BoundedQueryPlanRegistry(100);
@@ -159,5 +187,81 @@ public class TestLiveQueryPlanSource {
 		QueryPlan viaRegistry = registry.snapshot(source.getQueryId()).orElseThrow();
 		Assertions.assertThat(viaRegistry.getQueryId()).isEqualTo(source.getQueryId());
 		Assertions.assertThat(viaRegistry.getState()).isEqualTo(PlanState.PENDING);
+	}
+
+	@Test
+	public void testPublishFragmentAppearsInNextSnapshot() {
+		CubeQueryStep root = CubeQueryStep.builder().measure("mRoot").build();
+		LiveQueryPlanSource source = buildSource(root, new ConcurrentHashMap<>());
+
+		QueryPlanNode v4 =
+				QueryPlanNode.builder().subject("v4-subject").operator(NodeOperator.TABLE_QUERY).label("v4").build();
+		long v0 = source.version();
+		source.publishFragment(root, v4);
+
+		QueryPlan plan = source.snapshot();
+		// The fragment hangs off the materialized step, which is the CUBE_QUERY wrapper's single child.
+		Assertions.assertThat(stepChildrenOf(plan))
+				.extracting(QueryPlanNode::getSubject)
+				.containsExactly(v4.getSubject());
+		Assertions.assertThat(source.version()).isGreaterThan(v0);
+	}
+
+	@Test
+	public void testPublishFragmentDedupesOnSubjectEqualityWithinSameAnchor() {
+		CubeQueryStep root = CubeQueryStep.builder().measure("mRoot").build();
+		LiveQueryPlanSource source = buildSource(root, new ConcurrentHashMap<>());
+
+		QueryPlanNode v4a =
+				QueryPlanNode.builder().subject("shared-subject").operator(NodeOperator.TABLE_QUERY).label("a").build();
+		QueryPlanNode v4b = QueryPlanNode.builder()
+				.subject("shared-subject")
+				.operator(NodeOperator.TABLE_QUERY)
+				.label("b (replaces a)")
+				.build();
+		source.publishFragment(root, v4a);
+		source.publishFragment(root, v4b);
+
+		QueryPlan plan = source.snapshot();
+		// Only the second fragment survives — the first was replaced because its subject collided. Fragments hang
+		// off the materialized step (the CUBE_QUERY wrapper's single child). Match by label since both fragments
+		// share the same subject.
+		Assertions.assertThat(stepChildrenOf(plan))
+				.extracting(QueryPlanNode::getLabel)
+				.containsExactly("b (replaces a)");
+	}
+
+	@Test
+	public void testPublishFragmentRoutedViaRegistry() {
+		CubeQueryStep root = CubeQueryStep.builder().measure("mRoot").build();
+		LiveQueryPlanSource source = buildSource(root, new ConcurrentHashMap<>());
+
+		BoundedQueryPlanRegistry registry = new BoundedQueryPlanRegistry(100);
+		registry.registerSource(source);
+
+		QueryPlanNode v4 = QueryPlanNode.builder()
+				.subject("v4-via-registry")
+				.operator(NodeOperator.TABLE_QUERY)
+				.label("v4")
+				.build();
+		registry.publishFragment(source.getQueryId(), root, v4);
+
+		QueryPlan plan = registry.snapshot(source.getQueryId()).orElseThrow();
+		// Fragment hangs off the materialized step (the CUBE_QUERY wrapper's single child).
+		Assertions.assertThat(stepChildrenOf(plan))
+				.extracting(QueryPlanNode::getSubject)
+				.containsExactly(v4.getSubject());
+	}
+
+	@Test
+	public void testPublishFragmentForUnknownQueryIdIsDropped() {
+		BoundedQueryPlanRegistry registry = new BoundedQueryPlanRegistry(100);
+		AdhocQueryId unknown = AdhocQueryId.builder().cube("not-registered").build();
+		QueryPlanNode v4 = QueryPlanNode.builder().subject("v4").operator(NodeOperator.TABLE_QUERY).label("v4").build();
+
+		// Must not throw — the production path expects the engine to drop fragments arriving after eviction or
+		// for unknown ids (e.g. a wrapper publishing during a unit test that never registered a source).
+		registry.publishFragment(unknown, new Object(), v4);
+		Assertions.assertThat(registry.snapshot(unknown)).isEmpty();
 	}
 }

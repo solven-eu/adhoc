@@ -23,11 +23,6 @@
 package eu.solven.adhoc.engine.observability.plan;
 
 import java.time.Instant;
-import java.util.ArrayDeque;
-import java.util.Deque;
-import java.util.LinkedHashSet;
-import java.util.Set;
-import java.util.function.Consumer;
 
 import org.jspecify.annotations.Nullable;
 
@@ -116,7 +111,12 @@ public class QueryPlanSummary {
 	 */
 	public static QueryPlanSummary of(QueryPlan plan, Instant now) {
 		Counter counter = new Counter();
-		walk(plan.getRoot(), node -> count(counter, node));
+		// The plan's `nodes` list is already deduplicated by the projector — one entry per logical step — so this is
+		// just a flat sweep, no DAG traversal needed. Iteration order is the projector's DFS-discovery order, which
+		// keeps `latestCompletedLabel` deterministic across snapshots.
+		for (QueryPlanNode n : plan.getNodes()) {
+			count(counter, n);
+		}
 
 		long elapsed;
 		if (plan.getCompletedAt() != null) {
@@ -146,35 +146,6 @@ public class QueryPlanSummary {
 				.totalRowsOut(counter.rowsOut)
 				.latestCompletedLabel(counter.latestCompletedLabel)
 				.build();
-	}
-
-	/**
-	 * DAG-aware DFS over the plan tree. Visits each subject at most once (dedup on {@link QueryPlanNode#getSubject()})
-	 * and invokes {@code visitor} per distinct node — pure traversal, no business logic. Callers supply the counting /
-	 * aggregation logic via {@code visitor}, keeping this method reusable for future renderers (mermaid, text dump)
-	 * that need the same traversal but different per-node side effects.
-	 *
-	 * @param root
-	 *            starting point
-	 * @param visitor
-	 *            invoked once per distinct subject, in DFS pre-order
-	 */
-	protected static void walk(QueryPlanNode root, Consumer<QueryPlanNode> visitor) {
-		Deque<QueryPlanNode> stack = new ArrayDeque<>();
-		// LinkedHashSet so the walk visits nodes in a reproducible order — important for {@code latestCompletedLabel}
-		// when two nodes share the same {@code completedAt}.
-		Set<Object> visited = new LinkedHashSet<>();
-		stack.push(root);
-		while (!stack.isEmpty()) {
-			QueryPlanNode n = stack.pop();
-			if (!visited.add(n.getSubject())) {
-				continue;
-			}
-			visitor.accept(n);
-			for (QueryPlanNode child : n.getChildren()) {
-				stack.push(child);
-			}
-		}
 	}
 
 	/**

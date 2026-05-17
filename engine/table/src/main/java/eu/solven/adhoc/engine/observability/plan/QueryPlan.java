@@ -23,6 +23,8 @@
 package eu.solven.adhoc.engine.observability.plan;
 
 import java.time.Instant;
+import java.util.Collections;
+import java.util.List;
 import java.util.UUID;
 
 import org.jspecify.annotations.Nullable;
@@ -46,11 +48,26 @@ import lombok.experimental.NonFinal;
  * walks parent-&gt;child links via {@link IQueryPlanRegistry#getChildrenOf(AdhocQueryId)}.</li>
  * <li>{@link #submittedCustomMarker} — recorded once at submission time. Per-node marker decisions (routing measures,
  * composite translations) will live on nodes in a follow-up PR.</li>
- * <li>{@link #root} — root of the DAG of {@link QueryPlanNode}s for this plan.</li>
- * <li>{@link #nodeCount} — total live nodes anywhere under {@link #root}. Used by the registry's size-capped eviction
+ * <li>{@link #rootId} — id of the {@code CUBE_QUERY} node sitting at the top of the plan graph (always the
+ * {@code CubeQuery} wrapper produced by {@code QueryPlanProjector}). Resolve via
+ * {@code nodes.stream().filter(n -> rootId.equals(n.getId())).findFirst()}.</li>
+ * <li>{@link #nodes} — flat list of every {@link QueryPlanNode} reachable from {@link #rootId}. Each node appears
+ * exactly once even when several parents depend on it (DAG: shared TableQueryV4, shared SQL leaf, …). Stable order:
+ * projector emits in DFS-discovery order, so {@code rootId} is at index 0.</li>
+ * <li>{@link #edges} — flat list of every parent → child link. Endpoints reference {@link QueryPlanNode#getId()}.
+ * Renderers reconstruct the graph by indexing nodes by id then walking edges; tree-shaped UIs (Mermaid, ASCII
+ * explainers) can BFS / DFS from {@link #rootId}.</li>
+ * <li>{@link #nodeCount} — total node count (equals {@code nodes.size()}). Used by the registry's size-capped eviction
  * policy (we cap by node count, not by plan count, so light queries accumulate freely while a single 20k-node plan eats
  * its fair share of the budget).</li>
  * </ul>
+ *
+ * <p>
+ * Why graph (not tree): the projector memoizes per-subject so a step shared between multiple parents materializes once.
+ * Before this shape, Jackson serialization re-flattened the DAG into a tree by emitting the shared node once per
+ * occurrence — a single TableQueryV4 served by 3 induced steps appeared 3 times in the JSON, costing payload size and
+ * forcing UI consumers to re-dedup at parse time. The flat {@code nodes}/{@code edges} shape is the natural encoding of
+ * the DAG.
  *
  * @author Benoit Lacelle
  */
@@ -105,8 +122,21 @@ public class QueryPlan {
 	@Nullable
 	Instant completedAt;
 
+	/** Id of the {@code CUBE_QUERY} wrapper at the top of the plan graph. Always present in {@link #nodes}. */
 	@NonNull
-	QueryPlanNode root;
+	String rootId;
+
+	/**
+	 * Flat list of every node in the plan, deduplicated by subject. See class-level doc for ordering.
+	 */
+	@NonNull
+	@Builder.Default
+	List<QueryPlanNode> nodes = Collections.emptyList();
+
+	/** Flat list of every parent → child link. Endpoints reference {@link QueryPlanNode#getId()}. */
+	@NonNull
+	@Builder.Default
+	List<QueryPlanEdge> edges = Collections.emptyList();
 
 	/**
 	 * Pre-computed node count for the {@link IQueryPlanRegistry} eviction policy. Callers populating the plan are

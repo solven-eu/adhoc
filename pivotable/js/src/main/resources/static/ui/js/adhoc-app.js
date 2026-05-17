@@ -13,12 +13,15 @@ import AdhocAccountChip from "./adhoc-account-chip.js";
 
 import LoginModal from "./login-modal.js";
 
+import BackendStatusBanner from "./backend-status-banner.js";
+
 export default {
 	components: {
 		AdhocNavbar,
 		LoginChip,
 		LoginModal,
 		AdhocAccountChip,
+		BackendStatusBanner,
 	},
 	computed: {
 		...mapState(useUserStore, ["account", "tokens", "nbLoginLoading"]),
@@ -52,6 +55,8 @@ export default {
 	template: /* HTML */ `
 		<div class="container-fluid">
 			<AdhocNavbar />
+
+			<BackendStatusBanner />
 
 			<main>
 				<RouterView />

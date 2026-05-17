@@ -78,7 +78,6 @@ classDiagram
     class CubeQueryEngine {
         IAdhocEventBus eventBus
         IAdhocFactories factories
-        IQueryPlanRegistry queryPlanRegistry
         ITableQueryEngineFactory tableQueryEngine
     }
     class CubeWrapper {
@@ -138,6 +137,7 @@ classDiagram
         IAdhocFactories factories
         IImplicitFilter implicitFilter
         IImplicitOptions implicitOptions
+        IQueryPlanRegistry queryPlanRegistry
         IQueryStepCache queryStepCache
     }
     class TableQueryEngineFactory {
@@ -211,7 +211,7 @@ classDiagram
     AdhocFactories *-- IOperatorFactory : operatorFactory
     JooqTableWrapperParameters *-- IOperatorFactory : operatorFactory
     TableQueryEngineFactory *-- TableQueryFactoryFactory : queryFactoryFactory
-    CubeQueryEngine *-- NoopQueryPlanRegistry : queryPlanRegistry
+    StandardQueryPreparator *-- NoopQueryPlanRegistry : queryPlanRegistry
     CubeWrapper *-- StandardQueryPreparator : queryPreparator
     StandardQueryPreparator *-- IQueryStepCache : queryStepCache
     PrunedJoinsJooqTableSupplier *-- PrunedJoinsJooqTableSupplierBuilder : schema

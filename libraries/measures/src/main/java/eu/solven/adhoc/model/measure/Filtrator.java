@@ -85,4 +85,16 @@ public class Filtrator implements IMeasure, IHasUnderlyingMeasures {
 		return ImmutableList.of(underlying);
 	}
 
+	@Override
+	public String toString() {
+		// Skip empty `tags` and `combinationOptions`: most Combinators use defaults, and printing `tags=[]`
+		// or `combinationOptions={}` is noise that drowns the meaningful fields in EXPLAIN logs and exception
+		// messages.
+		StringBuilder sb = new StringBuilder("Filtrator(name=").append(name);
+		if (!tags.isEmpty()) {
+			sb.append(", tags=").append(tags);
+		}
+		sb.append(", underlying=").append(underlying).append(", filter=").append(filter);
+		return sb.append(')').toString();
+	}
 }
