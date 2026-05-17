@@ -187,7 +187,7 @@ public class TestPlanFragmentScope_Extensions extends ATestDagInMemory {
 
 			// Free-form "I ran on this step" leaf. The leafKey is the (cubeStep, "combinator-name") pair so the
 			// fragment dedups across multiple combine() invocations on the same step.
-			sink.publishLeaf(cubeStep,
+			sink.publishDoneLeaf(cubeStep,
 					new LeafKey(cubeStep, "combinator-name"),
 					NodeOperator.OTHER,
 					"decorated combinator",
@@ -199,7 +199,7 @@ public class TestPlanFragmentScope_Extensions extends ATestDagInMemory {
 			// Optional SQL-style leaf — exercises the same path a calculated column with a sub-query would.
 			String sql = lastSqlPublished;
 			if (sql != null) {
-				sink.publishLeaf(cubeStep,
+				sink.publishDoneLeaf(cubeStep,
 						new LeafKey(cubeStep, "calculated-column-sql"),
 						NodeOperator.OTHER,
 						"calculated-column",

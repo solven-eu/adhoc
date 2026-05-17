@@ -44,9 +44,11 @@ import eu.solven.adhoc.engine.step.ICubeQueryStep;
 import eu.solven.adhoc.engine.step.IHasMeasure;
 import eu.solven.adhoc.filter.IHasFilters;
 import eu.solven.adhoc.filter.ISliceFilter;
+import eu.solven.adhoc.model.measure.IMeasure;
 import eu.solven.adhoc.model.query.IGroupBy;
 import eu.solven.adhoc.model.query.IHasCustomMarker;
 import eu.solven.adhoc.model.query.IHasGroupBy;
+import eu.solven.adhoc.model.query.IHasMeasures;
 import eu.solven.adhoc.options.IHasQueryOptions;
 import eu.solven.adhoc.options.IQueryOption;
 import eu.solven.adhoc.query.AdhocQueryId;
@@ -78,47 +80,62 @@ public class QueryPlanProjector {
 	private static final Object SYNTHETIC_ROOT = new Object();
 
 	/**
-	 * Structured per-property view of this step intended for renderers (Mermaid graph labels, log formatters).
+	 * Structured per-property view of a plan participant — a step ({@code CubeQueryStep}, {@code TableQueryStep}) or a
+	 * top-level query ({@code CubeQuery}) — intended for renderers (Mermaid graph labels, log formatters).
 	 *
 	 * <p>
-	 * Returns a {@link java.util.LinkedHashMap} so the iteration order matches the property order a reader expects
-	 * ({@code measure} first, then {@code filter}, {@code groupBy}, etc.). Optional properties (matchAll filter,
-	 * grand-total groupBy, null customMarker, empty options) are omitted — same conditional inclusion as
-	 * {@link #toString()}, so the two representations stay aligned.
+	 * Returns a {@link LinkedHashMap} so the iteration order matches the property order a reader expects: measure(s)
+	 * first, then {@code filter}, {@code groupBy}, {@code customMarker}, {@code options}. Optional properties are
+	 * omitted (matchAll filter, grand-total groupBy, null customMarker, empty options) — same conditional inclusion as
+	 * {@code toString} implementations on the participating types, so the two representations stay aligned.
 	 *
 	 * <p>
-	 * Values are stringified at the source. Renderers receive a {@code Map<String, String>} they can iterate without
-	 * having to know the concrete types of {@code filter}/{@code groupBy}/etc. This is the multi-line counterpart of
-	 * {@link #toString()}: SLF4J still uses {@code toString} (one line per step), the SPA Mermaid label uses
-	 * {@code toDetails} (one line per property).
+	 * Polymorphic on purpose: the input is typed as {@link Object} and the method picks up whichever capability
+	 * interfaces the value implements. {@link IHasMeasure} (singular, per-step) and {@link IHasMeasures} (plural,
+	 * per-query) are mutually exclusive in practice; both are checked so the helper works for either.
 	 *
-	 * @return a fresh, mutable map — callers may freely add additional entries (the projector does, to splice in
-	 *         {@code state}/{@code stats}-derived hints)
+	 * @param participant
+	 *            either a {@code CubeQueryStep}/{@code TableQueryStep} (singular measure) or a {@code CubeQuery}
+	 *            (plural measures). May implement none, any, or all of the capability interfaces — missing capabilities
+	 *            just skip the corresponding entry.
+	 * @return a fresh, mutable map — callers may freely add additional entries
 	 */
-	public static Map<String, String> toDetails(Object step) {
+	public static Map<String, String> toDetails(Object participant) {
 		Map<String, String> details = new LinkedHashMap<>();
 
-		if (step instanceof IHasMeasure hasMeasure) {
+		if (participant instanceof IHasMeasure hasMeasure) {
 			details.put("measure", String.valueOf(hasMeasure.getMeasure()));
+		} else if (participant instanceof IHasMeasures hasMeasures) {
+			// Plural shape: a comma-joined list of measure names wrapped in `[…]`. Distinct field name from the
+			// singular case so a reader can tell a per-step view ("measure=…") from a per-query view
+			// ("measures=[a, b]") at a glance.
+			details.put("measures",
+					hasMeasures.getMeasures()
+							.stream()
+							.map(IMeasure::getName)
+							.collect(java.util.stream.Collectors.joining(", ", "[", "]")));
 		}
-		if (step instanceof IHasFilters hasFilters) {
+		if (participant instanceof IHasFilters hasFilters) {
 			ISliceFilter filter = hasFilters.getFilter();
-			if (!filter.isMatchAll()) {
+			// null-guard: production types initialise filter to MATCH_ALL via @NonNull defaults, but Mockito-built
+			// fixtures (used in unit tests) leave it null when no stubbing is set up. Treat null as matchAll.
+			if (filter != null && !filter.isMatchAll()) {
 				details.put("filter", String.valueOf(filter));
 			}
 		}
-		if (step instanceof IHasGroupBy hasGroupBy) {
+		if (participant instanceof IHasGroupBy hasGroupBy) {
 			IGroupBy groupBy = hasGroupBy.getGroupBy();
-			if (!groupBy.isGrandTotal()) {
+			// Same null-guard rationale as above.
+			if (groupBy != null && !groupBy.isGrandTotal()) {
 				details.put("groupBy", String.valueOf(groupBy));
 			}
 		}
-		if (step instanceof IHasCustomMarker hasCustomMarker) {
+		if (participant instanceof IHasCustomMarker hasCustomMarker) {
 			hasCustomMarker.optCustomMarker().ifPresent(customMarker -> {
 				details.put("customMarker", String.valueOf(customMarker));
 			});
 		}
-		if (step instanceof IHasQueryOptions hasOptions) {
+		if (participant instanceof IHasQueryOptions hasOptions) {
 			Set<IQueryOption> options = hasOptions.getOptions();
 			if (!options.isEmpty()) {
 				details.put("options", String.valueOf(options));

@@ -113,8 +113,7 @@ public class TestQueryPlanProjector {
 
 	@Test
 	public void testPendingStepHasEmptyStats() {
-		CubeQueryStep root = Mockito.mock(CubeQueryStep.class);
-		Mockito.when(root.toString()).thenReturn("root-step");
+		CubeQueryStep root = CubeQueryStep.builder().measure("m").build();
 		QueryStepsDag dag = oneRootDag(root, new ConcurrentHashMap<>());
 
 		AdhocQueryId queryId = newId();
@@ -144,8 +143,7 @@ public class TestQueryPlanProjector {
 
 	@Test
 	public void testDoneStepCarriesSizeAndDuration() {
-		CubeQueryStep root = Mockito.mock(CubeQueryStep.class);
-		Mockito.when(root.toString()).thenReturn("root-step");
+		CubeQueryStep root = CubeQueryStep.builder().measure("m").build();
 		ConcurrentHashMap<ICubeQueryStep, SizeAndDuration> costs = new ConcurrentHashMap<>();
 		costs.put(root, SizeAndDuration.builder().size(42L).duration(Duration.ofMillis(123)).build());
 		QueryStepsDag dag = oneRootDag(root, costs);
@@ -167,8 +165,8 @@ public class TestQueryPlanProjector {
 
 	@Test
 	public void testParentChildEdgesPropagatedAsEdges() {
-		CubeQueryStep root = Mockito.mock(CubeQueryStep.class, "root");
-		CubeQueryStep leaf = Mockito.mock(CubeQueryStep.class, "leaf");
+		CubeQueryStep root = CubeQueryStep.builder().measure("m").build();
+		CubeQueryStep leaf = CubeQueryStep.builder().measure("mLeaf").build();
 		IAdhocDag<CubeQueryStep> graph = GraphHelpers.makeGraph();
 		graph.addVertex(root);
 		graph.addVertex(leaf);
@@ -203,8 +201,7 @@ public class TestQueryPlanProjector {
 	public void testCustomMarkerPropagatedToPlan() {
 		// The projector reads the plan-level customMarker from the dag's first explicit step, not from a parameter —
 		// the marker is per-step (and may vary across the dag), so the dag is the source of truth.
-		CubeQueryStep root = Mockito.mock(CubeQueryStep.class);
-		Mockito.when(root.getCustomMarker()).thenReturn("JPY");
+		CubeQueryStep root = CubeQueryStep.builder().measure("m").customMarker("JPY").build();
 		QueryStepsDag dag = oneRootDag(root, new ConcurrentHashMap<>());
 
 		QueryPlan plan = new QueryPlanProjector().project(dag,
@@ -221,7 +218,7 @@ public class TestQueryPlanProjector {
 
 	@Test
 	public void testParentQueryIdPropagatedToPlan() {
-		CubeQueryStep root = Mockito.mock(CubeQueryStep.class);
+		CubeQueryStep root = CubeQueryStep.builder().measure("m").build();
 		QueryStepsDag dag = oneRootDag(root, new ConcurrentHashMap<>());
 
 		java.util.UUID parentUuid = java.util.UUID.randomUUID();
@@ -242,9 +239,9 @@ public class TestQueryPlanProjector {
 		// Both roots fan-out to the same leaf. The projector dedupes by subject equality so the leaf becomes ONE
 		// {@link QueryPlanNode} that two edges point at — DAG property; otherwise a deep merge graph would explode
 		// the node count.
-		CubeQueryStep rootA = Mockito.mock(CubeQueryStep.class, "rootA");
-		CubeQueryStep rootB = Mockito.mock(CubeQueryStep.class, "rootB");
-		CubeQueryStep leaf = Mockito.mock(CubeQueryStep.class, "leaf");
+		CubeQueryStep rootA = CubeQueryStep.builder().measure("mRootA").build();
+		CubeQueryStep rootB = CubeQueryStep.builder().measure("mRootB").build();
+		CubeQueryStep leaf = CubeQueryStep.builder().measure("mLeaf").build();
 		IAdhocDag<CubeQueryStep> graph = GraphHelpers.makeGraph();
 		graph.addVertex(rootA);
 		graph.addVertex(rootB);
@@ -291,8 +288,7 @@ public class TestQueryPlanProjector {
 	 */
 	@Test
 	public void testProject_singleFragmentGraftsAsAdditionalChild() {
-		CubeQueryStep root = Mockito.mock(CubeQueryStep.class);
-		Mockito.when(root.toString()).thenReturn("root-step");
+		CubeQueryStep root = CubeQueryStep.builder().measure("m").build();
 		QueryStepsDag dag = oneRootDag(root, new ConcurrentHashMap<>());
 
 		// Fragment with a custom subject mimicking a `TableQueryV4` reference.
@@ -325,8 +321,7 @@ public class TestQueryPlanProjector {
 	 */
 	@Test
 	public void testProject_multipleFragmentsUnderSameAnchorAreSiblings() {
-		CubeQueryStep root = Mockito.mock(CubeQueryStep.class);
-		Mockito.when(root.toString()).thenReturn("root-step");
+		CubeQueryStep root = CubeQueryStep.builder().measure("m").build();
 		QueryStepsDag dag = oneRootDag(root, new ConcurrentHashMap<>());
 
 		QueryPlanNode v4a =
@@ -357,8 +352,7 @@ public class TestQueryPlanProjector {
 	 */
 	@Test
 	public void testProject_deepFragmentChainGraftsRecursively() {
-		CubeQueryStep root = Mockito.mock(CubeQueryStep.class);
-		Mockito.when(root.toString()).thenReturn("root-step");
+		CubeQueryStep root = CubeQueryStep.builder().measure("m").build();
 		QueryStepsDag dag = oneRootDag(root, new ConcurrentHashMap<>());
 
 		Object v4Subject = new Object();
@@ -402,8 +396,7 @@ public class TestQueryPlanProjector {
 	 */
 	@Test
 	public void testProject_fragmentWhoseSubjectIsItsOwnAnchorDoesNotLoop() {
-		CubeQueryStep root = Mockito.mock(CubeQueryStep.class);
-		Mockito.when(root.toString()).thenReturn("root-step");
+		CubeQueryStep root = CubeQueryStep.builder().measure("m").build();
 		QueryStepsDag dag = oneRootDag(root, new ConcurrentHashMap<>());
 
 		// Fragment anchored on `root` AND with subject = root → would loop on the old tree-walking projector.

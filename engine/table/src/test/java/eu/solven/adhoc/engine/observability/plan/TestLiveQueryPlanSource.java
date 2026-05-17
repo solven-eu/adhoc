@@ -70,7 +70,7 @@ public class TestLiveQueryPlanSource {
 
 	@Test
 	public void testSnapshotReflectsCurrentStepToCost() {
-		CubeQueryStep root = Mockito.mock(CubeQueryStep.class);
+		CubeQueryStep root = CubeQueryStep.builder().measure("mRoot").build();
 		ConcurrentHashMap<ICubeQueryStep, SizeAndDuration> costs = new ConcurrentHashMap<>();
 		LiveQueryPlanSource source = buildSource(root, costs);
 
@@ -113,7 +113,7 @@ public class TestLiveQueryPlanSource {
 
 	@Test
 	public void testSnapshotReturnsFreshTreePerCall() {
-		CubeQueryStep root = Mockito.mock(CubeQueryStep.class);
+		CubeQueryStep root = CubeQueryStep.builder().measure("mRoot").build();
 		LiveQueryPlanSource source = buildSource(root, new ConcurrentHashMap<>());
 
 		QueryPlan a = source.snapshot();
@@ -126,7 +126,7 @@ public class TestLiveQueryPlanSource {
 
 	@Test
 	public void testVersionStartsAtZeroAndBumps() {
-		CubeQueryStep root = Mockito.mock(CubeQueryStep.class);
+		CubeQueryStep root = CubeQueryStep.builder().measure("mRoot").build();
 		LiveQueryPlanSource source = buildSource(root, new ConcurrentHashMap<>());
 
 		Assertions.assertThat(source.version()).isZero();
@@ -137,7 +137,7 @@ public class TestLiveQueryPlanSource {
 
 	@Test
 	public void testIsCompletedTracksPlanState() {
-		CubeQueryStep root = Mockito.mock(CubeQueryStep.class);
+		CubeQueryStep root = CubeQueryStep.builder().measure("mRoot").build();
 		LiveQueryPlanSource source = buildSource(root, new ConcurrentHashMap<>());
 
 		Assertions.assertThat(source.isCompleted()).isFalse();
@@ -153,7 +153,7 @@ public class TestLiveQueryPlanSource {
 
 	@Test
 	public void testMarkCompletedBumpsVersion() {
-		CubeQueryStep root = Mockito.mock(CubeQueryStep.class);
+		CubeQueryStep root = CubeQueryStep.builder().measure("mRoot").build();
 		LiveQueryPlanSource source = buildSource(root, new ConcurrentHashMap<>());
 
 		long v0 = source.version();
@@ -163,7 +163,7 @@ public class TestLiveQueryPlanSource {
 
 	@Test
 	public void testMarkExecutionStartedIsIdempotentAndFlowsToSnapshot() {
-		CubeQueryStep root = Mockito.mock(CubeQueryStep.class);
+		CubeQueryStep root = CubeQueryStep.builder().measure("mRoot").build();
 		LiveQueryPlanSource source = buildSource(root, new ConcurrentHashMap<>());
 
 		Assertions.assertThat(source.snapshot().getExecutionStartedAt()).isNull();
@@ -179,7 +179,7 @@ public class TestLiveQueryPlanSource {
 
 	@Test
 	public void testLiveSourceCanBeRegisteredInRegistry() {
-		CubeQueryStep root = Mockito.mock(CubeQueryStep.class);
+		CubeQueryStep root = CubeQueryStep.builder().measure("mRoot").build();
 		LiveQueryPlanSource source = buildSource(root, new ConcurrentHashMap<>());
 
 		BoundedQueryPlanRegistry registry = new BoundedQueryPlanRegistry(100);
@@ -192,7 +192,7 @@ public class TestLiveQueryPlanSource {
 
 	@Test
 	public void testPublishFragmentAppearsInNextSnapshot() {
-		CubeQueryStep root = Mockito.mock(CubeQueryStep.class);
+		CubeQueryStep root = CubeQueryStep.builder().measure("mRoot").build();
 		LiveQueryPlanSource source = buildSource(root, new ConcurrentHashMap<>());
 
 		QueryPlanNode v4 =
@@ -210,7 +210,7 @@ public class TestLiveQueryPlanSource {
 
 	@Test
 	public void testPublishFragmentDedupesOnSubjectEqualityWithinSameAnchor() {
-		CubeQueryStep root = Mockito.mock(CubeQueryStep.class);
+		CubeQueryStep root = CubeQueryStep.builder().measure("mRoot").build();
 		LiveQueryPlanSource source = buildSource(root, new ConcurrentHashMap<>());
 
 		QueryPlanNode v4a =
@@ -234,7 +234,7 @@ public class TestLiveQueryPlanSource {
 
 	@Test
 	public void testPublishFragmentRoutedViaRegistry() {
-		CubeQueryStep root = Mockito.mock(CubeQueryStep.class);
+		CubeQueryStep root = CubeQueryStep.builder().measure("mRoot").build();
 		LiveQueryPlanSource source = buildSource(root, new ConcurrentHashMap<>());
 
 		BoundedQueryPlanRegistry registry = new BoundedQueryPlanRegistry(100);

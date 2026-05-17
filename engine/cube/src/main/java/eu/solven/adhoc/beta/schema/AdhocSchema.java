@@ -204,7 +204,7 @@ public class AdhocSchema implements IAdhocSchema, IAdhocSchemaRegistrer {
 		return cube;
 	}
 
-	private IQueryPreparator makeQueryPreparator() {
+	protected IQueryPreparator makeQueryPreparator() {
 		return StandardQueryPreparator.builder()
 				.implicitOptions(makeImplicitOptions())
 				.queryPlanRegistry(queryPlanRegistry)

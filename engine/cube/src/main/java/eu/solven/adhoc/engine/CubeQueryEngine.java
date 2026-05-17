@@ -72,6 +72,7 @@ import eu.solven.adhoc.engine.observability.plan.IQueryPlanRegistry;
 import eu.solven.adhoc.engine.observability.plan.LiveQueryPlanSource;
 import eu.solven.adhoc.engine.observability.plan.PlanFragmentScope;
 import eu.solven.adhoc.engine.observability.plan.PlanState;
+import eu.solven.adhoc.engine.observability.plan.QueryPlanProjector;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.TableQueryStep;
 import eu.solven.adhoc.engine.tabular.ITableQueryEngineFactory;
@@ -184,10 +185,6 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 		// QueryOptionsScope#current without us threading either through every internal API. Each composite sub-cube
 		// re-enters execute() and rebinds with its own (possibly transcoded) values — nesting works naturally
 		// through ScopedValue.
-		//
-		// The pod's `queryPlanRegistry` is already populated by `StandardQueryPreparator` (or its
-		// {@link NoopQueryPlanRegistry} default). The engine does not modify the pod here — it consumes what
-		// the preparator built.
 		return CustomMarkerScope.runWith(queryPod.getQuery().getCustomMarker(),
 				() -> QueryOptionsScope.runWith(queryPod.getOptions(), () -> executeInScope(queryPod)));
 	}
@@ -214,7 +211,7 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 					.queryId(queryPod.getQueryId())
 					.parentQueryId(queryPod.getQueryId().getParentQueryId())
 					.cubeName(queryPod.getQueryId().getCube())
-					.cubeQueryDetails(cubeQueryDetails(queryPod.getQuery()))
+					.cubeQueryDetails(QueryPlanProjector.toDetails(queryPod.getQuery()))
 					.submittedAt(java.time.Instant.now())
 					.build();
 			queryPlanRegistry.registerSource(planSource);
@@ -317,39 +314,6 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 
 	protected DagExplainerForPerfs makeDagExplainerForPerfs() {
 		return DagExplainerForPerfs.builder().eventBus(eventBus).build();
-	}
-
-	/**
-	 * Structured per-property view of the submitted {@link eu.solven.adhoc.engine.step.ICubeQuery} for the plan
-	 * registry's top-level {@code CUBE_QUERY} node label. Mirrors
-	 * {@link eu.solven.adhoc.engine.step.ACubeQueryStep#toDetails()} on the per-step side so the SPA's multi-line label
-	 * rendering uses one consistent shape across the whole plan tree. Conditional inclusion mirrors {@code toString}:
-	 * matchAll filter, grand-total groupBy, null customMarker and empty options are omitted.
-	 *
-	 * @return ordered map (LinkedHashMap) so the property order observed in the SPA matches the order a reader expects:
-	 *         measures first, then filter, groupBy, customMarker, options
-	 */
-	protected Map<String, String> cubeQueryDetails(eu.solven.adhoc.engine.step.ICubeQuery query) {
-		Map<String, String> details = new LinkedHashMap<>();
-		details.put("measures",
-				query.getMeasures()
-						.stream()
-						.map(IMeasure::getName)
-						.collect(java.util.stream.Collectors.joining(", ", "[", "]")));
-		if (!query.getFilter().isMatchAll()) {
-			details.put("filter", String.valueOf(query.getFilter()));
-		}
-		if (!query.getGroupBy().isGrandTotal()) {
-			details.put("groupBy", String.valueOf(query.getGroupBy()));
-		}
-		Object customMarker = query.getCustomMarker();
-		if (customMarker != null) {
-			details.put("customMarker", String.valueOf(customMarker));
-		}
-		if (!query.getOptions().isEmpty()) {
-			details.put("options", String.valueOf(query.getOptions()));
-		}
-		return details;
 	}
 
 	@VisibleForTesting
