@@ -744,7 +744,7 @@
 								https://download.eclipse.org/eclipse/downloads/ -->
 								<!-- 4.39 is broken
 								https://github.com/diffplug/spotless/issues/2897 -->
-								<version>4.38</version>
+								<version>4.39</version>
 								<file>${maven.multiModuleProjectDirectory}/.cleanthat/eclipse_java_code_formatter.xml</file>
 							</eclipse>
 
