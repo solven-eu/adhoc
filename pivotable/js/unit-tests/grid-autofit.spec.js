@@ -305,7 +305,9 @@ describe("autoFitColumnWidth", () => {
 		};
 		// Stub `CSS.escape` so the stubbed `globalThis.window` is honoured (the polyfill check
 		// `typeof CSS !== "undefined" && typeof CSS.escape === "function"` walks the global).
-		vi.stubGlobal("CSS", { escape: (s) => s.replace(/([\[\]])/g, "\\$1") });
+		vi.stubGlobal("CSS", {
+			escape: (s) => s.replace(/\\/g, "\\\\").replace(/([\[\]])/g, "\\$1"),
+		});
 		const grid = {
 			getContainerNode: () => ({
 				querySelector: (sel) => {
