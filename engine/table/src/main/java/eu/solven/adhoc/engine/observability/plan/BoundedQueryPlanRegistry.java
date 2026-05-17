@@ -118,7 +118,7 @@ public class BoundedQueryPlanRegistry implements IQueryPlanRegistry {
 
 	@Override
 	public void registerSource(IPlanSource source) {
-		source = Objects.requireNonNull(source, "source");
+		Objects.requireNonNull(source, "source");
 		AdhocQueryId id = source.getQueryId();
 		long newCount = nodeCountOf(source);
 

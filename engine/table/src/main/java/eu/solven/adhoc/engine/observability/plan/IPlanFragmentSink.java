@@ -33,10 +33,10 @@ import java.util.Map;
  * <p>
  * Default helpers cover the two common shapes:
  * <ul>
- * <li>{@link #publishDoneLeaf} — a free-form leaf carrying {@code details} (label + Map). Use this for "I want the plan to
- * show what I'm doing right now", e.g. the rendered SQL of a calculated column, the marker chosen by a routing measure,
- * the buffer-strategy a combinator picked. The {@code leafKey} controls dedup — re-publishing with the same key
- * replaces the previous fragment rather than appending.</li>
+ * <li>{@link #publishDoneLeaf} — a free-form leaf carrying {@code details} (label + Map). Use this for "I want the plan
+ * to show what I'm doing right now", e.g. the rendered SQL of a calculated column, the marker chosen by a routing
+ * measure, the buffer-strategy a combinator picked. The {@code leafKey} controls dedup — re-publishing with the same
+ * key replaces the previous fragment rather than appending.</li>
  * <li>{@link #publish} — full control over the published {@link QueryPlanNode} for callers that want to attach a
  * sub-tree rather than a single leaf.</li>
  * </ul>
