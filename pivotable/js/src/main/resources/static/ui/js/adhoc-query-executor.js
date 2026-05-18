@@ -710,7 +710,7 @@ export default {
 						scroll past the tall accordion body to reach them.
 					-->
 					<div class="d-flex flex-wrap gap-2 mt-2">
-						<AdhocQueryRawModal :queryJson="queryJson" :queryModel="queryModel" :cubeId="cubeId" />
+						<AdhocQueryRawModal :queryJson="queryJson" :queryModel="queryModel" :cubeId="cubeId" :endpointId="endpointId" />
 						<AdhocQueryReset :queryModel="queryModel" />
 						<AdhocQueryFavorite :queryModel="queryModel" />
 						<AdhocQueryFavorites :queryModel="queryModel" />

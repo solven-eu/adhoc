@@ -3,12 +3,14 @@ import { mapState } from "pinia";
 import { useAdhocStore } from "./store-adhoc.js";
 
 import AdhocEndpointChip from "./adhoc-endpoint-chip.js";
+import AdhocEndpointActuator from "./adhoc-endpoint-actuator.js";
 
 import AdhocLoading from "./adhoc-loading.js";
 
 export default {
 	components: {
 		AdhocEndpointChip,
+		AdhocEndpointActuator,
 		AdhocLoading,
 	},
 	props: {
@@ -68,6 +70,7 @@ export default {
 						</button>
 					</h1>
 					Endpoint-Description: {{endpoint.name}}
+					<AdhocEndpointActuator v-if="endpoint.url" :endpointUrl="endpoint.url" />
 				</span>
 				<span v-else>
 					<h5>

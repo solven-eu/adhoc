@@ -648,6 +648,7 @@
 			import AdhocEndpoint from "./ui/js/adhoc-endpoint.js";
 			import AdhocCube from "./ui/js/adhoc-cube.js";
 			import AdhocWrapperQuery from "./ui/js/adhoc-wrapper-query.js";
+			import AdhocShareReceive from "./ui/js/adhoc-share-receive.js";
 			import Login from "./ui/js/login.js";
 			import LoginBasic from "./ui/js/login-basic.js";
 			import AboutView from "./ui/js/about.js";
@@ -715,6 +716,12 @@
 						cubeId: route.params.cubeId,
 						endpointId: route.params.endpointId,
 					}),
+				},
+				// Receive end of the "Share view" feature. The payload (endpoint + cubeId + query)
+				// rides entirely in the URL hash, so no path params are needed. See adhoc-share-helper.js.
+				{
+					path: "/html/share",
+					component: AdhocShareReceive,
 				},
 			];
 
