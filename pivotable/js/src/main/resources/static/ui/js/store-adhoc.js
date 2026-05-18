@@ -642,6 +642,57 @@ export const useAdhocStore = defineStore("adhoc", {
 			});
 		},
 
+		/**
+		 * Merge distinct values observed in a rendered grid row-set into the per-column
+		 * coordinate cache. Called from `<AdhocQueryGrid>`'s resyncData every time a new
+		 * result is rendered — this is what makes the navbar coordinate-search remember
+		 * values the user saw on screen, even AFTER the column is dropped from the groupBy.
+		 *
+		 * Without this, the cache only grows via `loadColumnCoordinatesIfMissing` (column
+		 * filter dropdown) and `loadAllCubeColumnsCoordinates` (bulk estimate) — both of
+		 * which require an explicit user action. The grid render path is the most natural
+		 * place to learn a column's values: the user DID see them, so we record them.
+		 *
+		 * Idempotent: existing entries are extended (Set-based dedup), missing entries are
+		 * created with a minimal shape. The `estimatedCardinality` field stays untouched —
+		 * that's the ColumnStatistics contract owned by the bulk loader.
+		 *
+		 * @param {string} endpointId
+		 * @param {string} cubeId
+		 * @param {Array<Record<string, any>>} coordinates view.coordinates from the rendered grid
+		 */
+		mergeCoordinatesFromView(endpointId, cubeId, coordinates) {
+			if (!endpointId || !cubeId || !Array.isArray(coordinates) || coordinates.length === 0) return;
+			// Build the per-column distinct-value sets in one pass.
+			/** @type {Map<string, Set<any>>} */
+			const perColumn = new Map();
+			for (const row of coordinates) {
+				if (!row) continue;
+				for (const [col, value] of Object.entries(row)) {
+					if (value === null || value === undefined) continue;
+					if (!perColumn.has(col)) perColumn.set(col, new Set());
+					perColumn.get(col).add(value);
+				}
+			}
+			if (perColumn.size === 0) return;
+			const store = this;
+			store.$patch((state) => {
+				for (const [col, values] of perColumn) {
+					const columnId = `${endpointId}-${cubeId}-${col}`;
+					const existing = state.columns[columnId];
+					const merged = new Set(values);
+					if (existing && Array.isArray(existing.coordinates)) {
+						for (const v of existing.coordinates) merged.add(v);
+					}
+					state.columns[columnId] = {
+						...(existing || {}),
+						column: col,
+						coordinates: Array.from(merged),
+					};
+				}
+			});
+		},
+
 		async loadColumnCoordinatesIfMissing(cubeId, endpointId, column) {
 			const columnId = `${endpointId}-${cubeId}-${column}`;
 			if (this.columns[columnId]) {

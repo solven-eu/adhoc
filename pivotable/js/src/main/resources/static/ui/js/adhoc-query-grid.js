@@ -2,6 +2,7 @@
 import { ref, computed, watch, onMounted, onUnmounted, reactive, provide, inject } from "vue";
 
 import { useSearchStore } from "./store-search.js";
+import { useAdhocStore } from "./store-adhoc.js";
 
 import AdhocCellModal from "./adhoc-query-grid-cell-modal.js";
 import AdhocGridTimingsBar from "./adhoc-query-grid-timings-bar.js";
@@ -79,6 +80,7 @@ export default {
 		// reference inside `onMounted` is the same object as this one.
 		const preferencesStore = usePreferencesStore();
 		const searchStore = useSearchStore();
+		const adhocStore = useAdhocStore();
 
 		// Singleton model for the per-measure Statistics modal — provided by `adhoc-query.js`
 		// so the grid header buttons (registered in `adhoc-query-grid-helper.js`) can toggle
@@ -704,12 +706,27 @@ export default {
 						console.warn("scrollToRow failed", e);
 					}
 				};
+				// Persist the distinct coordinate values that appear in this view into the
+				// per-column cache. Why here: the user-visible "I saw value X in column Y"
+				// signal happens at render time, BEFORE the user ever opens the filter
+				// dropdown for that column (or after they drop the column from groupBy and
+				// the in-view search loses it). Merging here makes the navbar's
+				// coordinate-search remember those values across queries.
+				if (props.endpointId && props.cubeId && view && view.coordinates) {
+					adhocStore.mergeCoordinatesFromView(props.endpointId, props.cubeId, view.coordinates);
+				}
+
+				// `queryModel` is exposed so the navbar's coordinate-search dropdown can add a
+				// column to the groupBy without prop-drilling — clicking a `{column, coordinate}`
+				// hit flips `queryModel.selectedColumns[col]` + calls `onColumnToggled(col)`.
+				// Captured by reference; the wizard's reactivity does the rest.
 				searchStore.registerActiveGrid({
 					view,
 					coordinateColumns: columnNames,
 					measureColumns: measureNames,
 					formatCell,
 					scrollToRow,
+					queryModel: props.queryModel,
 					cubeId: props.cubeId,
 					endpointId: props.endpointId,
 				});

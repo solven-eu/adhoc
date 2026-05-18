@@ -8,6 +8,7 @@ import { defineStore } from "pinia";
  * @property {string[]} measureColumns
  * @property {(row: number, columnId: string) => string | null} formatCell
  * @property {(row: number, columnId?: string) => void} scrollToRow scrolls the SlickGrid to the given row (and optionally flashes the cell)
+ * @property {Record<string, any>} queryModel the wizard's reactive queryModel — mutated by Phase B coordinate-search hits (adds the matching column to the groupBy)
  * @property {string} cubeId for hit attribution in the modal
  * @property {string} endpointId
  */
