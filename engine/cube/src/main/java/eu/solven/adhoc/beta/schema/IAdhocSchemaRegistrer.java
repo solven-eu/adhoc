@@ -37,22 +37,34 @@ import eu.solven.adhoc.table.ITableWrapper;
  */
 public interface IAdhocSchemaRegistrer {
 
-	void registerForest(IMeasureForest fromMeasures);
+	IAdhocSchemaRegistrer registerForest(IMeasureForest fromMeasures);
 
-	void registerCustomMarker(String cube,
+	IAdhocSchemaRegistrer registerCustomMarker(String cube,
 			IValueMatcher matchEq,
 			CustomMarkerMetadataGenerator customMarkerMetadataGenerator);
 
-	void registerTable(ITableWrapper table);
+	IAdhocSchemaRegistrer registerTable(ITableWrapper table);
 
-	void registerCube(ICubeWrapper cube);
+	IAdhocSchemaRegistrer registerCube(ICubeWrapper cube);
 
 	CubeWrapper registerCube(String cubeName, String tableName, String forestName);
 
 	CubeWrapper.CubeWrapperBuilder openCubeWrapperBuilder();
 
-	void tagColumn(ColumnIdentifier columnIdentifier, Set<String> tags);
+	IAdhocSchemaRegistrer tagColumn(ColumnIdentifier columnIdentifier, Set<String> tags);
 
-	void tagMeasure(MeasureIdentifier measureIdentifier, Set<String> tags);
+	IAdhocSchemaRegistrer tagMeasure(MeasureIdentifier measureIdentifier, Set<String> tags);
+
+	/**
+	 * Attach tags to a registered cube. Tags are stored at the schema level (the cube itself is not modified) and
+	 * surface on the wire under {@link CubeSchemaMetadata#getTags()}. The motivating use case is helping the
+	 * {@code /html/endpoints/.../schema} UI offer a cube picker filtered by tag.
+	 *
+	 * @param cubeName
+	 *            name of an already-registered cube
+	 * @param tags
+	 *            tags to attach; merged with any tags already attached to the cube
+	 */
+	IAdhocSchemaRegistrer tagCube(String cubeName, Set<String> tags);
 
 }

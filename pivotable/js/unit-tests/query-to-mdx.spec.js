@@ -26,13 +26,13 @@ test("single measure lands on COLUMNS", () => {
 	expect(mdx).toEqual(["SELECT", "  {[Measures].[delta]} ON COLUMNS", "FROM [simple]"].join("\n"));
 });
 
-test("multiple selected measures are comma-separated, unselected skipped", () => {
+test("multiple selected measures are rendered one per line, unselected skipped", () => {
 	const q = model();
 	q.selectedMeasures.delta = true;
 	q.selectedMeasures.gamma = true;
 	q.selectedMeasures.vega = false; // should be skipped
 	const mdx = queryModelToMdx(q, "simple");
-	expect(mdx).toEqual(["SELECT", "  {[Measures].[delta], [Measures].[gamma]} ON COLUMNS", "FROM [simple]"].join("\n"));
+	expect(mdx).toEqual(["SELECT", "  {", "    [Measures].[delta],", "    [Measures].[gamma]", "  } ON COLUMNS", "FROM [simple]"].join("\n"));
 });
 
 test("single groupBy column goes on ROWS via .Members with NON EMPTY", () => {
@@ -157,9 +157,7 @@ test("withStarColumns renders as DrillDownMember from the All member", () => {
 	q.selectedColumnsOrdered.push("city");
 	q.withStarColumns.city = true;
 	const mdx = queryModelToMdx(q, "simple");
-	expect(mdx).toEqual(
-		["SELECT", "  NON EMPTY DrillDownMember({[city].[city].[AllMember]}, {[city].[city].[AllMember]}) ON ROWS", "FROM [simple]"].join("\n"),
-	);
+	expect(mdx).toEqual(["SELECT", "  NON EMPTY DrillDownMember({[city].[city].[AllMember]}, {[city].[city].[AllMember]}) ON ROWS", "FROM [simple]"].join("\n"));
 });
 
 test("withStarColumns mixes with plain members in a multi-line NON EMPTY CrossJoin", () => {

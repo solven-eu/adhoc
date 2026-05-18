@@ -241,3 +241,4 @@ Open questions:
 - Mobile / touch: long-press is the conventional analogue. SlickGrid's
   touch story is its own roadmap item; flag this as a dependency rather
   than blocking on it.
+

@@ -141,6 +141,9 @@ public class AdhocSchema implements IAdhocSchema, IAdhocSchemaRegistrer {
 	// AdhocSchema may add additional tags to those hardcoded into the ICubeWrapper
 	final Map<ColumnIdentifier, Set<String>> columnToTags = new ConcurrentHashMap<>();
 	final Map<MeasureIdentifier, Set<String>> measureToTags = new ConcurrentHashMap<>();
+	// Cube-level tags live ONLY on the schema; ICubeWrapper is intentionally not extended to carry tags so a single
+	// cube can be presented under different tag sets in different schemas without modifying its identity.
+	final Map<String, Set<String>> cubeToTags = new ConcurrentHashMap<>();
 
 	/**
 	 * Used as key to identify in which context/cube given customMarker is relevant.
@@ -272,6 +275,11 @@ public class AdhocSchema implements IAdhocSchema, IAdhocSchemaRegistrer {
 							});
 					cubeSchema.customMarkers(customMarkerNameToMetadata);
 
+					Set<String> tags = cubeToTags.get(cubeName);
+					if (tags != null && !tags.isEmpty()) {
+						cubeSchema.tags(ImmutableSet.copyOf(tags));
+					}
+
 					metadata.cube(cubeName, cubeSchema.build());
 				});
 
@@ -384,18 +392,21 @@ public class AdhocSchema implements IAdhocSchema, IAdhocSchemaRegistrer {
 	}
 
 	@Override
-	public void registerCube(ICubeWrapper cube) {
+	public IAdhocSchemaRegistrer registerCube(ICubeWrapper cube) {
 		nameToCube.put(cube.getName(), cube);
+		return this;
 	}
 
 	@Override
-	public void registerTable(ITableWrapper table) {
+	public IAdhocSchemaRegistrer registerTable(ITableWrapper table) {
 		nameToTable.put(table.getName(), table);
+		return this;
 	}
 
 	@Override
-	public void registerForest(IMeasureForest forest) {
+	public IAdhocSchemaRegistrer registerForest(IMeasureForest forest) {
 		nameToForest.put(forest.getName(), forest);
+		return this;
 	}
 
 	/**
@@ -406,12 +417,13 @@ public class AdhocSchema implements IAdhocSchema, IAdhocSchemaRegistrer {
 	 * @param customMarker
 	 */
 	@Override
-	public void registerCustomMarker(String name,
+	public IAdhocSchemaRegistrer registerCustomMarker(String name,
 			IValueMatcher cubeMatcher,
 			CustomMarkerMetadataGenerator customMarker) {
 		CustomMarkerMatchingKey matchingKey =
 				CustomMarkerMatchingKey.builder().name(name).cubeMatcher(cubeMatcher).build();
 		nameToCustomMarker.add(Map.entry(matchingKey, customMarker));
+		return this;
 	}
 
 	// public void registerMeasure(String measureBagName, IMeasure measure) {
@@ -458,13 +470,36 @@ public class AdhocSchema implements IAdhocSchema, IAdhocSchemaRegistrer {
 	}
 
 	@Override
-	public void tagColumn(ColumnIdentifier columnIdentifier, Set<String> tags) {
+	public IAdhocSchemaRegistrer tagColumn(ColumnIdentifier columnIdentifier, Set<String> tags) {
 		columnToTags.computeIfAbsent(columnIdentifier, k -> new ConcurrentSkipListSet<>()).addAll(tags);
+		return this;
 	}
 
 	@Override
-	public void tagMeasure(MeasureIdentifier measureIdentifier, Set<String> tags) {
+	public IAdhocSchemaRegistrer tagMeasure(MeasureIdentifier measureIdentifier, Set<String> tags) {
 		measureToTags.computeIfAbsent(measureIdentifier, k -> new ConcurrentSkipListSet<>()).addAll(tags);
+		return this;
+	}
+
+	@Override
+	public IAdhocSchemaRegistrer tagCube(String cubeName, Set<String> tags) {
+		cubeToTags.computeIfAbsent(cubeName, k -> new ConcurrentSkipListSet<>()).addAll(tags);
+		return this;
+	}
+
+	/**
+	 * Read the schema-level tags attached to a cube. Returns an empty set when the cube is unknown or has no tags.
+	 *
+	 * @param cubeName
+	 *            name of the cube
+	 * @return an immutable snapshot of the tags currently attached
+	 */
+	public Set<String> getCubeTags(String cubeName) {
+		Set<String> tags = cubeToTags.get(cubeName);
+		if (tags == null) {
+			return ImmutableSet.of();
+		}
+		return ImmutableSet.copyOf(tags);
 	}
 
 	@Override

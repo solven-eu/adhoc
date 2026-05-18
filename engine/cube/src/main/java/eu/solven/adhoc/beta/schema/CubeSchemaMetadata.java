@@ -25,6 +25,7 @@ package eu.solven.adhoc.beta.schema;
 import org.jspecify.annotations.NonNull;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.cube.ICubeWrapper;
 import eu.solven.adhoc.engine.step.ICubeQuery;
@@ -57,4 +58,13 @@ public class CubeSchemaMetadata {
 	@Singular
 	@NonNull
 	ImmutableMap<String, CustomMarkerMetadata> customMarkers;
+
+	/**
+	 * Tags attached to the cube at the {@link IAdhocSchema} level. Empty when the cube carries no schema-level tags.
+	 * The cube object itself is not modified — tagging is purely a schema-side concern, so a single cube can be
+	 * presented under different tag sets in different schemas without changing its behaviour.
+	 */
+	@Singular
+	@NonNull
+	ImmutableSet<String> tags;
 }

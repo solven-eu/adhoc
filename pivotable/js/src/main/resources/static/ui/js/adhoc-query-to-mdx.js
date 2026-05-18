@@ -133,8 +133,15 @@ export const queryModelToMdx = function (queryModel, cubeName) {
 	const lines = ["SELECT"];
 	const axes = [];
 
-	if (measures.length > 0) {
-		axes.push("  {" + measures.map(asMeasureMember).join(", ") + "} ON COLUMNS");
+	if (measures.length === 1) {
+		// Single measure stays inline — a single line is easier to read than a three-line block.
+		axes.push("  {" + asMeasureMember(measures[0]) + "} ON COLUMNS");
+	} else if (measures.length > 1) {
+		// Multi-measure: one measure per line so long measure lists stay readable. Same
+		// layout principle as the multi-column CrossJoin on ROWS — both render as a brace-
+		// delimited block with each entry indented on its own line.
+		const memberLines = measures.map((m) => "    " + asMeasureMember(m));
+		axes.push("  {\n" + memberLines.join(",\n") + "\n  } ON COLUMNS");
 	}
 	const withStarColumns = queryModel.withStarColumns || {};
 	if (columns.length === 1) {

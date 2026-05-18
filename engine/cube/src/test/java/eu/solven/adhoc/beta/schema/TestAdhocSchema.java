@@ -257,6 +257,7 @@ public class TestAdhocSchema {
 		schema.tagMeasure(MeasureIdentifier.builder().cube("simpleCube").measure("k").build(), Set.of("customTag_m"));
 		schema.tagColumn(ColumnIdentifier.builder().isCubeElseTable(true).holder("simpleCube").column("k").build(),
 				Set.of("customTag_c"));
+		schema.tagCube("simpleCube", Set.of("customTag_cube"));
 
 		EndpointSchemaMetadata schemaAll = schema.getMetadata(AdhocSchemaQuery.builder().build(), true);
 		Assertions.assertThat(schemaAll.getTables()).containsKey("simpleTable");
@@ -268,7 +269,16 @@ public class TestAdhocSchema {
 			Assertions.assertThat(m.getMeasures()).hasEntrySatisfying("k", c -> {
 				Assertions.assertThat(c.getTags()).containsExactly("customTag_m");
 			});
+
+			Assertions.assertThat(m.getTags()).containsExactly("customTag_cube");
 		});
+
+		// Re-tag with an additional tag — should merge, not replace.
+		schema.tagCube("simpleCube", Set.of("extraTag"));
+		Assertions.assertThat(schema.getCubeTags("simpleCube")).containsExactlyInAnyOrder("customTag_cube", "extraTag");
+
+		// Unknown cube → empty set (not null).
+		Assertions.assertThat(schema.getCubeTags("noSuchCube")).isEmpty();
 	}
 
 	/**

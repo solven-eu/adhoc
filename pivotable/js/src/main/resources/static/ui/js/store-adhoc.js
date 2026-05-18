@@ -53,6 +53,7 @@ export function backoffDelayMs(attempt) {
  * @property {number} nbAccountFetching count of in-flight account loads (for spinners)
  * @property {Record<string, any>} endpoints endpoint-id → endpoint descriptor; grown by `loadEndpoints` / local-only registrations
  * @property {Record<string, any>} schemas endpoint-id → schema (cube tree); grown by `loadEndpointSchemas`
+ * @property {Record<string, boolean>} schemasLoadedFull endpoint-id → true when the schema was last loaded WITHOUT a `cube=` filter (i.e. carries every cube). A partial load (e.g. opening `/cubes/{cubeId}/query` directly) leaves the entry false/missing, so the endpoints listing knows to refresh before rendering a misleading 1-cube list.
  * @property {number} nbSchemaFetching in-flight schema loads (for spinners)
  * @property {Record<string, any>} columns column-id → column-details; grown by `loadCubeColumnDetails` / `loadAllCubeColumnsCoordinates`
  * @property {number} nbColumnFetching in-flight column-detail loads
@@ -81,6 +82,12 @@ export const useAdhocStore = defineStore("adhoc", {
 			// schemas are the cubes. They are grouped by endpoints, as multiple endpoints may have cubes with the same name
 			// we should consider schema for a endpoint+cube only if the endpoint is properly loaded
 			schemas: {},
+			// Tracks which endpoint schemas were loaded WITHOUT a `cube=` filter. A direct
+			// navigation to a query URL loads only that cube's slice of the schema; later
+			// jumping to the endpoints listing would otherwise display a single cube and
+			// look like the endpoint hosts only one cube. The listing consults this map and
+			// triggers a full reload when the flag is false/missing.
+			schemasLoadedFull: {},
 			nbSchemaFetching: 0,
 			columns: {},
 			nbColumnFetching: 0,
@@ -451,11 +458,18 @@ export const useAdhocStore = defineStore("adhoc", {
 					console.debug("responseJson", responseJson);
 
 					const schemas = responseJson;
+					const isFullLoad = !cubeId;
 					schemas.forEach((schemaAndEndpoint) => {
 						console.log("Registering schemaId", schemaAndEndpoint.endpoint.id);
 
 						store.$patch((state) => {
 							state.schemas[schemaAndEndpoint.endpoint.id] = schemaAndEndpoint.schema;
+							// A full load (no cube filter) supersedes any prior partial entry; a
+							// partial load preserves a `true` flag from a previous full load if
+							// any (so a partial reload doesn't downgrade the cache).
+							if (isFullLoad) {
+								state.schemasLoadedFull[schemaAndEndpoint.endpoint.id] = true;
+							}
 						});
 					});
 					return store.schemas;
@@ -510,8 +524,14 @@ export const useAdhocStore = defineStore("adhoc", {
 			const store = this;
 			const availableSchema = store.getLoadedSchema(endpointId);
 
-			if (availableSchema.error) {
-				console.log("Loading schema due to error=", availableSchema.error);
+			// Reload when: (a) the schema isn't loaded at all / errored, OR (b) only a
+			// partial slice was loaded earlier (typically when the user landed directly on a
+			// `/cubes/{cubeId}/query` URL — only that cube's slice is cached). Without (b),
+			// visiting the endpoints listing after a deep-linked query showed just the one
+			// cube, masking the rest of the schema.
+			const isPartial = !store.schemasLoadedFull[endpointId];
+			if (availableSchema.error || isPartial) {
+				console.log("Loading schema. error=", availableSchema.error, "isPartial=", isPartial);
 				return this.loadEndpointSchemas(endpointId, null, onProgress).then(() => {
 					return store.getLoadedSchema(endpointId);
 				});
