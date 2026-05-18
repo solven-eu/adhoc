@@ -85,8 +85,8 @@ Example:
 Two processes — Spring Boot on `:8080`, Vite on `:5173` (proxies `/api`, `/webjars`, `/login`,
 `/logout`, `/oauth2` to the backend). All commands run from this directory:
 
-|        Command         |                                What it starts                                 |
-|------------------------|-------------------------------------------------------------------------------|
+| Command                | What it starts                                                                |
+| ---------------------- | ----------------------------------------------------------------------------- |
 | `npm run backend`      | Spring Boot only (`mvn spring-boot:run`, default profile `pivotable-unsafe`). |
 | `npm run dev_frontend` | Vite only — assumes a backend is already running on `:8080`.                  |
 | `npm run dev_stack`    | Both — Ctrl-C kills both.                                                     |

@@ -146,6 +146,34 @@ const formatters = function (formatOptions, measureStats, parentSliceStats, pare
 		numberFormat = new Intl.NumberFormat(formatOptions.locale, {});
 	}
 
+	// Per-column override: when every observed numeric value in a column is an integer
+	// (`measureStats[columnId].allInteger`), drop the fractional part so the user doesn't see
+	// "12.00" on a count column. The override is cached per columnId since `Intl.NumberFormat`
+	// is not the cheapest object to construct on every cell render. Falls back to the shared
+	// `numberFormat` when no stats are available or the column has fractional values.
+	const integerFormatPerColumn = new Map();
+	function formatNumber(columnId, value) {
+		const stats = measureStats ? measureStats[columnId] : null;
+		if (stats && stats.count > 0 && stats.allInteger) {
+			let fmt = integerFormatPerColumn.get(columnId);
+			if (!fmt) {
+				/** @type {Intl.NumberFormatOptions & Record<string, any>} */
+				const intOptions = { ...numberFormatOptions, minimumFractionDigits: 0, maximumFractionDigits: 0 };
+				// `maximumSignificantDigits` can conflict with explicit fraction digits when the
+				// `roundingPriority` isn't set; drop it so the integer output is unambiguous.
+				delete intOptions.maximumSignificantDigits;
+				try {
+					fmt = new Intl.NumberFormat(formatOptions.locale, intOptions);
+				} catch (e) {
+					fmt = numberFormat;
+				}
+				integerFormatPerColumn.set(columnId, fmt);
+			}
+			return fmt.format(value);
+		}
+		return numberFormat.format(value);
+	}
+
 	// Build a heatmap-styled DOM node for a single numeric cell. SlickGrid's formatter
 	// pipeline renders FormatterResultWithText via `textContent`, so any background color
 	// MUST be attached to a DOM element returned via `.html`. We keep `display: block` so
@@ -224,11 +252,11 @@ const formatters = function (formatOptions, measureStats, parentSliceStats, pare
 			// midpoint-equal — `heatmapColor` returns null then).
 			const hasSecondary = secondaryOn && parentSliceStats && parentSliceStats[columnDef.id] && parentColumnNames && parentColumnNames.length > 0;
 			if (color || hasSecondary) {
-				rtn.html = buildHeatmapCell(value, color, numberFormat.format(value), dataContext, columnDef);
+				rtn.html = buildHeatmapCell(value, color, formatNumber(columnDef.id, value), dataContext, columnDef);
 				rtn.toolTip = value;
 				return rtn;
 			}
-			rtn.text = numberFormat.format(value);
+			rtn.text = formatNumber(columnDef.id, value);
 			// toolTip show raw value
 			rtn.toolTip = value;
 		} else if (typeof value === "object") {

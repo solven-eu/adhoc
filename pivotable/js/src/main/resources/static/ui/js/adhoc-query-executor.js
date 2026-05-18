@@ -13,6 +13,7 @@ import AdhocQueryFavorites from "./adhoc-query-favorites.js";
 
 import { useUserStore } from "./store-user.js";
 import { finalizeActiveStages } from "./adhoc-query-grid-timings.js";
+import { notifyIfBackground } from "./adhoc-tab-notification.js";
 
 // https://stackoverflow.com/questions/7616461/generate-a-hash-from-string-in-javascript
 String.prototype.hashCode = function () {
@@ -503,6 +504,11 @@ export default {
 							loading.sleeping = false;
 							loading.downloading = false;
 						}
+
+						// Tab the user is no longer looking at? Flag the result with a favicon badge
+						// + a short chime so they know to come back. No-op when the tab is focused —
+						// the in-page grid renders the result there, no extra signal needed.
+						notifyIfBackground();
 					}
 				}
 			}
