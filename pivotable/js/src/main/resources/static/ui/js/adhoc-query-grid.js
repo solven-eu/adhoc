@@ -1059,7 +1059,7 @@ export default {
 			<AdhocMeasureStatsModal :statsModel="measureStatsModel" :formatOptions="formatOptions" />
 
 			<span style="width:100%;" class="position-relative">
-				<div :id="domId" class="vh-75 slickgrid-grid"></div>
+				<div :id="domId" class="adhoc-grid-fill slickgrid-grid"></div>
 
 				<!--
 					Empty-state hints. Two variants depending on which kind of "empty" we

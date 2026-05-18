@@ -195,6 +195,18 @@
 				--alpine-cell-border-width: 0 1px 1px 0;
 				/* --alpine-row-mouse-hover-color: transparent; */
 			}
+			/* Grid height — fills the viewport minus the chrome that lives outside the grid
+			   itself: navbar, optional BackendStatusBanner, the timings strip + controls
+			   strip below the grid, plus row/column gutters and a small bottom margin so
+			   the footer sits visibly. 14rem was empirically the safe budget across the
+			   typical viewport sizes — at smaller values a scrollbar appears when the
+			   BackendStatusBanner is shown or the wizard's filter chips wrap onto a second
+			   line. The calc-based form replaces the previous `vh-75` (75vh) which capped
+			   the grid arbitrarily low on tall screens and left the strip below the grid
+			   pushed away from the page bottom. */
+			.adhoc-grid-fill {
+				height: calc(100vh - 12rem);
+			}
 			.slick-cell {
 				/* Not flex else measures a left-eligned while we want them right-aligned */
 				/* display: flex; */
