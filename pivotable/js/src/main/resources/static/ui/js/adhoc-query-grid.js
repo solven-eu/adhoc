@@ -525,11 +525,20 @@ export default {
 			// Restore the user's previously-set widths for columns that survived the resync. NEW
 			// columns (no memo entry) keep whatever default width came out of the helper builders;
 			// the post-setColumns block sizes them appropriately.
+			//
+			// Fit mode is intentionally exempt — its whole point is that SlickGrid's
+			// `forceFitColumns` distributes proportionally across the viewport, so per-column
+			// preferences serve no purpose except to corrupt the proportions when a NEW column
+			// (default 80 px) joins old memoed columns (e.g. 200 px each): the newcomer gets a
+			// disproportionately small share. Skipping memo restoration in fit mode means every
+			// column starts at the helper-builder default and forceFitColumns balances them
+			// uniformly.
+			const isFitLayout = preferencesStore.gridLayout !== "scroll";
 			const newColumnIds = [];
 			for (const col of gridColumns) {
-				if (columnWidthMemo.has(col.id)) {
+				if (!isFitLayout && columnWidthMemo.has(col.id)) {
 					col.width = columnWidthMemo.get(col.id);
-				} else {
+				} else if (!columnWidthMemo.has(col.id)) {
 					newColumnIds.push(col.id);
 				}
 			}

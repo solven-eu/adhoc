@@ -39,6 +39,10 @@ let visibilityHookInstalled = false;
  * Returns a data-URL ready to feed to a `<link rel="icon">`. The result is cached after the
  * first build — the favicon does not change at runtime.
  *
+ * <p>Eagerly warmed at module load (see the bottom of this file) so the first call to
+ * `setBadge()` doesn't have to wait for the favicon image to load — the data-URL is already
+ * resolved by then, and the badge appears synchronously on the first query completion.
+ *
  * <p>If the favicon load fails (offline, blocked, missing) we fall back to drawing the badge
  * alone on a transparent canvas. The dot is the actually-meaningful part of the signal.
  *
@@ -216,3 +220,15 @@ export function notifyIfBackground() {
 
 // Back-compat alias for callers wired before the window-focus path was added.
 export const notifyIfHidden = notifyIfBackground;
+
+// Pre-warm the badged favicon data-URL at module load. The build is asynchronous (the source
+// favicon must load through an `Image` element), and if we leave it to the first `setBadge`
+// call the badge appears with a visible lag — a query that completes a few hundred ms after
+// page load would finish faster than the favicon does, and the tab would only flip its icon
+// after the user is already looking away. Kicking the build off now lets the data-URL be ready
+// by the time any realistic query returns, so `await buildBadgedDataUrl()` resolves
+// synchronously in `setBadge` from then on.
+if (typeof document !== "undefined" && typeof Image !== "undefined") {
+	// Fire-and-forget — errors are absorbed by the helper itself (badge-alone fallback).
+	buildBadgedDataUrl();
+}
