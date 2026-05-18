@@ -289,7 +289,11 @@ export default {
 
 				<div>
 					Cubes
-					<span v-for="(cube, cubeName) in schema.cubes"> <AdhocCubeChip :endpointId="endpointId" :cubeId="cubeName" />&nbsp; </span>
+					<ul>
+						<li v-for="(cube, cubeName) in schema.cubes" :key="cubeName">
+							<AdhocCubeChip :endpointId="endpointId" :cubeId="cubeName" />
+						</li>
+					</ul>
 				</div>
 				<AdhocEndpointSchemaChip :endpointId="endpointId" />
 			</span>
