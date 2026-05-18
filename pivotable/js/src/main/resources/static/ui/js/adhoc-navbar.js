@@ -6,12 +6,14 @@ import { useUserStore } from "./store-user.js";
 import Logout from "./login-logout.js";
 import PreferencesModal from "./adhoc-preferences-modal.js";
 import AdhocNavbarBreadcrumb from "./adhoc-navbar-breadcrumb.js";
+import AdhocNavbarSearch from "./adhoc-navbar-search.js";
 
 export default {
 	components: {
 		Logout,
 		PreferencesModal,
 		AdhocNavbarBreadcrumb,
+		AdhocNavbarSearch,
 	},
 	computed: {
 		...mapState(useUserStore, ["isLoggedIn", "account", "tokens", "nbLoginLoading", "needsToLogin", "needsToRefreshAccessToken"]),
@@ -117,8 +119,15 @@ export default {
 						routes append the endpoint name and (when present) the cube. The wrapper
 						uses me-auto so the right-cluster gets pushed to the far right.
 					-->
-					<div class="me-auto">
+					<div class="d-flex align-items-center gap-3 me-auto flex-grow-1">
 						<AdhocNavbarBreadcrumb />
+						<!--
+							Application-level search input — augments (does NOT replace) the
+							browser's native Ctrl+F. The browser only sees viewport rows in the
+							lazy-rendered SlickGrid; this scans the full materialized view. When
+							no grid is mounted, the dropdown shows a "no active grid" hint.
+						-->
+						<AdhocNavbarSearch class="flex-grow-1" />
 					</div>
 					<!--
 						Right cluster, left-to-right:
