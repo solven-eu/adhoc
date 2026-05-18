@@ -53,9 +53,6 @@ classDiagram
     }
     class AtotiAliaser {
     }
-    class CachingTableWrapper {
-        ITableWrapper decorated
-    }
     class CaseInsensitiveCubeQueryEngine {
         ICubeQueryEngine delegate
     }
@@ -162,7 +159,6 @@ classDiagram
     ICubeQueryEngine <|.. CubeQueryEngine
     ITableQueryEngineFactory <|.. TableQueryEngineFactory
     ITableWrapper <|.. AAtotiWrapper
-    ITableWrapper <|.. CachingTableWrapper
     ITableWrapper <|.. CompositeCubesTableWrapper
     IColumnsManager <|.. ColumnsManager
     ITableWrapper <|.. EmptyTableWrapper
@@ -187,7 +183,6 @@ classDiagram
     PrunedJoinsJooqTableSupplier *-- IJooqColumnsResolver : columnsResolver
     StandardMissingColumnManager *-- StandardCoordinateNormalizer : coordinateNormalizer
     ColumnsManager *-- StandardCustomTypeManager : customTypeManager
-    CachingTableWrapper *-- ITableWrapper : decorated
     CaseInsensitiveCubeQueryEngine *-- ICubeQueryEngine : delegate
     JooqTableWrapperParameters *-- IDSLSupplier : dslSupplier
     CubeWrapper *-- CubeQueryEngine : engine
