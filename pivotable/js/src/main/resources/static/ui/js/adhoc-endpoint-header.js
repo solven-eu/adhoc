@@ -73,48 +73,54 @@ export default {
 			<AdhocLoading :id="endpointId" type="endpoint" :loading="nbSchemaFetching > 0" :error="endpoint.error" />
 		</div>
 		<div v-else>
-			<span>
-				<span v-if="withDescription">
-					<h1>
-						<AdhocEndpointChip :endpointId="endpointId" />
-						<button
-							type="button"
-							class="btn btn-sm btn-outline-secondary ms-2 align-baseline"
-							:disabled="nbSchemaFetching > 0"
-							@click="reloadSchema"
-							title="Reload tables and cubes from this endpoint"
-						>
-							<span v-if="nbSchemaFetching > 0">
-								<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
-								Reloading…
-							</span>
-							<span v-else><i class="bi bi-arrow-clockwise"></i> Reload schema</span>
-						</button>
-					</h1>
-					<!--
-						Live download progress for the schema reload. Hidden when not in-flight so the
-						strip doesn't permanently occupy vertical space. Width animates from 0 → 100 %
-						as the streaming reader hits each chunk (driven by store.toJSON's onProgress
-						callback wired in setup()).
-					-->
-					<div v-if="reloadInFlight || reloadPercent > 0" class="progress my-1" style="height: 4px;" data-testid="endpoint-reload-progress">
-						<div
-							class="progress-bar progress-bar-striped progress-bar-animated bg-secondary"
-							:style="'width: ' + Math.round(reloadPercent * 100) + '%;'"
-							role="progressbar"
-							:aria-valuenow="Math.round(reloadPercent * 100)"
-							aria-valuemin="0"
-							aria-valuemax="100"
-						></div>
-					</div>
-					Endpoint-Description: {{endpoint.name}}
+			<!--
+				The big H1 + endpoint-chip + "Endpoint-Description" line that used to live here
+				has moved into the navbar breadcrumb (Endpoints / endpoint name). What remains
+				in the body is a compact toolbar — the Reload-schema button, its download
+				progress bar, and the actuator status strip — so functionality stays reachable
+				but the grid below gets the vertical space back. The withDescription=false
+				caller (the small in-listing endpoint chip in adhoc-endpoints.js) keeps its
+				tiny H5 form for backward compatibility, although the navbar breadcrumb has
+				made that variant largely redundant.
+			-->
+			<span v-if="withDescription">
+				<div class="d-flex flex-wrap align-items-center gap-2">
+					<button
+						type="button"
+						class="btn btn-sm btn-outline-secondary"
+						:disabled="nbSchemaFetching > 0"
+						@click="reloadSchema"
+						title="Reload tables and cubes from this endpoint"
+					>
+						<span v-if="nbSchemaFetching > 0">
+							<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+							Reloading…
+						</span>
+						<span v-else><i class="bi bi-arrow-clockwise"></i> Reload schema</span>
+					</button>
 					<AdhocEndpointActuator v-if="endpoint.url" :endpointUrl="endpoint.url" />
-				</span>
-				<span v-else>
-					<h5>
-						<AdhocEndpointChip :endpointId="endpointId" />
-					</h5>
-				</span>
+				</div>
+				<!--
+					Live download progress for the schema reload. Hidden when not in-flight so the
+					strip doesn't permanently occupy vertical space. Width animates from 0 → 100 %
+					as the streaming reader hits each chunk (driven by store.toJSON's onProgress
+					callback wired in setup()).
+				-->
+				<div v-if="reloadInFlight || reloadPercent > 0" class="progress my-1" style="height: 4px;" data-testid="endpoint-reload-progress">
+					<div
+						class="progress-bar progress-bar-striped progress-bar-animated bg-secondary"
+						:style="'width: ' + Math.round(reloadPercent * 100) + '%;'"
+						role="progressbar"
+						:aria-valuenow="Math.round(reloadPercent * 100)"
+						aria-valuemin="0"
+						aria-valuemax="100"
+					></div>
+				</div>
+			</span>
+			<span v-else>
+				<h5>
+					<AdhocEndpointChip :endpointId="endpointId" />
+				</h5>
 			</span>
 		</div>
 	`,

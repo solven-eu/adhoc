@@ -8,8 +8,8 @@ import { useAdhocStore } from "./store-adhoc.js";
 
 import queryHelper from "./adhoc-query-helper.js";
 
-import AdhocEndpointHeader from "./adhoc-endpoint-header.js";
-import AdhocCubeHeader from "./adhoc-cube-header.js";
+// Endpoint + cube headers are now shown in the navbar breadcrumb (see `adhoc-navbar.js`),
+// so neither AdhocEndpointHeader nor AdhocCubeHeader is mounted on the query page anymore.
 
 import { useUserStore } from "./store-user.js";
 import { usePreferencesStore } from "./store-preferences.js";
@@ -30,8 +30,6 @@ import { defaultExecutorBus } from "./adhoc-executor-bus.js";
 export default {
 	// https://vuejs.org/guide/components/registration#local-registration
 	components: {
-		AdhocEndpointHeader,
-		AdhocCubeHeader,
 		AdhocQueryWizard,
 		AdhocQueryExecutor,
 		AdhocQueryGrid,
@@ -378,7 +376,12 @@ export default {
 		};
 	},
 	template: /* HTML */ `
-		<AdhocCubeHeader :endpointId="endpointId" :cubeId="cubeId" />
+		<!--
+			Endpoint + cube identification moved to the navbar breadcrumb (Endpoints / endpoint
+			/ cube). Skipping the body-side header gives the grid the extra vertical real
+			estate the user asked for. The previous AdhocCubeHeader mount is intentionally
+			gone — its information is now visible at all times in the top bar.
+		-->
 		<div class="row">
 			<!--
 				Wizard column. Hidden when preferencesStore.wizardHidden is true — grid below
