@@ -35,7 +35,6 @@ import eu.solven.adhoc.beta.schema.AdhocSchema.AdhocSchemaBuilder;
 import eu.solven.adhoc.beta.schema.IAdhocSchema;
 import eu.solven.adhoc.engine.ICubeQueryEngine;
 import eu.solven.adhoc.engine.context.IQueryPreparator;
-import eu.solven.adhoc.engine.observability.plan.IQueryPlanRegistry;
 import eu.solven.adhoc.pivotable.endpoint.PivotableAdhocEndpointMetadata;
 import eu.solven.adhoc.pivotable.endpoint.PivotableEndpointsRegistry;
 import eu.solven.adhoc.pivotable.endpoint.PivotableSchemaRegistry;
