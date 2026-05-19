@@ -43,11 +43,13 @@ import java.util.stream.Stream;
 import org.jspecify.annotations.NonNull;
 
 import com.google.common.collect.HashMultimap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.MultimapBuilder.SetMultimapBuilder;
 import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.ListeningExecutorService;
 
+import eu.solven.adhoc.beta.schema.CoordinatesSample;
 import eu.solven.adhoc.column.ColumnMetadata;
 import eu.solven.adhoc.column.ColumnsManager;
 import eu.solven.adhoc.column.IColumnsManager;
@@ -70,6 +72,7 @@ import eu.solven.adhoc.filter.FilterHelpers;
 import eu.solven.adhoc.filter.IColumnFilter;
 import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.filter.editor.SimpleFilterEditor;
+import eu.solven.adhoc.filter.value.IValueMatcher;
 import eu.solven.adhoc.measure.forest.IMeasureForest;
 import eu.solven.adhoc.measure.forest.MeasureForest;
 import eu.solven.adhoc.measure.model.MeasureHelpers;
@@ -203,6 +206,170 @@ public class CompositeCubesTableWrapper implements ITableWrapper, IHasHealthDeta
 
 			return builder.build();
 		}
+	}
+
+	/**
+	 * Bulk per-column coordinates over a composite cube: dispatches the requested columns to each sub-cube that
+	 * actually carries them, in a single bulk call per sub-cube, and merges the results.
+	 *
+	 * Overriding the default {@link ITableWrapper} fan-out (which would call
+	 * {@link #getCoordinates(String, IValueMatcher, int)} once per column and ultimately re-stream a full composite
+	 * query for each column) is what preserves the {@link eu.solven.adhoc.table.sql.JooqTableWrapper} bulk-query
+	 * optimisation end-to-end — a Pivotable navbar search across N columns issues one SQL round-trip per Jooq-backed
+	 * sub-cube rather than one round-trip per (column × sub-cube) pair.
+	 *
+	 * Sub-cube fan-out runs on the shared executor service (see {@link AdhocFactoriesUnsafe}), same as
+	 * {@link #getColumns()}; no per-query {@code QueryPod} is in scope here.
+	 *
+	 * The {@link #optCubeSlicer cube-slicer} virtual column, when requested, is materialised locally from the list of
+	 * sub-cube names rather than dispatched.
+	 *
+	 * @param columnToValueMatcher
+	 *            the requested columns, each with the {@link IValueMatcher} restricting the returned coordinates
+	 * @param limit
+	 *            the maximum number of sample coordinates to return per column; non-positive values mean unlimited
+	 * @return one {@link CoordinatesSample} per requested column; columns unknown to every sub-cube map to
+	 *         {@link CoordinatesSample#empty()}
+	 */
+	@Override
+	public Map<String, CoordinatesSample> getCoordinates(Map<String, IValueMatcher> columnToValueMatcher, int limit) {
+		if (columnToValueMatcher.isEmpty()) {
+			return Map.of();
+		}
+
+		Map<String, CoordinatesSample> merged = LinkedHashMap.newLinkedHashMap(columnToValueMatcher.size());
+
+		// Synthesise the slicer column locally: its coordinates are exactly the sub-cube names.
+		Optional<String> requestedSlicer = optCubeSlicer.filter(columnToValueMatcher::containsKey);
+		requestedSlicer.ifPresent(slicerColumn -> merged.put(slicerColumn,
+				makeSlicerSample(columnToValueMatcher.get(slicerColumn), limit)));
+
+		Map<String, IValueMatcher> dispatchable;
+		if (requestedSlicer.isPresent()) {
+			dispatchable = new LinkedHashMap<>(columnToValueMatcher);
+			dispatchable.remove(requestedSlicer.get());
+		} else {
+			dispatchable = columnToValueMatcher;
+		}
+
+		if (!dispatchable.isEmpty()) {
+			// Fan-out the per-sub-cube bulk calls on the shared executor — each sub-cube call is @Blocking and we want
+			// N
+			// parallel round-trips, not N sequential ones.
+			ListeningExecutorService executor = AdhocFactoriesUnsafe.factories.getExecutorService();
+			Map<ICubeWrapper, CompletableFuture<Map<String, CoordinatesSample>>> futures =
+					LinkedHashMap.newLinkedHashMap(cubes.size());
+
+			cubes.forEach(subCube -> {
+				Map<String, IValueMatcher> subRequest = subCubeRequest(subCube, dispatchable);
+				if (subRequest.isEmpty()) {
+					return;
+				}
+				futures.put(subCube,
+						CompletableFuture.supplyAsync(() -> subCube.getCoordinates(subRequest, limit), executor));
+			});
+
+			futures.forEach((subCube, future) -> {
+				Map<String, CoordinatesSample> subResult = future.join();
+				subResult.forEach((column, sample) -> merged
+						.merge(column, sample, (left, right) -> mergeSamples(left, right, limit)));
+			});
+		}
+
+		// Columns that no sub-cube recognises: surface an empty sample so callers see them in the response shape.
+		dispatchable.keySet().forEach(column -> merged.putIfAbsent(column, CoordinatesSample.empty()));
+
+		return merged;
+	}
+
+	/**
+	 * Restricts the bulk request to the columns the sub-cube actually exposes — sub-cubes silently drop unknown columns
+	 * from a bulk request, but pre-filtering keeps the SQL projection tight.
+	 *
+	 * @return the entries of {@code dispatchable} whose column is in {@code subCube.getColumnsAsMap().keySet()}, in
+	 *         insertion order
+	 */
+	protected Map<String, IValueMatcher> subCubeRequest(ICubeWrapper subCube, Map<String, IValueMatcher> dispatchable) {
+		Set<String> subColumns = subCube.getColumnsAsMap().keySet();
+		Map<String, IValueMatcher> subRequest = LinkedHashMap.newLinkedHashMap(dispatchable.size());
+		dispatchable.forEach((column, valueMatcher) -> {
+			if (subColumns.contains(column)) {
+				subRequest.put(column, valueMatcher);
+			}
+		});
+		return subRequest;
+	}
+
+	/**
+	 * Synthesises the {@link #optCubeSlicer cube-slicer} virtual column's coordinates from the list of sub-cube names.
+	 * Honours {@code valueMatcher} (returning the matching names) and the {@code limit} (truncating the sample to the
+	 * first {@code limit} matches while still counting them all into {@code estimatedCardinality}).
+	 */
+	protected CoordinatesSample makeSlicerSample(IValueMatcher valueMatcher, int limit) {
+		int sampleSize;
+		if (limit < 1) {
+			sampleSize = Integer.MAX_VALUE;
+		} else {
+			sampleSize = limit;
+		}
+		ImmutableSet.Builder<Object> sample = ImmutableSet.builder();
+		long matching = 0;
+		for (ICubeWrapper subCube : cubes) {
+			String cubeName = subCube.getName();
+			if (!valueMatcher.match(cubeName)) {
+				continue;
+			}
+			if (matching < sampleSize) {
+				sample.add(cubeName);
+			}
+			matching++;
+		}
+		return CoordinatesSample.builder().coordinates(sample.build()).estimatedCardinality(matching).build();
+	}
+
+	/**
+	 * Merges two per-column {@link CoordinatesSample}s coming from different sub-cubes. Coordinates are de-duplicated
+	 * and truncated to {@code limit}; estimated cardinalities are summed (taking the non-estimated side when only one
+	 * is known). The sum is an upper bound when sub-cubes share coordinates, but is the best we can do without
+	 * inspecting the full coordinate sets.
+	 */
+	protected CoordinatesSample mergeSamples(CoordinatesSample left, CoordinatesSample right, int limit) {
+		int sampleSize;
+		if (limit < 1) {
+			sampleSize = Integer.MAX_VALUE;
+		} else {
+			sampleSize = limit;
+		}
+		LinkedHashSet<Object> mergedCoordinates = LinkedHashSet
+				.newLinkedHashSet(Math.min(sampleSize, left.getCoordinates().size() + right.getCoordinates().size()));
+		for (Object coordinate : left.getCoordinates()) {
+			if (mergedCoordinates.size() >= sampleSize) {
+				break;
+			}
+			mergedCoordinates.add(coordinate);
+		}
+		for (Object coordinate : right.getCoordinates()) {
+			if (mergedCoordinates.size() >= sampleSize) {
+				break;
+			}
+			mergedCoordinates.add(coordinate);
+		}
+
+		long mergedCardinality;
+		long leftCardinality = left.getEstimatedCardinality();
+		long rightCardinality = right.getEstimatedCardinality();
+		if (leftCardinality == CoordinatesSample.NO_ESTIMATION) {
+			mergedCardinality = rightCardinality;
+		} else if (rightCardinality == CoordinatesSample.NO_ESTIMATION) {
+			mergedCardinality = leftCardinality;
+		} else {
+			mergedCardinality = leftCardinality + rightCardinality;
+		}
+
+		return CoordinatesSample.builder()
+				.coordinates(mergedCoordinates)
+				.estimatedCardinality(mergedCardinality)
+				.build();
 	}
 
 	@Override
