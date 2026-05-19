@@ -127,4 +127,13 @@ public class TestAdhocUnsafe {
 		Assertions.assertThat(AdhocUnsafe.randomUUID()).hasToString("00000000-0000-0000-0000-000000000000");
 		Assertions.assertThat(AdhocUnsafe.randomUUID()).hasToString("00000000-0000-0000-0000-000000000001");
 	}
+
+	@Test
+	public void testSetParallelism() {
+		Assertions.assertThat(AdhocUnsafe.getParallelism()).isEqualTo(Runtime.getRuntime().availableProcessors());
+
+		AdhocUnsafe.setParallelism(17);
+		Assertions.assertThat(AdhocUnsafe.getParallelism()).isEqualTo(17);
+
+	}
 }

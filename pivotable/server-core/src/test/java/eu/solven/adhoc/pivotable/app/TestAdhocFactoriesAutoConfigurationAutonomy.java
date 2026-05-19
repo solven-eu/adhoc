@@ -30,26 +30,24 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
-import eu.solven.adhoc.engine.CubeQueryEngine;
-import eu.solven.adhoc.engine.ICubeQueryEngine;
-import eu.solven.adhoc.pivotable.spring.AdhocAutoConfiguration;
+import eu.solven.adhoc.factories.AdhocFactories;
+import eu.solven.adhoc.factories.IAdhocFactories;
+import eu.solven.adhoc.pivotable.spring.AdhocFactoriesAutoConfiguration;
 import lombok.extern.slf4j.Slf4j;
 
 @ExtendWith(SpringExtension.class)
-@ContextConfiguration(classes = { AdhocAutoConfiguration.class })
+@ContextConfiguration(classes = { AdhocFactoriesAutoConfiguration.class })
 @Slf4j
-public class TestPivotableAdhocConfigAutonomy {
+public class TestAdhocFactoriesAutoConfigurationAutonomy {
 
 	@Autowired
 	ApplicationContext appContest;
 
 	@Test
-	public void testEngineEventBus() {
-		Assertions.assertThat(appContest.getBean(ICubeQueryEngine.class))
-				.isInstanceOfSatisfying(CubeQueryEngine.class, engine -> {
-					// TODO How to check make a Guava EventBus by default?
-					// Assertions.assertThat(engine.getEventBus().getClass().getName()).contains("aaaa");
-					Assertions.assertThat(engine.getEventBus()).isNotNull();
+	public void testFactories() {
+		Assertions.assertThat(appContest.getBean(IAdhocFactories.class))
+				.isInstanceOfSatisfying(AdhocFactories.class, f -> {
+					Assertions.assertThat(f.getSliceFactory()).isNotNull();
 				});
 	}
 }

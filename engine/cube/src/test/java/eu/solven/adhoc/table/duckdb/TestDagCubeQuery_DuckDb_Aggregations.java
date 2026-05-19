@@ -22,21 +22,17 @@
  */
 package eu.solven.adhoc.table.duckdb;
 
-import java.util.List;
 import java.util.Map;
 
 import org.assertj.core.api.Assertions;
 import org.jooq.impl.DSL;
 import org.jooq.impl.SQLDataType;
 import org.junit.jupiter.api.Test;
-import org.slf4j.LoggerFactory;
 
-import ch.qos.logback.classic.LoggerContext;
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.dataframe.tabular.ITabularView;
 import eu.solven.adhoc.dataframe.tabular.MapBasedTabularView;
 import eu.solven.adhoc.engine.query.CubeQuery;
-import eu.solven.adhoc.eventbus.UnsafeAdhocEventBusHelpers;
 import eu.solven.adhoc.measure.aggregation.comparable.RankAggregation;
 import eu.solven.adhoc.model.measure.Aggregator;
 import eu.solven.adhoc.table.ITableWrapper;
@@ -45,13 +41,6 @@ import eu.solven.adhoc.table.sql.duckdb.DuckDBHelper;
 
 public class TestDagCubeQuery_DuckDb_Aggregations extends ATestDagDuckDb implements IAdhocTestConstants {
 	String tableName = "someTableName";
-
-	static {
-		// https://stackoverflow.com/questions/59491564/logback-doesnt-print-method-or-line-number
-		LoggerContext loggerContext = (LoggerContext) LoggerFactory.getILoggerFactory();
-		List<String> frameworkPackages = loggerContext.getFrameworkPackages();
-		UnsafeAdhocEventBusHelpers.addToFrameworkPackages(frameworkPackages);
-	}
 
 	@Override
 	public ITableWrapper makeTable() {

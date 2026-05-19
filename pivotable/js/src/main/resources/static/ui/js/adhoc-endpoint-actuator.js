@@ -27,6 +27,7 @@ export default {
 		const isSelf = computed(() => props.endpointUrl === "http://localhost:self");
 		const infoUrl = computed(() => (isSelf.value ? "/actuator/info" : props.endpointUrl + "/actuator/info"));
 		const healthUrl = computed(() => (isSelf.value ? "/actuator/health" : props.endpointUrl + "/actuator/health"));
+		const threadDumpUrl = computed(() => (isSelf.value ? "/actuator/threaddump" : props.endpointUrl + "/actuator/threaddump"));
 
 		/** @type {import("vue").Ref<"loading" | "ok" | "error">} */
 		const fetchState = ref("loading");
@@ -62,7 +63,67 @@ export default {
 			fetchState.value = "ok";
 		});
 
-		return { fetchState, status, gitCommitId, gitCommitTime, buildTime, infoUrl, healthUrl };
+		// Thread-dump fetch: hits /actuator/threaddump with `Accept: text/plain` so Spring
+		// Boot's content negotiation returns the classic jstack-style text dump (rather than
+		// the default vnd.spring-boot.actuator.v3+json shape). The route is NOT under the
+		// /api/v1 JWT chain — it's protected by the Login Realm (session cookie), the same
+		// auth that fronts /html/** and friends. So we use a plain fetch with
+		// `credentials: "include"` to ride the session cookie; the dedicated
+		// `userStore.authenticatedFetch` is the wrong tool here (it prepends /api/v1 and
+		// expects the bearer-token chain). On success we open the text in a new tab via a
+		// Blob URL — keeps the click feeling like a target="_blank" anchor while letting us
+		// inject the Accept header (which a plain anchor cannot do).
+		/** @type {import("vue").Ref<"idle"|"loading"|"error">} */
+		const threadDumpState = ref("idle");
+		const openThreadDump = async () => {
+			if (threadDumpState.value === "loading") return;
+			threadDumpState.value = "loading";
+			try {
+				const response = await fetch(threadDumpUrl.value, {
+					credentials: "include",
+					headers: { Accept: "text/plain" },
+				});
+				if (!response.ok) {
+					console.warn("Thread dump fetch failed", response.status, response.statusText);
+					threadDumpState.value = "error";
+					setTimeout(() => {
+						if (threadDumpState.value === "error") threadDumpState.value = "idle";
+					}, 2500);
+					return;
+				}
+				const text = await response.text();
+				const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+				const blobUrl = URL.createObjectURL(blob);
+				const newWindow = window.open(blobUrl, "_blank");
+				if (!newWindow) {
+					console.warn("Thread dump: window.open returned null (popup blocked?)");
+				}
+				// Best-effort cleanup — the blob URL stays alive long enough for the new tab
+				// to start fetching; revoking after a minute keeps the in-memory leak bounded
+				// when the user opens many dumps.
+				setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
+				threadDumpState.value = "idle";
+			} catch (e) {
+				console.error("Thread dump fetch threw", e);
+				threadDumpState.value = "error";
+				setTimeout(() => {
+					if (threadDumpState.value === "error") threadDumpState.value = "idle";
+				}, 2500);
+			}
+		};
+
+		return {
+			fetchState,
+			status,
+			gitCommitId,
+			gitCommitTime,
+			buildTime,
+			infoUrl,
+			healthUrl,
+			threadDumpUrl,
+			threadDumpState,
+			openThreadDump,
+		};
 	},
 	template: /* HTML */ `
 		<div class="small text-muted d-flex flex-wrap align-items-center gap-2 mt-1">
@@ -86,9 +147,28 @@ export default {
 				<a :href="infoUrl" target="_blank" rel="noopener" class="text-decoration-none me-2" data-testid="actuator-info-link">
 					<i class="bi bi-info-circle me-1"></i>info
 				</a>
-				<a :href="healthUrl" target="_blank" rel="noopener" class="text-decoration-none" data-testid="actuator-health-link">
+				<a :href="healthUrl" target="_blank" rel="noopener" class="text-decoration-none me-2" data-testid="actuator-health-link">
 					<i class="bi bi-heart-pulse me-1"></i>health
 				</a>
+				<!--
+					Thread dump: a button (not an anchor) because the request needs an explicit
+					Accept text/plain header to get the human-readable jstack-style output and
+					an Authorization header to get past the JWT chain. Click opens the text in
+					a new tab via a Blob URL — feels like a regular target="_blank" link.
+				-->
+				<button
+					type="button"
+					class="btn btn-link p-0 text-decoration-none align-baseline"
+					@click="openThreadDump"
+					:disabled="threadDumpState === 'loading'"
+					:title="threadDumpState === 'error' ? 'Thread dump request failed — see the console' : 'Open a text/plain JVM thread dump in a new tab (requires login)'"
+					data-testid="actuator-threaddump-link"
+				>
+					<span v-if="threadDumpState === 'loading'" class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+					<i v-else-if="threadDumpState === 'error'" class="bi bi-exclamation-triangle text-danger me-1" aria-hidden="true"></i>
+					<i v-else class="bi bi-bug me-1" aria-hidden="true"></i>
+					thread dump
+				</button>
 			</span>
 		</div>
 	`,

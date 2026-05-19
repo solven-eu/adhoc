@@ -505,5 +505,16 @@ public class TestSecurity_WithoutAuth {
 				.exchange()
 				.expectStatus()
 				.isUnauthorized();
+		// `/actuator/threaddump` is exposed for operator diagnostics but MUST remain
+		// authenticated — only `/actuator`, `/actuator/health/**`, `/actuator/info` are in
+		// the permitAll list. The SPA's "Thread dump" button rides the session cookie via a
+		// plain fetch(url, {credentials: "include"}) — same Login Realm that fronts the
+		// rest of the UI.
+		webTestClient.get()
+				.uri("/actuator/threaddump")
+				.accept(MediaType.TEXT_PLAIN)
+				.exchange()
+				.expectStatus()
+				.isUnauthorized();
 	}
 }

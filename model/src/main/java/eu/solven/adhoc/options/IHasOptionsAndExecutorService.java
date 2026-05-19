@@ -45,7 +45,7 @@ public interface IHasOptionsAndExecutorService extends IHasQueryOptions {
 	static IHasOptionsAndExecutorService concurrent() {
 		return HasOptionsAndExecutorService.builder()
 				.option(StandardQueryOptions.CONCURRENT)
-				.executorService(AdhocUnsafe.adhocMixedPool)
+				.executorService(AdhocUnsafe.getMixedPool())
 				.build();
 	}
 

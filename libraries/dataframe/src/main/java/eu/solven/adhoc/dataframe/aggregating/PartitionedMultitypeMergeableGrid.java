@@ -77,7 +77,7 @@ public class PartitionedMultitypeMergeableGrid<T extends Comparable<T>, K> exten
 	public IMultitypeColumnFastGet<T> closeColumn(ICubeQueryStep queryStep, IAliasedAggregator aggregator) {
 		// Always parallel: assume parallelization given we are partitioned
 		List<IMultitypeColumnFastGet<T>> closed =
-				map(AdhocUnsafe.adhocCpuPool, c -> c.closeColumn(queryStep, aggregator));
+				map(AdhocUnsafe.getCpuPool(), c -> c.closeColumn(queryStep, aggregator));
 
 		return PartitionedColumn.<T>builder().partitions(closed).build();
 	}

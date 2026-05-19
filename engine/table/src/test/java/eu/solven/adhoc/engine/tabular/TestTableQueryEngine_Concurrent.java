@@ -61,7 +61,7 @@ public class TestTableQueryEngine_Concurrent {
 		ITableWrapper tableWrapper = Mockito.mock(ITableWrapper.class);
 		Mockito.when(tableWrapper.getName()).thenReturn("someTableName");
 
-		ListeningExecutorService executorService = AdhocUnsafe.adhocMixedPool;
+		ListeningExecutorService executorService = AdhocUnsafe.getMixedPool();
 
 		SimpleQueryPod queryPod = SimpleQueryPod.builder()
 				.table(tableWrapper)

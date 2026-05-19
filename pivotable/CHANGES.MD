@@ -9,6 +9,9 @@ We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format.
 
 Bump to 0.1.0 to mark the move to JDK 25 (still 0.x — Pivotable is not yet API-stable).
 
+### Added
+- Query grid performance footer: when a query is completed, a "view age" indicator (clock icon + `Xs ago` up to 120s, `Xm ago` up to 120 min, `Xh ago` up to 48h, `Xd ago` beyond) is rendered next to the `total: Xms` total — surfacing how stale the displayed snapshot is. Hidden while a stage is in-flight; ticker cadence is coarse (1s for seconds, 30s for minutes, 60s for hours, 1h for days) to keep idle-tab CPU negligible.
+
 ## [0.0.19]
 
 ### Added

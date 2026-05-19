@@ -51,17 +51,30 @@ opening backtick to the closing backtick for any *other* backtick or `${`. Find 
 Every new `.js` file under this tree starts with `// @ts-check`. CI runs `tsc --noEmit`. Use
 `/** @type {…} */` casts to escape narrow typings rather than disabling the check.
 
-## Formatting
+## Formatting — MUST run BOTH formatters after every edit
 
-After every JS edit, run (from this directory):
+After **every** JS/HTML edit under `pivotable/js/`, run **both** formatters from this directory:
 
 ```
-npm run format && mvn spotless:apply
+npm run format && mvn spotless:apply -pl :pivotable-js
 ```
 
-The order matters: prettier first, spotless second. Prettier and Biome's Spotless integration
+**Do not stop after `npm run format`.** Prettier+Biome alone leave Spotless work behind:
+Spotless invokes Biome with its own config and rewrites files that prettier just touched, so
+a session that only runs `npm run format` accumulates "linter modified these files" surprises
+later in the session (the next `mvn` invocation finds the queued rewrites). Empirically this
+has bitten the workflow multiple times — the user has had to ask "did you run spotless?".
+
+The chain is stable after one pass: a second `npm run format && mvn spotless:apply -pl :pivotable-js`
+must report 0 changes. If it doesn't, fix what's drifting before continuing.
+
+Order matters: **prettier first, spotless second.** Prettier and Biome's Spotless integration
 use different line-wrap algorithms for expressions over 160 cols; running prettier _after_
 spotless can re-introduce rewrites that spotless would normalise on the next pass.
+
+The `-pl :pivotable-js` flag scopes spotless to this module — fast (a few seconds), so
+there's no speed excuse to skip it. The full-reactor `mvn spotless:apply` is correct too,
+just slower.
 
 ## Vitest specs avoid the DOM
 

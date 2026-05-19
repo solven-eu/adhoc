@@ -58,9 +58,9 @@ import eu.solven.adhoc.engine.observability.plan.NodeOperator;
 import eu.solven.adhoc.engine.observability.plan.NodeState;
 import eu.solven.adhoc.engine.observability.plan.QueryPlanNode;
 import eu.solven.adhoc.engine.tabular.AdhocExceptionAsMeasureValueHelper;
+import eu.solven.adhoc.eventbus.AdhocEventBusHelpersUnsafe;
 import eu.solven.adhoc.eventbus.AdhocLogEvent;
 import eu.solven.adhoc.eventbus.IAdhocEventBus;
-import eu.solven.adhoc.eventbus.UnsafeAdhocEventBusHelpers;
 import eu.solven.adhoc.exception.AdhocExceptionHelpers;
 import eu.solven.adhoc.filter.FilterHelpers;
 import eu.solven.adhoc.filter.ISliceFilter;
@@ -111,7 +111,7 @@ public class ColumnsManager implements IColumnsManager {
 
 	@NonNull
 	@Default
-	final IAdhocEventBus eventBus = UnsafeAdhocEventBusHelpers.safeWrapper(AdhocBlackHole.getInstance());
+	final IAdhocEventBus eventBus = AdhocEventBusHelpersUnsafe.safeWrapper(AdhocBlackHole.getInstance());
 
 	@Default
 	@NonNull
@@ -181,7 +181,7 @@ public class ColumnsManager implements IColumnsManager {
 			FilterHelpers.getFilteredColumns(transcodedFilter).forEach(underlying -> {
 				Set<String> queried = transcodingContext.queried(underlying);
 				if (queried.size() >= 2) {
-					UnsafeAdhocEventBusHelpers.logForkEventBus(eventBus,
+					AdhocEventBusHelpersUnsafe.logForkEventBus(eventBus,
 							AdhocLogEvent.builder()
 									.level(Level.WARN)
 									.messageT("Ambiguous filtered column: %s -> %s (filter=%s)",

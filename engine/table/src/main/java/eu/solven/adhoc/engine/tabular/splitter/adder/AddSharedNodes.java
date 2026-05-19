@@ -101,9 +101,11 @@ public class AddSharedNodes implements IAddSharedNodes {
 
 	/**
 	 * Given a {@link Graph}, adds intermediate nodes to share repeated computations. Independent nodes (those with no
-	 * directed path between them) are processed concurrently via {@link DagCompletableExecutor} running on
-	 * {@link AdhocUnsafe#adhocCpuPool}; dependency ordering is maintained so each inducer is processed only after all
-	 * its induced nodes have completed.
+	 * directed path between them) are processed concurrently via {@link DagCompletableExecutor} running on the query's
+	 * own {@link IHasOptionsAndExecutorService#getExecutorService()} — by default {@link AdhocUnsafe#adhocMixedPool}
+	 * (virtual-thread-per-task) for {@code CONCURRENT} or {@code NON_BLOCKING} queries, since adding shared nodes may
+	 * indirectly trigger table queries and therefore must not be pinned to a CPU-only pool. Dependency ordering is
+	 * maintained so each inducer is processed only after all its induced nodes have completed.
 	 *
 	 * <p>
 	 * A reversed snapshot of the original DAG is passed to the executor for dependency tracking. The original DAG has
@@ -137,7 +139,7 @@ public class AddSharedNodes implements IAddSharedNodes {
 				// No pre-completed steps; all original nodes must be processed.
 				.queryStepsDone(ConcurrentHashMap.newKeySet())
 				.onReadyStep(node -> addSharedNode(lock, dag, node))
-				// Forces the CPU pool as this process is CPU only
+				// Use the query's own executor (typically `adhocMixedPool` / VT) — see Javadoc.
 				.executor(concurrencyOptions.getExecutorService())
 				.build();
 

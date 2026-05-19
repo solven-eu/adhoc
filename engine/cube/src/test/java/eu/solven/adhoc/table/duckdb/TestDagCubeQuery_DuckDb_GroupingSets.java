@@ -38,7 +38,7 @@ import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.dataframe.tabular.ITabularView;
 import eu.solven.adhoc.dataframe.tabular.MapBasedTabularView;
 import eu.solven.adhoc.engine.query.CubeQuery;
-import eu.solven.adhoc.eventbus.UnsafeAdhocEventBusHelpers;
+import eu.solven.adhoc.eventbus.AdhocEventBusHelpersUnsafe;
 import eu.solven.adhoc.model.measure.Aggregator;
 import eu.solven.adhoc.model.measure.Partitionor;
 import eu.solven.adhoc.model.query.groupby.GroupByColumns;
@@ -53,7 +53,7 @@ public class TestDagCubeQuery_DuckDb_GroupingSets extends ATestDagDuckDb impleme
 		// https://stackoverflow.com/questions/59491564/logback-doesnt-print-method-or-line-number
 		LoggerContext loggerContext = (LoggerContext) LoggerFactory.getILoggerFactory();
 		List<String> frameworkPackages = loggerContext.getFrameworkPackages();
-		UnsafeAdhocEventBusHelpers.addToFrameworkPackages(frameworkPackages);
+		AdhocEventBusHelpersUnsafe.addToFrameworkPackages(frameworkPackages);
 	}
 
 	@Override

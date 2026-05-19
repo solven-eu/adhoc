@@ -239,7 +239,7 @@ export default {
 			// as the wizard may have been edited while receiving the result
 			// We need both query and view to be assigned atomically, else some `watch` would trigger on partially updated object
 			// Also clear any previous error so the "query broken" banner goes away on recovery.
-			Object.assign(props.tabularView, { query: queryForApi.query, view: responseTabularView, error: "" });
+			Object.assign(props.tabularView, { query: queryForApi.query, view: responseTabularView, error: "", completedAt: Date.now() });
 			// props.tabularView.value = {query: queryForApi.query, view: responseTabularView};
 		};
 

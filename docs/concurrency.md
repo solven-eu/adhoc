@@ -76,6 +76,46 @@ Rationale: a FJP carrier thread that blocks waiting for a VT future will hold a 
 
 ---
 
+## Fairness vs throughput: do we need a CPU pool at all?
+
+The two-pool topology (`adhocCpuPool` FJP + `adhocMixedPool` VT) optimises **per-task latency**: a CPU-bound task pinned to a platform thread avoids the parking/unparking overhead VTs pay on every blocking call, and FJP work-stealing keeps the cores warm with cache-local sub-tasks. Under a single in-flight query this is strictly better than running CPU work on a VT.
+
+Under **many concurrent queries**, the same property becomes a fairness hazard. Consider an `adhocCpuPool` sized to `P` workers (default `availableProcessors × 2`) receiving `Q ≫ P` queries that each open with a CPU-heavy step (filter optimisation, sort) before reaching their first I/O wait:
+
+- The first `P` queries saturate the FJP. Their CPU steps run at full speed, finish quickly, and release the worker.
+- The remaining `Q − P` queries sit in the FJP submission queue. None of them advance — not even the cheap setup work that would let them reach their I/O wait — until a worker becomes free.
+- Net effect: the system spends time minimising per-task latency on `P` queries while `Q − P` queries are entirely stalled, including any whose downstream work (table query, RPC) would have happily proceeded in parallel without consuming a CPU worker.
+
+The VT-everywhere alternative trades per-task efficiency for **global progress**:
+
+- Every query starts on its own VT immediately, pays context-switch overhead on its CPU steps, but reaches its first blocking I/O quickly.
+- The underlying carrier-thread FJP still serialises CPU work onto `availableProcessors` cores — work-stealing isn't lost — but no query is starved waiting for the front of a queue.
+- The I/O subsystem (DB connection pool, HTTP client, disk) sees `Q` concurrent requests instead of `P`, which is often the actual bottleneck on small-data analytical workloads.
+
+### When the CPU pool wins
+
+- **Low concurrency** (one or a handful of queries): per-task latency dominates; the FJP's lock-free deques and cache-locality beat VT context switches.
+- **Compute-heavy queries with no I/O fan-out** (e.g. large in-memory aggregations on already-loaded data): the bottleneck genuinely is CPU; queueing extra work doesn't help.
+- **Predictable workloads** where `Q ≤ P` by design (batch pipelines, scheduled jobs).
+
+### When the CPU pool loses
+
+- **Multi-tenant SaaS** with many users running ad-hoc queries: `Q ≫ P` is the common case; head-of-line blocking on the CPU pool is more painful than the VT overhead.
+- **Workloads that fan out to slow tables** (BigQuery, Redshift): the time spent in `adhocCpuPool` is dwarfed by the table round-trip, so squeezing it makes no measurable difference, while delaying the table call by even tens of milliseconds (because the query is queued on the CPU pool) directly extends wall-clock latency.
+
+### Current direction
+
+The library defaults to the two-pool topology because the conservative choice for an embeddable engine is to preserve per-query speed. The trade-off is *not* free, however, and the right answer for a given deployment depends on its `Q` vs `P` ratio and the relative cost of its CPU steps to its I/O steps.
+
+Two practical mitigations are in scope:
+
+1. **Keep `adhocCpuPool` usage minimal** — only pure in-memory fan-out (`PartitionedMultitypeMergeableGrid#closeColumn`, `APartitionedColumn#purgeAggregationCarriers`). Anything that may, even transitively, trigger a table query goes through `adhocMixedPool`. This bounds the FJP's responsibility to a few short, leaf-level steps.
+2. **Allow callers to opt out** — `AdhocFactories#executorService` is overridable, so a deployment that prefers VT-everywhere can replace the CPU pool with the mixed pool entirely. The cost is a small per-step VT overhead; the benefit is no head-of-line blocking when `Q ≫ P`.
+
+A future direction is to make the choice automatic: monitor the FJP queue depth and route to the VT pool when the queue exceeds a threshold. This is not yet implemented.
+
+---
+
 ## Why `Stream.parallel()` is banned for IO-bound work
 
 `Stream.parallel()` submits tasks to the JVM common ForkJoinPool (or whichever FJP is the current pool context). This is wrong for IO-bound sources for two reasons:

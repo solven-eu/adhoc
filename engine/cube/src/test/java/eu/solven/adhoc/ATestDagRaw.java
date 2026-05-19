@@ -22,15 +22,18 @@
  */
 package eu.solven.adhoc;
 
+import java.util.List;
 import java.util.function.Supplier;
 
 import org.jspecify.annotations.NullMarked;
 import org.junit.jupiter.api.BeforeEach;
+import org.slf4j.LoggerFactory;
 import org.springframework.mock.env.MockEnvironment;
 
 import com.google.common.base.Suppliers;
 import com.google.common.eventbus.EventBus;
 
+import ch.qos.logback.classic.LoggerContext;
 import eu.solven.adhoc.cube.CubeWrapper;
 import eu.solven.adhoc.cube.CubeWrapper.CubeWrapperBuilder;
 import eu.solven.adhoc.cube.ICubeWrapper;
@@ -38,8 +41,8 @@ import eu.solven.adhoc.engine.AdhocTestHelper;
 import eu.solven.adhoc.engine.CubeQueryEngine;
 import eu.solven.adhoc.engine.context.IQueryPreparator;
 import eu.solven.adhoc.engine.context.StandardQueryPreparator;
+import eu.solven.adhoc.eventbus.AdhocEventBusHelpersUnsafe;
 import eu.solven.adhoc.eventbus.IAdhocEventBus;
-import eu.solven.adhoc.eventbus.UnsafeAdhocEventBusHelpers;
 import eu.solven.adhoc.factories.AdhocFactories;
 import eu.solven.adhoc.measure.forest.MeasureForest;
 import eu.solven.adhoc.measure.forest.UnsafeMeasureForest;
@@ -56,6 +59,14 @@ import eu.solven.adhoc.util.IStopwatchFactory;
  */
 @NullMarked
 public abstract class ATestDagRaw {
+
+	static {
+		// https://stackoverflow.com/questions/59491564/logback-doesnt-print-method-or-line-number
+		LoggerContext loggerContext = (LoggerContext) LoggerFactory.getILoggerFactory();
+		List<String> frameworkPackages = loggerContext.getFrameworkPackages();
+		AdhocEventBusHelpersUnsafe.addToFrameworkPackages(frameworkPackages);
+	}
+
 	public EventBus makeEventBus() {
 		return AdhocTestHelper.eventBus();
 	}
@@ -67,7 +78,7 @@ public abstract class ATestDagRaw {
 	}
 
 	public IAdhocEventBus eventBus() {
-		return UnsafeAdhocEventBusHelpers.safeWrapper(eventBus.get()::post);
+		return AdhocEventBusHelpersUnsafe.safeWrapper(eventBus.get()::post);
 	}
 
 	public final MockEnvironment env = new MockEnvironment();

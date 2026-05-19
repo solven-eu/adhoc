@@ -77,13 +77,13 @@ import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.TableQueryStep;
 import eu.solven.adhoc.engine.tabular.ITableQueryEngineFactory;
 import eu.solven.adhoc.engine.tabular.TableQueryEngineFactory;
+import eu.solven.adhoc.eventbus.AdhocEventBusHelpersUnsafe;
 import eu.solven.adhoc.eventbus.AdhocLogEvent;
 import eu.solven.adhoc.eventbus.AdhocQueryPhaseIsCompleted;
 import eu.solven.adhoc.eventbus.IAdhocEventBus;
 import eu.solven.adhoc.eventbus.QueryLifecycleEvent;
 import eu.solven.adhoc.eventbus.QueryStepIsCompleted;
 import eu.solven.adhoc.eventbus.QueryStepIsEvaluating;
-import eu.solven.adhoc.eventbus.UnsafeAdhocEventBusHelpers;
 import eu.solven.adhoc.exception.AdhocExceptionHelpers;
 import eu.solven.adhoc.factories.AdhocFactoriesUnsafe;
 import eu.solven.adhoc.factories.CustomMarkerScope;
@@ -145,7 +145,7 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 	// @Getter is useful for tests. May be useful to help providing a relevant EventBus to other components.
 	@Getter
 	@SuppressWarnings("PMD.UnusedAssignment")
-	final IAdhocEventBus eventBus = UnsafeAdhocEventBusHelpers.safeWrapper(AdhocBlackHole.getInstance());
+	final IAdhocEventBus eventBus = AdhocEventBusHelpersUnsafe.safeWrapper(AdhocBlackHole.getInstance());
 
 	@NonNull
 	@VisibleForTesting

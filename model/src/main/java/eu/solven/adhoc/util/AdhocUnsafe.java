@@ -46,7 +46,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @UtilityClass
 @Slf4j
-@SuppressWarnings({ "checkstyle:MagicNumber", "PMD.MutableStaticState", "PMD.FieldDeclarationsShouldBeAtStartOfClass" })
+@SuppressWarnings({ "checkstyle:MagicNumber", "PMD.FieldDeclarationsShouldBeAtStartOfClass" })
 public class AdhocUnsafe {
 	static {
 		// TODO Log current version and build-time, similarly to JooQ
@@ -73,11 +73,11 @@ public class AdhocUnsafe {
 		cartesianProductLimit = DEFAULT_CARTESIAN_PRODUCT_LIMIT;
 		setNullComparator(DEFAULT_NULL_COMPARATOR);
 		// Recreate the VT executor so tests starting a fresh state get a non-shutdown executor
-		adhocMixedPool = MoreExecutors.listeningDecorator(
+		mixedPool = MoreExecutors.listeningDecorator(
 				Executors.newThreadPerTaskExecutor(Thread.ofVirtual().name("adhoc-vt-", 0).factory()));
 		// Recreate FJP so tests starting a fresh state get a non-shutdown pool
 		// asyncMode is false as stack-based seems better for our DAG usages.
-		adhocCpuPool = new ForkJoinPool(parallelism, new NamingForkJoinWorkerThreadFactory("adhoc-fjp-"), null, false);
+		cpuPool = new ForkJoinPool(parallelism, new NamingForkJoinWorkerThreadFactory("adhoc-fjp-"), null, false);
 	}
 
 	public static void reloadProperties() {
@@ -158,7 +158,9 @@ public class AdhocUnsafe {
 	/**
 	 * Used for unitTests
 	 */
-	public static boolean deterministicUUID = false;
+	@Getter
+	@Setter
+	private static boolean deterministicUUID = false;
 	private static final AtomicLong DETERMINISTIC_UUID_INDEX = new AtomicLong();
 	private static final AtomicLong DETERMINISTIC_QUERY_INDEX = new AtomicLong();
 	private static final AtomicLong DETERMINISTIC_QUERY_STEP_INDEX = new AtomicLong();
@@ -199,30 +201,37 @@ public class AdhocUnsafe {
 	}
 
 	private static int defaultParallelism() {
-		// Multiply by 2 as we expect some thread to be stuck on external calls like a `ITableQuery` waiting for the
-		// computation by an external ITableWrapper
-		return Runtime.getRuntime().availableProcessors() * 2;
+		// No point is multiplying by any factor `>1` as this is used only by CPU-bound operations.
+		return Runtime.getRuntime().availableProcessors();
 	}
 
 	// Virtual-thread executor: replaces the former ForkJoinPool-based work-stealing pool.
 	// VTs are cheap, blocking-friendly, and remove the need for a separate IO executor.
-	public static ListeningExecutorService adhocMixedPool = MoreExecutors
+	@Getter
+	@Setter
+	private static ListeningExecutorService mixedPool = MoreExecutors
 			.listeningDecorator(Executors.newThreadPerTaskExecutor(Thread.ofVirtual().name("adhoc-vt-", 0).factory()));
 
 	// ForkJoinPool for CPU-bound work: tasks submitted from a FJP worker thread that call
 	// Stream.parallelStream() will fork into this pool (work-stealing) rather than the JVM
 	// common pool, giving predictable thread naming and sizing.
-	public static ForkJoinPool adhocCpuPool =
-			new ForkJoinPool(defaultParallelism(), new NamingForkJoinWorkerThreadFactory("adhoc-cpu-"), null, true);
+	@Getter
+	@Setter
+	private static ForkJoinPool cpuPool =
+			new ForkJoinPool(defaultParallelism(), new NamingForkJoinWorkerThreadFactory("adhoc-fjp-"), null, true);
 
 	// Typically used as limit to prevent iterating over large cartesian products
 	// This limit should be applied over the number of potential combinations
-	public static int cartesianProductLimit = 16 * 1024;
+	@Getter
+	@Setter
+	private static int cartesianProductLimit = 16 * 1024;
 	private static final int DEFAULT_CARTESIAN_PRODUCT_LIMIT = 16 * 1024;
 
 	// A pool dedicated to maintenance operations.
 	// Typically used in `CacheBuilder.refreshAfterWrite(_)` scenarios
-	public static Executor maintenancePool = Executors.newCachedThreadPool(Thread.ofPlatform()
+	@Getter
+	@Setter
+	private static Executor maintenancePool = Executors.newCachedThreadPool(Thread.ofPlatform()
 			// Daemon as these thread does not hold critical operations
 			.daemon(true)
 			.name("adhoc-maintenance-", 0)

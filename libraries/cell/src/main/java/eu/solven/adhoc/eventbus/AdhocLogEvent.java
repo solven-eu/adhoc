@@ -26,6 +26,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.event.Level;
 
 import com.google.common.collect.ImmutableSet;
@@ -65,6 +66,7 @@ public class AdhocLogEvent implements IAdhocEvent, IIsExplainable, IIsDebugable 
 	Level level = Level.INFO;
 
 	@With
+	@Nullable
 	String fqdn;
 
 	@NonNull

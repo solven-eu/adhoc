@@ -132,7 +132,7 @@ public abstract class APartitionedColumn<T, D extends IMultitypeColumnFastGet<T>
 	@Override
 	public IMultitypeColumnFastGet<T> purgeAggregationCarriers() {
 		List<IMultitypeColumnFastGet<T>> purged =
-				map(AdhocUnsafe.adhocCpuPool, IMultitypeColumnFastGet::purgeAggregationCarriers);
+				map(AdhocUnsafe.getCpuPool(), IMultitypeColumnFastGet::purgeAggregationCarriers);
 
 		return PartitionedColumn.<T>builder().partitions(purged).build();
 	}

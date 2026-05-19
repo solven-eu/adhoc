@@ -34,6 +34,7 @@ import eu.solven.adhoc.beta.schema.AdhocSchema;
 import eu.solven.adhoc.beta.schema.AdhocSchema.AdhocSchemaBuilder;
 import eu.solven.adhoc.beta.schema.IAdhocSchema;
 import eu.solven.adhoc.engine.ICubeQueryEngine;
+import eu.solven.adhoc.engine.context.IQueryPreparator;
 import eu.solven.adhoc.pivotable.endpoint.PivotableAdhocEndpointMetadata;
 import eu.solven.adhoc.pivotable.endpoint.PivotableEndpointsRegistry;
 import eu.solven.adhoc.pivotable.endpoint.PivotableSchemaRegistry;
@@ -65,12 +66,12 @@ public class InjectPivotableSelfEndpointConfig {
 	@Bean
 	public IAdhocSchema registerSelfSchema(ApplicationContext appContext,
 			ICubeQueryEngine engine,
-			eu.solven.adhoc.engine.observability.plan.IQueryPlanRegistry queryPlanRegistry,
+			IQueryPreparator queryPreparator,
 			PivotableSchemaRegistry schemaRegistry) {
 		Environment env = appContext.getEnvironment();
 
 		AdhocSchemaBuilder schemaBuilder =
-				AdhocSchema.builder().engine(engine).env(env).queryPlanRegistry(queryPlanRegistry);
+				AdhocSchema.builder().engine(engine).env(env).queryPreparator(queryPreparator);
 
 		// Apply customizers
 		appContext.getBeansOfType(IAdhocSchemaCustomizer.class).values().forEach(customizer -> {

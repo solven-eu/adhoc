@@ -26,26 +26,23 @@ import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
+import org.springframework.core.env.Environment;
 
 import eu.solven.adhoc.engine.CubeQueryEngine;
 import eu.solven.adhoc.engine.ICubeQueryEngine;
+import eu.solven.adhoc.engine.cache.GuavaQueryStepCache;
+import eu.solven.adhoc.engine.cache.IQueryStepCache;
+import eu.solven.adhoc.engine.context.IImplicitFilter;
+import eu.solven.adhoc.engine.context.IImplicitOptions;
+import eu.solven.adhoc.engine.context.IQueryPreparator;
+import eu.solven.adhoc.engine.context.SpringImplicitOptions;
+import eu.solven.adhoc.engine.context.StandardQueryPreparator;
 import eu.solven.adhoc.engine.observability.plan.BoundedQueryPlanRegistry;
 import eu.solven.adhoc.engine.observability.plan.IQueryPlanRegistry;
+import eu.solven.adhoc.eventbus.AdhocEventBusHelpersUnsafe;
 import eu.solven.adhoc.eventbus.IAdhocEventBus;
-import eu.solven.adhoc.eventbus.UnsafeAdhocEventBusHelpers;
-import eu.solven.adhoc.factories.AdhocFactories;
-import eu.solven.adhoc.factories.AdhocFactoriesUnsafe;
 import eu.solven.adhoc.factories.IAdhocFactories;
-import eu.solven.adhoc.factories.IColumnFactory;
-import eu.solven.adhoc.factories.StandardColumnFactory;
-import eu.solven.adhoc.filter.optimizer.IFilterOptimizerFactory;
-import eu.solven.adhoc.filter.stripper.IFilterStripperFactory;
-import eu.solven.adhoc.map.factory.ISliceFactory;
-import eu.solven.adhoc.map.factory.ISliceFactoryFactory;
-import eu.solven.adhoc.map.factory.RowSliceFactory;
-import eu.solven.adhoc.measure.operator.IOperatorFactory;
-import eu.solven.adhoc.measure.operator.StandardOperatorFactory;
-import eu.solven.adhoc.util.IStopwatchFactory;
+import eu.solven.adhoc.filter.ISliceFilter;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -59,6 +56,7 @@ public class AdhocAutoConfiguration {
 
 	/** Default cap on the in-memory plan registry — enough for ~10 simultaneous 20k-step plans. */
 	private static final long DEFAULT_PLAN_REGISTRY_NODE_BUDGET = 200_000L;
+	private static final long DEFAULT_QUERY_STEP_CACHE_BUDGET = 20_000L;
 
 	@Bean
 	@ConditionalOnMissingBean({ IAdhocEventBus.class,
@@ -74,7 +72,7 @@ public class AdhocAutoConfiguration {
 	@ConditionalOnBean(com.google.common.eventbus.EventBus.class)
 	public IAdhocEventBus adhocEventBusFromGuava(com.google.common.eventbus.EventBus eventBus) {
 		log.info("Autoconfigured: IAdhocEventBus over {}", eventBus.getClass().getName());
-		return UnsafeAdhocEventBusHelpers.safeWrapper(eventBus::post);
+		return AdhocEventBusHelpersUnsafe.safeWrapper(eventBus::post);
 	}
 
 	@Bean
@@ -82,70 +80,7 @@ public class AdhocAutoConfiguration {
 	@ConditionalOnBean(org.greenrobot.eventbus.EventBus.class)
 	public IAdhocEventBus adhocEventBusFromGreenRobot(org.greenrobot.eventbus.EventBus eventBus) {
 		log.info("Autoconfigured: IAdhocEventBus over {}", eventBus.getClass().getName());
-		return UnsafeAdhocEventBusHelpers.safeWrapper(eventBus::post);
-	}
-
-	@Bean
-	@ConditionalOnMissingBean(IOperatorFactory.class)
-	public IOperatorFactory adhocOperatorsFactory() {
-		return StandardOperatorFactory.builder().build();
-	}
-
-	@Bean
-	@ConditionalOnMissingBean(IColumnFactory.class)
-	public IColumnFactory columnFactory() {
-		return StandardColumnFactory.builder().build();
-	}
-
-	// BEWARE As this is a shared ISliceFactory, it must not keep memory in the long-run (e.g. through dictionaries)
-	@Bean
-	@ConditionalOnMissingBean(ISliceFactory.class)
-	public ISliceFactory sliceFactory() {
-		return RowSliceFactory.builder().build();
-	}
-
-	@Bean
-	@ConditionalOnMissingBean(ISliceFactoryFactory.class)
-	public ISliceFactoryFactory sliceFactoryFactory() {
-		return AdhocFactoriesUnsafe.factories.getSliceFactoryFactory();
-	}
-
-	@Bean
-	@ConditionalOnMissingBean(IStopwatchFactory.class)
-	public IStopwatchFactory stopwatchFactory() {
-		return IStopwatchFactory.guavaStopwatchFactory();
-	}
-
-	@Bean
-	@ConditionalOnMissingBean(IFilterOptimizerFactory.class)
-	public IFilterOptimizerFactory filterOptimizerFactory() {
-		return IFilterOptimizerFactory.standard();
-	}
-
-	@Bean
-	@ConditionalOnMissingBean(IFilterStripperFactory.class)
-	public IFilterStripperFactory filterStripperFactory() {
-		// TODO Should we rely on Unsafe?
-		return IFilterStripperFactory.noCache();
-	}
-
-	@Bean
-	@ConditionalOnMissingBean(IAdhocFactories.class)
-	public IAdhocFactories adhocFactories(IOperatorFactory operatorFactory,
-			IFilterOptimizerFactory filterOptimizerFactory,
-			IFilterStripperFactory filterStripperFactory,
-			IColumnFactory columnsFactory,
-			ISliceFactoryFactory sliceFactoryFactory,
-			IStopwatchFactory stopwatchFactory) {
-		// TODO Should we rely on Unsafe?
-		return AdhocFactories.builder()
-				.columnFactory(columnsFactory)
-				.filterOptimizerFactory(filterOptimizerFactory)
-				.filterStripperFactory(filterStripperFactory)
-				.operatorFactory(operatorFactory)
-				.sliceFactoryFactory(sliceFactoryFactory)
-				.stopwatchFactory(stopwatchFactory)
-				.build();
+		return AdhocEventBusHelpersUnsafe.safeWrapper(eventBus::post);
 	}
 
 	/**
@@ -158,8 +93,45 @@ public class AdhocAutoConfiguration {
 	 */
 	@Bean
 	@ConditionalOnMissingBean(IQueryPlanRegistry.class)
-	public IQueryPlanRegistry queryPlanRegistry() {
-		return new BoundedQueryPlanRegistry(DEFAULT_PLAN_REGISTRY_NODE_BUDGET);
+	public IQueryPlanRegistry queryPlanRegistry(Environment env) {
+		long size = env
+				.getProperty("adhoc.pivotable.queryPlanRegistry.size", Long.class, DEFAULT_PLAN_REGISTRY_NODE_BUDGET);
+		return new BoundedQueryPlanRegistry(size);
+	}
+
+	@Bean
+	@ConditionalOnMissingBean(IImplicitOptions.class)
+	public IImplicitOptions implicitOptions(Environment env) {
+		return SpringImplicitOptions.builder().env(env).build();
+	}
+
+	@Bean
+	@ConditionalOnMissingBean(IImplicitFilter.class)
+	public IImplicitFilter implicitFilter() {
+		return _ -> ISliceFilter.MATCH_ALL;
+	}
+
+	@Bean
+	@ConditionalOnMissingBean(IQueryStepCache.class)
+	public IQueryStepCache queryStepCache(Environment env) {
+		long size = env.getProperty("adhoc.pivotable.queryStepCache.size", Long.class, DEFAULT_QUERY_STEP_CACHE_BUDGET);
+		return GuavaQueryStepCache.withSize(size);
+	}
+
+	@Bean
+	@ConditionalOnMissingBean(IQueryPreparator.class)
+	public IQueryPreparator queryPreparator(IAdhocFactories factories,
+			IImplicitOptions implicitOptions,
+			IImplicitFilter implicitFilter,
+			IQueryStepCache queryStepCache,
+			IQueryPlanRegistry queryPlanRegistry) {
+		return StandardQueryPreparator.builder()
+				.factories(factories)
+				.implicitOptions(implicitOptions)
+				.implicitFilter(implicitFilter)
+				.queryStepCache(queryStepCache)
+				.queryPlanRegistry(queryPlanRegistry)
+				.build();
 	}
 
 	@Bean

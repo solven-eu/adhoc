@@ -520,7 +520,7 @@ public class FilterOptimizer implements IFilterOptimizer, IHasFilterStripperFact
 
 		long combinations = LongMath.checkedMultiply(operands.size(), operands.size() - 1);
 
-		if (combinations > AdhocUnsafe.cartesianProductLimit) {
+		if (combinations > AdhocUnsafe.getCartesianProductLimit()) {
 			if (removeLaxerElseStricter) {
 				listener.onSkip(AndFilter.builder().ands(operands).build());
 			} else {
@@ -529,7 +529,7 @@ public class FilterOptimizer implements IFilterOptimizer, IHasFilterStripperFact
 			log.warn(
 					"Skip 'removeLaxerOrStricterGivenOne' due to product={} is greater than AdhocUnsafe.cartesianProductLimit={} over {}",
 					combinations,
-					AdhocUnsafe.cartesianProductLimit,
+					AdhocUnsafe.getCartesianProductLimit(),
 					operands);
 			return ImmutableSet.copyOf(operands);
 		}

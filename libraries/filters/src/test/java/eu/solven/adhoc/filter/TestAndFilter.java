@@ -648,7 +648,7 @@ public class TestAndFilter {
 	@Test
 	public void testAndOr_contradictoryIns() {
 		// b has 3 options, c has 3 options, d has 2 options (post simplification by packing columns)
-		AdhocUnsafe.cartesianProductLimit = 3 * 3 * 2;
+		AdhocUnsafe.setCartesianProductLimit(3 * 3 * 2);
 
 		try {
 			FilterOptimizer optimizer = FilterOptimizer.builder().listener(listener).build();
