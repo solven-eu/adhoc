@@ -35,11 +35,13 @@ test("queryPivotable.addColumn", async ({ page }) => {
 	await queryPivotable.addColumn(page, "Shirt Number");
 
 	// TODO Wait for query executed
-	// row0
+	// row0. event_count is integer-only → the cell formatter drops decimals (see
+	// `formatNumber` + `stats.allInteger` in adhoc-query-grid-helper.js), so the rendered
+	// value is "28" rather than "28.00".
 	await expect(page.locator(".slick-row").nth(0).locator(".slick-cell").nth(0)).toHaveText("0");
 	await expect(page.locator(".slick-row").nth(0).locator(".slick-cell").nth(1)).toHaveText("C");
 	await expect(page.locator(".slick-row").nth(0).locator(".slick-cell").nth(2)).toHaveText("0");
-	await expect(page.locator(".slick-row").nth(0).locator(".slick-cell").nth(3)).toHaveText("28.00");
+	await expect(page.locator(".slick-row").nth(0).locator(".slick-cell").nth(3)).toHaveText("28");
 
 	// row1
 	await expect(page.locator(".slick-row").nth(1).locator(".slick-cell").nth(0)).toHaveText("1");
@@ -58,7 +60,7 @@ test("queryPivotable.addColumn", async ({ page }) => {
 			.nth(1)
 			.locator(".slick-cell")
 			.nth(3 - 1),
-	).toHaveText("17.00");
+	).toHaveText("17");
 });
 
 test("queryPivotable.addDependantFromGraph", async ({ page }) => {
@@ -80,23 +82,26 @@ test("queryPivotable.addDependantFromGraph", async ({ page }) => {
 	await page.locator("a").filter({ hasText: "goal_count" }).click();
 	await page.getByRole("dialog", { name: "Measure Info" }).getByLabel("Close").click();
 
+	// event_count / goal_count are integer-only columns — the formatter drops fractional
+	// digits (see `formatNumber` + `stats.allInteger` in adhoc-query-grid-helper.js), so the
+	// rendered values omit ".00" that the previous assertions expected.
 	const starCoordinate = false;
 	if (starCoordinate) {
 		// row0
-		await expect(page.locator(".slick-row").nth(0).locator(".slick-cell").nth(2)).toHaveText("11,270.00");
-		await expect(page.locator(".slick-row").nth(0).locator(".slick-cell").nth(3)).toHaveText("2,256.00");
+		await expect(page.locator(".slick-row").nth(0).locator(".slick-cell").nth(2)).toHaveText("11,270");
+		await expect(page.locator(".slick-row").nth(0).locator(".slick-cell").nth(3)).toHaveText("2,256");
 		// row1
-		await expect(page.locator(".slick-row").nth(1).locator(".slick-cell").nth(2)).toHaveText("558.00");
-		await expect(page.locator(".slick-row").nth(1).locator(".slick-cell").nth(3)).toHaveText("158.00");
+		await expect(page.locator(".slick-row").nth(1).locator(".slick-cell").nth(2)).toHaveText("558");
+		await expect(page.locator(".slick-row").nth(1).locator(".slick-cell").nth(3)).toHaveText("158");
 	} else {
 		// row0
-		await expect(page.locator(".slick-row").nth(0).locator(".slick-cell").nth(2)).toHaveText("558.00");
-		await expect(page.locator(".slick-row").nth(0).locator(".slick-cell").nth(3)).toHaveText("158.00");
+		await expect(page.locator(".slick-row").nth(0).locator(".slick-cell").nth(2)).toHaveText("558");
+		await expect(page.locator(".slick-row").nth(0).locator(".slick-cell").nth(3)).toHaveText("158");
 		// row1 — cell[3] holds a null value that is now rendered with the explicit `NULL`
 		// placeholder (per CHANGES.MD: "empty cells are now rendered with explicit greyed-italic
 		// placeholders"). The cell still has `title="The cell carries a null value."` so we anchor
 		// on that attribute instead of the empty-text check the renderer no longer produces.
-		await expect(page.locator(".slick-row").nth(1).locator(".slick-cell").nth(2)).toHaveText("88.00");
+		await expect(page.locator(".slick-row").nth(1).locator(".slick-cell").nth(2)).toHaveText("88");
 		await expect(page.locator(".slick-row").nth(1).locator(".slick-cell").nth(3)).toHaveAttribute("title", "The cell carries a null value.");
 	}
 });
@@ -110,8 +115,8 @@ test("queryPivotable.browserRefresh", async ({ page }) => {
 	// Check the pivotTable data is available
 	const starCoordinate = false;
 	if (starCoordinate) {
-		await expect(page.locator(".slick-row").nth(0).locator(".slick-cell").nth(2)).toHaveText("11,270.00");
+		await expect(page.locator(".slick-row").nth(0).locator(".slick-cell").nth(2)).toHaveText("11,270");
 	} else {
-		await expect(page.locator(".slick-row").nth(0).locator(".slick-cell").nth(2)).toHaveText("558.00");
+		await expect(page.locator(".slick-row").nth(0).locator(".slick-cell").nth(2)).toHaveText("558");
 	}
 });

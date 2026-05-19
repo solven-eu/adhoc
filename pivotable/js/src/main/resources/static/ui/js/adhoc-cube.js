@@ -4,9 +4,8 @@ import { provide } from "vue";
 import { mapState } from "pinia";
 import { useAdhocStore } from "./store-adhoc.js";
 
-import AdhocEndpointHeader from "./adhoc-endpoint-header.js";
-import AdhocCubeHeader from "./adhoc-cube-header.js";
-
+// Cube + endpoint identification is now shown via the navbar breadcrumb
+// (Endpoints / endpoint / cube), so AdhocCubeHeader is no longer mounted on this route.
 import AdhocQueryChip from "./adhoc-query-chip.js";
 
 import AdhocLoading from "./adhoc-loading.js";
@@ -14,8 +13,6 @@ import AdhocLoading from "./adhoc-loading.js";
 export default {
 	// https://vuejs.org/guide/components/registration#local-registration
 	components: {
-		AdhocEndpointHeader,
-		AdhocCubeHeader,
 		AdhocQueryChip,
 		AdhocLoading,
 	},
@@ -67,8 +64,6 @@ export default {
 			<AdhocLoading :id="cubeId" type="cube" :loading="nbSchemaFetching > 0" :error="cube.error" />
 		</div>
 		<div v-else>
-			<AdhocCubeHeader :endpointId="endpointId" :cubeId="cubeId" />
-
 			<ul>
 				<li><AdhocQueryChip :cubeId="cubeId" :endpointId="endpointId" :withDescription="false" v-if="showEndpoint" /></li>
 			</ul>

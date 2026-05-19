@@ -3,6 +3,7 @@ import { ref } from "vue";
 
 import { mapState } from "pinia";
 import { useAdhocStore } from "./store-adhoc.js";
+import { tagToStyle } from "./adhoc-tag-color.js";
 
 // https://stackoverflow.com/questions/69053972/adding-bootstrap-5-tooltip-to-vue-3
 import { Tooltip } from "bootstrap";
@@ -120,7 +121,7 @@ export default {
 			}
 		};
 
-		return { nbCubes, percentUi, tableFilter, measureFilter, cubeFilter, lowerIncludes, measureSignature, measureTypeBadge };
+		return { nbCubes, percentUi, tableFilter, measureFilter, cubeFilter, lowerIncludes, measureSignature, measureTypeBadge, tagToStyle };
 	},
 	template: /* HTML */ `
 		<div v-if="!schema || schema.error">
@@ -260,12 +261,16 @@ export default {
 					</h2>
 					<div :id="'schemaCubes_' + endpointId" class="accordion-collapse collapse show" :data-bs-parent="'#schemaAccordion_' + endpointId">
 						<div class="accordion-body">
-							<input type="text" class="form-control form-control-sm mb-2" placeholder="Filter cubes…" v-model="cubeFilter" />
+							<input type="text" class="form-control form-control-sm mb-2" placeholder="Filter cubes (name or tag)…" v-model="cubeFilter" />
 							<div v-if="!schema.cubes || Object.keys(schema.cubes).length === 0" class="text-muted small">No cubes.</div>
 							<ul v-else class="list-group">
 								<template v-for="(cube, cubeName) in schema.cubes" :key="cubeName">
-									<li v-if="lowerIncludes(cubeName, cubeFilter)" class="list-group-item d-flex flex-wrap align-items-center gap-2">
+									<li
+										v-if="lowerIncludes(cubeName, cubeFilter) || (cube.tags || []).some((t) => lowerIncludes(t, cubeFilter))"
+										class="list-group-item d-flex flex-wrap align-items-center gap-2"
+									>
 										<AdhocCubeChip :endpointId="endpointId" :cubeId="cubeName" />
+										<span class="badge" v-for="tag in (cube.tags || [])" :key="tag" :style="tagToStyle(tag)">{{tag}}</span>
 										<span class="badge text-bg-light" v-if="cube.columns &amp;&amp; cube.columns.columnToTypes">
 											{{Object.keys(cube.columns.columnToTypes).length}} cols
 										</span>
@@ -289,7 +294,12 @@ export default {
 
 				<div>
 					Cubes
-					<span v-for="(cube, cubeName) in schema.cubes"> <AdhocCubeChip :endpointId="endpointId" :cubeId="cubeName" />&nbsp; </span>
+					<ul>
+						<li v-for="(cube, cubeName) in schema.cubes" :key="cubeName" class="d-flex flex-wrap align-items-center gap-1">
+							<AdhocCubeChip :endpointId="endpointId" :cubeId="cubeName" />
+							<span class="badge" v-for="tag in (cube.tags || [])" :key="tag" :style="tagToStyle(tag)">{{tag}}</span>
+						</li>
+					</ul>
 				</div>
 				<AdhocEndpointSchemaChip :endpointId="endpointId" />
 			</span>

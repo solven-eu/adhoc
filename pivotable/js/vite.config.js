@@ -123,6 +123,12 @@ export default defineConfig(({ command }) => {
 					// index.html instead of the 302 to github.com/google.com, and the SPA router
 					// throws a no-route error on `/oauth2/authorization/github`.
 					"/oauth2": backendProxy,
+					// Spring Boot Actuator endpoints (`/actuator/info`, `/actuator/health`, …)
+					// are surfaced by `<AdhocEndpointActuator>`. Without this proxy, the
+					// `:self` endpoint resolves them to `/actuator/info` on Vite's port (5173)
+					// and gets back `index.html` — `response.json()` then throws and the UI
+					// silently falls back to "no actuator data".
+					"/actuator": backendProxy,
 				},
 			},
 		};

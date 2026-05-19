@@ -45,6 +45,23 @@ test("computeMeasureStats: variance is computed via Welford and matches the popu
 	expect(stats.m.variance).toBeCloseTo(4, 10);
 });
 
+test("computeMeasureStats: allInteger flips false on the first fractional value", () => {
+	const intsOnly = gridHelper.computeMeasureStats(["m"], [{ m: 1 }, { m: 2 }, { m: 3 }]);
+	expect(intsOnly.m.allInteger).toBe(true);
+
+	const mixed = gridHelper.computeMeasureStats(["m"], [{ m: 1 }, { m: 2.5 }, { m: 3 }]);
+	expect(mixed.m.allInteger).toBe(false);
+
+	// Negative integers stay flagged; null / non-numeric cells do not flip the flag.
+	const negativesAndNulls = gridHelper.computeMeasureStats(["m"], [{ m: -3 }, { m: null }, { m: "oops" }, { m: 5 }]);
+	expect(negativesAndNulls.m.allInteger).toBe(true);
+
+	// Zero-numeric-count columns stay at the default `true` (degenerate — formatter ignores).
+	const noNumbers = gridHelper.computeMeasureStats(["m"], [{ m: null }, { m: "x" }]);
+	expect(noNumbers.m.allInteger).toBe(true);
+	expect(noNumbers.m.count).toBe(0);
+});
+
 // heatmapColor --------------------------------------------------------------------------
 
 test("heatmapColor: null when stats is missing or degenerate (single value, zero range)", () => {

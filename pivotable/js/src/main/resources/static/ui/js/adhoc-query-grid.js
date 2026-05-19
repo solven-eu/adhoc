@@ -1,5 +1,8 @@
 // @ts-check
-import { ref, computed, watch, onMounted, reactive, provide, inject } from "vue";
+import { ref, computed, watch, onMounted, onUnmounted, reactive, provide, inject } from "vue";
+
+import { useSearchStore } from "./store-search.js";
+import { useAdhocStore } from "./store-adhoc.js";
 
 import AdhocCellModal from "./adhoc-query-grid-cell-modal.js";
 import AdhocGridTimingsBar from "./adhoc-query-grid-timings-bar.js";
@@ -76,6 +79,8 @@ export default {
 		// reactive instance is returned across calls — the dedicated `preferencesStoreForResize`
 		// reference inside `onMounted` is the same object as this one.
 		const preferencesStore = usePreferencesStore();
+		const searchStore = useSearchStore();
+		const adhocStore = useAdhocStore();
 
 		// Singleton model for the per-measure Statistics modal — provided by `adhoc-query.js`
 		// so the grid header buttons (registered in `adhoc-query-grid-helper.js`) can toggle
@@ -390,6 +395,11 @@ export default {
 				}
 			}
 
+			// Hoisted so the search-store registration block at the end of resyncData can see it
+			// regardless of which branch ran. Defaults to an empty array in the empty-coordinates
+			// path (no rows → no measures to search).
+			/** @type {string[]} */
+			let measureNames = [];
 			if (view.coordinates.length === 0) {
 				// TODO Why do we show an empty column? Maybe to force having something to render
 				const column = { id: "empty", name: "empty", field: "empty", sortable: sortable, asyncPostRender: renderCallback };
@@ -409,7 +419,7 @@ export default {
 				gridColumns.push(...gridHelper.groupByToGridColumns(columnNames, props.queryModel, renderCallback, isDrillthrough, requestedColumns));
 
 				// measureNames may be filled on first row if we requested no measure and received the default measure
-				let measureNames = props.tabularView.query.measures;
+				measureNames = props.tabularView.query.measures;
 				if (isDrillthrough) {
 					// In DRILLTHROUGH the response uses per-aggregator aliases (e.g. `k1`, `k1_1`) which may
 					// differ from the user-submitted `measures`. Discover the value schema as the union of
@@ -525,11 +535,20 @@ export default {
 			// Restore the user's previously-set widths for columns that survived the resync. NEW
 			// columns (no memo entry) keep whatever default width came out of the helper builders;
 			// the post-setColumns block sizes them appropriately.
+			//
+			// Fit mode is intentionally exempt — its whole point is that SlickGrid's
+			// `forceFitColumns` distributes proportionally across the viewport, so per-column
+			// preferences serve no purpose except to corrupt the proportions when a NEW column
+			// (default 80 px) joins old memoed columns (e.g. 200 px each): the newcomer gets a
+			// disproportionately small share. Skipping memo restoration in fit mode means every
+			// column starts at the helper-builder default and forceFitColumns balances them
+			// uniformly.
+			const isFitLayout = preferencesStore.gridLayout !== "scroll";
 			const newColumnIds = [];
 			for (const col of gridColumns) {
-				if (columnWidthMemo.has(col.id)) {
+				if (!isFitLayout && columnWidthMemo.has(col.id)) {
 					col.width = columnWidthMemo.get(col.id);
-				} else {
+				} else if (!columnWidthMemo.has(col.id)) {
 					newColumnIds.push(col.id);
 				}
 			}
@@ -608,6 +627,111 @@ export default {
 
 			gridMetadata.nb_rows = data.array.length;
 
+			// Register the freshly-rebuilt grid with the navbar search store so the
+			// application-level search modal can scan EVERY row (not just the lazy-rendered
+			// viewport that the browser's native Ctrl+F sees). The closures capture
+			// `gridColumns` and `data.array` by reference; both are rebuilt on every
+			// resyncData, so re-registering here keeps the search aligned with the current
+			// rendering contract.
+			{
+				const columnsById = new Map();
+				for (const col of gridColumns) {
+					columnsById.set(col.id, col);
+				}
+				const formatCell = (rowIndex, columnId) => {
+					const col = columnsById.get(columnId);
+					if (!col || typeof col.formatter !== "function") return null;
+					const row = data.array[rowIndex];
+					if (!row) return null;
+					let out;
+					try {
+						out = col.formatter(rowIndex, 0, row[columnId], col, row);
+					} catch (e) {
+						return null;
+					}
+					if (!out) return null;
+					if (typeof out === "string") return out;
+					if (typeof out.text === "string") return out.text;
+					// Some formatters return `{ html: HTMLElement }` for heatmap-styled cells;
+					// the visible text is the element's textContent.
+					if (out.html && typeof out.html.textContent === "string") return out.html.textContent;
+					return null;
+				};
+				const scrollToRow = (rowIndex, columnId) => {
+					try {
+						const viewport = typeof grid.getViewportNode === "function" ? grid.getViewportNode() : null;
+						const gridOptions = typeof grid.getOptions === "function" ? grid.getOptions() : {};
+						const rowHeight = (gridOptions && gridOptions.rowHeight) || 25;
+						const colIdx =
+							columnId && typeof grid.getColumnIndex === "function" ? grid.getColumnIndex(columnId) : gridColumns.findIndex((c) => c.id === columnId);
+
+						// Horizontal scroll: defer to SlickGrid's `scrollCellIntoView` which knows
+						// each column's actual rendered width (frozen pane, manual resizes, …) and
+						// parks the cell just inside the viewport edge. Then we override the
+						// vertical axis below so the row sits CENTERED rather than at the bottom
+						// edge — much easier for the eye to pick up.
+						if (colIdx >= 0 && typeof grid.scrollCellIntoView === "function") {
+							grid.scrollCellIntoView(rowIndex, colIdx, false);
+						}
+						// Center the row vertically. Computed manually because SlickGrid's
+						// scrollCellIntoView only ensures visibility — it doesn't center.
+						if (viewport && typeof viewport.scrollTop === "number") {
+							const rowTop = rowIndex * rowHeight;
+							const target = rowTop - Math.max(0, (viewport.clientHeight - rowHeight) / 2);
+							viewport.scrollTop = Math.max(0, target);
+						} else if (typeof grid.scrollRowIntoView === "function") {
+							// Fallback when the viewport API is unavailable for some reason — keep
+							// the default SlickGrid behaviour rather than crashing.
+							grid.scrollRowIntoView(rowIndex, false);
+						}
+						// Persistent highlight: clear any prior search highlight, then mark the new
+						// target cell. The class is removed by a class-selector sweep (rather than
+						// holding a stale DOM reference) because SlickGrid recycles its cell nodes
+						// when scrolling — a remembered element may now display a different row by
+						// the time we want to clear it.
+						const previouslyHighlighted = document.querySelectorAll(".slick-cell.adhoc-search-highlight");
+						previouslyHighlighted.forEach((el) => el.classList.remove("adhoc-search-highlight"));
+						if (colIdx >= 0 && typeof grid.getCellNode === "function") {
+							// SlickGrid's virtualised renderer only attaches cell DOM after the row
+							// enters the rendered window — give the layout a frame to settle after
+							// our scroll before grabbing the node.
+							requestAnimationFrame(() => {
+								const cellEl = grid.getCellNode(rowIndex, colIdx);
+								if (cellEl && cellEl.classList) {
+									cellEl.classList.add("adhoc-search-highlight");
+								}
+							});
+						}
+					} catch (e) {
+						console.warn("scrollToRow failed", e);
+					}
+				};
+				// Persist the distinct coordinate values that appear in this view into the
+				// per-column cache. Why here: the user-visible "I saw value X in column Y"
+				// signal happens at render time, BEFORE the user ever opens the filter
+				// dropdown for that column (or after they drop the column from groupBy and
+				// the in-view search loses it). Merging here makes the navbar's
+				// coordinate-search remember those values across queries.
+				if (props.endpointId && props.cubeId && view && view.coordinates) {
+					adhocStore.mergeCoordinatesFromView(props.endpointId, props.cubeId, view.coordinates);
+				}
+
+				// `queryModel` is exposed so the navbar's coordinate-search dropdown can add a
+				// column to the groupBy without prop-drilling — clicking a `{column, coordinate}`
+				// hit flips `queryModel.selectedColumns[col]` + calls `onColumnToggled(col)`.
+				// Captured by reference; the wizard's reactivity does the rest.
+				searchStore.registerActiveGrid({
+					view,
+					coordinateColumns: columnNames,
+					measureColumns: measureNames,
+					formatCell,
+					scrollToRow,
+					queryModel: props.queryModel,
+					cubeId: props.cubeId,
+					endpointId: props.endpointId,
+				});
+			}
+
 			// https://github.com/6pac/SlickGrid/issues/1114
 			grid.remapAllColumnsRowSpan();
 
@@ -659,6 +783,14 @@ export default {
 
 		// Initialize with `-1` to have a nice default value
 		const clickedCell = ref({ id: "-1" });
+
+		// Drop the active-grid context from the search store when this grid unmounts (route
+		// change, conditional unmount in the wrapper). Compared by cubeId+endpointId inside
+		// the store so a stale unmount from a previously-active grid can't clobber a newly-
+		// mounted one — Vue's unmount/mount ordering across route swaps isn't deterministic.
+		onUnmounted(() => {
+			searchStore.clearActiveGrid(props.cubeId, props.endpointId);
+		});
 
 		// Use AutoResizer?
 		// https://6pac.github.io/SlickGrid/examples/example15-auto-resize.html
@@ -927,7 +1059,7 @@ export default {
 			<AdhocMeasureStatsModal :statsModel="measureStatsModel" :formatOptions="formatOptions" />
 
 			<span style="width:100%;" class="position-relative">
-				<div :id="domId" class="vh-75 slickgrid-grid"></div>
+				<div :id="domId" class="adhoc-grid-fill slickgrid-grid"></div>
 
 				<!--
 					Empty-state hints. Two variants depending on which kind of "empty" we

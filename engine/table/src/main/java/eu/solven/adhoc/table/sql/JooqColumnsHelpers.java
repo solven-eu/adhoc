@@ -25,10 +25,13 @@ package eu.solven.adhoc.table.sql;
 import java.util.List;
 import java.util.function.Function;
 
+import org.jooq.DSLContext;
 import org.jooq.Field;
 import org.jooq.Record;
 import org.jooq.SelectLimitPercentStep;
 import org.jooq.TableLike;
+import org.jooq.conf.RenderFormatting;
+import org.jooq.impl.DSL;
 
 import com.google.common.collect.ImmutableList;
 
@@ -112,8 +115,14 @@ public final class JooqColumnsHelpers {
 		@Blocking
 		@Override
 		public List<Field<?>> columnsOf(IDSLSupplier dslSupplier, TableLike<?> table) {
+			// Ensure the SQL fits on 1 LOC
+			DSLContext dslContext = DSL.using(dslSupplier.getDSLContext()
+					.configuration()
+					.deriveSettings(
+							s -> s.withRenderFormatting(new RenderFormatting().withNewline(" ").withIndentation(" "))));
+
 			// Log in INFO as the round-trip may be slow on large-schema JDBC drivers.
-			SelectLimitPercentStep<Record> query = dslSupplier.getDSLContext().select().from(table).limit(0);
+			SelectLimitPercentStep<Record> query = dslContext.select().from(table).limit(0);
 
 			log.info("Fetching fields via SQL=`{}`", PepperLogHelper.lazyToString(() -> escapeEOL(query.toString())));
 

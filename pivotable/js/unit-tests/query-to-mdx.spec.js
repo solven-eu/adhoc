@@ -26,13 +26,13 @@ test("single measure lands on COLUMNS", () => {
 	expect(mdx).toEqual(["SELECT", "  {[Measures].[delta]} ON COLUMNS", "FROM [simple]"].join("\n"));
 });
 
-test("multiple selected measures are comma-separated, unselected skipped", () => {
+test("multiple selected measures are rendered one per line, unselected skipped", () => {
 	const q = model();
 	q.selectedMeasures.delta = true;
 	q.selectedMeasures.gamma = true;
 	q.selectedMeasures.vega = false; // should be skipped
 	const mdx = queryModelToMdx(q, "simple");
-	expect(mdx).toEqual(["SELECT", "  {[Measures].[delta], [Measures].[gamma]} ON COLUMNS", "FROM [simple]"].join("\n"));
+	expect(mdx).toEqual(["SELECT", "  {", "    [Measures].[delta],", "    [Measures].[gamma]", "  } ON COLUMNS", "FROM [simple]"].join("\n"));
 });
 
 test("single groupBy column goes on ROWS via .Members with NON EMPTY", () => {

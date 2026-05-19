@@ -4,9 +4,11 @@ import { ref, computed, watch, inject } from "vue";
 import mermaid from "mermaid";
 
 import { useAdhocStore } from "./store-adhoc.js";
+import { usePreferencesStore } from "./store-preferences.js";
 import { queryModelToMdx } from "./adhoc-query-to-mdx.js";
 import { queryModelToMermaid } from "./adhoc-query-to-mermaid.js";
 import { queryModelToSql } from "./adhoc-query-to-sql.js";
+import { buildSharePayload, encodePayloadToJson, encodePayloadToUrl } from "./adhoc-share-helper.js";
 
 export default {
 	props: {
@@ -22,6 +24,14 @@ export default {
 		// omitted the MDX tab still renders with an empty cube name (`FROM []`), which is
 		// still useful for copy-paste.
 		cubeId: {
+			type: String,
+			required: false,
+			default: "",
+		},
+		// Endpoint id used to resolve the endpoint's `(host, port, prefix, name)` for the Share
+		// tab. Optional; the Share tab self-hides when no endpoint can be resolved (e.g. the
+		// modal is mounted outside a known endpoint context).
+		endpointId: {
 			type: String,
 			required: false,
 			default: "",
@@ -70,6 +80,33 @@ export default {
 		// Informative-only: the diagram is a reading aid for the current queryModel, NOT an
 		// execution plan.
 		const mermaidSource = computed(() => queryModelToMermaid(props.queryModel, props.cubeId));
+
+		// Share tab — endpoint+cubeId+query packaged for paste-into-another-Pivotable. Resolved
+		// from the adhoc store (server-discovered) with a fallback to the preferences store
+		// (user-registered). Returns `null` when no endpoint can be resolved — the template
+		// then hides the Share tab rather than offering a broken copy.
+		const preferencesStore = usePreferencesStore();
+		const shareEndpoint = computed(() => {
+			if (!props.endpointId) return null;
+			return store.endpoints[props.endpointId] || preferencesStore.localEndpoints[props.endpointId] || null;
+		});
+		const sharePayload = computed(() => {
+			const endpoint = shareEndpoint.value;
+			if (!endpoint) return null;
+			try {
+				return buildSharePayload(endpoint, props.cubeId, props.queryModel);
+			} catch (e) {
+				console.warn("Failed to build share payload", e);
+				return null;
+			}
+		});
+		const shareJson = computed(() => (sharePayload.value ? encodePayloadToJson(sharePayload.value) : ""));
+		const shareUrl = computed(() => {
+			const payload = sharePayload.value;
+			if (!payload) return "";
+			const origin = typeof window !== "undefined" && window.location ? window.location.origin : "";
+			return encodePayloadToUrl(payload, origin);
+		});
 
 		// Mermaid is a one-off initialisation per page load. `startOnLoad: false` keeps the
 		// library passive — we call `render()` ourselves below so the SVG lives in a Vue-managed
@@ -160,12 +197,17 @@ export default {
 			}
 		};
 
-		const copyToClipboard = function () {
+		const copyToClipboard = function (override) {
 			// Copy whatever the user is currently looking at — editing JSON copies the edited
 			// buffer, viewing JSON copies the serialized queryJson, viewing MDX/SQL copies the
-			// derived string.
+			// derived string. The Share tab passes an explicit override ("share-url" or
+			// "share-json") since it surfaces two side-by-side copy buttons.
 			let value;
-			if (activeTab.value === "mdx") {
+			if (override === "share-url") {
+				value = shareUrl.value;
+			} else if (override === "share-json") {
+				value = shareJson.value;
+			} else if (activeTab.value === "mdx") {
 				value = mdxString.value;
 			} else if (activeTab.value === "sql") {
 				value = sqlString.value;
@@ -205,6 +247,10 @@ export default {
 			mermaidSource,
 			mermaidSvg,
 			mermaidError,
+
+			shareEndpoint,
+			shareUrl,
+			shareJson,
 
 			isEditing,
 			toggleEdit,
@@ -289,6 +335,17 @@ export default {
 										data-adhoc-tab="mermaid"
 									>
 										Mermaid
+									</button>
+								</li>
+								<li class="nav-item" v-if="shareEndpoint">
+									<button
+										type="button"
+										class="nav-link"
+										:class="activeTab === 'share' ? 'active' : ''"
+										@click="activeTab = 'share'"
+										data-adhoc-tab="share"
+									>
+										Share
 									</button>
 								</li>
 							</ul>
@@ -408,6 +465,50 @@ export default {
 {{sqlString}}</pre
 									>
 								</div>
+							</div>
+
+							<!--
+								Share tab: copy-pasteable URL + JSON describing the current view (endpoint +
+								cubeId + query). Either form can be pasted into another Pivotable: the URL
+								opens directly via the /html/share route; the JSON goes through the "Import
+								shared view" affordance on the endpoints page. Auto-hides when no endpoint
+								can be resolved (rare — would mean the modal was mounted without context).
+							-->
+							<div v-else-if="activeTab === 'share' && shareEndpoint" data-adhoc-tab-pane="share">
+								<div class="alert alert-info py-2 mb-2 small" role="alert">
+									<i class="bi bi-info-circle me-1"></i>
+									<strong>Share this view.</strong>
+									The recipient will be prompted to register the endpoint if not already known, then the query will load. Display preferences
+									(heatmaps, frozen columns, …) are NOT included — they are per-user.
+								</div>
+
+								<label class="form-label small text-muted mb-1">Share URL</label>
+								<div class="input-group input-group-sm mb-3">
+									<input type="text" class="form-control font-monospace small" readonly :value="shareUrl" data-testid="share-url" />
+									<button type="button" class="btn btn-outline-primary" @click="copyToClipboard('share-url')" data-testid="copy-share-url">
+										<i class="bi bi-clipboard me-1"></i>Copy URL
+									</button>
+								</div>
+
+								<label class="form-label small text-muted mb-1">Share JSON</label>
+								<div class="position-relative">
+									<pre
+										class="border text-start w-100 bg-body-secondary small mb-2"
+										style="max-height: 240px; overflow-y: scroll; cursor: not-allowed;"
+										data-testid="share-json"
+									>
+{{shareJson}}</pre
+									>
+									<button
+										type="button"
+										class="btn btn-outline-primary btn-sm position-absolute top-0 end-0 m-2"
+										@click="copyToClipboard('share-json')"
+										data-testid="copy-share-json"
+									>
+										<i class="bi bi-clipboard me-1"></i>Copy JSON
+									</button>
+								</div>
+								<div v-if="copyToClipboardStatus" class="small text-muted">Clipboard: {{copyToClipboardStatus}}</div>
 							</div>
 						</div>
 						<div class="modal-footer">

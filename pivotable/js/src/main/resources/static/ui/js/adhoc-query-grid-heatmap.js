@@ -32,6 +32,10 @@ export const computeMeasureStats = function (measureNames, values) {
 			m2: 0,
 			nullCount: 0,
 			nonNumericCount: 0,
+			// `allInteger` flips to false the first time a non-integer numeric value is observed.
+			// A column with zero numeric observations stays `true` — the formatter treats that as a
+			// degenerate case and applies its normal defaults.
+			allInteger: true,
 		};
 	}
 	for (let rowIndex = 0; rowIndex < values.length; rowIndex++) {
@@ -51,6 +55,9 @@ export const computeMeasureStats = function (measureNames, values) {
 			s.count += 1;
 			s.min = s.min === null ? v : Math.min(s.min, v);
 			s.max = s.max === null ? v : Math.max(s.max, v);
+			if (s.allInteger && !Number.isInteger(v)) {
+				s.allInteger = false;
+			}
 			// Welford update.
 			const delta = v - s.mean;
 			s.mean += delta / s.count;

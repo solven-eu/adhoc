@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.IntStream;
 
@@ -173,6 +174,7 @@ public class InjectSimpleExampleCubesConfig {
 		registrer.registerForest(MeasureForest.fromMeasures("simple", measures));
 
 		registrer.registerCube("simple", "simple", "simple");
+		registrer.tagCube("simple", Set.of("inmemory"));
 
 		registrer.registerCustomMarker("ccy",
 				EqualsMatcher.matchEq("simple"),

@@ -1,5 +1,5 @@
 // @ts-check
-import { provide, ref } from "vue";
+import { provide, ref, computed } from "vue";
 
 import AdhocColumnChip from "./adhoc-column-chip.js";
 import queryHelper from "./adhoc-query-helper.js";
@@ -188,6 +188,68 @@ export default {
 			}
 		};
 
+		// True when `column` is a measure of the active cube — used to bucket the clickedCell
+		// entries into the two tables (coordinates vs measures). Defensive against an empty
+		// `cube.measures` (the cube schema may still be loading when the modal opens).
+		const isMeasure = function (column) {
+			return !!(props.cube && props.cube.measures && Object.prototype.hasOwnProperty.call(props.cube.measures, column));
+		};
+
+		// Excel/CSV escaping: wrap a cell in double quotes when it contains a comma, a quote,
+		// or a newline; double up embedded quotes per RFC 4180. Cells without those characters
+		// are emitted as-is so simple data stays human-readable when pasted into a text editor.
+		const csvEscape = function (raw) {
+			if (raw === null || raw === undefined) return "";
+			const s = String(raw);
+			if (/[",\r\n]/.test(s)) {
+				return '"' + s.replace(/"/g, '""') + '"';
+			}
+			return s;
+		};
+
+		// Serialise every clickedCell entry as a two-column CSV: header row "Name,Value" then
+		// one row per entry, coordinates first then measures (same order as the on-screen
+		// tables). Designed for pasting into Excel / Google Sheets: those tools auto-detect
+		// the comma delimiter and the RFC 4180 quoting we apply above.
+		const copyAllStatus = ref(/** @type {"idle"|"done"|"error"} */ ("idle"));
+		const copyAllAsCsv = async () => {
+			const lines = ["Name,Value"];
+			for (const row of coordinateRows.value) {
+				lines.push(csvEscape(row.column) + "," + csvEscape(row.coordinate));
+			}
+			for (const row of measureRows.value) {
+				lines.push(csvEscape(row.column) + "," + csvEscape(row.value));
+			}
+			const text = lines.join("\n");
+			try {
+				if (!navigator.clipboard || !window.isSecureContext) {
+					console.warn("navigator.clipboard not available — CSV not copied");
+					copyAllStatus.value = "error";
+					return;
+				}
+				await navigator.clipboard.writeText(text);
+				copyAllStatus.value = "done";
+				setTimeout(() => {
+					if (copyAllStatus.value === "done") copyAllStatus.value = "idle";
+				}, 1500);
+			} catch (e) {
+				console.error("Failed copying CSV to clipboard:", e);
+				copyAllStatus.value = "error";
+			}
+		};
+
+		// Split `clickedCell` into the two rows the template renders. Computeds rather than
+		// inline `v-for` filters so the iteration order is stable (insertion order in the
+		// clicked row) and the two lists are easy to assert in tests later.
+		const coordinateRows = computed(() => {
+			const entries = Object.entries(props.clickedCell || {});
+			return entries.filter(([col]) => !isMeasure(col)).map(([column, coordinate]) => ({ column, coordinate }));
+		});
+		const measureRows = computed(() => {
+			const entries = Object.entries(props.clickedCell || {});
+			return entries.filter(([col]) => isMeasure(col)).map(([column, value]) => ({ column, value }));
+		});
+
 		return {
 			applyEqualsFilter,
 			applyNotEqualsFilter,
@@ -198,6 +260,10 @@ export default {
 			drillthroughThisCellNewTab,
 			copiedFlags,
 			copyCellValue,
+			coordinateRows,
+			measureRows,
+			copyAllAsCsv,
+			copyAllStatus,
 		};
 	},
 	template: /* HTML */ `
@@ -209,40 +275,146 @@ export default {
 						<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
 					</div>
 					<div class="modal-body">
-						<ul>
-							<li v-for="(coordinate, column) in clickedCell">
-								<AdhocColumnChip :name="column" />: {{ coordinate }}
-								<!--
-									Copy chip — same shape as the SQL-copy button in adhoc-query-plan-mermaid-modal.js:
-									clipboard icon flipping to a green tick + "Copied" feedback for 1.5 s. One per row
-									so column-coordinate and measure-value rows both get it (the iteration is the same).
-								-->
-								<button
-									type="button"
-									class="btn btn-sm btn-outline-secondary ms-1"
-									@click="copyCellValue(column, coordinate)"
-									:title="copiedFlags[column] ? 'Copied!' : 'Copy value to clipboard'"
-								>
-									<i v-if="copiedFlags[column]" class="bi bi-check2 text-success" aria-hidden="true"></i>
-									<i v-else class="bi bi-clipboard" aria-hidden="true"></i>
-								</button>
-								<span v-if="columnIsFilterable(column)">
-									<button type="button" class="btn" @click="applyEqualsFilter(column, coordinate)">
-										<i class="bi bi-filter-circle" aria-hidden="true"></i>
-									</button>
-									<button type="button" class="btn" @click="applyNotEqualsFilter(column, coordinate)">
-										<i class="bi bi-filter-circle-fill" aria-hidden="true"></i>
-									</button>
-								</span>
-								<ul v-if="getUnderlyingsIfMeasure(column)">
-									<li v-for="underlying in getUnderlyingsIfMeasure(column)">
-										<button type="button" class="btn" @click="addMeasure(underlying)">
-											{{underlying}} <i class="bi bi-plus-circle" aria-hidden="true"></i>
-										</button>
-									</li>
-								</ul>
-							</li>
-						</ul>
+						<!--
+							Two compact 2-column tables: groupBy coordinates on top, measure
+							values below. Replaces the previous flat <ul> that mixed both kinds
+							of entries on the same line — splitting by kind lets the eye scan
+							"what row am I on" (coordinates) separately from "what numbers does
+							that row carry" (measures), and gives the action icons a
+							predictable column-aligned home.
+						-->
+						<!--
+							Three columns: NAME | VALUE | ACTIONS. The actions cell is anchored to
+							the right (text-end + width: 1%) so the icon column lines up vertically
+							across rows regardless of how long a coordinate or value gets — a row
+							whose value spills onto multiple lines doesn't push its icons sideways.
+							Cleaner visual scan than the previous inline-after-value layout where
+							icon column-offset drifted per row.
+						-->
+						<div v-if="coordinateRows.length > 0">
+							<h6 class="text-muted small mb-1"><i class="bi bi-funnel me-1"></i>Coordinates</h6>
+							<table class="table table-sm table-borderless align-middle mb-3">
+								<tbody>
+									<tr v-for="row in coordinateRows" :key="'coord-' + row.column">
+										<td class="text-nowrap font-monospace text-muted small" style="width: 1%;">
+											<AdhocColumnChip :name="row.column" />
+										</td>
+										<td class="font-monospace">{{ row.coordinate }}</td>
+										<td class="text-nowrap text-end" style="width: 1%;">
+											<!--
+												Order: [filter-in] [filter-out] [copy]. Copy is rendered last so
+												it lands at the rightmost position of the cell — aligning
+												vertically with the copy-only actions cell in the Measures
+												table below. Filter actions: same bi-funnel base for the
+												include/exclude pair; exclude adds an overlaid bi-slash-lg to
+												read as "filter, but excluded". Primary colour for include,
+												muted grey for exclude.
+											-->
+											<span class="d-inline-flex gap-2 align-items-center">
+												<button
+													type="button"
+													class="btn btn-link p-0 text-primary text-decoration-none"
+													:disabled="!columnIsFilterable(row.column)"
+													:style="!columnIsFilterable(row.column) ? 'visibility: hidden;' : ''"
+													@click="applyEqualsFilter(row.column, row.coordinate)"
+													title="Filter on this coordinate (equals)"
+												>
+													<i class="bi bi-funnel" aria-hidden="true"></i>
+												</button>
+												<button
+													type="button"
+													class="btn btn-link p-0 text-muted text-decoration-none position-relative"
+													:disabled="!columnIsFilterable(row.column)"
+													:style="!columnIsFilterable(row.column) ? 'visibility: hidden;' : ''"
+													@click="applyNotEqualsFilter(row.column, row.coordinate)"
+													title="Filter out this coordinate (not equals)"
+												>
+													<i class="bi bi-funnel" aria-hidden="true"></i>
+													<i
+														class="bi bi-slash-lg position-absolute"
+														style="top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 1.4em;"
+														aria-hidden="true"
+													></i>
+												</button>
+												<button
+													type="button"
+													class="btn btn-link p-0 text-decoration-none"
+													@click="copyCellValue(row.column, row.coordinate)"
+													:title="copiedFlags[row.column] ? 'Copied!' : 'Copy value to clipboard'"
+												>
+													<i v-if="copiedFlags[row.column]" class="bi bi-check2 text-success" aria-hidden="true"></i>
+													<i v-else class="bi bi-clipboard text-muted" aria-hidden="true"></i>
+												</button>
+											</span>
+										</td>
+									</tr>
+								</tbody>
+							</table>
+						</div>
+
+						<div v-if="measureRows.length > 0">
+							<h6 class="text-muted small mb-1"><i class="bi bi-rulers me-1"></i>Measures</h6>
+							<table class="table table-sm table-borderless align-middle mb-0">
+								<tbody>
+									<!--
+										Per measure: a primary row (name | value | copy action) and, when
+										the measure is composite, a secondary row beneath it spanning all
+										3 columns and carrying the "+ underlying" pills. Putting the
+										underlyings on their own row keeps the primary row clean and the
+										actions column narrow and aligned with the coordinates table
+										above — the buttons would otherwise widen the actions column
+										unpredictably depending on which measures the user clicked.
+									-->
+									<template v-for="row in measureRows" :key="'measure-' + row.column">
+										<tr>
+											<!--
+												Measure name rendered as plain text rather than via
+												AdhocColumnChip: the chip's dropdown surfaces "Add as groupBy" /
+												"Add filter" / "Edit filter" — all column-only operations that
+												are meaningless for a measure.
+											-->
+											<td class="text-nowrap font-monospace text-muted small" style="width: 1%;">{{ row.column }}</td>
+											<td class="font-monospace">{{ row.value }}</td>
+											<td class="text-nowrap text-end" style="width: 1%;">
+												<button
+													type="button"
+													class="btn btn-link p-0 text-decoration-none"
+													@click="copyCellValue(row.column, row.value)"
+													:title="copiedFlags[row.column] ? 'Copied!' : 'Copy value to clipboard'"
+												>
+													<i v-if="copiedFlags[row.column]" class="bi bi-check2 text-success" aria-hidden="true"></i>
+													<i v-else class="bi bi-clipboard text-muted" aria-hidden="true"></i>
+												</button>
+											</td>
+										</tr>
+										<!--
+											Underlyings row — only for composite measures. Colspans all 3
+											columns so the "+ underlying" pills can flow naturally without
+											being squeezed into the narrow actions cell. Subtle muted
+											styling + a leading indent makes the row read as a continuation
+											of the measure above.
+										-->
+										<tr v-if="getUnderlyingsIfMeasure(row.column).length > 0">
+											<td colspan="3" class="ps-4 pt-0 pb-2 small text-muted border-0">
+												<span class="me-2"><i class="bi bi-diagram-2 me-1"></i>underlyings:</span>
+												<span class="d-inline-flex flex-wrap gap-1">
+													<button
+														v-for="underlying in getUnderlyingsIfMeasure(row.column)"
+														:key="underlying"
+														type="button"
+														class="btn btn-sm btn-outline-secondary"
+														@click="addMeasure(underlying)"
+														:title="'Add measure ' + underlying + ' to the query'"
+													>
+														<i class="bi bi-plus-circle me-1" aria-hidden="true"></i>{{ underlying }}
+													</button>
+												</span>
+											</td>
+										</tr>
+									</template>
+								</tbody>
+							</table>
+						</div>
 					</div>
 					<div class="modal-footer">
 						<!--
@@ -279,6 +451,25 @@ export default {
 								</li>
 							</ul>
 						</div>
+						<!--
+							Copy-all CSV: positioned between DrillThrough and Ok so it sits on the
+							same row as the other footer actions. Produces a 2-column CSV
+							(Name,Value header + one row per coordinate then per measure) suitable
+							for pasting into Excel / Google Sheets. RFC 4180 quoting in csvEscape
+							so a coordinate carrying a comma or a quote doesn't break the parse.
+						-->
+						<button
+							type="button"
+							class="btn btn-outline-secondary"
+							@click="copyAllAsCsv"
+							:title="copyAllStatus === 'done' ? 'Copied as CSV!' : copyAllStatus === 'error' ? 'Copy failed (clipboard blocked)' : 'Copy all coordinates and measures as a 2-column CSV (paste into Excel)'"
+							data-testid="cell-modal-copy-all-csv"
+						>
+							<i v-if="copyAllStatus === 'done'" class="bi bi-check2 text-success me-1" aria-hidden="true"></i>
+							<i v-else-if="copyAllStatus === 'error'" class="bi bi-exclamation-triangle text-danger me-1" aria-hidden="true"></i>
+							<i v-else class="bi bi-clipboard-data me-1" aria-hidden="true"></i>
+							Copy as CSV
+						</button>
 						<button type="button" class="btn btn-primary" data-bs-dismiss="modal">Ok</button>
 					</div>
 				</div>
