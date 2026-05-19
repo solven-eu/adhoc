@@ -25,8 +25,16 @@ package eu.solven.adhoc.table.sql;
 import java.util.List;
 import java.util.stream.IntStream;
 
+import org.jooq.Condition;
+import org.jooq.Field;
+import org.jooq.Name;
 import org.jooq.Record;
 import org.jooq.ResultQuery;
+import org.jooq.Select;
+import org.jooq.impl.DSL;
+import org.jspecify.annotations.NonNull;
+
+import com.google.common.collect.ImmutableList;
 
 import lombok.Builder;
 
@@ -65,9 +73,24 @@ public class ModuloQueryPartitionor implements IQueryPartitionor {
 	@Builder.Default
 	public int modulo = DEFAULT_MODULO;
 
+	@NonNull
+	public Name partition;
+
 	@Override
 	public List<ResultQuery<Record>> partition(ResultQuery<Record> query) {
-		// `mod(abs(from_hex(substring(md5("someColumn"), 1, 16))::bigint), 4) = 0`
-		return IntStream.range(0, modulo).mapToObj(index -> query).toList();
+		if (query instanceof Select<Record> select) {
+			// BEWARE This might not be functional if the input query is a `UNION ALL`, as the partitionedColumn is not
+			// visible. However, modern SQL engines (PostgreSQL, DuckDB, ClickHouse) might pushdown the filter to each
+			// unioned query.
+			return IntStream.range(0, modulo).mapToObj(index -> {
+				String expr = "mod(abs(from_hex(substring(md5(%s), 1, 16))::bigint), %s)";
+				Field<Object> moduloField = DSL.field(expr.formatted(partition.toString(), modulo));
+				Condition condition = moduloField.eq(DSL.value(index));
+				return (ResultQuery<Record>) select.$where(condition);
+			}).toList();
+		} else {
+			return ImmutableList.of(query);
+		}
+
 	}
 }
