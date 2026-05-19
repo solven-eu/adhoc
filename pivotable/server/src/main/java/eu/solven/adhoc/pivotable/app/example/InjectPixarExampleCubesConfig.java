@@ -29,6 +29,7 @@ import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Stream;
 
 import org.duckdb.DuckDBConnection;
@@ -41,6 +42,7 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Profile;
 
+import com.google.common.collect.ImmutableSet;
 import com.opencsv.CSVParser;
 import com.opencsv.CSVParserBuilder;
 import com.opencsv.CSVReader;
@@ -184,7 +186,7 @@ public class InjectPixarExampleCubesConfig {
 							.aliaser(MapTableAliaser.builder().aliasToOriginals(films.getAliasToOriginal()).build())
 							.build())
 					.build();
-			schemaRegistrer.registerCube(filmsCube);
+			schemaRegistrer.registerCube(filmsCube).tagCube(filmsCube.getName(), Set.of("duckdb"));
 		}
 
 		CubeWrapper peopleCube;
@@ -215,7 +217,7 @@ public class InjectPixarExampleCubesConfig {
 							.aliaser(MapTableAliaser.builder().aliasToOriginals(people.getAliasToOriginal()).build())
 							.build())
 					.build();
-			schemaRegistrer.registerCube(peopleCube);
+			schemaRegistrer.registerCube(peopleCube).tagCube(filmsCube.getName(), Set.of("duckdb"));
 		}
 
 		{
@@ -240,6 +242,7 @@ public class InjectPixarExampleCubesConfig {
 
 			schemaRegistrer.registerForest(clearPixarForest);
 			schemaRegistrer.registerCube("pixar", "pixar", "pixar");
+			schemaRegistrer.tagCube("pixar", ImmutableSet.of("duckdb", "composite"));
 		}
 	}
 }

@@ -59,6 +59,14 @@ export default {
 	setup(props) {
 		const store = useAdhocStore();
 
+		// Direct navigation to e.g. `/html/endpoints/<id>/schema` mounts THIS component first;
+		// `<AdhocEndpointHeader>` (which used to be the only place calling
+		// `loadEndpointIfMissing`) only mounts inside the v-else branch, i.e. AFTER the
+		// endpoint is already loaded. Without this kick the view stayed in the loading state
+		// indefinitely because the v-if branch renders `<AdhocLoading>` and nothing else
+		// triggers the fetch.
+		store.loadEndpointIfMissing(props.endpointId);
+
 		// https://getbootstrap.com/docs/5.3/components/tooltips/
 		// https://stackoverflow.com/questions/69053972/adding-bootstrap-5-tooltip-to-vue-3
 		// NOSONAR

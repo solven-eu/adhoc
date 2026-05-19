@@ -117,7 +117,7 @@ public class StandardDSLSupplier implements IDSLSupplier {
 			return this;
 		}
 
-		@Deprecated(since = "Unsatble API")
+		@Deprecated(since = "Unstable API")
 		public StandardDSLSupplierBuilder stopWatch() {
 			ExecuteListenerProvider[] existingProviders = configuration.executeListenerProviders();
 

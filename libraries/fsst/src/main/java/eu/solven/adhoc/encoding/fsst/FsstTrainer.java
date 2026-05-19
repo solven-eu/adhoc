@@ -415,7 +415,7 @@ public class FsstTrainer {
 
 	// larger val breaks tie
 	public static final Comparator<QSym> COMPARATOR =
-				Comparator.<QSym>comparingInt(q -> q.gain).thenComparingLong(q -> -q.symbol.val);
+			Comparator.<QSym>comparingInt(q -> q.gain).thenComparingLong(q -> -q.symbol.val);
 
 	@Override
 	public int compareTo(QSym o) {

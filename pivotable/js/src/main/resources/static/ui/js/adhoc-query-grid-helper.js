@@ -146,6 +146,42 @@ const formatters = function (formatOptions, measureStats, parentSliceStats, pare
 		numberFormat = new Intl.NumberFormat(formatOptions.locale, {});
 	}
 
+	// Per-column override: when every observed numeric value in a column is an integer
+	// (`measureStats[columnId].allInteger`), drop the fractional part so the user doesn't see
+	// "12.00" on a count column. The override is cached per columnId since `Intl.NumberFormat`
+	// is not the cheapest object to construct on every cell render. Falls back to the shared
+	// `numberFormat` when no stats are available or the column has fractional values.
+	const integerFormatPerColumn = new Map();
+	function formatNumber(columnId, value) {
+		const stats = measureStats ? measureStats[columnId] : null;
+		if (stats && stats.count > 0 && stats.allInteger) {
+			let fmt = integerFormatPerColumn.get(columnId);
+			if (!fmt) {
+				// Build the integer-format options from scratch rather than spreading
+				// `numberFormatOptions` — the spread used to carry through `undefined` keys
+				// (notably `roundingPriority` and `maximumSignificantDigits`) which some
+				// `Intl.NumberFormat` implementations treat as "explicitly set to default"
+				// and then conflict with the fraction-digits 0/0 pair, silently downgrading
+				// the format to the locale default and showing "12.00" again. Carrying only
+				// the keys we actually want avoids the foot-gun.
+				/** @type {Intl.NumberFormatOptions & Record<string, any>} */
+				const intOptions = { minimumFractionDigits: 0, maximumFractionDigits: 0 };
+				if (numberFormatOptions.style === "currency") {
+					intOptions.style = "currency";
+					intOptions.currency = numberFormatOptions.currency;
+				}
+				try {
+					fmt = new Intl.NumberFormat(formatOptions.locale, intOptions);
+				} catch (e) {
+					fmt = numberFormat;
+				}
+				integerFormatPerColumn.set(columnId, fmt);
+			}
+			return fmt.format(value);
+		}
+		return numberFormat.format(value);
+	}
+
 	// Build a heatmap-styled DOM node for a single numeric cell. SlickGrid's formatter
 	// pipeline renders FormatterResultWithText via `textContent`, so any background color
 	// MUST be attached to a DOM element returned via `.html`. We keep `display: block` so
@@ -224,11 +260,11 @@ const formatters = function (formatOptions, measureStats, parentSliceStats, pare
 			// midpoint-equal — `heatmapColor` returns null then).
 			const hasSecondary = secondaryOn && parentSliceStats && parentSliceStats[columnDef.id] && parentColumnNames && parentColumnNames.length > 0;
 			if (color || hasSecondary) {
-				rtn.html = buildHeatmapCell(value, color, numberFormat.format(value), dataContext, columnDef);
+				rtn.html = buildHeatmapCell(value, color, formatNumber(columnDef.id, value), dataContext, columnDef);
 				rtn.toolTip = value;
 				return rtn;
 			}
-			rtn.text = numberFormat.format(value);
+			rtn.text = formatNumber(columnDef.id, value);
 			// toolTip show raw value
 			rtn.toolTip = value;
 		} else if (typeof value === "object") {
@@ -579,13 +615,22 @@ export default {
 		// Footer numbers reuse the same Intl.NumberFormat the measure cells use, so the
 		// summary (min / sum / max) visually lines up with the cell values above it. We
 		// build a dedicated formatter (no heatmap) so the footer stays plain text.
-		const footerFormatters = formatters(formatOptions || {});
-		const formatNumber = function (n) {
+		//
+		// measureStats MUST be threaded through here too — otherwise the footer's
+		// `formatNumber` has no way to detect an all-integer column and the min/max line
+		// shows e.g. "min 5.00 · max 12.00" while the cells above (which DO see stats)
+		// render the same numbers as "5" and "12". Visual inconsistency that prompted the
+		// "default format does not print decimals" complaint.
+		const footerFormatters = formatters(formatOptions || {}, measureStats);
+		const formatNumber = function (n, columnId) {
 			if (n === null || n === undefined || Number.isNaN(n)) {
 				return "";
 			}
-			// Borrow the measure number-format by calling the same formatter with a fake cell.
-			const out = footerFormatters.measureFormatter(0, 0, n, { id: "__footer__" }, {});
+			// Borrow the measure number-format by calling the same formatter with the REAL column id
+			// — the integer-format path in `formatters()` keys off it (`stats[columnId].allInteger`),
+			// so a synthetic id would lose the per-column override and render the footer's min/max
+			// with decimals while the cells above show integers.
+			const out = footerFormatters.measureFormatter(0, 0, n, { id: columnId || "__footer__" }, {});
 			return out && typeof out.text === "string" ? out.text : String(n);
 		};
 
@@ -632,7 +677,7 @@ export default {
 				// per-column Statistics modal — accessible via the footer button below.
 				const s = measureStats[column.id];
 				if (s.count > 0) {
-					footerText = `min ${formatNumber(s.min)} · max ${formatNumber(s.max)}`;
+					footerText = `min ${formatNumber(s.min, column.id)} · max ${formatNumber(s.max, column.id)}`;
 				} else {
 					// All values are non-numeric (e.g. a custom-marker measure surfacing
 					// currency codes). Fall back to the distinct-count footer the groupBy

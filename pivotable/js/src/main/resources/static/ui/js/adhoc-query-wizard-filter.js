@@ -1,7 +1,8 @@
 // @ts-check
-import { inject } from "vue";
+import { computed, inject } from "vue";
 
 import AdhocColumnChip from "./adhoc-column-chip.js";
+import { renderValueMatcher } from "./adhoc-filter-render-helper.js";
 
 export default {
 	name: "AdhocQueryWizardFilter",
@@ -103,7 +104,14 @@ export default {
 			props.filter.disabled = !props.filter.disabled;
 		};
 
-		return { childrenPath, removeFilter, toggleDisabled };
+		// `{text, op, strike}` view of the column-filter's valueMatcher. Replaces the
+		// previous raw `{{filter.valueMatcher}}` template binding which rendered a `not`
+		// matcher as ugly JSON like `{"type":"not","negated":"Darla K. Anderson"}`. With
+		// the helper a not-equals renders as the bare operand under a strikethrough span,
+		// paired with a `≠` operator glyph instead of the inclusion `=`.
+		const renderedValueMatcher = computed(() => renderValueMatcher(props.filter && props.filter.valueMatcher));
+
+		return { childrenPath, removeFilter, toggleDisabled, renderedValueMatcher };
 	},
 	template: /* HTML */ `
 		<!--
@@ -182,8 +190,16 @@ export default {
 		<span v-else-if="filter.type==='column'" class="d-inline-flex align-items-center gap-1" :class="filter.disabled ? 'text-muted' : ''">
 			<span class="small" :class="filter.disabled ? 'text-decoration-line-through' : ''">
 				<AdhocColumnChip :name="filter.column" :disabled="filter.disabled" />
-				<span class="text-muted">=</span>
-				<span>{{filter.valueMatcher}}</span>
+				<!--
+					Operator + value rendered via renderValueMatcher so a not-equals
+					wrapper shows as ≠ value with a strikethrough on the value (instead
+					of the raw JSON shape it used to spew). The whole-filter pause
+					strikethrough above is independent of the not-equals strikethrough
+					below (semantic exclusion) — they may stack, which reads correctly
+					as "this excluded-value filter is also paused".
+				-->
+				<span class="text-muted me-1">{{renderedValueMatcher.op}}</span>
+				<span :class="renderedValueMatcher.strike ? 'text-decoration-line-through' : ''">{{renderedValueMatcher.text}}</span>
 			</span>
 			<button
 				type="button"

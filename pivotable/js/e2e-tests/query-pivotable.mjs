@@ -69,12 +69,15 @@ export default {
 
 		const starCoordinate = false;
 		if (starCoordinate) {
-			// Check some measure value
+			// Check some measure value. event_count is an all-integer column — the cell
+			// formatter detects that and drops fractional digits, so the rendered value is
+			// "11,270" (not "11,270.00"). See `computeMeasureStats.allInteger` +
+			// `formatNumber`'s integer-format override in adhoc-query-grid-helper.js.
 			await expect(page.locator(".slick-row").nth(0).locator(".slick-cell").nth(1)).toContainText("*");
-			await expect(page.locator(".slick-row").nth(0).locator(".slick-cell").nth(2)).toContainText("11,270.00");
+			await expect(page.locator(".slick-row").nth(0).locator(".slick-cell").nth(2)).toContainText("11,270");
 		} else {
 			await expect(page.locator(".slick-row").nth(0).locator(".slick-cell").nth(1)).toContainText("C");
-			await expect(page.locator(".slick-row").nth(0).locator(".slick-cell").nth(2)).toContainText("558.00");
+			await expect(page.locator(".slick-row").nth(0).locator(".slick-cell").nth(2)).toContainText("558");
 		}
 	},
 };
