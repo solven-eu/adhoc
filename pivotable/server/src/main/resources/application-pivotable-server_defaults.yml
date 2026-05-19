@@ -20,7 +20,7 @@ spring.pid.fail-on-write-error:
   true
 
 springdoc.show-actuator: true
-  
+
 # https://stackoverflow.com/questions/55877188/spring-boot-actuator-returns-404-not-found
 management.endpoints.web.exposure.include: health,info,beans
 
