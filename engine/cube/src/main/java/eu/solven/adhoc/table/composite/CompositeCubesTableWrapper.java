@@ -239,10 +239,13 @@ public class CompositeCubesTableWrapper implements ITableWrapper, IHasHealthDeta
 
 		Map<String, CoordinatesSample> merged = LinkedHashMap.newLinkedHashMap(columnToValueMatcher.size());
 
-		// Synthesise the slicer column locally: its coordinates are exactly the sub-cube names.
+		// Synthesize the slicer column locally: its coordinates are exactly the sub-cube names.
 		Optional<String> requestedSlicer = optCubeSlicer.filter(columnToValueMatcher::containsKey);
-		requestedSlicer.ifPresent(slicerColumn -> merged.put(slicerColumn,
-				makeSlicerSample(columnToValueMatcher.get(slicerColumn), limit)));
+		requestedSlicer.ifPresent(slicerColumn -> {
+			IValueMatcher valueMatcher = columnToValueMatcher.get(slicerColumn);
+			Objects.requireNonNull(valueMatcher);
+			merged.put(slicerColumn, makeSlicerSample(valueMatcher, limit));
+		});
 
 		Map<String, IValueMatcher> dispatchable;
 		if (requestedSlicer.isPresent()) {
