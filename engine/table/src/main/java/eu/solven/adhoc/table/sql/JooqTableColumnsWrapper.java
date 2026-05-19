@@ -209,6 +209,6 @@ public class JooqTableColumnsWrapper {
 					}
 				})
 				.build(CacheLoader.asyncReloading(CacheLoader.from(this::noCacheGetFields),
-						AdhocUnsafe.maintenancePool));
+						AdhocUnsafe.getMaintenancePool()));
 	}
 }

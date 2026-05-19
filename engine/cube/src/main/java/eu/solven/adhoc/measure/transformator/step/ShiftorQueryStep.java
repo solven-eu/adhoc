@@ -240,7 +240,7 @@ public class ShiftorQueryStep implements IMeasureQueryStep {
 			ISliceFactory sliceFactory = factories.getSliceFactory();
 
 			BigInteger cartesianProductSize = AdhocCollectionHelpers.cartesianProductSize(perColumnValues);
-			if (cartesianProductSize.compareTo(BigInteger.valueOf(AdhocUnsafe.cartesianProductLimit)) >= 0) {
+			if (cartesianProductSize.compareTo(BigInteger.valueOf(AdhocUnsafe.getCartesianProductLimit())) >= 0) {
 				throw new IllegalArgumentException("Too-large cartesian product given columns=%s on set=%s"
 						.formatted(columnToFilteredValues, step));
 			}

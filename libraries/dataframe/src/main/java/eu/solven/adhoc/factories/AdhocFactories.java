@@ -85,7 +85,7 @@ public class AdhocFactories implements IAdhocFactories {
 
 	@NonNull
 	@Default
-	ListeningExecutorService executorService = AdhocUnsafe.adhocMixedPool;
+	ListeningExecutorService executorService = AdhocUnsafe.getMixedPool();
 
 	@Override
 	public IMeasureQueryStepFactory getMeasureQueryStepFactory() {

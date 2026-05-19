@@ -39,8 +39,8 @@ import eu.solven.adhoc.engine.context.SpringImplicitOptions;
 import eu.solven.adhoc.engine.context.StandardQueryPreparator;
 import eu.solven.adhoc.engine.observability.plan.BoundedQueryPlanRegistry;
 import eu.solven.adhoc.engine.observability.plan.IQueryPlanRegistry;
+import eu.solven.adhoc.eventbus.AdhocEventBusHelpersUnsafe;
 import eu.solven.adhoc.eventbus.IAdhocEventBus;
-import eu.solven.adhoc.eventbus.UnsafeAdhocEventBusHelpers;
 import eu.solven.adhoc.factories.IAdhocFactories;
 import eu.solven.adhoc.filter.ISliceFilter;
 import lombok.extern.slf4j.Slf4j;
@@ -72,7 +72,7 @@ public class AdhocAutoConfiguration {
 	@ConditionalOnBean(com.google.common.eventbus.EventBus.class)
 	public IAdhocEventBus adhocEventBusFromGuava(com.google.common.eventbus.EventBus eventBus) {
 		log.info("Autoconfigured: IAdhocEventBus over {}", eventBus.getClass().getName());
-		return UnsafeAdhocEventBusHelpers.safeWrapper(eventBus::post);
+		return AdhocEventBusHelpersUnsafe.safeWrapper(eventBus::post);
 	}
 
 	@Bean
@@ -80,7 +80,7 @@ public class AdhocAutoConfiguration {
 	@ConditionalOnBean(org.greenrobot.eventbus.EventBus.class)
 	public IAdhocEventBus adhocEventBusFromGreenRobot(org.greenrobot.eventbus.EventBus eventBus) {
 		log.info("Autoconfigured: IAdhocEventBus over {}", eventBus.getClass().getName());
-		return UnsafeAdhocEventBusHelpers.safeWrapper(eventBus::post);
+		return AdhocEventBusHelpersUnsafe.safeWrapper(eventBus::post);
 	}
 
 	/**

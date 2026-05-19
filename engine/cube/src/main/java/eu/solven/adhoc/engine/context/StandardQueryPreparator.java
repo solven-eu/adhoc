@@ -88,7 +88,7 @@ public class StandardQueryPreparator implements IQueryPreparator {
 
 	@NonNull
 	@Default
-	final ListeningExecutorService concurrentExecutorService = AdhocUnsafe.adhocMixedPool;
+	final ListeningExecutorService concurrentExecutorService = AdhocUnsafe.getMixedPool();
 
 	// Typically customized into a named-pool so that even sequential queries run in specific thread
 	@NonNull

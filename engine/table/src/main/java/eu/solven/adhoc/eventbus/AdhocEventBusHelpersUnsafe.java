@@ -36,7 +36,7 @@ import lombok.experimental.UtilityClass;
  */
 @Deprecated(since = "Unclear of relevant")
 @UtilityClass
-public class UnsafeAdhocEventBusHelpers {
+public class AdhocEventBusHelpersUnsafe {
 	private static final AdhocEventsFromGuavaEventBusToSfl4j TO_SLF4J = new AdhocEventsFromGuavaEventBusToSfl4j();
 
 	/**
@@ -50,6 +50,7 @@ public class UnsafeAdhocEventBusHelpers {
 		@Override
 		public void post(Object event) {
 			if (event instanceof IAdhocEvent logEvent) {
+				// ch.qos.logback.classic.spi.CallerData.extract(Throwable, String, int, List<String>)
 				logForkEventBus(decorated, logEvent.withFqdn(this.getClass().getName()));
 			} else {
 				decorated.post(event);
@@ -73,7 +74,7 @@ public class UnsafeAdhocEventBusHelpers {
 		frameworkPackages.add("com.google.common.util.concurrent.DirectExecutor");
 		frameworkPackages.add("com.google.common.eventbus.Dispatcher");
 		frameworkPackages.add("com.google.common.eventbus.EventBus");
-		frameworkPackages.add(UnsafeAdhocEventBusHelpers.class.getName());
+		frameworkPackages.add(AdhocEventBusHelpersUnsafe.class.getName());
 	}
 
 	/**
@@ -84,7 +85,7 @@ public class UnsafeAdhocEventBusHelpers {
 	 */
 	public static void logForkEventBus(IAdhocEventBus eventBus, IAdhocEvent event) {
 		if (event.getFqdn() == null) {
-			event = event.withFqdn(UnsafeAdhocEventBusHelpers.class.getName());
+			event = event.withFqdn(AdhocEventBusHelpersUnsafe.class.getName());
 		}
 
 		// Will log to SLF4J

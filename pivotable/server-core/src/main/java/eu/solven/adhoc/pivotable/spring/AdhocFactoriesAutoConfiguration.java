@@ -23,12 +23,9 @@
 package eu.solven.adhoc.pivotable.spring;
 
 import org.springframework.boot.autoconfigure.AutoConfiguration;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 
-import eu.solven.adhoc.eventbus.IAdhocEventBus;
-import eu.solven.adhoc.eventbus.UnsafeAdhocEventBusHelpers;
 import eu.solven.adhoc.factories.AdhocFactories;
 import eu.solven.adhoc.factories.AdhocFactoriesUnsafe;
 import eu.solven.adhoc.factories.IAdhocFactories;

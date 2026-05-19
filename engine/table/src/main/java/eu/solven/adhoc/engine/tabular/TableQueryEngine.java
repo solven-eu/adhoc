@@ -90,13 +90,13 @@ import eu.solven.adhoc.engine.tabular.optimizer.IHasTableQueryForSteps.StepAndFi
 import eu.solven.adhoc.engine.tabular.optimizer.ITableQueryFactory;
 import eu.solven.adhoc.engine.tabular.optimizer.SplitTableQueries;
 import eu.solven.adhoc.engine.tabular.optimizer.TableQueryV4Merger;
+import eu.solven.adhoc.eventbus.AdhocEventBusHelpersUnsafe;
 import eu.solven.adhoc.eventbus.AdhocLogEvent;
 import eu.solven.adhoc.eventbus.IAdhocEventBus;
 import eu.solven.adhoc.eventbus.QueryStepIsCompleted;
 import eu.solven.adhoc.eventbus.QueryStepIsEvaluating;
 import eu.solven.adhoc.eventbus.TableStepIsCompleted;
 import eu.solven.adhoc.eventbus.TableStepIsEvaluating;
-import eu.solven.adhoc.eventbus.UnsafeAdhocEventBusHelpers;
 import eu.solven.adhoc.exception.AdhocExceptionHelpers;
 import eu.solven.adhoc.factories.AdhocFactories;
 import eu.solven.adhoc.factories.IAdhocFactories;
@@ -150,7 +150,7 @@ public class TableQueryEngine implements ITableQueryEngine {
 
 	@NonNull
 	@Default
-	final IAdhocEventBus eventBus = UnsafeAdhocEventBusHelpers.safeWrapper(AdhocBlackHole.getInstance());
+	final IAdhocEventBus eventBus = AdhocEventBusHelpersUnsafe.safeWrapper(AdhocBlackHole.getInstance());
 
 	@NonNull
 	final IQueryPod queryPod;

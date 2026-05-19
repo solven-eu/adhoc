@@ -340,20 +340,10 @@ public class CompositeCubesTableWrapper implements ITableWrapper, IHasHealthDeta
 		} else {
 			sampleSize = limit;
 		}
-		LinkedHashSet<Object> mergedCoordinates = LinkedHashSet
-				.newLinkedHashSet(Math.min(sampleSize, left.getCoordinates().size() + right.getCoordinates().size()));
-		for (Object coordinate : left.getCoordinates()) {
-			if (mergedCoordinates.size() >= sampleSize) {
-				break;
-			}
-			mergedCoordinates.add(coordinate);
-		}
-		for (Object coordinate : right.getCoordinates()) {
-			if (mergedCoordinates.size() >= sampleSize) {
-				break;
-			}
-			mergedCoordinates.add(coordinate);
-		}
+
+		Set<Object> mergedCoordinates = Stream.concat(left.getCoordinates().stream(), right.getCoordinates().stream())
+				.limit(sampleSize)
+				.collect(ImmutableSet.toImmutableSet());
 
 		long mergedCardinality;
 		long leftCardinality = left.getEstimatedCardinality();

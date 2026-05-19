@@ -108,7 +108,7 @@ public class TestQueryPod {
 	public void testCustomExecutorService() {
 		InMemoryTable table = InMemoryTable.builder().build();
 		QueryPod queryContext =
-				QueryPod.forTable(table).toBuilder().executorService(AdhocUnsafe.adhocMixedPool).build();
+				QueryPod.forTable(table).toBuilder().executorService(AdhocUnsafe.getMixedPool()).build();
 
 		// adhocCommonPool is a VirtualThread-per-task executor decorated by Guava
 		Assertions.assertThat(queryContext.getExecutorService().toString())
