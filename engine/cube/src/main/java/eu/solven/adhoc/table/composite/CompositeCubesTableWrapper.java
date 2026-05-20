@@ -153,7 +153,7 @@ public class CompositeCubesTableWrapper implements ITableWrapper, IHasHealthDeta
 		// AdhocFactoriesUnsafe.factories.getExecutorService() because getColumns() has no QueryPod in scope and
 		// therefore no per-query executor — falling back on the global one keeps every blocking call off the
 		// FJP common pool while reusing the project's standard mixed/VT pool.
-		ListeningExecutorService executor = AdhocFactoriesUnsafe.factories.getExecutorService();
+		ListeningExecutorService executor = AdhocFactoriesUnsafe.getFactories().getExecutorService();
 		Map<ICubeWrapper, Collection<ColumnMetadata>> cubeToColumns = LinkedHashMap.newLinkedHashMap(cubes.size());
 		Map<ICubeWrapper, CompletableFuture<Collection<ColumnMetadata>>> futures =
 				LinkedHashMap.newLinkedHashMap(cubes.size());
@@ -259,7 +259,7 @@ public class CompositeCubesTableWrapper implements ITableWrapper, IHasHealthDeta
 			// Fan-out the per-sub-cube bulk calls on the shared executor — each sub-cube call is @Blocking and we want
 			// N
 			// parallel round-trips, not N sequential ones.
-			ListeningExecutorService executor = AdhocFactoriesUnsafe.factories.getExecutorService();
+			ListeningExecutorService executor = AdhocFactoriesUnsafe.getFactories().getExecutorService();
 			Map<ICubeWrapper, CompletableFuture<Map<String, CoordinatesSample>>> futures =
 					LinkedHashMap.newLinkedHashMap(cubes.size());
 

@@ -65,7 +65,7 @@ public class InduceByAdhocComplete extends AInduceByAdhocParent implements IAddO
 	@NonNull
 	@Default
 	@Getter
-	final IFilterStripperFactory filterStripperFactory = AdhocFactoriesUnsafe.factories.getFilterStripperFactory();
+	final IFilterStripperFactory filterStripperFactory = AdhocFactoriesUnsafe.getFactories().getFilterStripperFactory();
 
 	/**
 	 * Given an input set of steps, callback on edge of an inducing DAG. The returned DAG looks for the edge which are

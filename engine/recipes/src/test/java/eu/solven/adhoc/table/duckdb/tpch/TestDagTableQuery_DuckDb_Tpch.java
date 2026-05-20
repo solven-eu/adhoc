@@ -262,9 +262,10 @@ public class TestDagTableQuery_DuckDb_Tpch extends ATestDagDuckDb {
 	}
 
 	/**
-	 * Case 1 — equivalent strategies: when all groupBys share the same aggregator set, {@link TableQueryV4#streamV3()}
-	 * collapses them into a single GROUPING SET (identical to {@link TableQueryV4#asCoveringV3()}). Both paths produce
-	 * identical results.
+	 * Case 1 — equivalent strategies: when all groupBys share the same aggregator set
+	 * ({@link TableQueryV4#isPerfectV3()} holds), {@link TableQueryV4#streamV3()} collapses them into a single GROUPING
+	 * SET (the {@link TableQueryV4#toV3()} path inside {@code JooqTableQueryFactory.prepareSliceQuery}). Both paths
+	 * produce identical results.
 	 *
 	 * <p>
 	 * This demonstrates that for equal aggregator sets, GROUPING SETS and UNION ALL converge to the same SQL and the
@@ -295,7 +296,8 @@ public class TestDagTableQuery_DuckDb_Tpch extends ATestDagDuckDb {
 
 		QueryPod queryPod = QueryPod.forTable(table());
 
-		// GROUPING SETS path: single SQL query (asCoveringV3 — used internally by JooqTableWrapper)
+		// GROUPING SETS path: single SQL query (TableQueryV4.toV3() — used internally by JooqTableQueryFactory
+		// when isPerfectV3() holds, i.e. all groupBys share the same FA set).
 		long[] timesGroupingSets = new long[NB_RUNS];
 		List<Map<String, ?>> groupingSetsRows = List.of();
 		for (int i = 0; i < NB_RUNS; i++) {
@@ -336,14 +338,16 @@ public class TestDagTableQuery_DuckDb_Tpch extends ATestDagDuckDb {
 	}
 
 	/**
-	 * Case 2 — wasteful GROUPING SET: when groupBys have distinct aggregator sets, {@link TableQueryV4#asCoveringV3()}
-	 * emits ONE SQL computing the cartesian product (extra columns computed unnecessarily for each grouping), while
-	 * {@link TableQueryV4#streamV3()} emits two targeted V3s (UNION ALL) computing only what is actually needed.
+	 * Case 2 — wasteful GROUPING SET vs targeted UNION ALL: when groupBys have distinct aggregator sets, a single
+	 * covering GROUPING-SETS query would compute the cartesian product (extra columns computed unnecessarily for each
+	 * grouping), while {@link TableQueryV4#streamV3()} emits two targeted V3s combined via SQL UNION ALL (by
+	 * {@code JooqTableQueryFactory.prepareUnionAllSliceQuery}) computing only what is actually needed.
 	 *
 	 * <p>
-	 * Concretely: {@code count(*) GROUP BY c_mktsegment} and {@code revenue GROUP BY r_name}. The GROUPING SETS path
-	 * also computes {@code revenue GROUP BY c_mktsegment} and {@code count(*) GROUP BY r_name}, which are wasted. The
-	 * UNION ALL path issues two focused queries and returns rows with only the relevant aggregator per groupBy.
+	 * Concretely: {@code count(*) GROUP BY c_mktsegment} and {@code revenue GROUP BY r_name}. A covering GROUPING-SETS
+	 * query would also compute {@code revenue GROUP BY c_mktsegment} and {@code count(*) GROUP BY
+	 * r_name}, which are wasted. The UNION ALL path issues one focused branch per aggregator set and returns rows with
+	 * only the relevant aggregator per groupBy.
 	 */
 	@Test
 	public void testGroupingSets_vs_UnionAll_wastefulCase() throws Exception {

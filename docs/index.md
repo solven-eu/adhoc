@@ -30,6 +30,7 @@ Pivotable is a referential implementation of a web application wrapping Adhoc ca
 - [Concurrency](concurrency.md) — thread-pool topology, pool selection rules, and `IAdhocStream` model
 - [Optimisations](optimisations.md) — data-structure and query optimisations (slices, perfect hashing, encodings, filter arithmetic)
 - [Data Transfer](data-transfer.md) — primitive type management (`IValueReceiver`, `IValueProvider`)
+- [EventBus](eventbus.md) — `IAdhocEventBus`, the built-in event types, the SLF4J bridge (`AdhocEventBusHelpersUnsafe.logForkEventBus` + `safeWrapper`), and the `%class`-vs-`%logger` FQDN caveat
 - [Unsafe](unsafe.md) — advanced tweaks and low-level configuration via `AdhocUnsafe`
 
 ### Customisation

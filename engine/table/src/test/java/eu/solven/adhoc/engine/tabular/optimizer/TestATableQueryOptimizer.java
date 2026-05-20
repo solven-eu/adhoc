@@ -89,7 +89,7 @@ public class TestATableQueryOptimizer {
 	Aggregator sumK2 = Aggregator.sum("k2");
 	TableQueryStep groupByA_K2 = TableQueryStep.builder().groupBy(GroupByColumns.named("a")).aggregator(sumK2).build();
 
-	ATableQueryFactory optimizer = new ATableQueryFactory(AdhocFactoriesUnsafe.factories.makeQueryBundle()) {
+	ATableQueryFactory optimizer = new ATableQueryFactory(AdhocFactoriesUnsafe.getFactories().makeQueryBundle()) {
 
 		@Override
 		public SplitTableQueries splitInduced(IHasOptionsAndExecutorService hasOptions,

@@ -72,7 +72,7 @@ public class TestBenchmarkTableQueryInducer extends ABenchmarkable {
 		// ITableQueryOptimizer optimizer = new
 		// TableQueryOptimizerFactory().makeOptimizer(AdhocFactoriesUnsafe.factories,
 		// IHasQueryOptions.noOption());
-		ITableQueryInducer inducer = new TableQueryInducer(AdhocFactoriesUnsafe.factories);
+		ITableQueryInducer inducer = new TableQueryInducer(AdhocFactoriesUnsafe.getFactories());
 
 		IAdhocDag<TableQueryStep> dag = new AdhocDag<>();
 		SplitTableQueries inducerAndInduced =
@@ -114,7 +114,8 @@ public class TestBenchmarkTableQueryInducer extends ABenchmarkable {
 
 			// inducerABC is navigable as we do nice inserts
 			IMultitypeColumnFastGet<ISlice> inducerColumn = MultitypeNavigableElseHashColumn.<ISlice>builder().build();
-			ISliceFactory mapFactory = AdhocFactoriesUnsafe.factories.getSliceFactoryFactory()
+			ISliceFactory mapFactory = AdhocFactoriesUnsafe.getFactories()
+					.getSliceFactoryFactory()
 					.makeFactory(IHasOptionsAndExecutorService.noOption());
 
 			int cardinalityPerKey = 16;

@@ -20,31 +20,36 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.pivotable.app.it;
+package eu.solven.adhoc.pivotable.app;
 
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.core.env.Environment;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import eu.solven.adhoc.app.IPivotableSpringProfiles;
-import eu.solven.adhoc.pivotable.core.PivotableComponentsConfiguration;
-import eu.solven.adhoc.pivotable.webnone.PivotableWebnoneSpringConfig;
+import eu.solven.adhoc.tools.PivotableRandomConfiguration;
 import lombok.extern.slf4j.Slf4j;
 
 @ExtendWith(SpringExtension.class)
-@SpringBootTest(classes = { PivotableWebnoneSpringConfig.class, PivotableComponentsConfiguration.class,
-// JwtUserContextHolder.class,
-}, webEnvironment = SpringBootTest.WebEnvironment.NONE, properties = { IPivotableSpringProfiles.P_CONFIG_IMPORT, })
+@SpringBootTest(classes = { PivotableRandomConfiguration.class, }, webEnvironment = SpringBootTest.WebEnvironment.NONE
+// ,properties = { IPivotableSpringProfiles.P_CONFIG_IMPORT}
+)
+// BEWARE Refer to a profile which should imply `pivotable`, which will not happen due to lack of `P_CONFIG_IMPORT`
 @ActiveProfiles(IPivotableSpringProfiles.P_UNSAFE)
 @Slf4j
 @EnableAutoConfiguration
-public class TestPivotableRouterSpringConfig {
+public class TestPivotableComponentsConfiguration_LackPivotableConfig {
+	@Autowired
+	Environment env;
 
 	@Test
 	public void testHello() {
-		// log.debug("About {}", GreetingHandler.class);
+		Assertions.assertThat(env.getProperty(IPivotableSpringProfiles.K_CONFIG_IMPORT)).isNull();
 	}
 }
