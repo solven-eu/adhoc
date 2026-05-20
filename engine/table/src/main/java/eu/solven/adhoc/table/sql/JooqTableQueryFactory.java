@@ -336,8 +336,8 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 
 		// `GROUP BY ...` — the SECOND mode-specific axis. ROWS emits no GROUP BY at all.
 		ResultQuery<Record> beforeOrder = switch (mode) {
-		case SLICES ->
-			selectFromWhere.groupBy(makeGroupingFields(tableQuery, conditionAndNonPushdown.getNonPushdown()));
+		case SLICES -> selectFromWhere
+				.groupBy(makeGroupingFields(tableQuery, conditionAndNonPushdown.getNonPushdown()));
 		case ROWS -> selectFromWhere;
 		};
 
@@ -566,7 +566,9 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 		Map<String, IAdhocColumn> branchDistinctColumns = branch.v3().getColumns();
 		for (String col : unified.getColumns()) {
 			if (branchFields.getColumns().contains(col)) {
-				selected.add(columnAsField(branchDistinctColumns.get(col)).as(col));
+				IAdhocColumn branchColumn = branchDistinctColumns.get(col);
+				Objects.requireNonNull(branchColumn);
+				selected.add(columnAsField(branchColumn).as(col));
 			} else {
 				selected.add(unionNullField().as(col));
 			}
