@@ -23,6 +23,7 @@
 package eu.solven.adhoc.table.sql;
 
 import org.jooq.conf.ParseNameCase;
+import org.jooq.conf.RenderNameCase;
 import org.jooq.conf.Settings;
 
 import lombok.Getter;
@@ -53,6 +54,7 @@ public class AdhocCaseInsensitivityUnsafe {
 		if (!caseInsensitive) {
 			// Adhoc being caseSensitive by default, we prefer to keep the case of encountered identifiers
 			settings.setParseNameCase(ParseNameCase.AS_IS);
+			settings.setRenderNameCase(RenderNameCase.AS_IS);
 		}
 
 		return settings;
