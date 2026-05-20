@@ -75,7 +75,7 @@ public class StandardQueryPreparator implements IQueryPreparator {
 
 	@NonNull
 	@Default
-	final IAdhocFactories factories = AdhocFactoriesUnsafe.factories;
+	final IAdhocFactories factories = AdhocFactoriesUnsafe.getFactories();
 
 	// By default, the filters are not modified
 	@NonNull

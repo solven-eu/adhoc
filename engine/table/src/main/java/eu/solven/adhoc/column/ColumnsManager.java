@@ -227,9 +227,9 @@ public class ColumnsManager implements IColumnsManager {
 
 		try {
 			if (isDT) {
-				// TODO Clarify if `asCoveringV3` is always a perfect match, as in DT, inputV4 is always equivalent to a
-				// V3
-				tabularRecordStream = table.streamRows(queryPod, transcodedQuery.asCoveringV3());
+				// DRILLTHROUGH always shapes its V4 around a single groupBy, so isPerfectV3() holds and toV3()
+				// converts without any cartesian-product padding nor index reshuffling.
+				tabularRecordStream = table.streamRows(queryPod, transcodedQuery.toV3());
 			} else {
 				tabularRecordStream = table.streamSlices(queryPod, transcodedQuery);
 			}

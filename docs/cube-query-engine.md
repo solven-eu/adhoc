@@ -180,4 +180,5 @@ A roadmap item tracks this:
 - [Concurrency](concurrency.md) — thread-pool topology and `DagCompletableExecutor`
 - [Custom Measures](custom-measure.md) — implementing `getUnderlyingSteps()` to define Cube DAG edges
 - [Optimisations](optimisations.md) — details on table-query merging and inducer logic
+- [EventBus](eventbus.md) — `QueryStepIsEvaluating` / `TableStepIsCompleted` and the rest of the events the two DAGs publish as they progress
 

@@ -123,7 +123,7 @@ public class PrunedJoinsJooqTableSupplier implements IJooqTableSupplier, IHasCac
 	 */
 	@NonNull
 	@Default
-	private ListeningExecutorService executorService = AdhocFactoriesUnsafe.factories.getExecutorService();
+	private ListeningExecutorService executorService = AdhocFactoriesUnsafe.getFactories().getExecutorService();
 
 	/**
 	 * Strategy used to recover the underlying column names referenced by a SQL expression that did not match the

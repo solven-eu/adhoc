@@ -40,7 +40,6 @@ import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.MultimapBuilder;
 import com.google.common.collect.SetMultimap;
-import com.google.common.util.concurrent.AtomicLongMap;
 
 import eu.solven.adhoc.engine.step.TableQueryStep;
 import eu.solven.adhoc.filter.FilterBuilder;
@@ -160,28 +159,35 @@ public class TableQueryV4 implements ITableQuery {
 	}
 
 	/**
-	 * Create a single {@link TableQueryV3} covering this {@link TableQueryV4}. It typically leads to unnecessary
-	 * computations as it requests a cartesian product between {@link IGroupBy} and {@link FilteredAggregator}.
-	 * 
-	 * @return a {@link TableQueryV3} covering this V4.
+	 * Convert this {@link TableQueryV4} into a single {@link TableQueryV3} when every {@link IGroupBy} shares the same
+	 * {@link FilteredAggregator} set (i.e. {@link #isPerfectV3()} holds). No cartesian-product padding nor
+	 * index-reshuffling is needed: any bucket of {@code groupByToAggregators} carries the FA set that the resulting V3
+	 * advertises for every groupBy. Callers that can guarantee perfectness (typically DRILLTHROUGH, whose V4 always
+	 * carries a single groupBy) should prefer this over building a covering V3 by hand.
+	 *
+	 * @return a {@link TableQueryV3} representing this V4 as a single GROUPING-SET query.
+	 * @throws IllegalStateException
+	 *             when {@link #isPerfectV3()} is {@code false} — distinct groupBys with distinct aggregator sets cannot
+	 *             collapse into a single V3 without spurious (groupBy, aggregator) combinations.
 	 */
-	public TableQueryV3 asCoveringV3() {
-		// Normalize index to 0, deduplicate by (aggregator, filter), then re-index name conflicts.
-		// Normalization ensures (aggregator, filter)-equivalent FAs from different groupBys collapse into one
-		// even if they carried different per-groupBy indices.
-		List<FilteredAggregator> deduped =
-				groupByToAggregators.values().stream().map(fa -> fa.withIndex(0)).distinct().toList();
+	public TableQueryV3 toV3() {
+		if (!isPerfectV3()) {
+			throw new IllegalStateException(
+					"TableQueryV4 is not perfect (groupBys carry distinct aggregator sets): %s".formatted(this));
+		}
 
-		AtomicLongMap<String> nameToNextIndex = AtomicLongMap.create();
-		Set<FilteredAggregator> aggregators = deduped.stream().map(fa -> {
-			long i = nameToNextIndex.getAndIncrement(fa.getAggregator().getName());
-			return fa.withIndex(i);
-		}).collect(ImmutableSet.toImmutableSet());
-		Set<IGroupBy> groupBys = ImmutableSet.copyOf(groupByToAggregators.keySet());
+		Set<FilteredAggregator> aggregators;
+		if (groupByToAggregators.isEmpty()) {
+			aggregators = ImmutableSet.of();
+		} else {
+			// Every bucket holds the same FA set (guaranteed by isPerfectV3); pick the first one as-is.
+			IGroupBy anyGroupBy = groupByToAggregators.keySet().iterator().next();
+			aggregators = ImmutableSet.copyOf(groupByToAggregators.get(anyGroupBy));
+		}
 
 		return TableQueryV3.builder()
 				.filter(filter)
-				.groupBys(groupBys)
+				.groupBys(ImmutableSet.copyOf(groupByToAggregators.keySet()))
 				.aggregators(aggregators)
 				.customMarker(customMarker)
 				.topClause(topClause)

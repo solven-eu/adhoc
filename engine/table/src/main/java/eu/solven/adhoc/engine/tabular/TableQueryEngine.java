@@ -727,10 +727,11 @@ public class TableQueryEngine implements ITableQueryEngine {
 	}
 
 	protected String toPerfLog(TableQueryV4 tableQuery) {
-		// isPerfectV3() is the shared flag: JooqTableQueryFactory currently ignores it and always uses
-		// asCoveringV3() (GROUPING SETS), but the log reflects what the strategy should ideally be.
+		// isPerfectV3() is the shared flag with JooqTableQueryFactory.prepareSliceQuery: when true, the V4
+		// collapses into a single GROUPING-SET V3 (no cartesian waste); when false, it's executed as a
+		// SQL UNION ALL across the streamV3() branches, which the log mirrors.
 		if (tableQuery.isPerfectV3()) {
-			return toPerfLog(tableQuery.asCoveringV3());
+			return toPerfLog(tableQuery.toV3());
 		}
 
 		return tableQuery.streamV3().map(this::toPerfLog).collect(Collectors.joining(" UNION ALL "));

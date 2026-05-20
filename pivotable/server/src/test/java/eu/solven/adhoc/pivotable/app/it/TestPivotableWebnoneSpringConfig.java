@@ -20,43 +20,31 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.factories;
+package eu.solven.adhoc.pivotable.app.it;
 
-import eu.solven.adhoc.filter.optimizer.IFilterOptimizerFactory;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.experimental.UtilityClass;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
+
+import eu.solven.adhoc.app.IPivotableSpringProfiles;
+import eu.solven.adhoc.pivotable.core.PivotableComponentsConfiguration;
+import eu.solven.adhoc.pivotable.webnone.PivotableWebnoneSpringConfig;
 import lombok.extern.slf4j.Slf4j;
 
-/**
- * Some various unsafe constants, one should edit if he knows what he's doing.
- * 
- * @author Benoit Lacelle
- */
-@UtilityClass
+@ExtendWith(SpringExtension.class)
+@SpringBootTest(classes = { PivotableWebnoneSpringConfig.class, PivotableComponentsConfiguration.class, },
+		webEnvironment = SpringBootTest.WebEnvironment.NONE,
+		properties = { IPivotableSpringProfiles.P_CONFIG_IMPORT, })
+@ActiveProfiles(IPivotableSpringProfiles.P_UNSAFE)
 @Slf4j
-@SuppressWarnings("PMD.FieldDeclarationsShouldBeAtStartOfClass")
-public class AdhocFactoriesUnsafe {
-	static {
-		resetAll();
+@EnableAutoConfiguration
+public class TestPivotableWebnoneSpringConfig {
+
+	@Test
+	public void testHello() {
+		// log.debug("About {}", GreetingHandler.class);
 	}
-
-	public static void resetProperties() {
-		log.info("Resetting {} configuration", AdhocFactoriesUnsafe.class.getName());
-
-	}
-
-	public static void resetAll() {
-		resetProperties();
-
-		factories = DEFAULT_FACTORIES;
-	}
-
-	private static final IAdhocFactories DEFAULT_FACTORIES =
-			AdhocFactories.builder().filterOptimizerFactory(IFilterOptimizerFactory.standard()).build();
-
-	@Getter
-	@Setter
-	private static IAdhocFactories factories = DEFAULT_FACTORIES;
-
 }

@@ -21,16 +21,12 @@ spring.pid.fail-on-write-error:
 
 springdoc.show-actuator: true
 
-# https://stackoverflow.com/questions/55877188/spring-boot-actuator-returns-404-not-found
-# `threaddump` is exposed for operator diagnostics — the SPA surfaces a "Thread dump" button
-# in the endpoint header that fetches the text/plain rendering for easy inspection in the
-# browser. The endpoint is protected by `PivotableJwtWebfluxSecurity`'s default-deny rule
-# (only `/actuator`, `/actuator/health/**`, `/actuator/info` are in the permitAll list), so a
-# logged-out caller gets a 401 just like any other protected /api/v1/** route.
-management.endpoints.web.exposure.include: health,info,beans,threaddump
-
 
 management:
+  endpoints:
+    # https://stackoverflow.com/questions/55877188/spring-boot-actuator-returns-404-not-found
+    # `threaddump` powers the SPA "Thread dump" button; auth-gated by `PivotableJwtWebfluxSecurity` (only health/info are permitAll).
+    web.exposure.include: health,info,beans,threaddump
   endpoint:
     health:
       show-details: always

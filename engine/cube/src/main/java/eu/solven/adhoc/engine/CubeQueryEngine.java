@@ -138,7 +138,7 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 	// @Getter is useful for tests. May be useful to help providing a relevant EventBus to other components.
 	@Getter
 	@SuppressWarnings("PMD.UnusedAssignment")
-	final IAdhocFactories factories = AdhocFactoriesUnsafe.factories;
+	final IAdhocFactories factories = AdhocFactoriesUnsafe.getFactories();
 
 	@NonNull
 	@Default

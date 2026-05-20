@@ -22,11 +22,13 @@
  */
 package eu.solven.adhoc.util;
 
+import java.time.Duration;
 import java.util.Comparator;
 import java.util.UUID;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import com.google.common.base.Strings;
@@ -77,7 +79,8 @@ public class AdhocUnsafe {
 				Executors.newThreadPerTaskExecutor(Thread.ofVirtual().name("adhoc-vt-", 0).factory()));
 		// Recreate FJP so tests starting a fresh state get a non-shutdown pool
 		// asyncMode is false as stack-based seems better for our DAG usages.
-		cpuPool = new ForkJoinPool(parallelism, new NamingForkJoinWorkerThreadFactory("adhoc-fjp-"), null, false);
+
+		cpuPool = makeCpuPool(parallelism);
 	}
 
 	public static void reloadProperties() {
@@ -124,6 +127,9 @@ public class AdhocUnsafe {
 		return defaultValue;
 	}
 
+	// Duration to waiting until terminating a pool
+	private static final Duration KEEP_ALIVE = Duration.ofMinutes(1);
+
 	/**
 	 * In various `.toString`, we print only a given number of elements, to prevent the {@link String} to grow too big.
 	 */
@@ -139,11 +145,46 @@ public class AdhocUnsafe {
 	private static boolean failFast;
 
 	/**
-	 * @return the default parallelism hint, e.g. for sizing connection pools (ClickHouse, etc.)
+	 * @return the default parallelism. Typically useful to lower parallelism, in order to reserve CPU for other
+	 *         activities
 	 */
 	@Getter
-	@Setter
 	private static int parallelism;
+
+	@SuppressWarnings("PMD.CloseResource")
+	public static void setParallelism(int newParallelism) {
+		if (parallelism == newParallelism) {
+			log.info("parallelism is kept at {}", newParallelism);
+			return;
+		}
+
+		parallelism = newParallelism;
+		ForkJoinPool oldCpuPool = cpuPool;
+		cpuPool = makeCpuPool(newParallelism);
+
+		getMaintenancePool().execute(() -> {
+			log.info("Closing oldCpuPool={}", oldCpuPool);
+			MoreExecutors.shutdownAndAwaitTermination(oldCpuPool, KEEP_ALIVE);
+			log.info("Closed oldCpuPool={}", oldCpuPool);
+		});
+	}
+
+	private static final AtomicInteger JFP_COUNTER = new AtomicInteger();
+
+	private static ForkJoinPool makeCpuPool(int parallelism) {
+		int poolIndex = JFP_COUNTER.getAndIncrement();
+		String prefix;
+		if (poolIndex == 0) {
+			// very first FJP
+			prefix = "adhoc-fjp-";
+		} else {
+			// next FJP are flagged not to be confused in threaddumps
+			prefix = "adhoc-fjp-%s-".formatted(poolIndex);
+		}
+
+		log.info("Making a FJP pool with parallelism={} and prefix={}", parallelism, prefix);
+		return new ForkJoinPool(parallelism, new NamingForkJoinWorkerThreadFactory(prefix), null, false);
+	}
 
 	private static final int DEFAULT_QUEUE_CAPACITY = 1024;
 
@@ -252,6 +293,7 @@ public class AdhocUnsafe {
 	}
 
 	public static final Comparator<Object> DEFAULT_NULL_COMPARATOR = ComparableElseClassComparator.nullsHigh();
+
 	@Getter
 	private static Comparator<Object> nullComparator = DEFAULT_NULL_COMPARATOR;
 

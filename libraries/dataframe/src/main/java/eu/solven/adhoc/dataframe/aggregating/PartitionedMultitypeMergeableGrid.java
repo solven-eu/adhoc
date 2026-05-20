@@ -61,7 +61,7 @@ public class PartitionedMultitypeMergeableGrid<T extends Comparable<T>, K> exten
 
 	@NonNull
 	@Default
-	IAdhocFactories factories = AdhocFactoriesUnsafe.factories;
+	IAdhocFactories factories = AdhocFactoriesUnsafe.getFactories();
 
 	@Override
 	public Set<String> getAggregators() {

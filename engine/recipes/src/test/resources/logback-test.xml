@@ -1,16 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
- 
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
-            <pattern>%d{HH:mm:ss.SSS} [%-10.10thread] %-5level %-30.30class{15}:%-4.4line- %msg%n</pattern>
+            <pattern>%d{HH:mm:ss.SSS} [%-10.10thread]%-4.4level %-43.43(%class{40}\(%line\)) %msg%n</pattern>
         </encoder>
     </appender>
-  
-    <logger name="com.intuit.karate" level="DEBUG"/>
-   
-    <root level="INFO">
+
+    <appender name="ASYNC_STDOUT" class="ch.qos.logback.classic.AsyncAppender">
+        <!-- includeCallerData due to AsyncAppender and we log class/method/line -->
+        <includeCallerData>true</includeCallerData>
         <appender-ref ref="STDOUT" />
+    </appender>
+
+    <logger name="eu.solven.adhoc.deep.package" level="DEBUG"/>
+
+    <root level="INFO">
+        <appender-ref ref="ASYNC_STDOUT" />
     </root>
-  
 </configuration>

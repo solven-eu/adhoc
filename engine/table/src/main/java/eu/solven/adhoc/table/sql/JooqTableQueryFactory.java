@@ -25,6 +25,7 @@ package eu.solven.adhoc.table.sql;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -40,6 +41,7 @@ import org.jooq.OrderField;
 import org.jooq.Param;
 import org.jooq.Record;
 import org.jooq.ResultQuery;
+import org.jooq.Select;
 import org.jooq.SelectConnectByStep;
 import org.jooq.SelectFieldOrAsterisk;
 import org.jooq.SelectHavingStep;
@@ -218,23 +220,17 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 
 	@Override
 	public QueryWithLeftover prepareSliceQuery(TableQueryV4 tableQuery) {
-		// TODO We should do a UNION ALL and not a covering V3
-		TableQueryV3 v3 = tableQuery.asCoveringV3();
+		TableLike<?> fromTable = resolveTable(tableQuery);
 
-		if (tableQuery.isDebugOrExplain()) {
-			long nbEvaluatedTableInducers = TableQueryV3.nbCuboids(v3);
-			long tableStepsCount = tableQuery.streamV3().mapToLong(TableQueryV3::nbCuboids).sum();
-
-			// prints percent with 1 digit.
-			String percentEfficiency = percent(tableStepsCount, nbEvaluatedTableInducers);
-			log.info("[EXPLAIN] {} inducers evaluated by {} tableQuery (evaluating {} steps). Efficiency={} v3={}",
-					tableStepsCount,
-					1,
-					nbEvaluatedTableInducers,
-					percentEfficiency,
-					v3);
+		// Perfect V4: every groupBy shares the same FA set — one GROUPING-SET SQL with no wasteful cartesian.
+		if (tableQuery.isPerfectV3()) {
+			return prepareSliceQuery(tableQuery.toV3(), fromTable);
 		}
-		return prepareSliceQuery(v3, resolveTable(tableQuery));
+
+		// Non-perfect V4: emit a SQL UNION ALL across the streamV3() branches so the DB only computes the
+		// (groupBy, aggregator) pairs each branch actually requires. Replaces the prior asCoveringV3() shape,
+		// which silently inflated to the full cartesian product.
+		return prepareUnionAllSliceQuery(tableQuery, fromTable);
 	}
 
 	@SuppressWarnings("checkstyle:MagicNumber")
@@ -339,25 +335,6 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 		}
 
 		// `GROUP BY ...` — the SECOND mode-specific axis. ROWS emits no GROUP BY at all.
-		// TODO We may like to break `GROUPING SET` around here (see TableQueryV4.streamV3 and
-		// JooqTableWrapper.streamSlices). TableQueryV4.isPerfectV3() is the shared flag that signals
-		// whether a covering GROUPING SET is efficient (true) or wasteful (false). Three strategies
-		// worth exposing as a configurable option:
-		//
-		// 1. GROUPING SETS (current default via asCoveringV3): one SQL query, cartesian product of all
-		// (groupBy × aggregator) pairs. Efficient when isPerfectV3() is true; wasteful otherwise,
-		// because it computes irrelevant (groupBy, aggregator) combinations.
-		//
-		// 2. UNION ALL via multiple TableQueryV3 (TableQueryV4.streamV3): one SQL per distinct aggregator
-		// set; each query covers only the (groupBy, aggregator) pairs that actually need each other.
-		// Avoids cartesian waste but adds per-query overhead. Preferable when isPerfectV3() is false.
-		//
-		// 3. Literal SQL UNION ALL (not yet implemented): a single SQL statement whose branches are
-		// UNION ALL'd by the DB engine itself. Unlike option 2 (which concatenates at the Java level),
-		// this lets the DB share one scan across branches and can be faster on columnar engines.
-		//
-		// The right choice depends on the DB engine, the scale factor, and the degree of aggregator-set
-		// overlap. Benchmark with TestDagTableQuery_DuckDb_Tpch.testGroupingSets_vs_UnionAll_* to decide.
 		ResultQuery<Record> beforeOrder = switch (mode) {
 		case SLICES ->
 			selectFromWhere.groupBy(makeGroupingFields(tableQuery, conditionAndNonPushdown.getNonPushdown()));
@@ -379,6 +356,275 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 				.aggregatorToNonPushdowns(aggregateToNonPushdown)
 				.fields(fields)
 				.build();
+	}
+
+	/**
+	 * Build a single SQL UNION ALL combining one branch per distinct aggregator set across the {@link TableQueryV4}'s
+	 * groupBys (as exposed by {@link TableQueryV4#streamV3()}). Each branch carries only the (groupBy, aggregator)
+	 * pairs it actually needs; every branch's SELECT projects the unified column set directly, with {@code NULL} for
+	 * slots a branch does not carry and a constant grouping indicator ({@code 0} for always-grouped, {@code 1} for
+	 * rolled-up) for columns the branch does not have a real {@code GROUPING(col)} for.
+	 *
+	 * <p>
+	 * Only used when {@link TableQueryV4#isPerfectV3()} is false — when it is true, {@link #prepareSliceQuery} routes
+	 * directly through a single GROUPING-SET query via {@link TableQueryV4#toV3()}.
+	 */
+	protected QueryWithLeftover prepareUnionAllSliceQuery(TableQueryV4 tableQuery, TableLike<?> fromTable) {
+		List<TableQueryV3> branchV3s = tableQuery.streamV3().toList();
+		if (branchV3s.isEmpty()) {
+			throw new IllegalStateException("Expected at least one streamV3 branch: %s".formatted(tableQuery));
+		}
+
+		// First pass per branch: condition + leftover + branch-natural fields. Captured up-front because we need
+		// the union of all branches' fields to build each branch's unified SELECT in the second pass.
+		List<BranchContext> branches = branchV3s.stream().map(this::prepareBranchContext).toList();
+
+		AggregatedRecordFields unifiedFields = unifyFields(branches.stream().map(BranchContext::fields).toList());
+
+		List<Select<Record>> branchSelects =
+				branches.stream().map(b -> buildUnionBranchSelect(b, unifiedFields, fromTable)).toList();
+		Select<Record> union = branchSelects.get(0);
+		for (int i = 1; i < branchSelects.size(); i++) {
+			union = union.unionAll(branchSelects.get(i));
+		}
+
+		// `ORDER BY ...` / `LIMIT ...` on the union as a whole — V4.topClause applies once across all branches.
+		// jOOQ's Select<R> does NOT extend SelectOrderByStep, so we cannot chain `.orderBy` directly on the
+		// unionAll result. Wrap the union as a derived table when a top-clause is present; the optimizer in
+		// every supported engine (DuckDB, Postgres, Redshift, ClickHouse) flattens this trivially.
+		ResultQuery<Record> resultQuery;
+		if (tableQuery.getTopClause().isPresent()) {
+			Collection<? extends OrderField<?>> optOrderFields = getOptionalOrders(tableQuery.getTopClause());
+			resultQuery = dslContext.selectFrom(union.asTable("u"))
+					.orderBy(optOrderFields)
+					.limit(tableQuery.getTopClause().getLimit());
+		} else {
+			resultQuery = union;
+		}
+
+		// All branches share V4.filter, so their non-pushdown leftovers on the WHERE clause are identical — pick any.
+		ISliceFilter sharedNonPushdown = branches.get(0).conditionAndNonPushdown().getNonPushdown();
+		// Aliases of FAs that belong to more than one branch resolve to the same leftover (a function of the FA's
+		// filter), so the union is well-defined; otherwise each branch contributes its own.
+		Map<String, ISliceFilter> mergedAggregateLeftovers = new LinkedHashMap<>();
+		branches.forEach(b -> mergedAggregateLeftovers.putAll(b.aggregatorToNonPushdown()));
+
+		return QueryWithLeftover.builder()
+				.queries(partitionQuery(resultQuery))
+				.nonPushdown(sharedNonPushdown)
+				.aggregatorToNonPushdowns(mergedAggregateLeftovers)
+				.fields(unifiedFields)
+				.build();
+	}
+
+	/**
+	 * Per-branch context captured by the UNION ALL path: the V3, its {@link ISliceToJooqCondition} (reused across the
+	 * branch so identical sub-filters share the cache), the shared WHERE leftover, the per-FA FILTER leftover map, and
+	 * the branch's natural {@link AggregatedRecordFields}.
+	 */
+	protected record BranchContext(TableQueryV3 v3,
+			ISliceToJooqCondition toCondition,
+			ConditionWithFilter conditionAndNonPushdown,
+			Map<String, ISliceFilter> aggregatorToNonPushdown,
+			AggregatedRecordFields fields) {
+	}
+
+	protected BranchContext prepareBranchContext(TableQueryV3 branch) {
+		ISliceToJooqCondition toCondition = makeToCondition();
+		ConditionWithFilter conditionAndNonPushdown = toConditions(toCondition, branch);
+
+		Map<String, ISliceFilter> aggregateToNonPushdown = new LinkedHashMap<>();
+		branch.getAggregators().forEach(filtered -> {
+			ConditionWithFilter conditionWithFilter = toCondition.toConditionSplitNonPushdown(filtered.getFilter());
+			ISliceFilter nonPushdown = conditionWithFilter.getNonPushdown();
+			if (!nonPushdown.isMatchAll()) {
+				aggregateToNonPushdown.put(filtered.getAlias(), nonPushdown);
+			}
+		});
+
+		ImmutableSet<ISliceFilter> nonPushdowns = ImmutableSet.<ISliceFilter>builder()
+				.add(conditionAndNonPushdown.getNonPushdown())
+				.addAll(aggregateToNonPushdown.values())
+				.build();
+		AggregatedRecordFields fields = selectedColumns(branch, nonPushdowns);
+
+		return new BranchContext(branch, toCondition, conditionAndNonPushdown, aggregateToNonPushdown, fields);
+	}
+
+	/**
+	 * Compute the unified {@link AggregatedRecordFields} shape that every UNION ALL branch must project. Aggregates,
+	 * groupBy columns and leftover columns are unioned by insertion order; grouping indicators cover the union of
+	 * per-branch grouping indicators PLUS any groupBy column that does not appear in EVERY branch's grouping (so the
+	 * row can be tagged as rolled-up when its source branch did not group by that column).
+	 */
+	protected AggregatedRecordFields unifyFields(List<AggregatedRecordFields> branchFields) {
+		AggregatedRecordFields.AggregatedRecordFieldsBuilder unified = AggregatedRecordFields.builder();
+
+		Set<String> aggregates = new LinkedHashSet<>();
+		Set<String> columns = new LinkedHashSet<>();
+		Set<String> nonPushdownCols = new LinkedHashSet<>();
+		Set<String> groupingCols = new LinkedHashSet<>();
+		branchFields.forEach(b -> {
+			aggregates.addAll(b.getAggregates());
+			columns.addAll(b.getColumns());
+			nonPushdownCols.addAll(b.getNonPushdowns());
+			groupingCols.addAll(b.getGroupingColumns());
+		});
+
+		// Any groupBy column not present in EVERY branch's groupBy set needs a grouping indicator across the union
+		// — branches that do not carry it emit `1 AS _grp_<col>` (rolled-up) in their SELECT.
+		for (String col : columns) {
+			boolean inEveryBranch = branchFields.stream().allMatch(b -> b.getColumns().contains(col));
+			if (!inEveryBranch) {
+				groupingCols.add(col);
+			}
+		}
+
+		aggregates.forEach(unified::aggregate);
+		columns.forEach(unified::column);
+		nonPushdownCols.forEach(unified::nonPushdown);
+		groupingCols.forEach(unified::groupingColumn);
+		return unified.build();
+	}
+
+	/**
+	 * Build a single branch's SELECT in the unified column shape: real SQL expressions for slots the branch carries,
+	 * {@code NULL} for slots it does not, and constant {@code 0}/{@code 1} for grouping indicators outside the branch's
+	 * natural grouping set. The branch's WHERE / GROUP BY stay natural to its V3 so the DB still only groups/scans on
+	 * what the branch actually needs.
+	 */
+	protected Select<Record> buildUnionBranchSelect(BranchContext branch,
+			AggregatedRecordFields unified,
+			TableLike<?> fromTable) {
+		List<SelectFieldOrAsterisk> selectedFields = selectedUnionBranchFields(branch, unified);
+
+		SelectJoinStep<Record> selectFrom = dslContext.select(selectedFields).from(fromTable);
+		SelectConnectByStep<Record> selectFromWhere;
+		if (branch.conditionAndNonPushdown().getCondition() instanceof True) {
+			selectFromWhere = selectFrom;
+		} else {
+			selectFromWhere = selectFrom.where(branch.conditionAndNonPushdown().getCondition());
+		}
+		return selectFromWhere
+				.groupBy(makeGroupingFields(branch.v3(), branch.conditionAndNonPushdown().getNonPushdown()));
+	}
+
+	/**
+	 * Build the SELECT clause for one UNION ALL branch in the unified column shape. The branch's natural slots emit the
+	 * same SQL as a stand-alone V3 query would (via {@link #toSqlAggregatedColumn}, {@link #columnAsField}, or
+	 * {@link DSL#grouping}); slots the branch does not carry emit {@code NULL AS <alias>} for values and {@code 0}
+	 * (always-grouped) or {@code 1} (rolled-up) for grouping indicators.
+	 */
+	protected List<SelectFieldOrAsterisk> selectedUnionBranchFields(BranchContext branch,
+			AggregatedRecordFields unified) {
+		AggregatedRecordFields branchFields = branch.fields();
+		ISliceToJooqCondition toCondition = branch.toCondition();
+		List<SelectFieldOrAsterisk> selected = new ArrayList<>();
+
+		// Aggregates — unified order. Branch FAs are keyed by alias; missing aliases are NULL-padded.
+		Map<String, FilteredAggregator> branchAliasToFA = new LinkedHashMap<>();
+		branch.v3().getAggregators().forEach(fa -> branchAliasToFA.putIfAbsent(fa.getAlias(), fa));
+		boolean branchHasRealAggregate = false;
+		// First pass: emit real aggregates so we know whether the branch carries any. Branches with zero real
+		// aggregates (e.g. groupBy=grandTotal + only EmptyAggregation) would otherwise produce a SELECT of pure
+		// constants, which the engine evaluates row-by-row rather than as an aggregating query — yielding one row
+		// per source row instead of one row per group, and a downstream merge collision at the (lone) slice.
+		List<SelectFieldOrAsterisk> aggregateSlots = new ArrayList<>();
+		for (String alias : unified.getAggregates()) {
+			FilteredAggregator fa = branchAliasToFA.get(alias);
+			SelectFieldOrAsterisk sql = null;
+			if (fa != null) {
+				try {
+					sql = toSqlAggregatedColumn(toCondition, fa);
+				} catch (RuntimeException e) {
+					throw new IllegalArgumentException("Issue converting to SQL: %s".formatted(fa), e);
+				}
+			}
+			if (sql != null) {
+				aggregateSlots.add(sql);
+				branchHasRealAggregate = true;
+			} else {
+				aggregateSlots.add(null);
+			}
+		}
+		for (int i = 0; i < unified.getAggregates().size(); i++) {
+			String alias = unified.getAggregates().get(i);
+			SelectFieldOrAsterisk realSlot = aggregateSlots.get(i);
+			if (realSlot != null) {
+				selected.add(realSlot);
+			} else if (!branchHasRealAggregate) {
+				// Wrap the NULL placeholder in MAX(...) so this SELECT item is itself an aggregate function. The
+				// value is still NULL, but the engine now sees an aggregating query and emits one row per group.
+				selected.add(DSL.max(unionNullField()).as(alias));
+			} else {
+				selected.add(unionNullField().as(alias));
+			}
+		}
+
+		// GroupBy columns — emit the natural field aliased by its stored name for stable union-output naming;
+		// NULL-pad columns this branch does not group by.
+		Map<String, IAdhocColumn> branchDistinctColumns = branch.v3().getColumns();
+		for (String col : unified.getColumns()) {
+			if (branchFields.getColumns().contains(col)) {
+				IAdhocColumn branchColumn = branchDistinctColumns.get(col);
+				Objects.requireNonNull(branchColumn);
+				selected.add(columnAsField(branchColumn).as(col));
+			} else {
+				selected.add(unionNullField().as(col));
+			}
+		}
+
+		// Leftover (non-pushdown) columns — same pattern.
+		for (String col : unified.getNonPushdowns()) {
+			if (branchFields.getNonPushdowns().contains(col) || branchFields.getColumns().contains(col)) {
+				selected.add(columnAsField(ReferencedColumn.ref(col)).as(col));
+			} else {
+				selected.add(unionNullField().as(col));
+			}
+		}
+
+		// Grouping indicators — real GROUPING(col) when the branch's GROUPING SET produces it; constant 0
+		// when the branch always groups by the column (single-groupBy branch); constant 1 when the column is
+		// absent from this branch entirely (rolled-up).
+		for (String col : unified.getGroupingColumns()) {
+			String alias = groupingAlias(col);
+			if (branchFields.getGroupingColumns().contains(col)) {
+				selected.add(DSL.grouping(columnAsField(ReferencedColumn.ref(col))).as(alias));
+			} else if (branchFields.getColumns().contains(col)) {
+				selected.add(DSL.val(0).as(alias));
+			} else {
+				selected.add(DSL.val(1).as(alias));
+			}
+		}
+
+		return selected;
+	}
+
+	/**
+	 * NULL placeholder for UNION ALL padding. Uses a plain {@code NULL} literal rather than an explicitly-typed
+	 * {@code CAST(NULL AS ...)} because UNION ALL infers each column's type from sibling branches; an explicit cast
+	 * would force a concrete type and engines like DuckDB reject {@code CAST(NULL AS OTHER)} that jOOQ emits when the
+	 * Java type is {@link Object} (no native SQL counterpart).
+	 */
+	protected Field<Object> unionNullField() {
+		return DSL.field("NULL");
+	}
+
+	/**
+	 * Extract ORDER BY fields from a {@link AdhocTopClause}. Mirror of {@link #getOptionalOrders(TableQueryV3)} for
+	 * call sites (the UNION ALL path) that have the top clause directly rather than via a V3.
+	 */
+	protected List<? extends OrderField<?>> getOptionalOrders(AdhocTopClause topClause) {
+		return topClause.getColumns().stream().map(c -> {
+			Field<Object> field = columnAsField(c);
+			SortField<Object> desc;
+			if (topClause.isDesc()) {
+				desc = field.desc();
+			} else {
+				desc = field.asc();
+			}
+			return desc;
+		}).toList();
 	}
 
 	/**
@@ -623,19 +869,7 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 	}
 
 	protected List<? extends OrderField<?>> getOptionalOrders(TableQueryV3 tableQuery) {
-		AdhocTopClause topClause = tableQuery.getTopClause();
-		return topClause.getColumns().stream().map(c -> {
-			Field<Object> field = columnAsField(c);
-
-			SortField<Object> desc;
-			if (topClause.isDesc()) {
-				desc = field.desc();
-			} else {
-				desc = field.asc();
-			}
-
-			return desc;
-		}).toList();
+		return getOptionalOrders(tableQuery.getTopClause());
 	}
 
 	protected @Nullable SelectFieldOrAsterisk toSqlAggregatedColumn(ISliceToJooqCondition toCondition,
