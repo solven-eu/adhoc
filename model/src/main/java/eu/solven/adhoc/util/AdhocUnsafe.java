@@ -151,6 +151,7 @@ public class AdhocUnsafe {
 	@Getter
 	private static int parallelism;
 
+	@SuppressWarnings("PMD.CloseResource")
 	public static void setParallelism(int newParallelism) {
 		if (parallelism == newParallelism) {
 			log.info("parallelism is kept at {}", newParallelism);
