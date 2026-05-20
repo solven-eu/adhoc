@@ -23,12 +23,12 @@ If you build a downstream Spring Boot application on top of `pivotable-infra`, t
 
 ```xml
 <plugin>
-  <groupId>io.github.git-commit-id</groupId>
-  <artifactId>git-commit-id-maven-plugin</artifactId>
-  <configuration>
-    <failOnNoGitDirectory>false</failOnNoGitDirectory>
-    <failOnUnableToExtractRepoInfo>false</failOnUnableToExtractRepoInfo>
-  </configuration>
+<groupId>io.github.git-commit-id</groupId>
+<artifactId>git-commit-id-maven-plugin</artifactId>
+<configuration>
+	<failOnNoGitDirectory>false</failOnNoGitDirectory>
+	<failOnUnableToExtractRepoInfo>false</failOnUnableToExtractRepoInfo>
+</configuration>
 </plugin>
 ```
 
