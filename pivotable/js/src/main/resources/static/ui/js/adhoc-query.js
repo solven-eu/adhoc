@@ -7,6 +7,7 @@ import { mapState } from "pinia";
 import { useAdhocStore } from "./store-adhoc.js";
 
 import queryHelper from "./adhoc-query-helper.js";
+import { useQueryHistoryStore } from "./adhoc-query-history-store.js";
 
 // Endpoint + cube headers are now shown in the navbar breadcrumb (see `adhoc-navbar.js`),
 // so neither AdhocEndpointHeader nor AdhocCubeHeader is mounted on the query page anymore.
@@ -238,11 +239,28 @@ export default {
 		// not a live reference to the reactive queryModel.
 		const lastSuccessfulQuery = ref(null);
 
+		// Per-cube, persistent (localStorage) history graph. Phase 1: capture only — no UI
+		// surface yet. The store accumulates nodes (one per distinct executed query, deduped
+		// by content hash) and edges (one per transition, carrying the diff). Future phases
+		// layer autocomplete in wizard pickers, forward/backtrack chips, and a mermaid browse
+		// modal on top of this same store. See `adhoc-query-history-store.js` for the design.
+		const history = useQueryHistoryStore(props.cubeId);
+
 		watch(
 			() => tabularView.view,
 			(newView) => {
 				if (newView) {
-					lastSuccessfulQuery.value = queryHelper.queryModelToParsedJson(queryModel);
+					const snapshot = queryHelper.queryModelToParsedJson(queryModel);
+					lastSuccessfulQuery.value = snapshot;
+					// Capture executes-only: typing mid-edit in a filter modal never lands in the
+					// graph; only queries the user actually ran do. Defensive try/catch — the
+					// history store is a non-essential side cache and must not break the query
+					// flow if its localStorage backing trips on quota or shape corruption.
+					try {
+						history.recordExecutedQuery(snapshot);
+					} catch (e) {
+						console.warn("Failed to record query into history graph", e);
+					}
 				}
 			},
 		);
@@ -268,7 +286,10 @@ export default {
 		// <AdhocQuery>). The model→URL watcher below writes the hash via `history.pushState`,
 		// which bypasses vue-router; vue-router's reactive `currentRoute.value.hash` therefore
 		// stops tracking the real URL after the first edit. Read straight from
-		// `window.location.hash` via the helper so the hydration uses the authoritative source.
+		// `window.location.hash` via the helper so both hydration AND every subsequent compare
+		// use the authoritative source (window.location).
+		/** @type {((event: PopStateEvent) => void) | null} */
+		let popStateListener = null;
 		router.isReady().then(() => {
 			const currentHashDecoded = queryHelper.readUrlHash();
 
@@ -279,12 +300,15 @@ export default {
 			//
 			// The hash-equality guard serves two purposes:
 			//   1. Breaks the feedback loop between this watcher and the popstate
-			//      watcher below — when popstate restores queryModel from the URL,
+			//      listener below — when popstate restores queryModel from the URL,
 			//      the re-encoded hash matches the URL and we skip pushState.
 			//   2. Avoids duplicate history entries when a mutation leaves the
 			//      hash semantically unchanged.
 			watch(queryModel, async (newQueryModel) => {
-				const currentHashDecoded = router.currentRoute.value.hash;
+				// `window.location.hash` (via readUrlHash) is the authoritative source — see the
+				// staleness note above. `currentRoute.value.hash` would diverge after the first
+				// pushState and silently drop top-level hash fields like `v` on the next compare.
+				const currentHashDecoded = queryHelper.readUrlHash();
 
 				const newHash = queryHelper.queryModelToHash(currentHashDecoded, newQueryModel);
 
@@ -298,20 +322,32 @@ export default {
 				history.pushState({}, null, newUrl);
 			});
 
-			// Browser back/forward: vue-router updates `currentRoute.value.hash` on
-			// popstate, and we reflect that change into queryModel, which re-runs
-			// the query through the normal reactive pipeline.
+			// Browser back/forward: subscribe to the NATIVE popstate event rather than
+			// vue-router's reactive `currentRoute.value.hash`. The reactive hash desyncs
+			// once we start writing via `history.pushState` (see staleness note above) —
+			// `popstate` is the browser's authoritative signal and fires for every back/
+			// forward, regardless of whether the underlying entry was pushed by vue-router
+			// or by our raw `history.pushState` calls. Re-reads from `window.location.hash`
+			// via the same helper used at hydration so behaviour is symmetric.
 			//
 			// TODO Roadmap: this re-triggers a full query recomputation on every
 			// back/forward. A future improvement could cache previously-computed
 			// TabularViews by hash to restore instantly without a round-trip
 			// (at the cost of showing potentially stale data).
-			watch(
-				() => router.currentRoute.value.hash,
-				(newHash) => {
-					queryHelper.hashToQueryModel(newHash, queryModel);
-				},
-			);
+			popStateListener = () => {
+				queryHelper.hashToQueryModel(queryHelper.readUrlHash(), queryModel);
+			};
+			window.addEventListener("popstate", popStateListener);
+		});
+
+		// Remove the popstate listener when this component unmounts — otherwise an
+		// in-place remount (e.g. token-expiry + re-login) would stack a second listener
+		// on top of the first and run hashToQueryModel twice per back/forward click.
+		onUnmounted(() => {
+			if (popStateListener) {
+				window.removeEventListener("popstate", popStateListener);
+				popStateListener = null;
+			}
 		});
 
 		// TODO This structure should be persisted in localStorage
