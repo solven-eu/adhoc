@@ -14,3 +14,22 @@ Both recipes run **`pivotable-server-webflux`** with profiles `pivotable-unsafe,
 - `pivotable-simple_datasets` registers the example cubes (`simple`, `ban`, `films`, `people`, `pixar`, `WorldCupPlayers`).
 
 If you later need real GitHub/Google OAuth2, swap `pivotable-unsafe` for `pivotable-unsafe_external_oauth2` and pass `ADHOC_PIVOTABLE_LOGIN_OAUTH2_GITHUB_CLIENTID` / `CLIENTSECRET` as environment variables — the profile's YAML already declares those placeholders.
+
+## Embedding pivotable in your own service: shipping your own `git.properties`
+
+`pivotable-infra` already declares the [`git-commit-id-maven-plugin`](https://github.com/git-commit-id/git-commit-id-maven-plugin) and bundles its own `classpath:git.properties` in the JAR so `/actuator/info` works out of the box on the shipped binary. `GitPropertySourceConfig` exposes that file as Spring `Environment` properties.
+
+If you build a downstream Spring Boot application on top of `pivotable-infra`, the bundled file is inherited from the Adhoc JAR — meaning `/actuator/info` will report **Adhoc's** commit, not yours. Add the same plugin to your own POM so your build emits its own `classpath:git.properties` that takes precedence on the classpath:
+
+```xml
+<plugin>
+  <groupId>io.github.git-commit-id</groupId>
+  <artifactId>git-commit-id-maven-plugin</artifactId>
+  <configuration>
+    <failOnNoGitDirectory>false</failOnNoGitDirectory>
+    <failOnUnableToExtractRepoInfo>false</failOnUnableToExtractRepoInfo>
+  </configuration>
+</plugin>
+```
+
+The two `false` flags let container builds without a `.git/` directory (Render, Cloud Run, …) finish without failing; in that case the file falls back to placeholder values, which you can override by passing `-Dgit.commit.id.abbrev=$CI_COMMIT_SHA` from CI.
