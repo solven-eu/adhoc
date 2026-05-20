@@ -138,8 +138,12 @@ public class TableQueryFactory extends ATableQueryFactory {
 		// possibly useless.
 		// BEWARE If customMarker are suppressed from tableQueries, these numbers would need additional
 		// interpretations
+		// Sum cuboids across every streamV3() branch — this is what the SQL will actually evaluate (a single
+		// GROUPING-SET query when isPerfectV3(), a UNION ALL of per-aggregator-set V3s otherwise). The earlier
+		// asCoveringV3() count over-reported, since it included the cartesian (groupBy, aggregator) pairs that
+		// the executor never materialised.
 		long nbEvaluatedTableInducers =
-				tableQueries.stream().map(TableQueryV4::asCoveringV3).mapToLong(TableQueryV3::nbCuboids).sum();
+				tableQueries.stream().flatMap(TableQueryV4::streamV3).mapToLong(TableQueryV3::nbCuboids).sum();
 
 		// prints percent with 1 digit.
 		// TODO May we have some steps which are irrelevant for inducers, but actually useful for induced?
