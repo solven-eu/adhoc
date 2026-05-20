@@ -74,7 +74,7 @@ public class ModuloQueryPartitionor implements IQueryPartitionor {
 	public int modulo = DEFAULT_MODULO;
 
 	@NonNull
-	public Name partition;
+	public Name partitioned;
 
 	@Override
 	public List<ResultQuery<Record>> partition(ResultQuery<Record> query) {
@@ -84,7 +84,7 @@ public class ModuloQueryPartitionor implements IQueryPartitionor {
 			// unioned query.
 			return IntStream.range(0, modulo).mapToObj(index -> {
 				String expr = "mod(abs(from_hex(substring(md5(%s), 1, 16))::bigint), %s)";
-				Field<Object> moduloField = DSL.field(expr.formatted(partition.toString(), modulo));
+				Field<Object> moduloField = DSL.field(expr.formatted(partitioned.toString(), modulo));
 				Condition condition = moduloField.eq(DSL.value(index));
 				return (ResultQuery<Record>) select.$where(condition);
 			}).toList();

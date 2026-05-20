@@ -12,7 +12,7 @@ plan views.
 ```java
 @FunctionalInterface
 public interface IAdhocEventBus {
-    void post(Object event);
+	void post(Object event);
 }
 ```
 
@@ -25,8 +25,8 @@ implements `IAdhocEvent`:
 
 ```java
 public interface IAdhocEvent {
-    String getFqdn();
-    IAdhocEvent withFqdn(String fqdn);
+	String getFqdn();
+	IAdhocEvent withFqdn(String fqdn);
 }
 ```
 
@@ -37,15 +37,15 @@ see the [FQDN section](#why-fqdn-not-logger) below for why this matters.
 
 All events live under `eu.solven.adhoc.eventbus`.
 
-| Event | When it fires | Carries |
-|-------|---------------|---------|
-| `AdhocLogEvent` | Anywhere Adhoc would have emitted a plain SLF4J log line. Has `level`, `message`, `tags`, `source`, plus `debug` / `explain` / `performance` flags. | The full message body + log level. |
-| `QueryLifecycleEvent` | Start / done milestones of a top-level query. | The `IQueryPod`, tags. |
-| `AdhocQueryPhaseIsCompleted` | Each main phase of `ICubeQueryEngine` finishes. | The phase name, source. |
-| `QueryStepIsEvaluating` | The Cube DAG enters a given `CubeQueryStep`. | The step, the source object. |
-| `QueryStepIsCompleted` | The Cube DAG finishes a `CubeQueryStep`. | The step, the number of cells produced. |
-| `TableStepIsEvaluating` | The Table DAG starts a `TableQueryV4`. | The table query, the source. |
-| `TableStepIsCompleted` | The Table DAG finishes a `TableQueryV4`. | The table query, the source. |
+|            Event             |                                                                    When it fires                                                                    |                 Carries                 |
+|------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------|
+| `AdhocLogEvent`              | Anywhere Adhoc would have emitted a plain SLF4J log line. Has `level`, `message`, `tags`, `source`, plus `debug` / `explain` / `performance` flags. | The full message body + log level.      |
+| `QueryLifecycleEvent`        | Start / done milestones of a top-level query.                                                                                                       | The `IQueryPod`, tags.                  |
+| `AdhocQueryPhaseIsCompleted` | Each main phase of `ICubeQueryEngine` finishes.                                                                                                     | The phase name, source.                 |
+| `QueryStepIsEvaluating`      | The Cube DAG enters a given `CubeQueryStep`.                                                                                                        | The step, the source object.            |
+| `QueryStepIsCompleted`       | The Cube DAG finishes a `CubeQueryStep`.                                                                                                            | The step, the number of cells produced. |
+| `TableStepIsEvaluating`      | The Table DAG starts a `TableQueryV4`.                                                                                                              | The table query, the source.            |
+| `TableStepIsCompleted`       | The Table DAG finishes a `TableQueryV4`.                                                                                                            | The table query, the source.            |
 
 Together, the `…IsEvaluating` / `…IsCompleted` pairs give fine-grained tracking of progress through
 the two DAGs the engine builds (see [CubeQueryEngine](cube-query-engine.md)). A bus subscriber can
@@ -90,9 +90,9 @@ IAdhocEventBus rawBus = /* your Guava / greenrobot / Spring bus adapter */;
 IAdhocEventBus safe = AdhocEventBusHelpersUnsafe.safeWrapper(rawBus);
 
 CubeQueryEngine engine = CubeQueryEngine.builder()
-        .eventBus(safe)
-        // ...
-        .build();
+		.eventBus(safe)
+		// ...
+		.build();
 ```
 
 `safeWrapper` returns a `WrappingEventBusForSlf4jFQDN` decorator. On every `post(...)`:
@@ -168,18 +168,18 @@ import eu.solven.adhoc.eventbus.QueryStepIsCompleted;
 
 EventBus raw = new EventBus("adhoc");
 raw.register(new Object() {
-    @Subscribe
-    public void onLifecycle(QueryLifecycleEvent e) { /* … */ }
-    @Subscribe
-    public void onStepDone(QueryStepIsCompleted e) { /* … */ }
+	@Subscribe
+	public void onLifecycle(QueryLifecycleEvent e) { /* … */ }
+	@Subscribe
+	public void onStepDone(QueryStepIsCompleted e) { /* … */ }
 });
 
 IAdhocEventBus adhocBus = AdhocEventBusHelpersUnsafe.safeWrapper(raw::post);
 
 CubeQueryEngine engine = CubeQueryEngine.builder()
-        .eventBus(adhocBus)
-        // ...
-        .build();
+		.eventBus(adhocBus)
+		// ...
+		.build();
 ```
 
 Three things to notice:
@@ -196,3 +196,4 @@ Three things to notice:
 - [CubeQueryEngine](cube-query-engine.md) — the two-DAG workflow whose progress these events expose.
 - [Debug / Investigations](debug.md) — `debug` / `explain` query options that turn on the
   performance-sensitive `AdhocLogEvent` instances.
+
