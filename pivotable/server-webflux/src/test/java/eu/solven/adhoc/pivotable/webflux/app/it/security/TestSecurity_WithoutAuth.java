@@ -315,7 +315,7 @@ public class TestSecurity_WithoutAuth {
 	public void testLoginToken() {
 		log.debug("About {}", GreetingHandler.class);
 
-		try (ILogDisabler logDisabler = PepperTestHelper.disableLog(PivotableWebfluxExceptionHandler.class)) {
+		try (ILogDisabler _ = PepperTestHelper.disableLog(PivotableWebfluxExceptionHandler.class)) {
 			webTestClient
 
 					.get()
