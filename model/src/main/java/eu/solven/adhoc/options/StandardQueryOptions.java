@@ -124,6 +124,7 @@ public enum StandardQueryOptions implements IQueryOption {
 		return isActive(hasOptions.getOptions());
 	}
 
+	@Override
 	public boolean isActive(Set<IQueryOption> options) {
 		if (this == CONCURRENT) {
 			// SEQUENTIAL will force disabling of CONCURRENT

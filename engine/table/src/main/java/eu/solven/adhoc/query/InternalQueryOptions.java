@@ -23,6 +23,7 @@
 package eu.solven.adhoc.query;
 
 import java.util.Locale;
+import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 
@@ -97,5 +98,10 @@ public enum InternalQueryOptions implements IQueryOption {
 	// @JsonValue
 	public String toValue() {
 		return this.name();
+	}
+
+	@Override
+	public boolean isActive(Set<IQueryOption> options) {
+		return options.contains(this);
 	}
 }

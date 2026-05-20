@@ -22,6 +22,8 @@
  */
 package eu.solven.adhoc.options;
 
+import java.util.Set;
+
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
 /**
@@ -38,5 +40,5 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 		property = "type",
 		defaultImpl = StandardQueryOptions.class)
 public interface IQueryOption {
-
+	boolean isActive(Set<IQueryOption> options);
 }

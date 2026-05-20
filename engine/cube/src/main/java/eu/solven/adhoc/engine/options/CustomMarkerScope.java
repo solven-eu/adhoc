@@ -20,13 +20,15 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.factories;
+package eu.solven.adhoc.engine.options;
 
 import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.function.Supplier;
 
 import org.jspecify.annotations.Nullable;
+
+import lombok.experimental.UtilityClass;
 
 /**
  * Thread-scoped access to the executing query's {@code customMarker}, without threading it through every internal API.
@@ -56,15 +58,12 @@ import org.jspecify.annotations.Nullable;
  *
  * @author Benoit Lacelle
  */
+@UtilityClass
 public final class CustomMarkerScope {
 
 	// Wrapped in Optional so a null customMarker is representable: ScopedValue#where rejects null values on some JDK
 	// builds, and we want a single uniform read-path. Optional.empty() also signals "no active scope" — see #current.
 	private static final ScopedValue<Optional<Object>> CURRENT_MARKER = ScopedValue.newInstance();
-
-	private CustomMarkerScope() {
-		// Utility class with static helpers only.
-	}
 
 	/**
 	 * Binds {@code customMarker} as the current query's marker for the duration of {@code body} and returns the body's

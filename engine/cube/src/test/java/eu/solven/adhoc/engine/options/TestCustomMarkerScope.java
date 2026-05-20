@@ -20,12 +20,14 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.factories;
+package eu.solven.adhoc.engine.options;
 
 import java.util.Optional;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
+
+import eu.solven.adhoc.engine.options.CustomMarkerScope;
 
 /**
  * Unit tests for {@link CustomMarkerScope}: pins the four observable shapes — outside-scope, scope-with-null-marker,
