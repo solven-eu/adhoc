@@ -114,7 +114,7 @@ public class MapBasedTabularView extends ATabularView implements ITabularView {
 
 	@Override
 	public <U> Stream<U> stream(ITabularRecordConverter<ISlice, U> rowScanner) {
-		ISliceFactory sliceFactory = AdhocFactoriesUnsafe.factories.getSliceFactory();
+		ISliceFactory sliceFactory = AdhocFactoriesUnsafe.getFactories().getSliceFactory();
 		return coordinatesToValues.entrySet()
 				.stream()
 				.map(e -> rowScanner.prepare(AdhocMapHelpers.fromMap(sliceFactory, e.getKey()).asSlice())

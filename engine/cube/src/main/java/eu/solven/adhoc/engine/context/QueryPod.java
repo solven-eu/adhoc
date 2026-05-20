@@ -307,7 +307,7 @@ public class QueryPod implements IQueryPod {
 						.options(query.getOptions())
 						.executorService(executorService)
 						.build();
-				sliceFactory = AdhocFactoriesUnsafe.factories.getSliceFactoryFactory().makeFactory(queryOptions);
+				sliceFactory = AdhocFactoriesUnsafe.getFactories().getSliceFactoryFactory().makeFactory(queryOptions);
 			}
 			if (queryStepCache == null) {
 				queryStepCache = GuavaQueryStepCache.withSize(1);

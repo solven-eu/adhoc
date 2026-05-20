@@ -42,18 +42,23 @@ public class PivotableProfilesChecker implements EnvironmentPostProcessor {
 
 	@Override
 	public void postProcessEnvironment(ConfigurableEnvironment env, SpringApplication app) {
-		String configImport = env.getProperty(IPivotableSpringProfiles.K_CONFIG_IMPORT);
+		// https://stackoverflow.com/questions/42839798/how-to-log-errors-in-a-environmentpostprocessor-execution
+		app.addInitializers(_ -> {
+			String configImport = env.getProperty(IPivotableSpringProfiles.K_CONFIG_IMPORT);
 
-		if (Strings.isNullOrEmpty(configImport)) {
-			log.warn("Your `application.yml` (or `application.properties`) is missing {}",
-					IPivotableSpringProfiles.P_CONFIG_IMPORT);
-		} else if (!configImport.contains(IPivotableSpringProfiles.C_CONFIG)) {
-			log.warn("Your `application.yml` (or `application.properties`)  {} given {}={}",
-					IPivotableSpringProfiles.C_CONFIG,
-					IPivotableSpringProfiles.K_CONFIG_IMPORT,
-					configImport);
-		} else if (!env.acceptsProfiles(Profiles.of(IPivotableSpringProfiles.P_PIVOTABLE))) {
-			log.warn("Conflicting configuration around {}={}", IPivotableSpringProfiles.P_CONFIG_IMPORT, configImport);
-		}
+			if (Strings.isNullOrEmpty(configImport)) {
+				log.warn("Your `application.yml` (or `application.properties`) is missing {}",
+						IPivotableSpringProfiles.P_CONFIG_IMPORT);
+			} else if (!configImport.contains(IPivotableSpringProfiles.C_CONFIG)) {
+				log.warn("Your `application.yml` (or `application.properties`) {} given {}={}",
+						IPivotableSpringProfiles.C_CONFIG,
+						IPivotableSpringProfiles.K_CONFIG_IMPORT,
+						configImport);
+			} else if (!env.acceptsProfiles(Profiles.of(IPivotableSpringProfiles.P_PIVOTABLE))) {
+				log.warn("Conflicting configuration around {}={}",
+						IPivotableSpringProfiles.P_CONFIG_IMPORT,
+						configImport);
+			}
+		});
 	}
 }

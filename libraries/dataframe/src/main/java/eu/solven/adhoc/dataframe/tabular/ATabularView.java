@@ -44,7 +44,8 @@ import lombok.experimental.SuperBuilder;
 public abstract class ATabularView implements IReadableTabularView {
 
 	@Default
-	ISliceFactory sliceFactory = AdhocFactoriesUnsafe.factories.getSliceFactoryFactory()
+	ISliceFactory sliceFactory = AdhocFactoriesUnsafe.getFactories()
+			.getSliceFactoryFactory()
 			.makeFactory(IHasOptionsAndExecutorService.noOption());
 
 	@Override

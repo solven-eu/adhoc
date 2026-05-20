@@ -90,7 +90,7 @@ public class DuplicatingDecomposition implements IDecomposition {
 	public DuplicatingDecomposition(Map<String, ?> options) {
 		columnToCoordinates = AdhocMapPathGet.getRequiredAs(options, K_COLUMN_TO_COORDINATES);
 		factories = AdhocMapPathGet.<IAdhocFactories>getOptionalAs(options, "factories")
-				.orElse(AdhocFactoriesUnsafe.factories);
+				.orElse(AdhocFactoriesUnsafe.getFactories());
 	}
 
 	protected Set<String> getDuplicatedColumns() {

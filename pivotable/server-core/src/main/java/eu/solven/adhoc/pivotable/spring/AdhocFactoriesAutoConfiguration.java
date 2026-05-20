@@ -72,7 +72,7 @@ public class AdhocFactoriesAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean(ISliceFactoryFactory.class)
 	public ISliceFactoryFactory sliceFactoryFactory() {
-		return AdhocFactoriesUnsafe.factories.getSliceFactoryFactory();
+		return AdhocFactoriesUnsafe.getFactories().getSliceFactoryFactory();
 	}
 
 	@Bean

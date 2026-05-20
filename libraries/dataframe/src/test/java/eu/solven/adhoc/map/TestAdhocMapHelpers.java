@@ -38,7 +38,8 @@ import eu.solven.adhoc.options.IHasOptionsAndExecutorService;
 import eu.solven.adhoc.table.transcoder.value.IColumnValueTranscoder;
 
 public class TestAdhocMapHelpers {
-	ISliceFactory sliceFactory = AdhocFactoriesUnsafe.factories.getSliceFactoryFactory()
+	ISliceFactory sliceFactory = AdhocFactoriesUnsafe.getFactories()
+			.getSliceFactoryFactory()
 			.makeFactory(IHasOptionsAndExecutorService.noOption());
 
 	@Test

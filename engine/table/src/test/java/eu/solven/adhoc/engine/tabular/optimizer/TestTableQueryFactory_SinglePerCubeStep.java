@@ -46,9 +46,9 @@ public class TestTableQueryFactory_SinglePerCubeStep {
 			.build();
 
 	TableQueryFactory optimizer = TableQueryFactory.builder()
-			.filterBundle(AdhocFactoriesUnsafe.factories.makeQueryBundle())
+			.filterBundle(AdhocFactoriesUnsafe.getFactories().makeQueryBundle())
 			.grouper(new TableStepsGrouperNoGroup())
-			.splitter(InduceByAdhocComplete.makeFactory().make(AdhocFactoriesUnsafe.factories.makeQueryBundle()))
+			.splitter(InduceByAdhocComplete.makeFactory().make(AdhocFactoriesUnsafe.getFactories().makeQueryBundle()))
 			.build();
 
 	@Test

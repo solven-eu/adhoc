@@ -49,7 +49,7 @@ import lombok.Builder.Default;
 @Builder
 public class MeasureQueryStepFactory implements IMeasureQueryStepFactory {
 	@Default
-	final IAdhocFactories factories = AdhocFactoriesUnsafe.factories;
+	final IAdhocFactories factories = AdhocFactoriesUnsafe.getFactories();
 
 	@Override
 	public IMeasureQueryStep makeQueryStep(CubeQueryStep queryStep, IHasUnderlyingMeasures measure) {

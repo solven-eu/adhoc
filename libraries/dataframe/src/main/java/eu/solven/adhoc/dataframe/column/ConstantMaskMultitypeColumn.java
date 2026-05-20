@@ -62,7 +62,8 @@ public class ConstantMaskMultitypeColumn implements IMultitypeColumnFastGet<ISli
 
 	@NonNull
 	@Default
-	ISliceFactory factory = AdhocFactoriesUnsafe.factories.getSliceFactoryFactory()
+	ISliceFactory factory = AdhocFactoriesUnsafe.getFactories()
+			.getSliceFactoryFactory()
 			.makeFactory(IHasOptionsAndExecutorService.noOption());
 
 	@NonNull
