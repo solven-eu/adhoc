@@ -34,7 +34,9 @@ import lombok.extern.slf4j.Slf4j;
 
 /**
  * Checks the spring profiles relative to Pivotable. Typically useful to detect the lack of `spring.config.import:
- * classpath:pivotable-config.yml`
+ * classpath:pivotable-config.yml`.
+ * 
+ * @author Benoit Lacelle
  */
 // Loaded by ./src/main/resources/META-INF/spring.factories
 @Slf4j
