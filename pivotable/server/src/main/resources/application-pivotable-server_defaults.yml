@@ -24,8 +24,8 @@ springdoc.show-actuator: true
 
 management:
   endpoint:
-  # https://stackoverflow.com/questions/55877188/spring-boot-actuator-returns-404-not-found
-  # `threaddump` powers the SPA "Thread dump" button; auth-gated by `PivotableJwtWebfluxSecurity` (only health/info are permitAll).
-	web.exposure.include: health,info,beans,threaddump
+    # https://stackoverflow.com/questions/55877188/spring-boot-actuator-returns-404-not-found
+    # `threaddump` powers the SPA "Thread dump" button; auth-gated by `PivotableJwtWebfluxSecurity` (only health/info are permitAll).
+    web.exposure.include: health,info,beans,threaddump
     health:
       show-details: always

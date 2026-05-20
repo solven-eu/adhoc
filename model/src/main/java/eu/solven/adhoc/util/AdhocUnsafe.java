@@ -168,10 +168,10 @@ public class AdhocUnsafe {
 		});
 	}
 
-	private static final AtomicInteger jfpCounter = new AtomicInteger();
+	private static final AtomicInteger JFP_COUNTER = new AtomicInteger();
 
 	private static ForkJoinPool makeCpuPool(int parallelism) {
-		int poolIndex = jfpCounter.getAndIncrement();
+		int poolIndex = JFP_COUNTER.getAndIncrement();
 		String prefix;
 		if (poolIndex == 0) {
 			// very first FJP
