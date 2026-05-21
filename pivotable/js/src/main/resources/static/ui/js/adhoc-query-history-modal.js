@@ -86,7 +86,7 @@ export default {
 			measures: new Map(),
 		});
 
-		const history = useQueryHistoryStore(props.cubeId);
+		const queryHistory = useQueryHistoryStore(props.cubeId);
 
 		/** @type {Modal | null} */
 		let bootstrapModal = null;
@@ -107,13 +107,13 @@ export default {
 			const excludeColumns = /** @type {string[]} */ ([]);
 			const includeMeasures = /** @type {string[]} */ ([]);
 			const excludeMeasures = /** @type {string[]} */ ([]);
-			for (const [name, state] of filterStates.columns) {
-				if (state === "include") includeColumns.push(name);
-				else if (state === "exclude") excludeColumns.push(name);
+			for (const [entityName, state] of filterStates.columns) {
+				if (state === "include") includeColumns.push(entityName);
+				else if (state === "exclude") excludeColumns.push(entityName);
 			}
-			for (const [name, state] of filterStates.measures) {
-				if (state === "include") includeMeasures.push(name);
-				else if (state === "exclude") excludeMeasures.push(name);
+			for (const [entityName, state] of filterStates.measures) {
+				if (state === "include") includeMeasures.push(entityName);
+				else if (state === "exclude") excludeMeasures.push(entityName);
 			}
 			return { includeColumns, excludeColumns, includeMeasures, excludeMeasures };
 		};
@@ -129,7 +129,7 @@ export default {
 				// recompute `distinctNames` from the RAW snapshot (so chips never disappear
 				// just because the user excluded something — they need the chip to toggle it
 				// back). Filtering happens on a separate variable.
-				const rawSnap = history.snapshot();
+				const rawSnap = queryHistory.snapshot();
 				lastSnapshot.value = rawSnap;
 				distinctNames.value = collectDistinctNames(rawSnap);
 				const ch = props.currentSnapshot ? contentHash(props.currentSnapshot) : null;
@@ -187,7 +187,7 @@ export default {
 		};
 
 		const onForget = (hash) => {
-			history.forget(hash);
+			queryHistory.forget(hash);
 			renderNow();
 		};
 
@@ -195,7 +195,7 @@ export default {
 			if (typeof window !== "undefined" && !window.confirm("Clear the entire query history for this cube? This cannot be undone.")) {
 				return;
 			}
-			history.clearAll();
+			queryHistory.clearAll();
 			renderNow();
 		};
 
@@ -212,15 +212,15 @@ export default {
 		 * trivial and keep their state independent (clearing all columns leaves measure
 		 * filters intact).
 		 */
-		const cycleFilter = (kind, name) => {
+		const cycleFilter = (kind, entityName) => {
 			const map = kind === "measures" ? filterStates.measures : filterStates.columns;
-			const cur = map.get(name);
+			const cur = map.get(entityName);
 			if (cur === undefined) {
-				map.set(name, "include");
+				map.set(entityName, "include");
 			} else if (cur === "include") {
-				map.set(name, "exclude");
+				map.set(entityName, "exclude");
 			} else {
-				map.delete(name);
+				map.delete(entityName);
 			}
 			renderNow();
 		};

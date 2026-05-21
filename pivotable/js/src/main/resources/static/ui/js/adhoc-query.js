@@ -248,7 +248,7 @@ export default {
 		// columns / measures higher within their text-match tier. The store accumulates one
 		// node per distinct executed query (content-hash dedup) and one edge per transition.
 		// See `adhoc-query-history-store.js` for the design.
-		const history = useQueryHistoryStore(props.cubeId);
+		const queryHistory = useQueryHistoryStore(props.cubeId);
 
 		// Reactive trigger for the computed `historyScores` below: incremented every time a
 		// new query is captured so consumers re-aggregate without us threading reactivity
@@ -267,7 +267,7 @@ export default {
 					// history store is a non-essential side cache and must not break the query
 					// flow if its localStorage backing trips on quota or shape corruption.
 					try {
-						history.recordExecutedQuery(snapshot);
+						queryHistory.recordExecutedQuery(snapshot);
 						historyBump.value++;
 					} catch (e) {
 						console.warn("Failed to record query into history graph", e);
@@ -283,7 +283,7 @@ export default {
 		// value; Vue tracks it and re-runs the computed on every increment.
 		const historyScores = computed(() => {
 			void historyBump.value;
-			const snap = history.snapshot();
+			const snap = queryHistory.snapshot();
 			return {
 				columns: aggregateNamesByKind(snap, "column"),
 				measures: aggregateNamesByKind(snap, "measure"),

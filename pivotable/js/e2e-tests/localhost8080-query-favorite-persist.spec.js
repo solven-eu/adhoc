@@ -63,11 +63,18 @@ test("Favorite saved on simple cube survives F5 and restores on reopen", async (
 	await expect(page.locator(".slick-row").first()).toBeVisible({ timeout: 15000 });
 
 	// ── Save as favorite ──
-	// The Favorite toggle button renders inside `adhoc-query-favorite.js`. Its text is
-	// "Favorite" plus an optional " * " span when there are unsaved changes; `name: "Favorite"`
-	// with `exact: false` would also match the plural "Favorites" modal, so we anchor on the
-	// modal trigger via its `data-bs-target`.
-	await page.locator('button[data-bs-target="#queryFavorite"]').first().click();
+	// The Favorite affordance is now a single Bootstrap dropdown (`adhoc-query-favorites-menu.js`)
+	// with two menu items: "Save current as Favorite" (data-bs-target="#queryFavorite") and
+	// "Browse Favorites" (data-bs-target="#queryFavorites"). The menu items are display:none
+	// until the toggle is clicked, so we open the dropdown first then click the right item. The
+	// `.first()` keeps us deterministic during the Submit block's <Transition> (which can
+	// briefly render both a leaving and entering copy of the actions row).
+	await page
+		.locator('button.dropdown-toggle[data-bs-toggle="dropdown"]')
+		.filter({ hasText: /Favorites/ })
+		.first()
+		.click();
+	await page.locator('button.dropdown-item[data-bs-target="#queryFavorite"]').first().click();
 	await expect(page.locator("#queryFavorite")).toBeVisible();
 	await page.getByRole("textbox", { name: "Query name" }).fill(favoriteName);
 	await page.locator("#queryFavorite").getByRole("button", { name: "Save", exact: true }).click();
@@ -104,10 +111,16 @@ test("Favorite saved on simple cube survives F5 and restores on reopen", async (
 	await expect(page.locator(".slick-row")).toHaveCount(0);
 
 	// ── Reopen the favorite from the Favorites modal ──
-	// The Submit block's <Transition> may briefly render both the leaving (floating) and entering (docked)
-	// copies during its 0.3s leave animation. `.first()` deterministically picks the docked one (which the
-	// default-mode Transition renders first).
-	await page.locator('button[data-bs-target="#queryFavorites"]').first().click();
+	// Same dropdown flow as the save path above: open the consolidated Favorites dropdown, then
+	// click the "Browse Favorites" menu item (data-bs-target="#queryFavorites"). `.first()`
+	// stays for the same Transition-duplication reason. Note that the page reloaded between the
+	// save and this open — the dropdown is now back to its closed state, so we MUST re-open it.
+	await page
+		.locator('button.dropdown-toggle[data-bs-toggle="dropdown"]')
+		.filter({ hasText: /Favorites/ })
+		.first()
+		.click();
+	await page.locator('button.dropdown-item[data-bs-target="#queryFavorites"]').first().click();
 	// Wait for the modal to be fully open before searching its body — Bootstrap
 	// applies the show transition asynchronously, and `getByText` does not retry
 	// across visibility transitions reliably.

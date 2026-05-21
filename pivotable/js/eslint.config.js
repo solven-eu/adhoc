@@ -4,6 +4,7 @@
 import js from "@eslint/js";
 import eslintPluginVue from "eslint-plugin-vue";
 import vueEslintParser from "vue-eslint-parser";
+import globals from "globals";
 
 // https://github.com/prettier/eslint-config-prettier
 // `eslint-plugin-prettier` will apply Prettier through ESLint
@@ -21,10 +22,31 @@ export default [
 		// ignores: ["*/target/*"],
 		languageOptions: {
 			parser: vueEslintParser,
+			// Declare the SPA runs in the browser so ESLint treats `window`, `document`,
+			// `history`, `location`, `localStorage`, … as known globals. Required by the
+			// `no-shadow` rule below (with `builtinGlobals: true`) to recognise that a
+			// local `const history` shadows a browser global. Without this `globals`
+			// declaration the rule has nothing to compare a local name against.
+			globals: { ...globals.browser },
 		},
 		rules: {
 			// 'vue/no-unused-vars': 'error'
 			//"vue/require-default-prop": "off",
+
+			// Flag local variables that shadow a built-in browser global (`history`, `location`,
+			// `event`, `name`, `parent`, …). Catches the class of bug where naming a local
+			// `history` inside a Vue setup() silently breaks every `history.pushState(...)`
+			// call in the same scope — exactly the mistake that crashed the URL-hash watcher
+			// in adhoc-query.js (see the matching note above `const queryHistory = ...`).
+			//
+			// `builtinGlobals: true` is the load-bearing flag: without it `no-shadow` only
+			// flags shadowing of OUTER LEXICAL variables (which the recommended preset already
+			// catches indirectly via `no-unused-vars`), not browser globals.
+			//
+			// `hoist: "all"` makes the rule hoist-aware so a `const x` near the top of a block
+			// is also flagged when an inner block declares its own `x`. Lower-noise default
+			// would be `"functions"` (hoist function decls only); `"all"` keeps us strict.
+			"no-shadow": ["error", { builtinGlobals: true, hoist: "all" }],
 		},
 	},
 	// `eslintPluginPrettierRecommended` is last to override previous config, and it includes eslintConfigPrettier

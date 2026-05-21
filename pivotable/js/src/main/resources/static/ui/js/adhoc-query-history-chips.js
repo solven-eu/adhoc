@@ -40,13 +40,13 @@ export default {
 	},
 	emits: ["restore"],
 	setup(props, { emit }) {
-		const history = useQueryHistoryStore(props.cubeId);
+		const queryHistory = useQueryHistoryStore(props.cubeId);
 
 		// Re-read the snapshot on each bump. `void props.bumpVersion` creates the reactive dep
 		// without us using its value — that's the only signal we need to invalidate.
 		const snapshot = computed(() => {
 			void props.bumpVersion;
-			return history.snapshot();
+			return queryHistory.snapshot();
 		});
 
 		const currentHash = computed(() => (props.currentSnapshot ? contentHash(props.currentSnapshot) : null));
