@@ -158,19 +158,23 @@ New executor jobs are proposed monthly by the Discovery Agent (see `.claude/disc
 
 ## Updating a JS dependency (Pivotable SPA)
 
-JavaScript libraries served to the SPA are wired through **three distinct layers** that MUST all be updated together. Renovate (or any manual bump) typically only touches the WebJar version in `pivotable/js/pom.xml`; the other layers do **not** auto-update and a partial update silently breaks one of the four loading modes (webjars / cdn × min / dev). Before declaring a JS-dep bump done, walk through every layer:
+JavaScript libraries served to the SPA are wired through **FIVE distinct layers** that MUST all be updated together. Renovate (or any manual bump) typically only touches the WebJar version in `pivotable/js/pom.xml`; the other layers do **not** auto-update and a partial update silently breaks one of the four loading modes (webjars / cdn × min / dev). Before declaring a JS-dep bump done, walk through every layer:
 
 1. **WebJar version (`pivotable/js/pom.xml`)** — the `<version>` of the `org.webjars[.npm]:<artifact>` dependency. This is what Spring Boot serves under `/webjars/<artifact>/<version>/...`.
-2. **All four importmaps under `pivotable/js/src/main/resources/static/ui/`** — `importmap-webjars.json`, `importmap-webjars-min.json`, `importmap-cdn.json`, `importmap-cdn-min.json`. The version segment of every URL referencing the bumped library MUST match the pom.xml version. The unit test `unit-tests/index-html-default-mode.spec.js` (`cdn importmap mirrors the webjars importmap — same keys, same versions` and `min importmaps carry the same keys and versions as their full-build counterparts`) enforces alignment between the four files but does **not** check alignment with `pom.xml`.
-3. **Direct `<script>` / `<link>` tags in `pivotable/js/src/main/resources/static/index.html`** — some libraries (bootstrap CSS, bootstrap-icons, slickgrid CSS) are loaded as stylesheets *outside* the importmap via the `STYLESHEETS` table near the top of `index.html`. Each entry has hardcoded `cdn`, `cdnMin`, `webjars`, `webjarsMin` URLs that embed the version. These MUST be bumped in the same change.
+2. **npm version (`pivotable/js/package.json`)** — the `<version>` of the corresponding `devDependencies` entry. Drives `npm install`, the local vitest run and the Vite dev server. Renovate raises this as a **separate PR** from the webjars one (one comes from the npm registry, the other from Maven Central / webjars), and the two must land at the same version.
+3. **All four importmaps under `pivotable/js/src/main/resources/static/ui/`** — `importmap-webjars.json`, `importmap-webjars-min.json`, `importmap-cdn.json`, `importmap-cdn-min.json`. The version segment of every URL referencing the bumped library MUST match the pom.xml version. The unit test `unit-tests/index-html-default-mode.spec.js` (`cdn importmap mirrors the webjars importmap — same keys, same versions` and `min importmaps carry the same keys and versions as their full-build counterparts`) enforces alignment between the four files but does **not** check alignment with `pom.xml`.
+4. **Direct `<script>` / `<link>` tags in `pivotable/js/src/main/resources/static/index.html`** — some libraries (bootstrap CSS, bootstrap-icons, slickgrid CSS) are loaded as stylesheets *outside* the importmap via the `STYLESHEETS` table near the top of `index.html`. Each entry has hardcoded `cdn`, `cdnMin`, `webjars`, `webjarsMin` URLs that embed the version. These MUST be bumped in the same change.
+5. **`pivotable/js/vite.config.js`** — the Vite dev server resolves bare module specifiers (e.g. `import "mermaid"`) against an inline mapping that mirrors the webjars importmap. Each entry hardcodes a `/webjars/<artifact>/<version>/...` URL; out-of-date versions here mean Vitest unit specs (which run under jsdom and follow the same resolution table) load a mismatched library, plus dev-server hot-reload pulls stale assets.
+
+`lib-version-alignment.spec.js` (under `unit-tests/`) is the cross-layer check — it parses every layer above and fails when any URL is out of sync. The hardcoded-versions assertion in `index-html-default-mode.spec.js` is also a layer cross-check; when adding a new dep, append its `/webjars/<artifact>/<version>/...` path to its `REQUIRED_WEBJAR_PATHS` so a missed bump is caught at vitest time.
 
 **Sanity-check after a bump:**
 
 ```bash
-cd pivotable/js && npx vitest run unit-tests/index-html-default-mode.spec.js
+cd pivotable/js && npx vitest run unit-tests/index-html-default-mode.spec.js unit-tests/lib-version-alignment.spec.js
 ```
 
-This verifies the four importmaps stay aligned and every webjars URL embeds a version segment.
+These verify the five layers stay aligned and every webjars URL embeds a version segment.
 
 **If the library is unused** (declared in `pom.xml` but referenced by no importmap, no script tag, no JS import): a Renovate bump has no SPA-side counterpart to update — the bump is harmless but pointless. Flag it to the user; the right follow-up is usually to drop the dead `pom.xml` dependency rather than to invent an importmap entry.
 

@@ -16,7 +16,7 @@ import { test, expect } from "@playwright/test";
 // vue runtime under `?cdn` in dev mode) silently crashes the SPA on first render and
 // shows nothing but the splash. Without an automated check, the regression escapes to
 // production.
-const url = "http://localhost:8080";
+import { BASE_URL as url } from "./_url.mjs";
 
 const COMBINATIONS = [
 	{ name: "default (webjars + min)", search: "" },

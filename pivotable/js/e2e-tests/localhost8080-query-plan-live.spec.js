@@ -9,7 +9,7 @@ import queryPivotable from "./query-pivotable.mjs";
 // `running` states are too fast to observe deterministically on this fixture — covered by the Vitest reducer spec
 // instead.
 
-const url = "http://localhost:8080";
+import { BASE_URL as url } from "./_url.mjs";
 
 test.beforeAll(async ({ request }) => {
 	const response = await queryPivotable.clear(request, url);

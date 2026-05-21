@@ -8,7 +8,7 @@ import queryPivotable from "./query-pivotable.mjs";
 // `127.0.0.1:8080`, one over `localhost:8080` — same backend, different host literal,
 // proving the URL synthesis treats each as a distinct entry.
 
-const url = "http://localhost:8080";
+import { BASE_URL as url } from "./_url.mjs";
 
 test.beforeAll(async ({ request }) => {
 	const response = await queryPivotable.clear(request, url);

@@ -21,18 +21,18 @@ import vue from "@vitejs/plugin-vue";
 const IMPORTMAP_ALIASES = {
 	vue: "/webjars/vue/3.5.32/dist/vue.esm-browser.prod.js",
 	"vue-router": "/webjars/vue-router/4.6.3/dist/vue-router.esm-browser.prod.js",
-	"@vue/devtools-api": "/webjars/vue__devtools-api/6.6.4/lib/esm/index.js",
+	"@vue/devtools-api": "/webjars/vue__devtools-api/8.1.2/dist/vue-devtools-api.esm-browser.js",
 	pinia: "/webjars/pinia/3.0.4/dist/pinia.esm-browser.js",
 	"vue-demi": "/webjars/vue-demi/0.14.10/lib/v3/index.min.mjs",
 	bootstrap: "/webjars/bootstrap/5.3.8/js/bootstrap.esm.min.js",
 	"@popperjs/core": "/webjars/popperjs__core/2.11.8/dist/esm/index.js",
-	slickgrid: "/webjars/slickgrid/5.18.2/dist/esm/index.mjs",
+	slickgrid: "/webjars/slickgrid/5.18.6/dist/esm/index.mjs",
 	sortablejs: "/webjars/sortablejs/1.15.7/modular/sortable.esm.js",
 	lodashEs: "/webjars/lodash-es/4.18.1/lodash.js",
 	// Prefix-mapping entry mirroring the importmap's `"lodashEs/": "..."` rule: per-function imports
 	// (e.g. `lodashEs/sortBy.js`) resolve under this directory so we don't pull the whole bundle.
 	"lodashEs/": "/webjars/lodash-es/4.18.1/",
-	mermaid: "/webjars/mermaid/11.14.0/dist/mermaid.esm.min.mjs",
+	mermaid: "/webjars/mermaid/11.15.0/dist/mermaid.esm.min.mjs",
 };
 
 /**

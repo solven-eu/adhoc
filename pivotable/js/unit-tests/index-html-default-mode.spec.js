@@ -62,12 +62,12 @@ test("local-webjars importmap has every library used by the SPA, with a versione
 		"/webjars/vue-router/4.6.3/dist/vue-router.esm-browser.js",
 		"/webjars/pinia/3.0.4/dist/pinia.esm-browser.js",
 		"/webjars/popperjs__core/2.11.8/dist/esm/index.js",
-		"/webjars/slickgrid/5.18.2/dist/esm/index.mjs",
+		"/webjars/slickgrid/5.18.6/dist/esm/index.mjs",
 		"/webjars/sortablejs/1.15.7/modular/sortable.esm.js",
 		"/webjars/lodash-es/4.18.1/lodash.js",
-		"/webjars/mermaid/11.14.0/dist/mermaid.esm.mjs",
+		"/webjars/mermaid/11.15.0/dist/mermaid.esm.mjs",
 		"/webjars/vue-demi/0.14.10/lib/v3/index.mjs",
-		"/webjars/vue__devtools-api/6.6.4/lib/esm/index.js",
+		"/webjars/vue__devtools-api/8.1.2/dist/vue-devtools-api.esm-browser.js",
 		"/webjars/bootstrap/5.3.8/js/bootstrap.esm.js",
 	];
 	const importUrls = Object.values(IMPORTMAP_WEBJARS.imports);
