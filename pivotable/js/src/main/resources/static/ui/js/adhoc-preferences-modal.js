@@ -27,6 +27,14 @@ export default {
 		// Apply once at construction so a returning user sees their saved theme immediately.
 		document.documentElement.setAttribute("data-bs-theme", theme.value);
 
+		// Vue devtools toggle. Persisted as a plain localStorage entry (not in the pinia
+		// preferences store) because the bootstrap script in `index.html` has to read it
+		// synchronously — before Vue itself is imported — to set `__VUE_PROD_DEVTOOLS__`.
+		// Reaching pinia from that early point would require the runtime to already be up,
+		// which is precisely what we're trying to influence.
+		const VUE_DEVTOOLS_KEY = "adhoc.vueDevtools";
+		const vueDevtools = ref(localStorage.getItem(VUE_DEVTOOLS_KEY) === "true");
+
 		const applyAssetFlags = function () {
 			// Build a fresh query string from the current toggle state. We intentionally drop
 			// any other existing params — today this modal owns the full set of flags, and
@@ -49,7 +57,15 @@ export default {
 			localStorage.setItem(BS_THEME_KEY, nextTheme);
 		};
 
-		return { useCdn, useDev, theme, currentResourceMode, applyAssetFlags, applyTheme };
+		const applyVueDevtools = function () {
+			localStorage.setItem(VUE_DEVTOOLS_KEY, vueDevtools.value ? "true" : "false");
+			// Reload so the bootstrap re-reads the flag before Vue's ESM module evaluates.
+			// `__VUE_PROD_DEVTOOLS__` is captured by Vue at import time; flipping it after
+			// is a no-op.
+			location.reload();
+		};
+
+		return { useCdn, useDev, theme, vueDevtools, currentResourceMode, applyAssetFlags, applyTheme, applyVueDevtools };
 	},
 	template: /* HTML */ `
 		<div class="modal fade" id="preferencesModal" tabindex="-1" aria-labelledby="preferencesModalLabel" aria-hidden="true">
@@ -80,6 +96,27 @@ export default {
 							</label>
 						</div>
 						<button type="button" class="btn btn-primary btn-sm" @click="applyAssetFlags">
+							<i class="bi bi-arrow-clockwise me-1"></i>Apply &amp; reload
+						</button>
+
+						<hr class="my-4" />
+
+						<h6 class="text-muted text-uppercase small">DevTools</h6>
+						<p class="small text-muted">
+							Reloads the page. Vue's ESM build reads <code>__VUE_PROD_DEVTOOLS__</code> at import time, so the flag can only be flipped before
+							Vue boots.
+						</p>
+						<div class="form-check form-switch mb-3">
+							<input class="form-check-input" type="checkbox" id="prefVueDevtools" v-model="vueDevtools" />
+							<label class="form-check-label" for="prefVueDevtools">
+								Enable Vue devtools
+								<span class="text-muted small d-block">
+									Off by default — minified builds disable the devtools hook. Turn on to inspect components from the browser's Vue devtools
+									extension.
+								</span>
+							</label>
+						</div>
+						<button type="button" class="btn btn-primary btn-sm" @click="applyVueDevtools">
 							<i class="bi bi-arrow-clockwise me-1"></i>Apply &amp; reload
 						</button>
 

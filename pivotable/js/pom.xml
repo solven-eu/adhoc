@@ -80,6 +80,13 @@
 			<groupId>org.webjars.npm</groupId>
 			<artifactId>vue__devtools-api</artifactId>
 			<version>8.1.2</version>
+			<exclusions>
+				<exclusion>
+					<!-- https://github.com/webjars/webjars/issues/2220 -->
+					<groupId>org.webjars.npm</groupId>
+					<artifactId>hookable</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 		<dependency>
 			<groupId>org.webjars.npm</groupId>

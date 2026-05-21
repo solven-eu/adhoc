@@ -176,6 +176,22 @@
 				window.__adhocResourceMode = useWebjars ? "webjars" : "cdn";
 				window.__adhocMinified = useMin;
 				window.__adhocDev = useDev;
+
+				// Vue 3 devtools toggle. Two-source check:
+				//   - `?devtools` URL flag (transient, like `?cdn`/`?dev`).
+				//   - `adhoc.vueDevtools` localStorage entry (persisted; managed by the
+				//     Preferences modal).
+				// In Vue 3, devtools detection on a PRODUCTION build is gated by the
+				// `__VUE_PROD_DEVTOOLS__` global, which Vue reads ONCE at module evaluation
+				// time. We must set it here in the synchronous bootstrap — before the
+				// importmap is registered and before any `<script type="module">` resolves
+				// `import "vue"`. Setting it later (e.g. from a component setup() hook)
+				// has no effect: by then Vue has already cached the value.
+				const wantDevtools = params.has("devtools") || localStorage.getItem("adhoc.vueDevtools") === "true";
+				if (wantDevtools) {
+					window.__VUE_PROD_DEVTOOLS__ = true;
+				}
+				window.__adhocVueDevtools = wantDevtools;
 			})();
 		</script>
 
