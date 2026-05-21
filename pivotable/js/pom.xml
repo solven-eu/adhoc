@@ -28,18 +28,28 @@
 		<dependency>
 			<groupId>org.webjars.npm</groupId>
 			<artifactId>vue</artifactId>
-			<version>3.5.32</version>
+			<version>3.5.34</version>
 		</dependency>
 		<!-- https://mvnrepository.com/artifact/org.webjars.npm/vue-router -->
 		<dependency>
 			<groupId>org.webjars.npm</groupId>
 			<artifactId>vue-router</artifactId>
-			<version>4.6.3</version>
-			<!-- See the matching exclusion on pinia below for the rationale. -->
+			<version>5.0.7</version>
+			<!--
+				vue-router 5 absorbed `unplugin-vue-router` into its core package, dragging in a
+				large transitive web of build-time tooling (@babel/generator, @vue-macros/common,
+				unplugin, chokidar, magic-string, mlly, picomatch, …). Several of these are not
+				published as Maven Central webjars (`babel__parser`, `pkg-types`, …), so Maven's
+				resolver fails the build. None of them are loaded at runtime — the SPA imports a
+				single self-contained `dist/vue-router.esm-browser.js` via the browser importmap.
+				The wildcard exclusion stops Maven from chasing the unresolvable transitives; the
+				few runtime deps the SPA genuinely needs (vue__devtools-api, etc.) are declared
+				explicitly below.
+			-->
 			<exclusions>
 				<exclusion>
-					<groupId>org.webjars.npm</groupId>
-					<artifactId>vue__devtools-api</artifactId>
+					<groupId>*</groupId>
+					<artifactId>*</artifactId>
 				</exclusion>
 			</exclusions>
 		</dependency>
@@ -57,12 +67,11 @@
 			<artifactId>pinia</artifactId>
 			<version>3.0.4</version>
 			<!--
-				pinia 3.0.4 transitively pulls `@vue/devtools-api:[7.7.7,8.0.0-0)` and
-				vue-router 4.6.3 pulls `[6.6.4,7.0.0-0)` — an unresolvable conflict, and we want
-				to pin a single version above both ranges (8.x). DevTools API is only loaded at
-				runtime when the Vue DevTools browser extension is present, so the production
-				bundle is unaffected; we exclude both transitive edges and declare a single
-				explicit version below.
+				pinia 3.0.4 transitively pulls `@vue/devtools-api:[7.7.7,8.0.0-0)` while we want a
+				single 8.x version (matches vue-router 5.0.7's `@vue/devtools-api: ^8.1.1`). DevTools
+				API is only loaded at runtime when the Vue DevTools browser extension is present,
+				so the production bundle is unaffected; we exclude pinia's transitive edge and
+				declare a single explicit version below.
 			-->
 			<exclusions>
 				<exclusion>

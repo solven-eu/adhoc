@@ -58,8 +58,8 @@ test("local-webjars importmap has every library used by the SPA, with a versione
 	// PivotableWebjarsCachingWebFluxConfigurer / PivotableWebjarsCachingWebmvcConfigurer. If
 	// any of these paths goes missing, the corresponding library will 404 at page load.
 	const REQUIRED_WEBJAR_PATHS = [
-		"/webjars/vue/3.5.32/dist/vue.esm-browser.js",
-		"/webjars/vue-router/4.6.3/dist/vue-router.esm-browser.js",
+		"/webjars/vue/3.5.34/dist/vue.esm-browser.js",
+		"/webjars/vue-router/5.0.7/dist/vue-router.esm-browser.js",
 		"/webjars/pinia/3.0.4/dist/pinia.esm-browser.js",
 		"/webjars/popperjs__core/2.11.8/dist/esm/index.js",
 		"/webjars/slickgrid/5.18.6/dist/esm/index.mjs",

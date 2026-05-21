@@ -9,8 +9,10 @@ import vue from "@vitejs/plugin-vue";
 // We point at the LOCAL `/webjars/*` paths (proxied through Vite to the Spring Boot
 // backend on `:8080`), and at the MINIFIED / `.prod.js` variants by default — same
 // defaults the prod bootstrap uses. Two reasons:
-//   1. The full vue-router 4.6.3 build trips a `__vrv_devtools` runtime error against
-//      vue 3.5.x; the .prod.js build skips the devtools integration code path.
+//   1. The full vue-router build historically tripped a `__vrv_devtools` runtime error
+//      against vue 3.5.x (observed on 4.6.3); the .prod.js build skips the devtools
+//      integration code path. Whether the issue persists on 5.x is untested — keep
+//      this comment until the non-prod build is exercised in dev.
 //   2. Keeping dev and prod on the same artefact paths means a bug reproducible in
 //      dev is a bug reproducible in prod, and vice versa — no "works in dev only"
 //      surprises.
@@ -19,8 +21,8 @@ import vue from "@vitejs/plugin-vue";
 //
 // Keep in sync with `/ui/importmap-webjars-min.json` and `/ui/importmap-cdn-min.json`.
 const IMPORTMAP_ALIASES = {
-	vue: "/webjars/vue/3.5.32/dist/vue.esm-browser.prod.js",
-	"vue-router": "/webjars/vue-router/4.6.3/dist/vue-router.esm-browser.prod.js",
+	vue: "/webjars/vue/3.5.34/dist/vue.esm-browser.prod.js",
+	"vue-router": "/webjars/vue-router/5.0.7/dist/vue-router.esm-browser.prod.js",
 	"@vue/devtools-api": "/webjars/vue__devtools-api/8.1.2/dist/vue-devtools-api.esm-browser.js",
 	pinia: "/webjars/pinia/3.0.4/dist/pinia.esm-browser.js",
 	"vue-demi": "/webjars/vue-demi/0.14.10/lib/v3/index.min.mjs",
