@@ -33,6 +33,16 @@ export default {
 			type: Object,
 			required: true,
 		},
+
+		// Personal-history score map for columns — `Map<columnName, score>`. Optional in the
+		// sense that the component still functions with an empty Map (default sort reverts to
+		// alphabetical within match tier), but the parent wizard always passes a real Map
+		// derived from the persistent history store.
+		historyScores: {
+			type: Object,
+			required: false,
+			default: () => new Map(),
+		},
 	},
 	computed: {
 		...mapState(useAdhocStore, ["nbColumnFetching"]),
@@ -43,7 +53,11 @@ export default {
 		const store = useAdhocStore();
 
 		const filtered = function (arrayOrObject) {
-			return wizardHelper.filtered(props.searchOptions, arrayOrObject, queryModel);
+			// Spread `searchOptions` + the kind-specific historyScores into a fresh plain object
+			// per call: `wizardHelper.filtered` consults `.historyScores` to stamp the secondary
+			// sort key. Done at the call-site (rather than mutating searchOptions in place) so
+			// the persisted searchOptions in localStorage stay free of large transient Maps.
+			return wizardHelper.filtered({ ...props.searchOptions, historyScores: props.historyScores }, arrayOrObject, queryModel);
 		};
 		const queried = function (arrayOrObject) {
 			return wizardHelper.queried(arrayOrObject);
@@ -157,6 +171,7 @@ export default {
 								:searchOptions="searchOptions"
 								:matchScore="columnToType._matchScore"
 								:matchTagsBypassed="!!columnToType._matchTagsBypassed"
+								:historyScore="columnToType._historyScore || 0"
 							/>
 						</li>
 					</ul>

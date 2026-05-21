@@ -32,13 +32,21 @@ export default {
 			type: Object,
 			required: true,
 		},
+
+		// Personal-history score map for measures — same shape and rationale as the columns
+		// accordion's `historyScores` prop. See that prop for the contract.
+		historyScores: {
+			type: Object,
+			required: false,
+			default: () => new Map(),
+		},
 	},
 	computed: {},
 	setup(props) {
 		const queryModel = inject("queryModel");
 
 		const filtered = function (arrayOrObject) {
-			return wizardHelper.filtered(props.searchOptions, arrayOrObject, queryModel);
+			return wizardHelper.filtered({ ...props.searchOptions, historyScores: props.historyScores }, arrayOrObject, queryModel);
 		};
 		const queried = function (arrayOrObject) {
 			return wizardHelper.queried(arrayOrObject);
@@ -116,7 +124,12 @@ export default {
 									:class="queryModel.disabledMeasures &amp;&amp; queryModel.disabledMeasures[measure.name] ? 'text-decoration-line-through' : ''"
 									:for="'measure_' + measure.name"
 								>
-									<AdhocMeasure :measure="measure" :showDetails="showMeasureDetails" :searchOptions="searchOptions" />
+									<AdhocMeasure
+										:measure="measure"
+										:showDetails="showMeasureDetails"
+										:searchOptions="searchOptions"
+										:historyScore="measure._historyScore || 0"
+									/>
 								</label>
 							</div>
 							<!--

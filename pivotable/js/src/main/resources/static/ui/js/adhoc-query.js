@@ -1,5 +1,5 @@
 // @ts-check
-import { reactive, ref, watch, provide, onMounted, onUnmounted } from "vue";
+import { computed, reactive, ref, watch, provide, onMounted, onUnmounted } from "vue";
 
 import { Collapse } from "bootstrap";
 
@@ -7,7 +7,7 @@ import { mapState } from "pinia";
 import { useAdhocStore } from "./store-adhoc.js";
 
 import queryHelper from "./adhoc-query-helper.js";
-import { useQueryHistoryStore } from "./adhoc-query-history-store.js";
+import { aggregateNamesByKind, useQueryHistoryStore } from "./adhoc-query-history-store.js";
 
 // Endpoint + cube headers are now shown in the navbar breadcrumb (see `adhoc-navbar.js`),
 // so neither AdhocEndpointHeader nor AdhocCubeHeader is mounted on the query page anymore.
@@ -239,12 +239,18 @@ export default {
 		// not a live reference to the reactive queryModel.
 		const lastSuccessfulQuery = ref(null);
 
-		// Per-cube, persistent (localStorage) history graph. Phase 1: capture only — no UI
-		// surface yet. The store accumulates nodes (one per distinct executed query, deduped
-		// by content hash) and edges (one per transition, carrying the diff). Future phases
-		// layer autocomplete in wizard pickers, forward/backtrack chips, and a mermaid browse
-		// modal on top of this same store. See `adhoc-query-history-store.js` for the design.
+		// Per-cube, persistent (localStorage) history graph. Phase 2: the wizard pickers
+		// consume the aggregated `historyScores` (computed below) to rank personally-frequented
+		// columns / measures higher within their text-match tier. The store accumulates one
+		// node per distinct executed query (content-hash dedup) and one edge per transition.
+		// See `adhoc-query-history-store.js` for the design.
 		const history = useQueryHistoryStore(props.cubeId);
+
+		// Reactive trigger for the computed `historyScores` below: incremented every time a
+		// new query is captured so consumers re-aggregate without us threading reactivity
+		// through the framework-agnostic store module. Starts at 0 — the initial `historyScores`
+		// computation already picks up whatever cumulative state is in localStorage.
+		const historyBump = ref(0);
 
 		watch(
 			() => tabularView.view,
@@ -258,12 +264,28 @@ export default {
 					// flow if its localStorage backing trips on quota or shape corruption.
 					try {
 						history.recordExecutedQuery(snapshot);
+						historyBump.value++;
 					} catch (e) {
 						console.warn("Failed to record query into history graph", e);
 					}
 				}
 			},
 		);
+
+		// Aggregated personal-history scores per (kind, name), recomputed when `historyBump`
+		// ticks. Passed to the wizard so its filtered() pipeline uses them as a secondary
+		// sort key — items the user has touched float to the top of their text-match tier.
+		// The `void historyBump.value` access creates the reactive dep without using the
+		// value; Vue tracks it and re-runs the computed on every increment.
+		const historyScores = computed(() => {
+			void historyBump.value;
+			const snap = history.snapshot();
+			return {
+				columns: aggregateNamesByKind(snap, "column"),
+				measures: aggregateNamesByKind(snap, "measure"),
+				filterColumns: aggregateNamesByKind(snap, "filterColumn"),
+			};
+		});
 
 		const restoreLastSuccessfulQuery = function () {
 			if (!lastSuccessfulQuery.value) {
@@ -350,20 +372,6 @@ export default {
 			}
 		});
 
-		// TODO This structure should be persisted in localStorage
-		const recentlyUsed = reactive({ columns: new Set(), measures: new Set() });
-		{
-			watch(queryModel, async (newQueryModel) => {
-				const columns = Object.keys(newQueryModel.selectedColumns || {});
-				// https://stackoverflow.com/questions/50881453/how-to-add-an-array-of-values-to-a-set
-				columns.forEach(recentlyUsed.columns.add, recentlyUsed.columns);
-
-				const measures = Object.keys(queryModel.selectedMeasures || {});
-				// https://stackoverflow.com/questions/50881453/how-to-add-an-array-of-values-to-a-set
-				measures.forEach(recentlyUsed.measures.add, recentlyUsed.measures);
-			});
-		}
-
 		// SlickGrid requires a cssSelector
 		const domId = ref("slickgrid_" + Math.floor(Math.random() * 1024));
 		console.log("SlickGrid id is", "#" + domId.value);
@@ -393,7 +401,7 @@ export default {
 		return {
 			loading,
 			queryModel,
-			recentlyUsed,
+			historyScores,
 			tabularView,
 			domId,
 
@@ -426,7 +434,7 @@ export default {
 			-->
 			<div :class="preferencesStore.wizardHidden ? 'd-none' : 'col-3'">
 				<div class="row">
-					<AdhocQueryWizard :endpointId="endpointId" :cubeId="cubeId" :queryModel="queryModel" :recentlyUsed="recentlyUsed" :loading="loading" />
+					<AdhocQueryWizard :endpointId="endpointId" :cubeId="cubeId" :queryModel="queryModel" :historyScores="historyScores" :loading="loading" />
 				</div>
 
 				<div class="row">

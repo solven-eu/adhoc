@@ -437,6 +437,52 @@ export function recordTransition(store, fromSnapshot, toSnapshot, opts = {}) {
 }
 
 /**
+ * Aggregate per-name usage scores across the persisted store, partitioned by what each name
+ * represents in the queryModel (a groupBy column, a measure, a filter-referenced column).
+ *
+ * <p>Phase 2 — autocomplete in wizard pickers. The wizard's existing scoring pipeline
+ * (`wizardHelper.filtered`) already sorts results by text-match score; the value returned
+ * here is fed in as a SECONDARY sort key so personally-frequented entries float to the top
+ * of their match tier without ever pushing a worse text-match above a better one.
+ *
+ * <p>Scoring shape: for each historical node containing the name, contribute
+ * {@code node.visitCount × halflifeDecay(node.lastSeenAt)}. Identical to {@link #lruScore} —
+ * keeps the "recently and often used" intuition consistent across the eviction and
+ * recommendation paths. A name that appears in many queries dominates one that appears in
+ * just one; a name not touched for a year decays toward zero.
+ *
+ * @param {{ nodes: Record<string, any> } | null | undefined} snapshot
+ * @param {"column" | "measure" | "filterColumn"} kind
+ * @param {{ nowMs?: number, halflifeMs?: number }} [opts]
+ * @returns {Map<string, number>} sparse map — names never seen are absent (NOT 0).
+ */
+export function aggregateNamesByKind(snapshot, kind, opts = {}) {
+	/** @type {Map<string, number>} */
+	const out = new Map();
+	if (!snapshot || !snapshot.nodes) {
+		return out;
+	}
+	const nowMs = opts.nowMs ?? Date.now();
+	const halflifeMs = opts.halflifeMs ?? DEFAULT_HALFLIFE_MS;
+	const field = kind === "column" ? "columnNames" : kind === "measure" ? "measureNames" : "filterColumnNames";
+
+	for (const node of Object.values(snapshot.nodes)) {
+		const names = /** @type {string[] | undefined} */ (node[field]);
+		if (!Array.isArray(names) || names.length === 0) {
+			continue;
+		}
+		const weight = lruScore(node, nowMs, halflifeMs);
+		if (weight <= 0) {
+			continue;
+		}
+		for (const name of names) {
+			out.set(name, (out.get(name) || 0) + weight);
+		}
+	}
+	return out;
+}
+
+/**
  * Tiny composable returning a stateful handle that wires the pure store to localStorage +
  * remembers the previous snapshot in a closure. The caller hands it executed queryModel
  * snapshots; the handle does the load → mutate → save dance.

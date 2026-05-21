@@ -113,11 +113,37 @@ export default {
 	// drop-tags fallback below). Tunable knob — exported so tests can pin it.
 	TAG_FALLBACK_DISCOUNT: 30,
 
+	/**
+	 * Personal-history boost: looked up per inputKey from the optional `searchOptions.historyScores`.
+	 * Accepts either a {@link Map} or a plain object. Returns 0 when the boost source is missing or
+	 * when the name has never been seen — items NOT in personal history score 0 here and fall to the
+	 * alphabetical tie-breaker, exactly as before the feature.
+	 *
+	 * @param {object | Map<string, number> | undefined | null} historyScores
+	 * @param {string} inputKey
+	 * @returns {number}
+	 */
+	historyScoreOf: function (historyScores, inputKey) {
+		if (!historyScores) {
+			return 0;
+		}
+		if (typeof historyScores.get === "function") {
+			return historyScores.get(inputKey) || 0;
+		}
+		// Plain object fallback — used by tests and by callers that don't want to pay the
+		// Map allocation cost.
+		const v = /** @type {any} */ (historyScores)[inputKey];
+		return typeof v === "number" ? v : 0;
+	},
+
 	filtered: function (searchOptions, inputsAsObjectOrArray, queryModel) {
 		const searchedValue = searchOptions.text || "";
 		const caseSensitiveOnly = !!searchOptions.caseSensitive;
 		const hasTags = Array.isArray(searchOptions.tags) && searchOptions.tags.length >= 1;
 		const hasSearch = searchedValue.length > 0;
+		// Personal-history score lookup. Optional — when absent every item gets 0 and sort
+		// reverts to the previous (matchScore, alpha) order.
+		const historyScores = searchOptions.historyScores;
 
 		// Score one item, optionally ignoring the tag filter. Returns 0 when the item is excluded.
 		// `ignoreTags` is set on the second pass (tag-fallback) so an item that matched the search text but
@@ -171,6 +197,9 @@ export default {
 				if (typeof item === "object" && item !== null) {
 					// Stamp the score so the wizard can render a percentage badge per row.
 					item._matchScore = score;
+					// Personal-history weight, looked up once per item. The sort below uses this as
+					// a secondary key — it breaks ties within a match tier, never crosses tiers.
+					item._historyScore = this.historyScoreOf(historyScores, inputKey);
 					// Flag rows that only made it into the result because we relaxed the tag filter, so the
 					// wizard can render a visual chip telling the user "this row does NOT satisfy your
 					// active tag selection". Without this hint the discounted score alone reads as ambiguous.
@@ -197,9 +226,19 @@ export default {
 
 		const all = primary.concat(fallback);
 
-		// Sort by score descending (so tier-1 hits come before tier-2, etc.), then alphabetically inside the
-		// tier so equal-score rows stay deterministic. The previous behaviour (alpha only) is preserved when
-		// no search text is set — every row scores 100 and ties break alphabetically.
-		return sortBy(all, [(resultItem) => -(resultItem._matchScore || 100), (resultItem) => (resultItem.key || resultItem.name || "").toLowerCase()]);
+		// Sort precedence:
+		//   1. Text-match score DESC — tier-1 hits before tier-2; the primary signal. Personal
+		//      history NEVER pushes a worse text-match above a better one (intentional — typing
+		//      `country` must surface "country" first even if the user uses "coach" all day).
+		//   2. Personal-history score DESC — within a match tier, items the user has touched
+		//      before float to the top. Items never touched score 0 here.
+		//   3. Alpha ASC — final deterministic tie-breaker so equally-ranked rows stay stable.
+		// When `searchOptions.historyScores` is absent every row gets 0 on key 2 and the order
+		// degrades cleanly to the previous (matchScore, alpha) behaviour.
+		return sortBy(all, [
+			(resultItem) => -(resultItem._matchScore || 100),
+			(resultItem) => -(resultItem._historyScore || 0),
+			(resultItem) => (resultItem.key || resultItem.name || "").toLowerCase(),
+		]);
 	},
 };

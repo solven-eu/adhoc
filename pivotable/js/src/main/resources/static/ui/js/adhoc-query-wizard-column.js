@@ -59,6 +59,14 @@ export default {
 			type: Boolean,
 			default: false,
 		},
+		// Personal-history weight assigned by `wizardHelper.filtered` from the optional
+		// `searchOptions.historyScores` Map. > 0 means the user has touched this column in past
+		// successful queries; the row already ranks higher within its match tier (see filtered()
+		// sort keys) — the badge below is the visual reinforcement of that boost.
+		historyScore: {
+			type: Number,
+			default: 0,
+		},
 	},
 	computed: {
 		...mapState(useAdhocStore, ["nbSchemaFetching"]),
@@ -197,6 +205,17 @@ export default {
 				:title="'Wizard search match score (lower = looser match)'"
 				>{{ matchScore }}%</span
 			>
+			<!-- Personal-history affinity chip. Surfaced when this column appears in past successful queries
+			     on this cube (historyScore > 0). The clock-history icon is the same idiom we'd use for
+			     a "recently used" affordance; the bg-info-subtle keeps it informational rather than alarming.
+			     Hidden when there's no history signal so first-time users on a fresh cube see no clutter. -->
+			<span
+				v-if="historyScore > 0"
+				class="badge bg-info-subtle text-info-emphasis border border-info-subtle ms-1"
+				style="font-size: 0.68rem; font-weight: normal;"
+				title="Used in past queries on this cube — boosted up the list. Cleared with browser data or by clearing this cube's history."
+				><i class="bi bi-clock-history"></i
+			></span>
 			<!-- Tag-bypass chip. Surfaced only on rows that the drop-tags fallback added: the user's tag filter
 			     would normally exclude them, but no row matched the tags so we relaxed them. The warning colour
 			     makes the bypass visible without screaming. -->

@@ -100,7 +100,13 @@ export default {
 			type: Object,
 			required: true,
 		},
-		recentlyUsed: {
+		// Personal-history score maps: `{ columns: Map<name, score>, measures: Map<name, score>,
+		// filterColumns: Map<name, score> }`. Each map ranks names the user has touched in past
+		// successful queries on this cube. Consumed by the accordion components below to bias
+		// `wizardHelper.filtered` toward personally-frequented entries within their match tier.
+		// Required so a missing wiring is caught at mount time rather than silently degrading
+		// to the alphabetical fallback.
+		historyScores: {
 			type: Object,
 			required: true,
 		},
@@ -177,8 +183,20 @@ export default {
 				</section>
 
 				<div class="accordion" id="accordionWizard">
-					<AdhocAccordionItemColumns :cubeId="cubeId" :endpointId="endpointId" :searchOptions="searchOptions" :columns="cube.columns.columns" />
-					<AdhocAccordionItemMeasures :cubeId="cubeId" :endpointId="endpointId" :searchOptions="searchOptions" :measures="cube.measures" />
+					<AdhocAccordionItemColumns
+						:cubeId="cubeId"
+						:endpointId="endpointId"
+						:searchOptions="searchOptions"
+						:columns="cube.columns.columns"
+						:historyScores="historyScores.columns"
+					/>
+					<AdhocAccordionItemMeasures
+						:cubeId="cubeId"
+						:endpointId="endpointId"
+						:searchOptions="searchOptions"
+						:measures="cube.measures"
+						:historyScores="historyScores.measures"
+					/>
 
 					<AdhocAccordionItemCustoms :cubeId="cubeId" :endpointId="endpointId" :searchOptions="searchOptions" :customMarkers="cube.customMarkers" />
 					<AdhocAccordionItemOptions :cubeId="cubeId" :endpointId="endpointId" :searchOptions="searchOptions" :options="{}" />

@@ -2,6 +2,7 @@
 import { describe, it, expect, beforeEach } from "vitest";
 
 import {
+	aggregateNamesByKind,
 	canonicalJson,
 	contentHash,
 	diffSnapshots,
@@ -344,6 +345,70 @@ describe("lruScore", () => {
 		const fresh = { visitCount: 4, lastSeenAt: new Date(t0).toISOString() };
 		const old = { visitCount: 4, lastSeenAt: new Date(t0 - halflife).toISOString() };
 		expect(lruScore(fresh, t0, halflife)).toBeCloseTo(2 * lruScore(old, t0, halflife), 6);
+	});
+});
+
+describe("aggregateNamesByKind", () => {
+	const t0 = Date.UTC(2026, 4, 20, 12, 0, 0);
+
+	/** @param {string} id @param {number} visitCount @param {number} ageMs @param {Record<string, string[]>} fields */
+	const mkNode = (id, visitCount, ageMs, fields) => ({
+		id,
+		visitCount,
+		lastSeenAt: new Date(t0 - ageMs).toISOString(),
+		columnNames: fields.columnNames || [],
+		measureNames: fields.measureNames || [],
+		filterColumnNames: fields.filterColumnNames || [],
+	});
+
+	it("returns an empty Map for null / empty snapshots", () => {
+		expect(aggregateNamesByKind(null, "column").size).toBe(0);
+		expect(aggregateNamesByKind(undefined, "measure").size).toBe(0);
+		expect(aggregateNamesByKind({ nodes: {} }, "column").size).toBe(0);
+	});
+
+	it("sums visit weights across nodes for the same name (column kind)", () => {
+		const snap = {
+			nodes: {
+				n1: mkNode("n1", 3, 0, { columnNames: ["country", "year"] }),
+				n2: mkNode("n2", 7, 0, { columnNames: ["country"] }),
+				n3: mkNode("n3", 2, 0, { columnNames: ["city"] }),
+			},
+		};
+		const scores = aggregateNamesByKind(snap, "column", { nowMs: t0 });
+		// All nodes age=0 so the weight === visitCount.
+		expect(scores.get("country")).toBe(10); // 3 + 7
+		expect(scores.get("year")).toBe(3);
+		expect(scores.get("city")).toBe(2);
+	});
+
+	it("partitions by kind — only the requested field contributes", () => {
+		const snap = {
+			nodes: {
+				n1: mkNode("n1", 5, 0, { columnNames: ["foo"], measureNames: ["bar"] }),
+			},
+		};
+		expect([...aggregateNamesByKind(snap, "column", { nowMs: t0 })]).toEqual([["foo", 5]]);
+		expect([...aggregateNamesByKind(snap, "measure", { nowMs: t0 })]).toEqual([["bar", 5]]);
+		expect([...aggregateNamesByKind(snap, "filterColumn", { nowMs: t0 })]).toEqual([]);
+	});
+
+	it("decays by halflife — a node one halflife old contributes half-weight", () => {
+		const snap = {
+			nodes: {
+				fresh: mkNode("fresh", 4, 0, { columnNames: ["country"] }),
+				old: mkNode("old", 4, DEFAULT_HALFLIFE_MS, { columnNames: ["country"] }),
+			},
+		};
+		const scores = aggregateNamesByKind(snap, "column", { nowMs: t0 });
+		// fresh contributes 4, old contributes 4*0.5=2, total = 6
+		expect(scores.get("country")).toBeCloseTo(6, 6);
+	});
+
+	it("never seeds 0 entries — names absent from history simply don't appear", () => {
+		const snap = { nodes: { n1: mkNode("n1", 1, 0, { columnNames: ["country"] }) } };
+		const scores = aggregateNamesByKind(snap, "column", { nowMs: t0 });
+		expect(scores.has("nonexistent")).toBe(false);
 	});
 });
 

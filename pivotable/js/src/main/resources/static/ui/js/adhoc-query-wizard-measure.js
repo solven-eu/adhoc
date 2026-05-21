@@ -25,6 +25,13 @@ export default {
 			type: Object,
 			required: true,
 		},
+		// Personal-history weight. See the matching prop on adhoc-query-wizard-column.js — same
+		// contract, same visual idiom. Wired through by the accordion-measures component from the
+		// `_historyScore` stamped onto each measure entry by wizardHelper.filtered().
+		historyScore: {
+			type: Number,
+			default: 0,
+		},
 	},
 	setup(props) {
 		const mark = function (text) {
@@ -64,6 +71,15 @@ export default {
 		<span type="button" :class="'badge text-bg-' + 'primary'" @click.prevent="toggleInfo()">
 			<span>?</span>
 		</span>
+		<!-- Personal-history affinity chip. Mirrors the column variant — surfaced only when this
+		     measure was used in past successful queries on this cube (historyScore > 0). -->
+		<span
+			v-if="historyScore > 0"
+			class="badge bg-info-subtle text-info-emphasis border border-info-subtle ms-1"
+			style="font-size: 0.68rem; font-weight: normal;"
+			title="Used in past queries on this cube — boosted up the list. Cleared with browser data or by clearing this cube's history."
+			><i class="bi bi-clock-history"></i
+		></span>
 		&nbsp;
 		<AdhocQueryWizardMeasureTag v-for="tag in measure.tags" :tag="tag" :searchOptions="searchOptions" />
 		<div v-if="showDetails" class="text-muted">

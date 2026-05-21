@@ -199,3 +199,61 @@ describe("filtered — waterfall ranking", () => {
 		expect(out2.map((c) => c.key)).not.toContain("Currency");
 	});
 });
+
+// ---------------------------------------------------------------------------------------------
+// historyScores — personal-history secondary sort. Three invariants to pin down so the feature
+// doesn't drift into making search worse:
+//   1. When two items share a text-match tier, the one with the higher history score wins.
+//   2. History NEVER pushes a worse-tier text match above a better-tier one.
+//   3. Absent / undefined / empty history degrades cleanly to the previous (matchScore, alpha)
+//      ordering — no regression for users with an empty store.
+// ---------------------------------------------------------------------------------------------
+describe("filtered — historyScores secondary sort", () => {
+	const columns = {
+		Currency: { tags: [], type: "varchar" },
+		LocalCurrency: { tags: [], type: "varchar" },
+		country: { tags: [], type: "varchar" },
+		ccy_rate: { tags: [], type: "double" },
+	};
+
+	test("no historyScores → previous alpha ordering inside the score-100 tier", () => {
+		const out = wizardHelper.filtered(opts(), columns, {});
+		expect(out.map((c) => c.key)).toEqual(["ccy_rate", "country", "Currency", "LocalCurrency"]);
+	});
+
+	test("history bumps a tier-equal item to the top of its tier", () => {
+		const history = new Map([
+			["country", 50], // user has touched 'country' often
+			["Currency", 5], // and 'Currency' a little
+		]);
+		const out = wizardHelper.filtered(opts({ historyScores: history }), columns, {});
+		// All four still at score 100 (no text search). History breaks ties:
+		//   country (50) > Currency (5) > ccy_rate (0) > LocalCurrency (0, alpha fallback)
+		expect(out.map((c) => c.key)).toEqual(["country", "Currency", "ccy_rate", "LocalCurrency"]);
+		// _historyScore is stamped so the UI can render the affordance.
+		expect(out.find((c) => c.key === "country")._historyScore).toBe(50);
+		expect(out.find((c) => c.key === "ccy_rate")._historyScore).toBe(0);
+	});
+
+	test("history NEVER beats a stronger text-match", () => {
+		// Search "Currency": Currency=100 (exact), LocalCurrency=80 (contains). Even if the user
+		// has touched LocalCurrency 1000× and never touched Currency, the exact-match Currency
+		// must still surface first — history is a TIE-BREAKER, not a tier-jumper.
+		const history = new Map([["LocalCurrency", 1000]]);
+		const out = wizardHelper.filtered(opts({ text: "Currency", historyScores: history }), columns, {});
+		expect(out[0].key).toBe("Currency");
+		// LocalCurrency still appears (it's in the contains tier), just below.
+		expect(out.find((c) => c.key === "LocalCurrency")).toBeTruthy();
+	});
+
+	test("plain-object historyScores work the same as a Map (test convenience path)", () => {
+		const out = wizardHelper.filtered(opts({ historyScores: { country: 50 } }), columns, {});
+		expect(out[0].key).toBe("country");
+	});
+
+	test("an unknown name gets historyScore 0 — never crashes, never reorders", () => {
+		const out = wizardHelper.filtered(opts({ historyScores: new Map([["does_not_exist", 999]]) }), columns, {});
+		// Same as the no-history case — the unknown-name entry doesn't pollute output.
+		expect(out.map((c) => c.key)).toEqual(["ccy_rate", "country", "Currency", "LocalCurrency"]);
+	});
+});
