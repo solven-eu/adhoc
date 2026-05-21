@@ -226,19 +226,31 @@ export default {
 
 		const all = primary.concat(fallback);
 
-		// Sort precedence:
-		//   1. Text-match score DESC — tier-1 hits before tier-2; the primary signal. Personal
-		//      history NEVER pushes a worse text-match above a better one (intentional — typing
-		//      `country` must surface "country" first even if the user uses "coach" all day).
-		//   2. Personal-history score DESC — within a match tier, items the user has touched
-		//      before float to the top. Items never touched score 0 here.
-		//   3. Alpha ASC — final deterministic tie-breaker so equally-ranked rows stay stable.
-		// When `searchOptions.historyScores` is absent every row gets 0 on key 2 and the order
-		// degrades cleanly to the previous (matchScore, alpha) behaviour.
-		return sortBy(all, [
-			(resultItem) => -(resultItem._matchScore || 100),
-			(resultItem) => -(resultItem._historyScore || 0),
-			(resultItem) => (resultItem.key || resultItem.name || "").toLowerCase(),
-		]);
+		// Sort precedence is search-aware:
+		//
+		//   - Search ACTIVE (hasSearch): match-score desc → history desc → alpha asc.
+		//       1. Text-match score DESC — tier-1 hits before tier-2; the primary signal. Personal
+		//          history NEVER pushes a worse text-match above a better one (typing "country"
+		//          must surface "country" first even if the user uses "coach" all day).
+		//       2. Personal-history score DESC — within a match tier, items the user has touched
+		//          before float to the top. Items never touched score 0 here.
+		//       3. Alpha ASC — final deterministic tie-breaker so equally-ranked rows stay stable.
+		//
+		//   - Search INACTIVE (browsing the full list): match-score desc → alpha asc, NO history.
+		//       The default unfiltered view must stay lexicographical — users expect the alphabet
+		//       to be a stable mental index. History was reordering the catalogue out from under
+		//       people on every page load; the per-row "used before" badge already signals personal
+		//       affinity without forcing the list to reshuffle.
+		//
+		// The badge (`_historyScore` stamped per item) is independent of the sort path — it surfaces
+		// whether or not history participates in ordering.
+		const sortKeys = hasSearch
+			? [
+					(resultItem) => -(resultItem._matchScore || 100),
+					(resultItem) => -(resultItem._historyScore || 0),
+					(resultItem) => (resultItem.key || resultItem.name || "").toLowerCase(),
+				]
+			: [(resultItem) => -(resultItem._matchScore || 100), (resultItem) => (resultItem.key || resultItem.name || "").toLowerCase()];
+		return sortBy(all, sortKeys);
 	},
 };

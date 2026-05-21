@@ -5,6 +5,8 @@ classDiagram
     %% ─── Interfaces ────────────────────────────────────────────────
     class IAdhocEventBus {
     }
+    class IAdhocFactories {
+    }
     class IColumnGenerator {
     }
     class IColumnsManager {
@@ -46,8 +48,6 @@ classDiagram
         IOperatorFactory operatorFactory
         ISliceFactoryFactory sliceFactoryFactory
         IStopwatchFactory stopwatchFactory
-    }
-    class AdhocFactoriesUnsafe {
     }
     class AdhocFilterUnsafe {
     }
@@ -161,6 +161,7 @@ classDiagram
     %% ─── Implements / Extends ──────────────────────────────────────
     ICubeQueryEngine <|.. CubeQueryEngine
     ITableQueryEngineFactory <|.. TableQueryEngineFactory
+    IAdhocFactories <|.. AdhocFactories
     ITableWrapper <|.. AAtotiWrapper
     ITableWrapper <|.. CachingTableWrapper
     ITableWrapper <|.. CompositeCubesTableWrapper
@@ -196,9 +197,9 @@ classDiagram
     TableQueryEngineFactory *-- IAdhocEventBus : eventBus
     ColumnsManager *-- IAdhocEventBus : eventBus
     PrunedJoinsJooqTableSupplier *-- KnownColumnsExpressionExtractor : expressionColumnExtractor
-    CubeQueryEngine *-- AdhocFactoriesUnsafe : factories
+    CubeQueryEngine *-- IAdhocFactories : factories
     TableQueryEngineFactory *-- AdhocFactories : factories
-    StandardQueryPreparator *-- AdhocFactoriesUnsafe : factories
+    StandardQueryPreparator *-- IAdhocFactories : factories
     AdhocFactories *-- IFilterOptimizerFactory : filterOptimizerFactory
     JooqTableWrapperParameters *-- IFilterOptimizerFactory : filterOptimizerFactory
     AdhocFactories *-- AdhocFilterUnsafe : filterStripperFactory

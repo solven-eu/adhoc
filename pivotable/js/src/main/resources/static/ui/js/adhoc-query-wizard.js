@@ -50,12 +50,6 @@ const sanitizeOptions = function (options) {
 		options.throughJson = true;
 	}
 
-	if (!(typeof options.recentlyUsed === "boolean")) {
-		// If true, filter the measures and columns which has been used recently
-		// Especially useful to add back a removed entity
-		options.recentlyUsed = false;
-	}
-
 	if (!Array.isArray(options.tags)) {
 		// Tags can be focused by being added to this list
 		options.tags = [];

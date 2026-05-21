@@ -27,8 +27,6 @@ import java.util.Optional;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import eu.solven.adhoc.engine.options.CustomMarkerScope;
-
 /**
  * Unit tests for {@link CustomMarkerScope}: pins the four observable shapes — outside-scope, scope-with-null-marker,
  * scope-with-non-null-marker, and nested scopes — that callers like {@code ICalculatedColumn} implementations rely on.

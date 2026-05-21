@@ -406,6 +406,85 @@
 				border-color: rgba(111, 66, 193, 0.35);
 			}
 
+			/* History-graph node label styling. Each entity (groupBy column, filter column,
+			   measure) is rendered on its own row inside a node so wide queries don't blow up
+			   the canvas with a single overflowing line. The four entity variants share a base
+			   pill style and differ by accent colour so a glance at a node reveals the shape of
+			   the query (mostly columns vs mostly measures vs filter-heavy). The visit-count
+			   chip sits inline at the top so it doesn't compete with the entity rows. */
+			.mermaid .adhoc-history-entity {
+				display: inline-block;
+				margin: 1px 0;
+				padding: 0 6px;
+				border-radius: 8px;
+				font-family: monospace;
+				font-size: 0.78em;
+				line-height: 1.35;
+				white-space: nowrap;
+			}
+			/* GroupBy column — neutral grey; the canonical "this query groups by X" shape. */
+			.mermaid .adhoc-history-entity--col {
+				background: rgba(108, 117, 125, 0.14);
+				border: 1px solid rgba(108, 117, 125, 0.28);
+				color: #495057;
+			}
+			/* Filter-referenced column — amber accent so it reads as "constrained by", visually
+			   distinct from "grouped by" without forcing the user to parse the prefix glyph. */
+			.mermaid .adhoc-history-entity--filter {
+				background: rgba(255, 193, 7, 0.16);
+				border: 1px solid rgba(255, 193, 7, 0.42);
+				color: #856404;
+			}
+			/* Measure — primary blue accent (same hue family as the wizard's measure badges). */
+			.mermaid .adhoc-history-entity--measure {
+				background: rgba(13, 110, 253, 0.12);
+				border: 1px solid rgba(13, 110, 253, 0.32);
+				color: #084298;
+			}
+			/* "+N more" overflow indicator — fully muted; tells the user there's more without
+			   competing for attention with the actual entities. */
+			.mermaid .adhoc-history-entity--more {
+				background: transparent;
+				border: 1px dashed rgba(0, 0, 0, 0.22);
+				color: #6c757d;
+				font-style: italic;
+			}
+			/* Empty-query glyph — for the cold-start root node that has no content. */
+			.mermaid .adhoc-history-entity--empty {
+				background: transparent;
+				color: #adb5bd;
+				font-style: italic;
+				border: none;
+			}
+			/* Label container — wraps every history-node label so its children can use absolute
+			   positioning relative to the node's content box. `padding-right` reserves room for
+			   the floating visit chip so it doesn't sit on top of the longest entity row. */
+			.mermaid .adhoc-history-label {
+				position: relative;
+				padding-right: 36px;
+				text-align: left;
+			}
+			/* Visit-count chip — pill anchored to the top-right corner of the label container.
+			   The green tinge matches the include-chip palette in the filter strip so the visual
+			   language stays coherent across affordances. */
+			.mermaid .adhoc-history-chip {
+				position: absolute;
+				top: 0;
+				right: 0;
+				display: inline-block;
+				padding: 1px 7px;
+				border-radius: 10px;
+				font-family: monospace;
+				font-size: 0.72em;
+				line-height: 1.2;
+				white-space: nowrap;
+			}
+			.mermaid .adhoc-history-chip--visits {
+				background: rgba(25, 135, 84, 0.16);
+				border: 1px solid rgba(25, 135, 84, 0.4);
+				color: #0f5132;
+			}
+
 			/* Persistent navbar-search highlight. Applied by `scrollToRow` to the SlickGrid cell
 			   the user jumped to from the search dropdown; cleared on the next jump or when the
 			   grid rebuilds. Uses `inset box-shadow` rather than `border` so the 2-px border

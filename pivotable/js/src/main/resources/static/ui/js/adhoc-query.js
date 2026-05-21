@@ -25,6 +25,8 @@ import AdhocMeasuresDag from "./adhoc-measures-dag.js";
 import AdhocQueryWizardColumnFilterModalSingleton from "./adhoc-query-wizard-column-filter-modal-singleton.js";
 import AdhocQueryChatbot from "./adhoc-query-chatbot.js";
 import AdhocQueryPlanLive from "./adhoc-query-plan-live.js";
+import AdhocQueryHistoryChips from "./adhoc-query-history-chips.js";
+import AdhocQueryHistoryModal from "./adhoc-query-history-modal.js";
 
 import { defaultExecutorBus } from "./adhoc-executor-bus.js";
 
@@ -39,6 +41,8 @@ export default {
 		AdhocQueryWizardColumnFilterModalSingleton,
 		AdhocQueryChatbot,
 		AdhocQueryPlanLive,
+		AdhocQueryHistoryChips,
+		AdhocQueryHistoryModal,
 	},
 	// https://vuejs.org/guide/components/props.html
 	props: {
@@ -398,6 +402,27 @@ export default {
 			if (gridShared.scrollToRightEnd) gridShared.scrollToRightEnd();
 		};
 
+		// History modal + chips state. The modal lives at the page level so its z-index dance
+		// doesn't conflict with the wizard or grid. The chips strip lives just above the grid
+		// header. Both read from the same `useQueryHistoryStore(cubeId)` the wizard uses and
+		// react to the same `historyBump` counter so capture, autocomplete, suggestions, and
+		// the modal all see the same snapshot at the same time.
+		const historyModalShow = ref(false);
+		// A reactive snapshot of the CURRENT queryModel — recomputed when queryModel changes.
+		// Passed to the chips and modal so they can content-hash it to highlight the matching
+		// node / anchor their suggestions. Kept as a `computed` (not a ref the caller sets)
+		// so it's always consistent with the live model.
+		const currentSnapshot = computed(() => queryHelper.queryModelToParsedJson(queryModel));
+		const restoreFromHistory = (snap) => {
+			if (!snap) return;
+			queryHelper.parsedJsonToQueryModel(snap, queryModel);
+			tabularView.error = "";
+			tabularView.errorStack = null;
+		};
+		const openHistoryModal = () => {
+			historyModalShow.value = true;
+		};
+
 		return {
 			loading,
 			queryModel,
@@ -417,6 +442,12 @@ export default {
 			onScrollToRightEnd,
 
 			executorBus,
+
+			historyBump,
+			historyModalShow,
+			currentSnapshot,
+			restoreFromHistory,
+			openHistoryModal,
 		};
 	},
 	template: /* HTML */ `
@@ -445,6 +476,7 @@ export default {
 						:tabularView="tabularView"
 						:loading="loading"
 						:executorBus="executorBus"
+						:openHistoryModal="openHistoryModal"
 					/>
 				</div>
 			</div>
@@ -504,6 +536,19 @@ export default {
 						+{{gridShared.offscreenColumnsRight}} more
 					</button>
 				</div>
+				<!--
+					Backtrack + forward suggestion chips, derived from the persistent per-cube
+					history graph. The dedicated "Browse history" button moved INTO the Submit
+					block (see AdhocQueryExecutor#openHistoryModal) — this row is now just the
+					chips strip and collapses to nothing when there's no signal yet.
+				-->
+				<AdhocQueryHistoryChips
+					class="mb-2"
+					:cubeId="cubeId"
+					:currentSnapshot="currentSnapshot"
+					:bumpVersion="historyBump"
+					@restore="restoreFromHistory"
+				/>
 				<AdhocQueryGrid
 					:tabularView="tabularView"
 					:loading="loading"
@@ -519,6 +564,14 @@ export default {
 			<AdhocMeasuresDag :measuresDagModel="measuresDagModel" />
 			<AdhocQueryWizardColumnFilterModalSingleton :columnFilterModel="columnFilterModel" />
 			<AdhocQueryChatbot :endpointId="endpointId" :cubeId="cubeId" />
+			<AdhocQueryHistoryModal
+				:show="historyModalShow"
+				:cubeId="cubeId"
+				:currentSnapshot="currentSnapshot"
+				:bumpVersion="historyBump"
+				@update:show="historyModalShow = $event"
+				@restore="restoreFromHistory"
+			/>
 		</div>
 	`,
 };

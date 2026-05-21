@@ -128,6 +128,8 @@ export default {
 										:measure="measure"
 										:showDetails="showMeasureDetails"
 										:searchOptions="searchOptions"
+										:matchScore="measure._matchScore"
+										:matchTagsBypassed="!!measure._matchTagsBypassed"
 										:historyScore="measure._historyScore || 0"
 									/>
 								</label>

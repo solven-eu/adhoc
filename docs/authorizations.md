@@ -11,7 +11,7 @@ The contract:
 ```java
 @FunctionalInterface
 public interface IImplicitFilter {
-    ISliceFilter getImplicitFilter(ICubeQuery query);
+	ISliceFilter getImplicitFilter(ICubeQuery query);
 }
 ```
 
@@ -21,15 +21,15 @@ Wire it on the `IQueryPreparator` that the `CubeWrapper` uses:
 
 ```java
 IQueryPreparator queryPreparator = StandardQueryPreparator.builder()
-        .implicitFilter(new MyImplicitFilter())
-        .build();
+		.implicitFilter(new MyImplicitFilter())
+		.build();
 
 CubeWrapper cube = CubeWrapper.builder()
-        .table(table)
-        .engine(engine)
-        .forest(forest)
-        .queryPreparator(queryPreparator)
-        .build();
+		.table(table)
+		.engine(engine)
+		.forest(forest)
+		.queryPreparator(queryPreparator)
+		.build();
 ```
 
 From this point on, every `cube.execute(query)` call narrows the result to the slice authorised by `MyImplicitFilter`.

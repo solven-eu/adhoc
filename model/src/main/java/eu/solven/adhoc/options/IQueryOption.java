@@ -39,6 +39,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 		include = JsonTypeInfo.As.PROPERTY,
 		property = "type",
 		defaultImpl = StandardQueryOptions.class)
+@SuppressWarnings("PMD.ImplicitFunctionalInterface")
 public interface IQueryOption {
 	boolean isActive(Set<IQueryOption> options);
 }

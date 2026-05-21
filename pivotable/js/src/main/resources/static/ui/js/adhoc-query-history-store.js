@@ -483,6 +483,340 @@ export function aggregateNamesByKind(snapshot, kind, opts = {}) {
 }
 
 /**
+ * Build a short human-readable label for an edge's diff. Used by:
+ *   - the mermaid modal as edge labels ("+country, -revenue").
+ *   - the forward-suggestion chips ("+ groupBy country").
+ *
+ * <p>Optionally biased toward "additions" (Phase 4 forward chips read better as
+ * action-oriented "+ X" prompts) or "removals" (Phase 4 backtrack chips read better as
+ * "− X" — what would be peeled away to reach the simpler query). Pass {@code direction:
+ * "added"} or {@code "removed"} to filter; the default {@code "both"} renders everything.
+ *
+ * <p>Returns {@code ""} when the diff is empty in the requested direction — callers use
+ * that as a "skip" signal (e.g. a backtrack target that's identical to current has no
+ * label to render and shouldn't be suggested).
+ *
+ * @param {ReturnType<typeof diffSnapshots> | null | undefined} diff
+ * @param {{ direction?: "both" | "added" | "removed", maxItems?: number }} [opts]
+ * @returns {string}
+ */
+export function diffLabel(diff, opts = {}) {
+	if (!diff) {
+		return "";
+	}
+	const direction = opts.direction ?? "both";
+	const maxItems = opts.maxItems ?? 4;
+	/** @type {string[]} */
+	const parts = [];
+
+	// Collect ALL signed items up front, then trim at the end. Trimming centrally lets the
+	// ellipsis fire exactly when the input genuinely exceeds maxItems — earlier drafts trimmed
+	// inside the push loop and then couldn't tell "I had exactly maxItems and stopped" from
+	// "I had more and was cut off".
+	if (direction !== "removed") {
+		(diff.addedColumns || []).forEach((c) => parts.push("+" + c));
+		(diff.addedMeasures || []).forEach((m) => parts.push("+" + m));
+		(diff.addedOptions || []).forEach((o) => parts.push("+" + o));
+	}
+	if (direction !== "added") {
+		(diff.removedColumns || []).forEach((c) => parts.push("−" + c));
+		(diff.removedMeasures || []).forEach((m) => parts.push("−" + m));
+		(diff.removedOptions || []).forEach((o) => parts.push("−" + o));
+	}
+	if (direction === "both" && diff.filterChanged) {
+		parts.push("±filter");
+	}
+	if (direction === "both" && diff.customMarkersChanged) {
+		parts.push("±marker");
+	}
+	if (direction === "added" && diff.filterChanged) {
+		parts.push("±filter");
+	}
+
+	if (parts.length === 0) {
+		return "";
+	}
+	if (parts.length <= maxItems) {
+		return parts.join(", ");
+	}
+	return parts.slice(0, maxItems).join(", ") + ", …";
+}
+
+/**
+ * Forward-suggestion candidates: outgoing edges from {@code fromHash}, ranked by edge weight
+ * (count × halflife decay on {@code lastSeenAt}). Returned items carry the destination node's
+ * snapshot so the UI can hydrate the queryModel without a second lookup.
+ *
+ * <p>Useful as "you often did X next" chips above the query header — Phase 4 of the history
+ * roadmap. Returns {@code []} when there are no outgoing edges (typical for a fresh root
+ * node or the leaf of a one-shot exploration).
+ *
+ * @param {{ nodes: Record<string, any>, edges: Record<string, Record<string, any>> } | null | undefined} snapshot
+ * @param {string} fromHash
+ * @param {{ nowMs?: number, halflifeMs?: number, topN?: number }} [opts]
+ * @returns {{ toHash: string, edge: any, target: any, label: string, score: number }[]}
+ */
+export function forwardSuggestions(snapshot, fromHash, opts = {}) {
+	if (!snapshot?.edges?.[fromHash]) {
+		return [];
+	}
+	const nowMs = opts.nowMs ?? Date.now();
+	const halflifeMs = opts.halflifeMs ?? DEFAULT_HALFLIFE_MS;
+	const topN = opts.topN ?? 3;
+
+	const outgoing = snapshot.edges[fromHash];
+	/** @type {{ toHash: string, edge: any, target: any, label: string, score: number }[]} */
+	const candidates = [];
+	for (const toHash of Object.keys(outgoing)) {
+		const edge = outgoing[toHash];
+		const target = snapshot.nodes[toHash];
+		if (!target) {
+			// Dangling edge — node was evicted before its incoming edges. Skip silently;
+			// the next eviction cycle will reap the orphan.
+			continue;
+		}
+		const lastMs = Date.parse(edge.lastSeenAt);
+		const ageMs = Math.max(0, nowMs - (Number.isFinite(lastMs) ? lastMs : nowMs));
+		const score = (edge.count || 0) * Math.pow(0.5, ageMs / halflifeMs);
+		const label = diffLabel(edge.diff, { direction: "added" }) || diffLabel(edge.diff);
+		if (!label) {
+			// Edge has no human-readable diff (degenerate — would only happen if the diff is empty,
+			// which `recordTransition` prevents). Skip to keep the UI quiet.
+			continue;
+		}
+		candidates.push({ toHash, edge, target, label, score });
+	}
+	candidates.sort((a, b) => b.score - a.score);
+	return candidates.slice(0, topN);
+}
+
+/**
+ * Backtrack-suggestion candidates: persisted nodes whose set of (groupBy columns ∪ measures ∪
+ * filter-referenced columns) is a STRICT subset of the current node's set, ranked by node
+ * weight (visitCount × halflife decay). Surfaced as "← simpler queries" chips — handy when the
+ * user has layered three filters and wants to peel back to where things were tractable.
+ *
+ * <p>The strict-subset test uses the cached {@code columnNames}/{@code measureNames}/
+ * {@code filterColumnNames} arrays produced at write time. We deliberately compare by NAME
+ * sets, not by content hash: two nodes that use the same names with different aggregation
+ * keys still count as "on the same axes" for the user's mental model.
+ *
+ * @param {{ nodes: Record<string, any> } | null | undefined} snapshot
+ * @param {string} currentHash
+ * @param {{ nowMs?: number, halflifeMs?: number, topN?: number }} [opts]
+ * @returns {{ toHash: string, node: any, label: string, score: number }[]}
+ */
+export function backtrackSuggestions(snapshot, currentHash, opts = {}) {
+	if (!snapshot?.nodes) {
+		return [];
+	}
+	const current = snapshot.nodes[currentHash];
+	if (!current) {
+		return [];
+	}
+	const nowMs = opts.nowMs ?? Date.now();
+	const halflifeMs = opts.halflifeMs ?? DEFAULT_HALFLIFE_MS;
+	const topN = opts.topN ?? 2;
+
+	const currentCols = new Set(current.columnNames || []);
+	const currentMeas = new Set(current.measureNames || []);
+	const currentFilt = new Set(current.filterColumnNames || []);
+	const currentSize = currentCols.size + currentMeas.size + currentFilt.size;
+
+	/** @type {{ toHash: string, node: any, label: string, score: number }[]} */
+	const candidates = [];
+	for (const node of Object.values(snapshot.nodes)) {
+		if (node.id === currentHash) {
+			continue;
+		}
+		const cols = new Set(node.columnNames || []);
+		const meas = new Set(node.measureNames || []);
+		const filt = new Set(node.filterColumnNames || []);
+
+		// Strict subset: every name in `node` must be in `current`, AND `node` must have at
+		// least one fewer name overall. Equal-size sets are skipped (those are sideways moves
+		// or the current node itself).
+		if (!isSubset(cols, currentCols) || !isSubset(meas, currentMeas) || !isSubset(filt, currentFilt)) {
+			continue;
+		}
+		const nodeSize = cols.size + meas.size + filt.size;
+		if (nodeSize >= currentSize) {
+			continue;
+		}
+
+		const score = lruScore(node, nowMs, halflifeMs);
+		// Build a "what would peel away" label from the difference (current minus node).
+		const removed = {
+			removedColumns: [...currentCols].filter((c) => !cols.has(c)).sort(),
+			removedMeasures: [...currentMeas].filter((m) => !meas.has(m)).sort(),
+			removedOptions: [],
+			addedColumns: [],
+			addedMeasures: [],
+			addedOptions: [],
+			filterChanged: false,
+			customMarkersChanged: false,
+		};
+		const label = diffLabel(removed, { direction: "removed" });
+		if (!label) {
+			continue;
+		}
+		candidates.push({ toHash: node.id, node, label, score });
+	}
+	candidates.sort((a, b) => b.score - a.score);
+	return candidates.slice(0, topN);
+}
+
+/**
+ * @param {Set<unknown>} a
+ * @param {Set<unknown>} b
+ * @returns {boolean}
+ */
+function isSubset(a, b) {
+	for (const x of a) {
+		if (!b.has(x)) {
+			return false;
+		}
+	}
+	return true;
+}
+
+/**
+ * Aggregate the universe of distinct column / measure names that appear across the snapshot.
+ * Powers the history-modal filter chip strip: one chip per name, tri-state include/exclude.
+ *
+ * <p>Sorted alphabetically so chip ordering stays stable across opens (and is a stable mental
+ * index for the user). filterColumns are intentionally folded INTO `columns` — both surface as
+ * a "this column matters" filter axis regardless of whether the user grouped on it or filtered
+ * on it. Subdividing the chips by axis would force the user to track that distinction; the
+ * downstream filter logic looks at the union anyway.
+ *
+ * @param {{ nodes: Record<string, any> } | null | undefined} snapshot
+ * @returns {{ columns: string[], measures: string[] }}
+ */
+export function collectDistinctNames(snapshot) {
+	const cols = /** @type {Set<string>} */ (new Set());
+	const meas = /** @type {Set<string>} */ (new Set());
+	if (snapshot && snapshot.nodes) {
+		for (const node of Object.values(snapshot.nodes)) {
+			(node.columnNames || []).forEach((c) => cols.add(c));
+			(node.filterColumnNames || []).forEach((c) => cols.add(c));
+			(node.measureNames || []).forEach((m) => meas.add(m));
+		}
+	}
+	return { columns: [...cols].sort(), measures: [...meas].sort() };
+}
+
+/**
+ * Return a snapshot subset where each surviving node satisfies the include / exclude filters.
+ * A node passes when:
+ * <ul>
+ *   <li>EVERY name in {@code includeColumns} appears in the node's columnNames ∪ filterColumnNames, AND</li>
+ *   <li>EVERY name in {@code includeMeasures} appears in the node's measureNames, AND</li>
+ *   <li>NO name in {@code excludeColumns} appears in the node's columnNames ∪ filterColumnNames, AND</li>
+ *   <li>NO name in {@code excludeMeasures} appears in the node's measureNames.</li>
+ * </ul>
+ *
+ * <p>Edges are kept when both endpoints survive — orphan edges would render as dangling arrows.
+ * Returns a new object; the input snapshot is not mutated.
+ *
+ * @param {{ nodes: Record<string, any>, edges: Record<string, Record<string, any>> } | null | undefined} snapshot
+ * @param {{ includeColumns?: Iterable<string>, excludeColumns?: Iterable<string>, includeMeasures?: Iterable<string>, excludeMeasures?: Iterable<string> }} [filters]
+ * @returns {{ nodes: Record<string, any>, edges: Record<string, Record<string, any>> }}
+ */
+export function filterSnapshotByNames(snapshot, filters = {}) {
+	const out = { nodes: /** @type {Record<string, any>} */ ({}), edges: /** @type {Record<string, Record<string, any>>} */ ({}) };
+	if (!snapshot || !snapshot.nodes) {
+		return out;
+	}
+	const incC = new Set(filters.includeColumns || []);
+	const excC = new Set(filters.excludeColumns || []);
+	const incM = new Set(filters.includeMeasures || []);
+	const excM = new Set(filters.excludeMeasures || []);
+	if (incC.size === 0 && excC.size === 0 && incM.size === 0 && excM.size === 0) {
+		// Fast-path identity: no filter ⇒ shallow copy so callers can freely mutate `out` without
+		// touching the source snapshot.
+		return { nodes: { ...snapshot.nodes }, edges: { ...snapshot.edges } };
+	}
+
+	for (const [hash, node] of Object.entries(snapshot.nodes)) {
+		const cols = new Set([...(node.columnNames || []), ...(node.filterColumnNames || [])]);
+		const meas = new Set(node.measureNames || []);
+		let pass = true;
+		for (const c of incC) {
+			if (!cols.has(c)) {
+				pass = false;
+				break;
+			}
+		}
+		if (pass) {
+			for (const c of excC) {
+				if (cols.has(c)) {
+					pass = false;
+					break;
+				}
+			}
+		}
+		if (pass) {
+			for (const m of incM) {
+				if (!meas.has(m)) {
+					pass = false;
+					break;
+				}
+			}
+		}
+		if (pass) {
+			for (const m of excM) {
+				if (meas.has(m)) {
+					pass = false;
+					break;
+				}
+			}
+		}
+		if (pass) {
+			out.nodes[hash] = node;
+		}
+	}
+
+	for (const fromHash of Object.keys(snapshot.edges || {})) {
+		if (!out.nodes[fromHash]) {
+			continue;
+		}
+		for (const toHash of Object.keys(snapshot.edges[fromHash])) {
+			if (!out.nodes[toHash]) {
+				continue;
+			}
+			(out.edges[fromHash] ||= {})[toHash] = snapshot.edges[fromHash][toHash];
+		}
+	}
+
+	return out;
+}
+
+/**
+ * Permanently remove a node and all edges referencing it. Used by the history modal's
+ * per-node "Forget" affordance. Idempotent — unknown hash is a no-op.
+ *
+ * @param {{ nodes: Record<string, any>, edges: Record<string, Record<string, any>> }} store
+ * @param {string} hash
+ */
+export function forgetNode(store, hash) {
+	if (!store.nodes[hash]) {
+		return;
+	}
+	delete store.nodes[hash];
+	delete store.edges[hash];
+	for (const fromHash of Object.keys(store.edges)) {
+		const outs = store.edges[fromHash];
+		if (outs && outs[hash]) {
+			delete outs[hash];
+			if (Object.keys(outs).length === 0) {
+				delete store.edges[fromHash];
+			}
+		}
+	}
+}
+
+/**
  * Tiny composable returning a stateful handle that wires the pure store to localStorage +
  * remembers the previous snapshot in a closure. The caller hands it executed queryModel
  * snapshots; the handle does the load → mutate → save dance.
@@ -540,6 +874,28 @@ export function useQueryHistoryStore(cubeId, opts = {}) {
 		snapshot() {
 			const store = loadStore(cubeId, storage);
 			return JSON.parse(JSON.stringify(store));
+		},
+
+		/**
+		 * Permanently remove a single node + its incident edges. Powers the history modal's
+		 * per-node "Forget" affordance. Persists the result. Idempotent on unknown hashes.
+		 *
+		 * @param {string} hash
+		 */
+		forget(hash) {
+			const store = loadStore(cubeId, storage);
+			forgetNode(store, hash);
+			saveStore(cubeId, store, storage);
+		},
+
+		/**
+		 * Wipe the persisted graph for this cube. Used by the modal's "Clear all" button.
+		 * Resets the in-memory previous-node pointer too so the next executed query becomes
+		 * a fresh root.
+		 */
+		clearAll() {
+			saveStore(cubeId, emptyStore(cubeId), storage);
+			previousSnapshot = null;
 		},
 	};
 }

@@ -3,12 +3,18 @@ import { describe, it, expect, beforeEach } from "vitest";
 
 import {
 	aggregateNamesByKind,
+	backtrackSuggestions,
 	canonicalJson,
+	collectDistinctNames,
 	contentHash,
+	diffLabel,
 	diffSnapshots,
 	emptyStore,
 	evictIfNeeded,
 	filterColumnsOf,
+	filterSnapshotByNames,
+	forgetNode,
+	forwardSuggestions,
 	loadStore,
 	lruScore,
 	recordTransition,
@@ -447,5 +453,447 @@ describe("useQueryHistoryStore composable", () => {
 		expect(r2.fromHash).toBeNull();
 		const snap = h.snapshot();
 		expect(snap.edges).toEqual({});
+	});
+
+	it("forget(hash) drops the node and its incident edges; persists", () => {
+		const storage = makeStubStorage();
+		const h = useQueryHistoryStore("cubeA", { storage });
+		const q1 = { columns: ["a"], measures: [], options: [], filter: {}, customMarkers: {} };
+		const q2 = { columns: ["a", "b"], measures: [], options: [], filter: {}, customMarkers: {} };
+		const r1 = h.recordExecutedQuery(q1);
+		const r2 = h.recordExecutedQuery(q2);
+		h.forget(r2.toHash);
+		const snap = h.snapshot();
+		expect(snap.nodes[r2.toHash]).toBeUndefined();
+		expect(snap.edges[r1.toHash]?.[r2.toHash]).toBeUndefined();
+		// And the next process re-reads the persisted (forgotten) state — not just an in-memory wipe.
+		const reload = useQueryHistoryStore("cubeA", { storage });
+		expect(reload.snapshot().nodes[r2.toHash]).toBeUndefined();
+	});
+
+	it("clearAll() empties the persisted graph and resets previous-node", () => {
+		const storage = makeStubStorage();
+		const h = useQueryHistoryStore("cubeA", { storage });
+		h.recordExecutedQuery({ columns: ["a"], measures: [], options: [], filter: {}, customMarkers: {} });
+		h.recordExecutedQuery({ columns: ["a", "b"], measures: [], options: [], filter: {}, customMarkers: {} });
+		h.clearAll();
+		const after = h.snapshot();
+		expect(after.nodes).toEqual({});
+		// And subsequent capture restarts as a root (no edge — previousSnapshot was wiped).
+		const r3 = h.recordExecutedQuery({ columns: ["c"], measures: [], options: [], filter: {}, customMarkers: {} });
+		expect(r3.fromHash).toBeNull();
+	});
+});
+
+// ---------------------------------------------------------------------------------------------
+// diffLabel — short edge / suggestion labels for the mermaid view + Phase 4 chips.
+// ---------------------------------------------------------------------------------------------
+describe("diffLabel", () => {
+	it("returns '' for an empty / null diff", () => {
+		expect(diffLabel(null)).toBe("");
+		expect(
+			diffLabel({
+				addedColumns: [],
+				removedColumns: [],
+				addedMeasures: [],
+				removedMeasures: [],
+				addedOptions: [],
+				removedOptions: [],
+				filterChanged: false,
+				customMarkersChanged: false,
+			}),
+		).toBe("");
+	});
+
+	it("formats additions with + and removals with − (default 'both')", () => {
+		const d = {
+			addedColumns: ["country"],
+			removedColumns: ["city"],
+			addedMeasures: ["revenue"],
+			removedMeasures: [],
+			addedOptions: [],
+			removedOptions: [],
+			filterChanged: false,
+			customMarkersChanged: false,
+		};
+		expect(diffLabel(d)).toBe("+country, +revenue, −city");
+	});
+
+	it("direction='added' suppresses removals (forward chip)", () => {
+		const d = {
+			addedColumns: ["country"],
+			removedColumns: ["city"],
+			addedMeasures: [],
+			removedMeasures: [],
+			addedOptions: [],
+			removedOptions: [],
+			filterChanged: false,
+			customMarkersChanged: false,
+		};
+		expect(diffLabel(d, { direction: "added" })).toBe("+country");
+	});
+
+	it("direction='removed' shows what would peel away (backtrack chip)", () => {
+		const d = {
+			addedColumns: [],
+			removedColumns: ["color", "year"],
+			addedMeasures: [],
+			removedMeasures: [],
+			addedOptions: [],
+			removedOptions: [],
+			filterChanged: false,
+			customMarkersChanged: false,
+		};
+		expect(diffLabel(d, { direction: "removed" })).toBe("−color, −year");
+	});
+
+	it("truncates with ellipsis when exceeding maxItems", () => {
+		const d = {
+			addedColumns: ["a", "b", "c", "d", "e", "f"],
+			removedColumns: [],
+			addedMeasures: [],
+			removedMeasures: [],
+			addedOptions: [],
+			removedOptions: [],
+			filterChanged: false,
+			customMarkersChanged: false,
+		};
+		expect(diffLabel(d, { maxItems: 3 })).toBe("+a, +b, +c, …");
+	});
+});
+
+// ---------------------------------------------------------------------------------------------
+// forwardSuggestions — Phase 4 forward chips.
+// ---------------------------------------------------------------------------------------------
+describe("forwardSuggestions", () => {
+	const t0 = Date.UTC(2026, 4, 20, 12, 0, 0);
+
+	it("returns [] when current node has no outgoing edges", () => {
+		const snap = {
+			nodes: { a: { id: "a", visitCount: 1, lastSeenAt: new Date(t0).toISOString(), columnNames: [], measureNames: [], filterColumnNames: [] } },
+			edges: {},
+		};
+		expect(forwardSuggestions(snap, "a", { nowMs: t0 })).toEqual([]);
+	});
+
+	it("ranks outgoing edges by edge count × halflife decay", () => {
+		const mkNode = (id, parsedJson = {}) => ({
+			id,
+			visitCount: 1,
+			lastSeenAt: new Date(t0).toISOString(),
+			columnNames: [],
+			measureNames: [],
+			filterColumnNames: [],
+			queryModelJson: parsedJson,
+		});
+		const mkEdge = (count, ageMs, diff) => ({
+			count,
+			lastSeenAt: new Date(t0 - ageMs).toISOString(),
+			diff,
+		});
+		const snap = {
+			nodes: {
+				a: mkNode("a"),
+				b: mkNode("b", { columns: ["country"] }),
+				c: mkNode("c", { columns: ["year"] }),
+				d: mkNode("d", { columns: ["color"] }),
+			},
+			edges: {
+				a: {
+					b: mkEdge(10, 0, {
+						addedColumns: ["country"],
+						addedMeasures: [],
+						addedOptions: [],
+						removedColumns: [],
+						removedMeasures: [],
+						removedOptions: [],
+						filterChanged: false,
+						customMarkersChanged: false,
+					}),
+					c: mkEdge(20, DEFAULT_HALFLIFE_MS, {
+						addedColumns: ["year"],
+						addedMeasures: [],
+						addedOptions: [],
+						removedColumns: [],
+						removedMeasures: [],
+						removedOptions: [],
+						filterChanged: false,
+						customMarkersChanged: false,
+					}), // 20 * 0.5 = 10 → tied with b on score, but lexicographic on toHash breaks via sort stability
+					d: mkEdge(1, 0, {
+						addedColumns: ["color"],
+						addedMeasures: [],
+						addedOptions: [],
+						removedColumns: [],
+						removedMeasures: [],
+						removedOptions: [],
+						filterChanged: false,
+						customMarkersChanged: false,
+					}),
+				},
+			},
+		};
+		const out = forwardSuggestions(snap, "a", { nowMs: t0, topN: 3 });
+		expect(out.map((c) => c.toHash)).toEqual(["b", "c", "d"]); // b/c both score 10, d scores 1; insertion order preserved for the tie
+		expect(out[0].label).toBe("+country");
+		expect(out[0].target.queryModelJson).toEqual({ columns: ["country"] });
+	});
+
+	it("skips dangling edges (target node already evicted)", () => {
+		const snap = {
+			nodes: { a: { id: "a", visitCount: 1, lastSeenAt: new Date(t0).toISOString(), columnNames: [], measureNames: [], filterColumnNames: [] } },
+			edges: {
+				a: {
+					gone: {
+						count: 5,
+						lastSeenAt: new Date(t0).toISOString(),
+						diff: {
+							addedColumns: ["x"],
+							removedColumns: [],
+							addedMeasures: [],
+							removedMeasures: [],
+							addedOptions: [],
+							removedOptions: [],
+							filterChanged: false,
+							customMarkersChanged: false,
+						},
+					},
+				},
+			},
+		};
+		expect(forwardSuggestions(snap, "a", { nowMs: t0 })).toEqual([]);
+	});
+
+	it("respects topN", () => {
+		const mkNode = (id) => ({
+			id,
+			visitCount: 1,
+			lastSeenAt: new Date(t0).toISOString(),
+			columnNames: [],
+			measureNames: [],
+			filterColumnNames: [],
+			queryModelJson: {},
+		});
+		const mkEdge = (count) => ({
+			count,
+			lastSeenAt: new Date(t0).toISOString(),
+			diff: {
+				addedColumns: ["x"],
+				removedColumns: [],
+				addedMeasures: [],
+				removedMeasures: [],
+				addedOptions: [],
+				removedOptions: [],
+				filterChanged: false,
+				customMarkersChanged: false,
+			},
+		});
+		const snap = {
+			nodes: { a: mkNode("a"), b: mkNode("b"), c: mkNode("c"), d: mkNode("d"), e: mkNode("e") },
+			edges: { a: { b: mkEdge(4), c: mkEdge(3), d: mkEdge(2), e: mkEdge(1) } },
+		};
+		expect(forwardSuggestions(snap, "a", { nowMs: t0, topN: 2 }).map((c) => c.toHash)).toEqual(["b", "c"]);
+	});
+});
+
+// ---------------------------------------------------------------------------------------------
+// backtrackSuggestions — Phase 4 backtrack chips.
+// ---------------------------------------------------------------------------------------------
+describe("backtrackSuggestions", () => {
+	const t0 = Date.UTC(2026, 4, 20, 12, 0, 0);
+
+	const mkNode = (id, visitCount, ageMs, fields, parsedJson = {}) => ({
+		id,
+		visitCount,
+		lastSeenAt: new Date(t0 - ageMs).toISOString(),
+		columnNames: fields.columnNames || [],
+		measureNames: fields.measureNames || [],
+		filterColumnNames: fields.filterColumnNames || [],
+		queryModelJson: parsedJson,
+	});
+
+	it("returns [] when current node is missing from the snapshot", () => {
+		expect(backtrackSuggestions({ nodes: {} }, "missing", { nowMs: t0 })).toEqual([]);
+	});
+
+	it("returns [] when nothing is a strict subset of current", () => {
+		const snap = {
+			nodes: {
+				current: mkNode("current", 1, 0, { columnNames: ["a"] }),
+				wider: mkNode("wider", 1, 0, { columnNames: ["a", "b"] }), // SUPERSET — not a backtrack
+				sideways: mkNode("sideways", 1, 0, { columnNames: ["b"] }), // overlap but not subset
+			},
+		};
+		expect(backtrackSuggestions(snap, "current", { nowMs: t0 })).toEqual([]);
+	});
+
+	it("returns strict subsets ranked by visitCount × recency", () => {
+		const snap = {
+			nodes: {
+				current: mkNode("current", 1, 0, { columnNames: ["a", "b"], measureNames: ["m"] }),
+				dropB: mkNode("dropB", 5, 0, { columnNames: ["a"], measureNames: ["m"] }),
+				dropAll: mkNode("dropAll", 99, 0, { columnNames: [], measureNames: [] }),
+				dropAllOld: mkNode("dropAllOld", 99, 365 * 24 * 60 * 60 * 1000, { columnNames: [], measureNames: [] }), // ancient — visitCount alone shouldn't win
+				selfHashed: mkNode("current", 1, 0, { columnNames: ["a", "b"] }), // same hash as current — must be skipped
+			},
+		};
+		const out = backtrackSuggestions(snap, "current", { nowMs: t0, topN: 3 });
+		const hashes = out.map((c) => c.toHash);
+		expect(hashes).toContain("dropAll"); // 99 visits, fresh → highest score
+		expect(hashes).toContain("dropB"); // 5 visits, fresh
+		// dropAllOld has 99 visits but is one year old → score halved many times over. Should still
+		// be in the top-3 here (the test passes topN: 3 — only 3 distinct candidates exist beyond
+		// 'current' itself), but ranked LAST.
+		expect(out[0].toHash).toBe("dropAll"); // confirmed top
+		expect(hashes).not.toContain("current"); // self-skip
+	});
+
+	it("labels the chip as what would peel away (negative direction)", () => {
+		const snap = {
+			nodes: {
+				current: mkNode("current", 1, 0, { columnNames: ["a", "b"] }),
+				dropB: mkNode("dropB", 1, 0, { columnNames: ["a"] }),
+			},
+		};
+		const out = backtrackSuggestions(snap, "current", { nowMs: t0 });
+		expect(out[0].label).toBe("−b");
+	});
+});
+
+describe("forgetNode (pure)", () => {
+	it("is idempotent on unknown hash", () => {
+		const store = { nodes: {}, edges: {} };
+		forgetNode(store, "nope");
+		expect(store.nodes).toEqual({});
+		expect(store.edges).toEqual({});
+	});
+
+	it("removes node + outgoing + incoming edges", () => {
+		const store = {
+			nodes: { a: { id: "a" }, b: { id: "b" }, c: { id: "c" } },
+			edges: {
+				a: { b: { count: 1 } },
+				b: { c: { count: 1 } },
+			},
+		};
+		forgetNode(store, "b");
+		expect(store.nodes.b).toBeUndefined();
+		expect(store.edges.a?.b).toBeUndefined();
+		expect(store.edges.b).toBeUndefined();
+		// 'a' has no more outgoing edges → its key was reaped to keep the structure tidy.
+		expect(store.edges.a).toBeUndefined();
+	});
+});
+
+// ---------------------------------------------------------------------------------------------
+// collectDistinctNames — chip universe.
+// ---------------------------------------------------------------------------------------------
+describe("collectDistinctNames", () => {
+	const mkNode = (id, fields = {}) => ({
+		id,
+		visitCount: 1,
+		lastSeenAt: "2026-05-21T00:00:00.000Z",
+		columnNames: fields.columnNames || [],
+		measureNames: fields.measureNames || [],
+		filterColumnNames: fields.filterColumnNames || [],
+	});
+
+	it("returns empty arrays for null / empty snapshots", () => {
+		expect(collectDistinctNames(null)).toEqual({ columns: [], measures: [] });
+		expect(collectDistinctNames({ nodes: {} })).toEqual({ columns: [], measures: [] });
+	});
+
+	it("unions columnNames + filterColumnNames into a single columns axis", () => {
+		const snap = {
+			nodes: {
+				a: mkNode("a", { columnNames: ["country"], filterColumnNames: ["status"] }),
+				b: mkNode("b", { columnNames: ["country", "year"] }),
+			},
+		};
+		expect(collectDistinctNames(snap).columns).toEqual(["country", "status", "year"]);
+	});
+
+	it("collects measures separately, sorted, de-duplicated", () => {
+		const snap = {
+			nodes: {
+				a: mkNode("a", { measureNames: ["revenue", "count"] }),
+				b: mkNode("b", { measureNames: ["revenue"] }),
+			},
+		};
+		expect(collectDistinctNames(snap).measures).toEqual(["count", "revenue"]);
+	});
+});
+
+// ---------------------------------------------------------------------------------------------
+// filterSnapshotByNames — tri-state chip filter applied to the snapshot.
+// ---------------------------------------------------------------------------------------------
+describe("filterSnapshotByNames", () => {
+	const mkNode = (id, fields = {}) => ({
+		id,
+		visitCount: 1,
+		lastSeenAt: "2026-05-21T00:00:00.000Z",
+		columnNames: fields.columnNames || [],
+		measureNames: fields.measureNames || [],
+		filterColumnNames: fields.filterColumnNames || [],
+	});
+	const baseSnap = {
+		nodes: {
+			a: mkNode("a", { columnNames: ["country"], measureNames: ["revenue"] }),
+			b: mkNode("b", { columnNames: ["country", "year"], measureNames: ["revenue"] }),
+			c: mkNode("c", { columnNames: ["city"], measureNames: ["count"] }),
+		},
+		edges: {
+			a: { b: { count: 1 } },
+			b: { c: { count: 1 } },
+		},
+	};
+
+	it("identity when no filter is applied", () => {
+		const out = filterSnapshotByNames(baseSnap, {});
+		expect(Object.keys(out.nodes).sort()).toEqual(["a", "b", "c"]);
+		expect(out.edges.a.b).toBeTruthy();
+	});
+
+	it("includeColumns: keeps only nodes that reference EVERY required column", () => {
+		const out = filterSnapshotByNames(baseSnap, { includeColumns: ["country"] });
+		expect(Object.keys(out.nodes).sort()).toEqual(["a", "b"]);
+		// 'c' didn't survive → the b→c edge must also be stripped (orphan-edge prevention).
+		expect(out.edges.b?.c).toBeUndefined();
+		// a→b survived (both endpoints present).
+		expect(out.edges.a?.b).toBeTruthy();
+	});
+
+	it("excludeColumns: hides nodes that reference any forbidden column", () => {
+		const out = filterSnapshotByNames(baseSnap, { excludeColumns: ["city"] });
+		expect(Object.keys(out.nodes).sort()).toEqual(["a", "b"]);
+		expect(out.edges.b?.c).toBeUndefined();
+	});
+
+	it("includeMeasures + excludeMeasures combine multiplicatively", () => {
+		const out = filterSnapshotByNames(baseSnap, { includeMeasures: ["revenue"], excludeMeasures: ["count"] });
+		// 'a' and 'b' have revenue and no count → in. 'c' has count and no revenue → out (both).
+		expect(Object.keys(out.nodes).sort()).toEqual(["a", "b"]);
+	});
+
+	it("filterColumnNames count toward the columns axis", () => {
+		const snap = {
+			nodes: {
+				a: mkNode("a", { columnNames: [], filterColumnNames: ["country"] }),
+			},
+			edges: {},
+		};
+		// 'a' references country only via its filter — include should still admit it.
+		expect(Object.keys(filterSnapshotByNames(snap, { includeColumns: ["country"] }).nodes)).toEqual(["a"]);
+	});
+
+	it("include AND exclude on the same column reduces to exclude (intersection is empty)", () => {
+		const out = filterSnapshotByNames(baseSnap, { includeColumns: ["country"], excludeColumns: ["country"] });
+		expect(Object.keys(out.nodes)).toEqual([]);
+	});
+
+	it("does not mutate the input snapshot", () => {
+		const before = JSON.stringify(baseSnap);
+		filterSnapshotByNames(baseSnap, { includeColumns: ["country"] });
+		expect(JSON.stringify(baseSnap)).toBe(before);
 	});
 });

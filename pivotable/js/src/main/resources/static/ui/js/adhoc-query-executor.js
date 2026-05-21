@@ -8,8 +8,7 @@ import { useAdhocStore } from "./store-adhoc.js";
 
 import AdhocQueryRawModal from "./adhoc-query-raw-modal.js";
 import AdhocQueryReset from "./adhoc-query-reset.js";
-import AdhocQueryFavorite from "./adhoc-query-favorite.js";
-import AdhocQueryFavorites from "./adhoc-query-favorites.js";
+import AdhocQueryFavoritesMenu from "./adhoc-query-favorites-menu.js";
 
 import { useUserStore } from "./store-user.js";
 import { finalizeActiveStages } from "./adhoc-query-grid-timings.js";
@@ -46,8 +45,7 @@ export default {
 	components: {
 		AdhocQueryRawModal,
 		AdhocQueryReset,
-		AdhocQueryFavorite,
-		AdhocQueryFavorites,
+		AdhocQueryFavoritesMenu,
 	},
 	// https://vuejs.org/guide/components/props.html
 	props: {
@@ -75,6 +73,15 @@ export default {
 		// mounts when used in isolation (tests).
 		executorBus: {
 			type: Object,
+			required: false,
+			default: null,
+		},
+		// Action callback (not a value): clicking the History button calls this. Plumbed from
+		// AdhocQuery, which owns the modal state. We accept a callback rather than emitting
+		// because the executor's secondary-actions row is the natural place for the button
+		// AND the host already owns the modal — a direct invoke keeps the wiring local.
+		openHistoryModal: {
+			type: Function,
 			required: false,
 			default: null,
 		},
@@ -710,16 +717,29 @@ export default {
 					</div>
 
 					<!--
-						Secondary action buttons (JSON inspector, Reset query, Favorite, Favorites).
-						They live INSIDE the Submit block so they float along when the wizard accordion
-						is open — otherwise they'd stay stranded below the wizard and force the user to
-						scroll past the tall accordion body to reach them.
+						Secondary action buttons (JSON inspector, Reset query, consolidated Favorites
+						dropdown, History). They live INSIDE the Submit block so they float along when
+						the wizard accordion is open — otherwise they'd stay stranded below the wizard
+						and force the user to scroll past the tall accordion body to reach them.
+
+						The Favorites dropdown consolidates the two previously-separate buttons
+						("Favorite" / "Favorites") into one trigger with "Save current" / "Browse"
+						menu items — same idiom as the DrillThrough action menu in the cell modal.
+						That freed-up slot now hosts the History button.
 					-->
 					<div class="d-flex flex-wrap gap-2 mt-2">
 						<AdhocQueryRawModal :queryJson="queryJson" :queryModel="queryModel" :cubeId="cubeId" :endpointId="endpointId" />
 						<AdhocQueryReset :queryModel="queryModel" />
-						<AdhocQueryFavorite :queryModel="queryModel" />
-						<AdhocQueryFavorites :queryModel="queryModel" />
+						<AdhocQueryFavoritesMenu :queryModel="queryModel" />
+						<button
+							v-if="openHistoryModal"
+							type="button"
+							class="btn btn-outline-secondary btn-sm"
+							@click="openHistoryModal"
+							title="Browse the per-cube history graph of queries you've run on this cube"
+						>
+							<i class="bi bi-clock-history me-1" aria-hidden="true"></i> History
+						</button>
 					</div>
 				</span>
 			</Transition>
