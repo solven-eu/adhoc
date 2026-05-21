@@ -12,7 +12,7 @@ import queryPivotable from "./query-pivotable.mjs";
 // stack — login, query submission, grid render — so the SPA's mount logic (`tabularView.queryUuid` gate, watch
 // on prop change) is still wired through real code.
 
-const url = "http://localhost:8080";
+import { BASE_URL as url } from "./_url.mjs";
 
 test.beforeAll(async ({ request }) => {
 	const response = await queryPivotable.clear(request, url);

@@ -3,7 +3,7 @@ import { test, expect, request } from "@playwright/test";
 
 import queryPivotable from "./query-pivotable.mjs";
 
-const url = "http://localhost:8080";
+import { BASE_URL as url } from "./_url.mjs";
 
 test.beforeAll(async ({ request }) => {
 	// Create a new repository

@@ -1,6 +1,8 @@
 // @ts-check
 import { expect } from "@playwright/test";
 
+import { BASE_URL } from "./_url.mjs";
+
 const addColumn = async function (page, column) {
 	await page.getByRole("searchbox", { name: "Search" }).dblclick();
 	await page.getByRole("searchbox", { name: "Search" }).fill(column);
@@ -55,7 +57,7 @@ export default {
 	addColumn: addColumn,
 
 	async queryPivotable(page) {
-		await page.goto("http://localhost:8080/");
+		await page.goto(BASE_URL + "/");
 		await page.getByRole("link", { name: /You need to login/ }).click();
 		await page.getByRole("link", { name: "pivotable-unsafe_fakeuser" }).click();
 		await page.getByRole("button", { name: /^Login$/i }).click();

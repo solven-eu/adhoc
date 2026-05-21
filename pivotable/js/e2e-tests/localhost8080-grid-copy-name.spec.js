@@ -14,7 +14,7 @@ import queryPivotable from "./query-pivotable.mjs";
 // guarantee: it drives a click on the icon in a real browser against a real
 // SlickGrid instance, and asserts the column ordering is unchanged.
 
-const url = "http://localhost:8080";
+import { BASE_URL as url } from "./_url.mjs";
 
 test.beforeAll(async ({ request }) => {
 	const response = await queryPivotable.clear(request, url);

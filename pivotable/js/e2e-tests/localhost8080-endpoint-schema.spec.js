@@ -15,7 +15,7 @@ import queryPivotable from "./query-pivotable.mjs";
 // We reach the page via the in-app `Show schema` link rather than navigating directly,
 // so the test also doubles as a regression for that link.
 
-const url = "http://localhost:8080";
+import { BASE_URL as url } from "./_url.mjs";
 
 test.beforeAll(async ({ request }) => {
 	const response = await queryPivotable.clear(request, url);

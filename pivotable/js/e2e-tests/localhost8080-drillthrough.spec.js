@@ -3,7 +3,7 @@ import { test, expect } from "./_coverage-fixture.mjs";
 
 import queryPivotable from "./query-pivotable.mjs";
 
-const url = "http://localhost:8080";
+import { BASE_URL as url } from "./_url.mjs";
 
 test.beforeAll(async ({ request }) => {
 	const response = await queryPivotable.clear(request, url);

@@ -92,9 +92,13 @@ const config = defineConfig({
 	/* Run your local dev server before starting the tests. */
 	/* Delegates to `npm run backend` so the command is defined in a single place (package.json), */
 	/* and honours $WEBMODE (webflux/webmvc) and $SPRING_ACTIVE_PROFILES. */
+	/* `url` probes the backend the specs target — kept in sync with `e2e-tests/_url.mjs` so */
+	/* a `PIVOTABLE_BASE_URL=http://localhost:8090` invocation reuses the developer's already- */
+	/* running :8090 backend instead of auto-spawning a competing :8080 one. The `.replace` */
+	/* normalises `localhost` to `127.0.0.1` because Playwright's probe is strict about that. */
 	webServer: {
 		command: "npm run backend",
-		url: "http://127.0.0.1:8080",
+		url: (process.env.PIVOTABLE_BASE_URL ?? "http://127.0.0.1:8080").replace("localhost", "127.0.0.1"),
 		reuseExistingServer: !process.env.CI,
 		// Forward Spring Boot's stdout/stderr to Playwright's terminal. Default is `"ignore"`, which
 		// swallows the entire backend log — including the stack trace when the JVM fails to start.
