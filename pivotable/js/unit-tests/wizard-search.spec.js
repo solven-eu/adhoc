@@ -199,3 +199,86 @@ describe("filtered — waterfall ranking", () => {
 		expect(out2.map((c) => c.key)).not.toContain("Currency");
 	});
 });
+
+// ---------------------------------------------------------------------------------------------
+// historyScores — personal-history secondary sort. Three invariants to pin down so the feature
+// doesn't drift into making search worse:
+//   1. When two items share a text-match tier, the one with the higher history score wins.
+//   2. History NEVER pushes a worse-tier text match above a better-tier one.
+//   3. Absent / undefined / empty history degrades cleanly to the previous (matchScore, alpha)
+//      ordering — no regression for users with an empty store.
+// ---------------------------------------------------------------------------------------------
+describe("filtered — historyScores secondary sort", () => {
+	const columns = {
+		Currency: { tags: [], type: "varchar" },
+		LocalCurrency: { tags: [], type: "varchar" },
+		country: { tags: [], type: "varchar" },
+		ccy_rate: { tags: [], type: "double" },
+	};
+
+	test("no historyScores → previous alpha ordering inside the score-100 tier", () => {
+		const out = wizardHelper.filtered(opts(), columns, {});
+		expect(out.map((c) => c.key)).toEqual(["ccy_rate", "country", "Currency", "LocalCurrency"]);
+	});
+
+	test("history is IGNORED in the unfiltered (no-search) view — alpha stays stable", () => {
+		// Design rule: the default catalogue view must be lexicographical. Users build a mental
+		// map of where each column / measure lives in the alphabet; reordering it under their
+		// finger on every page load (as personal-history scoring would) erodes that mental map.
+		// History affinity is still surfaced via the per-row badge below — it just doesn't move
+		// the rows in the absence of search.
+		const history = new Map([
+			["country", 999], // huge usage signal
+			["LocalCurrency", 500],
+		]);
+		const out = wizardHelper.filtered(opts({ historyScores: history }), columns, {});
+		// Pure alpha — same as the "no historyScores" case above.
+		expect(out.map((c) => c.key)).toEqual(["ccy_rate", "country", "Currency", "LocalCurrency"]);
+		// But the per-row history score IS stamped so the row component can render the
+		// "used before" affordance regardless of sort order — discoverability over rearrangement.
+		expect(out.find((c) => c.key === "country")._historyScore).toBe(999);
+		expect(out.find((c) => c.key === "ccy_rate")._historyScore).toBe(0);
+	});
+
+	test("history breaks ties WHEN search is active", () => {
+		// Two items share the contains tier (substring 'cur' present case-sensitively → score 80).
+		// Without history, alpha would put currency_a first; history on currency_b flips the tier.
+		const corpus = {
+			currency_a: { tags: [], type: "varchar" },
+			currency_b: { tags: [], type: "varchar" },
+		};
+		const history = new Map([["currency_b", 50]]);
+		const out = wizardHelper.filtered(opts({ text: "cur", historyScores: history }), corpus, {});
+		expect(out[0].key).toBe("currency_b");
+		expect(out[1].key).toBe("currency_a");
+	});
+
+	test("history NEVER beats a stronger text-match", () => {
+		// Search "Currency": Currency=100 (exact), LocalCurrency=80 (contains). Even if the user
+		// has touched LocalCurrency 1000× and never touched Currency, the exact-match Currency
+		// must still surface first — history is a TIE-BREAKER, not a tier-jumper.
+		const history = new Map([["LocalCurrency", 1000]]);
+		const out = wizardHelper.filtered(opts({ text: "Currency", historyScores: history }), columns, {});
+		expect(out[0].key).toBe("Currency");
+		// LocalCurrency still appears (it's in the contains tier), just below.
+		expect(out.find((c) => c.key === "LocalCurrency")).toBeTruthy();
+	});
+
+	test("plain-object historyScores work the same as a Map (test convenience path)", () => {
+		// With NO search, alpha order wins regardless of history. Smoke-test the plain-object
+		// path: historyScoreOf must accept both — assert by inspecting the stamped score, not
+		// the order, since the no-search alpha behaviour swallows the boost.
+		const out = wizardHelper.filtered(opts({ historyScores: { country: 50 } }), columns, {});
+		expect(out.find((c) => c.key === "country")._historyScore).toBe(50);
+		// And with search ON, the plain-object boost participates in tie-breaking as expected.
+		// Same tier shape as the "history breaks ties" test above.
+		const out2 = wizardHelper.filtered(opts({ text: "cur", historyScores: { currency_b: 50 } }), { currency_a: {}, currency_b: {} }, {});
+		expect(out2[0].key).toBe("currency_b");
+	});
+
+	test("an unknown name gets historyScore 0 — never crashes, never reorders", () => {
+		const out = wizardHelper.filtered(opts({ historyScores: new Map([["does_not_exist", 999]]) }), columns, {});
+		// Same as the no-history case — the unknown-name entry doesn't pollute output.
+		expect(out.map((c) => c.key)).toEqual(["ccy_rate", "country", "Currency", "LocalCurrency"]);
+	});
+});

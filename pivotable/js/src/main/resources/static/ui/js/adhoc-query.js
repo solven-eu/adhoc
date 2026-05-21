@@ -1,5 +1,5 @@
 // @ts-check
-import { reactive, ref, watch, provide, onMounted, onUnmounted } from "vue";
+import { computed, reactive, ref, watch, provide, onMounted, onUnmounted } from "vue";
 
 import { Collapse } from "bootstrap";
 
@@ -7,6 +7,7 @@ import { mapState } from "pinia";
 import { useAdhocStore } from "./store-adhoc.js";
 
 import queryHelper from "./adhoc-query-helper.js";
+import { aggregateNamesByKind, useQueryHistoryStore } from "./adhoc-query-history-store.js";
 
 // Endpoint + cube headers are now shown in the navbar breadcrumb (see `adhoc-navbar.js`),
 // so neither AdhocEndpointHeader nor AdhocCubeHeader is mounted on the query page anymore.
@@ -24,6 +25,8 @@ import AdhocMeasuresDag from "./adhoc-measures-dag.js";
 import AdhocQueryWizardColumnFilterModalSingleton from "./adhoc-query-wizard-column-filter-modal-singleton.js";
 import AdhocQueryChatbot from "./adhoc-query-chatbot.js";
 import AdhocQueryPlanLive from "./adhoc-query-plan-live.js";
+import AdhocQueryHistoryChips from "./adhoc-query-history-chips.js";
+import AdhocQueryHistoryModal from "./adhoc-query-history-modal.js";
 
 import { defaultExecutorBus } from "./adhoc-executor-bus.js";
 
@@ -38,6 +41,8 @@ export default {
 		AdhocQueryWizardColumnFilterModalSingleton,
 		AdhocQueryChatbot,
 		AdhocQueryPlanLive,
+		AdhocQueryHistoryChips,
+		AdhocQueryHistoryModal,
 	},
 	// https://vuejs.org/guide/components/props.html
 	props: {
@@ -238,14 +243,53 @@ export default {
 		// not a live reference to the reactive queryModel.
 		const lastSuccessfulQuery = ref(null);
 
+		// Per-cube, persistent (localStorage) history graph. Phase 2: the wizard pickers
+		// consume the aggregated `historyScores` (computed below) to rank personally-frequented
+		// columns / measures higher within their text-match tier. The store accumulates one
+		// node per distinct executed query (content-hash dedup) and one edge per transition.
+		// See `adhoc-query-history-store.js` for the design.
+		const queryHistory = useQueryHistoryStore(props.cubeId);
+
+		// Reactive trigger for the computed `historyScores` below: incremented every time a
+		// new query is captured so consumers re-aggregate without us threading reactivity
+		// through the framework-agnostic store module. Starts at 0 — the initial `historyScores`
+		// computation already picks up whatever cumulative state is in localStorage.
+		const historyBump = ref(0);
+
 		watch(
 			() => tabularView.view,
 			(newView) => {
 				if (newView) {
-					lastSuccessfulQuery.value = queryHelper.queryModelToParsedJson(queryModel);
+					const snapshot = queryHelper.queryModelToParsedJson(queryModel);
+					lastSuccessfulQuery.value = snapshot;
+					// Capture executes-only: typing mid-edit in a filter modal never lands in the
+					// graph; only queries the user actually ran do. Defensive try/catch — the
+					// history store is a non-essential side cache and must not break the query
+					// flow if its localStorage backing trips on quota or shape corruption.
+					try {
+						queryHistory.recordExecutedQuery(snapshot);
+						historyBump.value++;
+					} catch (e) {
+						console.warn("Failed to record query into history graph", e);
+					}
 				}
 			},
 		);
+
+		// Aggregated personal-history scores per (kind, name), recomputed when `historyBump`
+		// ticks. Passed to the wizard so its filtered() pipeline uses them as a secondary
+		// sort key — items the user has touched float to the top of their text-match tier.
+		// The `void historyBump.value` access creates the reactive dep without using the
+		// value; Vue tracks it and re-runs the computed on every increment.
+		const historyScores = computed(() => {
+			void historyBump.value;
+			const snap = queryHistory.snapshot();
+			return {
+				columns: aggregateNamesByKind(snap, "column"),
+				measures: aggregateNamesByKind(snap, "measure"),
+				filterColumns: aggregateNamesByKind(snap, "filterColumn"),
+			};
+		});
 
 		const restoreLastSuccessfulQuery = function () {
 			if (!lastSuccessfulQuery.value) {
@@ -268,7 +312,10 @@ export default {
 		// <AdhocQuery>). The model→URL watcher below writes the hash via `history.pushState`,
 		// which bypasses vue-router; vue-router's reactive `currentRoute.value.hash` therefore
 		// stops tracking the real URL after the first edit. Read straight from
-		// `window.location.hash` via the helper so the hydration uses the authoritative source.
+		// `window.location.hash` via the helper so both hydration AND every subsequent compare
+		// use the authoritative source (window.location).
+		/** @type {((event: PopStateEvent) => void) | null} */
+		let popStateListener = null;
 		router.isReady().then(() => {
 			const currentHashDecoded = queryHelper.readUrlHash();
 
@@ -279,12 +326,15 @@ export default {
 			//
 			// The hash-equality guard serves two purposes:
 			//   1. Breaks the feedback loop between this watcher and the popstate
-			//      watcher below — when popstate restores queryModel from the URL,
+			//      listener below — when popstate restores queryModel from the URL,
 			//      the re-encoded hash matches the URL and we skip pushState.
 			//   2. Avoids duplicate history entries when a mutation leaves the
 			//      hash semantically unchanged.
 			watch(queryModel, async (newQueryModel) => {
-				const currentHashDecoded = router.currentRoute.value.hash;
+				// `window.location.hash` (via readUrlHash) is the authoritative source — see the
+				// staleness note above. `currentRoute.value.hash` would diverge after the first
+				// pushState and silently drop top-level hash fields like `v` on the next compare.
+				const currentHashDecoded = queryHelper.readUrlHash();
 
 				const newHash = queryHelper.queryModelToHash(currentHashDecoded, newQueryModel);
 
@@ -298,35 +348,33 @@ export default {
 				history.pushState({}, null, newUrl);
 			});
 
-			// Browser back/forward: vue-router updates `currentRoute.value.hash` on
-			// popstate, and we reflect that change into queryModel, which re-runs
-			// the query through the normal reactive pipeline.
+			// Browser back/forward: subscribe to the NATIVE popstate event rather than
+			// vue-router's reactive `currentRoute.value.hash`. The reactive hash desyncs
+			// once we start writing via `history.pushState` (see staleness note above) —
+			// `popstate` is the browser's authoritative signal and fires for every back/
+			// forward, regardless of whether the underlying entry was pushed by vue-router
+			// or by our raw `history.pushState` calls. Re-reads from `window.location.hash`
+			// via the same helper used at hydration so behaviour is symmetric.
 			//
 			// TODO Roadmap: this re-triggers a full query recomputation on every
 			// back/forward. A future improvement could cache previously-computed
 			// TabularViews by hash to restore instantly without a round-trip
 			// (at the cost of showing potentially stale data).
-			watch(
-				() => router.currentRoute.value.hash,
-				(newHash) => {
-					queryHelper.hashToQueryModel(newHash, queryModel);
-				},
-			);
+			popStateListener = () => {
+				queryHelper.hashToQueryModel(queryHelper.readUrlHash(), queryModel);
+			};
+			window.addEventListener("popstate", popStateListener);
 		});
 
-		// TODO This structure should be persisted in localStorage
-		const recentlyUsed = reactive({ columns: new Set(), measures: new Set() });
-		{
-			watch(queryModel, async (newQueryModel) => {
-				const columns = Object.keys(newQueryModel.selectedColumns || {});
-				// https://stackoverflow.com/questions/50881453/how-to-add-an-array-of-values-to-a-set
-				columns.forEach(recentlyUsed.columns.add, recentlyUsed.columns);
-
-				const measures = Object.keys(queryModel.selectedMeasures || {});
-				// https://stackoverflow.com/questions/50881453/how-to-add-an-array-of-values-to-a-set
-				measures.forEach(recentlyUsed.measures.add, recentlyUsed.measures);
-			});
-		}
+		// Remove the popstate listener when this component unmounts — otherwise an
+		// in-place remount (e.g. token-expiry + re-login) would stack a second listener
+		// on top of the first and run hashToQueryModel twice per back/forward click.
+		onUnmounted(() => {
+			if (popStateListener) {
+				window.removeEventListener("popstate", popStateListener);
+				popStateListener = null;
+			}
+		});
 
 		// SlickGrid requires a cssSelector
 		const domId = ref("slickgrid_" + Math.floor(Math.random() * 1024));
@@ -354,10 +402,31 @@ export default {
 			if (gridShared.scrollToRightEnd) gridShared.scrollToRightEnd();
 		};
 
+		// History modal + chips state. The modal lives at the page level so its z-index dance
+		// doesn't conflict with the wizard or grid. The chips strip lives just above the grid
+		// header. Both read from the same `useQueryHistoryStore(cubeId)` the wizard uses and
+		// react to the same `historyBump` counter so capture, autocomplete, suggestions, and
+		// the modal all see the same snapshot at the same time.
+		const historyModalShow = ref(false);
+		// A reactive snapshot of the CURRENT queryModel — recomputed when queryModel changes.
+		// Passed to the chips and modal so they can content-hash it to highlight the matching
+		// node / anchor their suggestions. Kept as a `computed` (not a ref the caller sets)
+		// so it's always consistent with the live model.
+		const currentSnapshot = computed(() => queryHelper.queryModelToParsedJson(queryModel));
+		const restoreFromHistory = (snap) => {
+			if (!snap) return;
+			queryHelper.parsedJsonToQueryModel(snap, queryModel);
+			tabularView.error = "";
+			tabularView.errorStack = null;
+		};
+		const openHistoryModal = () => {
+			historyModalShow.value = true;
+		};
+
 		return {
 			loading,
 			queryModel,
-			recentlyUsed,
+			historyScores,
 			tabularView,
 			domId,
 
@@ -373,6 +442,12 @@ export default {
 			onScrollToRightEnd,
 
 			executorBus,
+
+			historyBump,
+			historyModalShow,
+			currentSnapshot,
+			restoreFromHistory,
+			openHistoryModal,
 		};
 	},
 	template: /* HTML */ `
@@ -390,7 +465,7 @@ export default {
 			-->
 			<div :class="preferencesStore.wizardHidden ? 'd-none' : 'col-3'">
 				<div class="row">
-					<AdhocQueryWizard :endpointId="endpointId" :cubeId="cubeId" :queryModel="queryModel" :recentlyUsed="recentlyUsed" :loading="loading" />
+					<AdhocQueryWizard :endpointId="endpointId" :cubeId="cubeId" :queryModel="queryModel" :historyScores="historyScores" :loading="loading" />
 				</div>
 
 				<div class="row">
@@ -401,6 +476,7 @@ export default {
 						:tabularView="tabularView"
 						:loading="loading"
 						:executorBus="executorBus"
+						:openHistoryModal="openHistoryModal"
 					/>
 				</div>
 			</div>
@@ -460,6 +536,19 @@ export default {
 						+{{gridShared.offscreenColumnsRight}} more
 					</button>
 				</div>
+				<!--
+					Backtrack + forward suggestion chips, derived from the persistent per-cube
+					history graph. The dedicated "Browse history" button moved INTO the Submit
+					block (see AdhocQueryExecutor#openHistoryModal) — this row is now just the
+					chips strip and collapses to nothing when there's no signal yet.
+				-->
+				<AdhocQueryHistoryChips
+					class="mb-2"
+					:cubeId="cubeId"
+					:currentSnapshot="currentSnapshot"
+					:bumpVersion="historyBump"
+					@restore="restoreFromHistory"
+				/>
 				<AdhocQueryGrid
 					:tabularView="tabularView"
 					:loading="loading"
@@ -475,6 +564,14 @@ export default {
 			<AdhocMeasuresDag :measuresDagModel="measuresDagModel" />
 			<AdhocQueryWizardColumnFilterModalSingleton :columnFilterModel="columnFilterModel" />
 			<AdhocQueryChatbot :endpointId="endpointId" :cubeId="cubeId" />
+			<AdhocQueryHistoryModal
+				:show="historyModalShow"
+				:cubeId="cubeId"
+				:currentSnapshot="currentSnapshot"
+				:bumpVersion="historyBump"
+				@update:show="historyModalShow = $event"
+				@restore="restoreFromHistory"
+			/>
 		</div>
 	`,
 };

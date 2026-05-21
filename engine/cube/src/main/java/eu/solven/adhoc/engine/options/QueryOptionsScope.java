@@ -20,17 +20,16 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.factories;
+package eu.solven.adhoc.engine.options;
 
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.function.Supplier;
 
-import org.jspecify.annotations.Nullable;
-
 import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.options.IQueryOption;
+import lombok.experimental.UtilityClass;
 
 /**
  * Thread-scoped access to the executing query's options ({@code Set<IQueryOption>}). Sibling to
@@ -50,6 +49,7 @@ import eu.solven.adhoc.options.IQueryOption;
  *
  * @author Benoit Lacelle
  */
+@UtilityClass
 public final class QueryOptionsScope {
 
 	// Empty set used both as the bound value when callers pass null AND as the read-side default outside any scope.
@@ -58,10 +58,6 @@ public final class QueryOptionsScope {
 	private static final Set<IQueryOption> EMPTY = ImmutableSet.of();
 
 	private static final ScopedValue<Set<IQueryOption>> CURRENT_OPTIONS = ScopedValue.newInstance();
-
-	private QueryOptionsScope() {
-		// Utility class with static helpers only.
-	}
 
 	/**
 	 * Binds {@code options} as the current query's option set for the duration of {@code body} and returns the body's
@@ -79,7 +75,7 @@ public final class QueryOptionsScope {
 	 */
 	// Mirrors Callable.call's `throws Exception` to propagate the body's checked exceptions transparently.
 	@SuppressWarnings("PMD.SignatureDeclareThrowsException")
-	public static <R> R callWith(@Nullable Set<IQueryOption> options, Callable<R> body) throws Exception {
+	public static <R> R callWith(Set<IQueryOption> options, Callable<R> body) throws Exception {
 		Set<IQueryOption> bound;
 		if (options == null) {
 			bound = EMPTY;
@@ -101,7 +97,7 @@ public final class QueryOptionsScope {
 	 *            the body to run inside the scope
 	 * @return the value returned by {@code body}
 	 */
-	public static <R> R runWith(@Nullable Set<IQueryOption> options, Supplier<R> body) {
+	public static <R> R runWith(Set<IQueryOption> options, Supplier<R> body) {
 		try {
 			return callWith(options, body::get);
 		} catch (RuntimeException | Error e) {
@@ -134,7 +130,7 @@ public final class QueryOptionsScope {
 	 * @return {@code true} if the option is currently active
 	 */
 	public static boolean isActive(IQueryOption option) {
-		return current().contains(option);
+		return option.isActive(current());
 	}
 
 	/**

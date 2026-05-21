@@ -181,11 +181,45 @@ export default {
 		}
 	},
 
+	/**
+	 * Current URL/storage encoding version for the queryModel hash payload.
+	 *
+	 * <p><b>Semantics — `v` is a BREAKING-CHANGE marker, not a feature flag.</b>
+	 * Bump it only when the on-wire shape changes in a way an older reader could not handle
+	 * (e.g. renaming {@code measures} → {@code m}, restructuring {@code filter}, dropping a
+	 * required field). Adding a new OPTIONAL field with a sensible default does NOT warrant
+	 * a bump — older readers ignore it, newer readers treat absence as default.
+	 *
+	 * <p>Each bump requires {@link #hashToQueryModel} to either understand both shapes (one-step
+	 * migration in-place) or refuse the unknown shape cleanly via the "unknown v" branch.
+	 *
+	 * @type {number}
+	 */
+	URL_HASH_VERSION: 1,
+
 	hashToQueryModel: function (currentHashDecoded, queryModel) {
 		// Restore queryModel from URL hash
 		if (currentHashDecoded && currentHashDecoded.startsWith("#")) {
 			try {
 				const currentHashObject = JSON.parse(currentHashDecoded.substring(1));
+
+				// `v` is the breaking-change marker; see URL_HASH_VERSION for the policy.
+				// Missing `v` is treated as v: 1 — covers legacy URLs in chat/email/bookmarks
+				// produced before the marker was introduced. An UNKNOWN v (greater than what
+				// this client understands) means the URL was minted by a newer client; we
+				// refuse to parse it rather than partial-restore from a shape we don't grok.
+				const hashVersion = currentHashObject.v ?? this.URL_HASH_VERSION;
+				if (hashVersion > this.URL_HASH_VERSION) {
+					console.warn(
+						"URL hash carries v=" +
+							hashVersion +
+							" but this client only understands v=" +
+							this.URL_HASH_VERSION +
+							"; leaving queryModel at defaults. The link was probably produced by a newer Pivotable build.",
+					);
+					return;
+				}
+
 				const queryModelFromHash = currentHashObject.query;
 
 				this.parsedJsonToQueryModel(queryModelFromHash, queryModel);
@@ -203,6 +237,9 @@ export default {
 		} else {
 			currentHashObject = {};
 		}
+		// Stamp the version on every emit — keeps the hash self-describing even when the
+		// inbound hash was a legacy/unversioned one. See URL_HASH_VERSION for the policy.
+		currentHashObject.v = this.URL_HASH_VERSION;
 		currentHashObject.query = this.queryModelToParsedJson(queryModel);
 
 		console.debug("Saving queryModel to hash", JSON.stringify(queryModel));

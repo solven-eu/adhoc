@@ -18,6 +18,14 @@ export default {
 			type: Object,
 			required: true,
 		},
+		// When true, suppress the component's own "Favorite" trigger button — used by the
+		// consolidated dropdown wrapper (`adhoc-query-favorites-menu.js`) that opens this
+		// component's modal (#queryFavorite) via its OWN single dropdown trigger. The modal
+		// element stays in the DOM so the wrapper's data-bs-target binding still resolves.
+		hideTrigger: {
+			type: Boolean,
+			default: false,
+		},
 	},
 	setup(props) {
 		const preferencesStore = usePreferencesStore();
@@ -74,8 +82,10 @@ export default {
 		};
 	},
 	template: /* HTML */ `
-        <!-- Button trigger modal -->
-        <button type="button" class="btn btn-primary  btn-sm" data-bs-toggle="modal" data-bs-target="#queryFavorite">
+        <!-- Button trigger modal — suppressed by hideTrigger when this component is hosted
+             inside the consolidated favorites-menu wrapper (the wrapper provides its own
+             trigger and opens this modal via data-bs-target). -->
+        <button v-if="!hideTrigger" type="button" class="btn btn-primary  btn-sm" data-bs-toggle="modal" data-bs-target="#queryFavorite">
             Favorite
 
             <span v-if="preferencesStore.hasUnsavedChanges(queryModel)"> * </span>

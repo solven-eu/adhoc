@@ -9,6 +9,13 @@ export default {
 			type: Object,
 			required: true,
 		},
+		// See `adhoc-query-favorite.js#hideTrigger` — same contract: when true, suppress this
+		// component's own "Favorites" trigger button so the consolidated wrapper can supply
+		// a single dropdown trigger that opens either modal.
+		hideTrigger: {
+			type: Boolean,
+			default: false,
+		},
 	},
 	setup(props) {
 		const preferencesStore = usePreferencesStore();
@@ -119,8 +126,8 @@ export default {
 		};
 	},
 	template: /* HTML */ `
-		<!-- Button trigger modal -->
-		<button type="button" class="btn btn-primary  btn-sm" data-bs-toggle="modal" data-bs-target="#queryFavorites">Favorites</button>
+		<!-- Button trigger modal — suppressed by hideTrigger when hosted in the consolidated wrapper. -->
+		<button v-if="!hideTrigger" type="button" class="btn btn-primary  btn-sm" data-bs-toggle="modal" data-bs-target="#queryFavorites">Favorites</button>
 
 		<!--
 			Teleport the modal to body. This component is rendered inside the floating Submit

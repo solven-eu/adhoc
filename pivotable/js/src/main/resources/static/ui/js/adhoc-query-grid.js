@@ -1058,7 +1058,16 @@ export default {
 			<AdhocCellModal :queryModel="queryModel" :clickedCell="clickedCell" :cube="cube" />
 			<AdhocMeasureStatsModal :statsModel="measureStatsModel" :formatOptions="formatOptions" />
 
-			<span style="width:100%;" class="position-relative">
+			<!--
+				Block-level positioned wrapper. Previously a span element, which is inline by
+				default — its width:100% was ignored, so the wrapper's bounding box collapsed
+				to its content. When SlickGrid resets after the user removes every column, the
+				inner domId div shrinks to ~0px, which dragged the wrapper with it, and the
+				absolutely-positioned empty-state hint below (start-50 translate-middle) ended
+				up centered inside a zero-width box — stuck to the left edge. A block-level
+				wrapper takes the full column width regardless of content state.
+			-->
+			<div style="width:100%;" class="position-relative">
 				<div :id="domId" class="adhoc-grid-fill slickgrid-grid"></div>
 
 				<!--
@@ -1095,7 +1104,7 @@ export default {
 						</div>
 					</div>
 				</div>
-			</span>
+			</div>
 			<div hidden>props.tabularView.loading={{tabularView.loading}}</div>
 			<AdhocGridTimingsBar :tabularView="tabularView" />
 			<AdhocGridControls :dataArray="data.array" :formatOptions="formatOptions" />

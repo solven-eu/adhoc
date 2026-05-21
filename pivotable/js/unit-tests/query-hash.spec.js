@@ -56,10 +56,17 @@ test("loadQueryModelFromHash - from 2 columns", () => {
 		throw new Error("Should starts with '#'");
 	}
 
+	// `v: 1` is stamped on every emit — it's the breaking-change marker that lets future
+	// clients identify legacy URL payloads. See `URL_HASH_VERSION` Javadoc for the bump policy.
 	expect(newHash).toEqual(
-		"#" + encodeURIComponent(JSON.stringify({ query: { columns: ["c1"], withStarColumns: {}, measures: [], filter: {}, customMarkers: {}, options: [] } })),
+		"#" +
+			encodeURIComponent(
+				JSON.stringify({
+					v: 1,
+					query: { columns: ["c1"], withStarColumns: {}, measures: [], filter: {}, customMarkers: {}, options: [] },
+				}),
+			),
 	);
-	// ("#%7B%22query%22%3A%7B%22columns%22%3A%5B%5D%2C%22withStarColumns%22%3A%7B%7D%2C%22measures%22%3A%5B%5D%2C%22filter%22%3A%7B%7D%2C%22customMarkers%22%3A%7B%7D%2C%22options%22%3A%5B%5D%7D%7D");
 
 	const reloadedQueryModel = queryHelper.makeQueryModel();
 	queryHelper.hashToQueryModel(decodeURIComponent(newHash), reloadedQueryModel);
@@ -118,4 +125,55 @@ test("readUrlHash: falls back to raw on a malformed URI sequence", () => {
 	// `decodeURIComponent` throws on a lone `%` — make sure the helper doesn't propagate that.
 	const raw = "#oops%invalid";
 	expect(queryHelper.readUrlHash({ location: { hash: raw } })).toBe(raw);
+});
+
+// ---------------------------------------------------------------------------------------------
+// URL_HASH_VERSION — the breaking-change marker stamped on every emitted hash and consulted by
+// `hashToQueryModel`. Three behaviours to guard against regression:
+//   1. Stamp on emit: the current client always writes `v: URL_HASH_VERSION` at the outer level.
+//   2. Tolerant read of legacy unversioned URLs: missing `v` is treated as the current version
+//      so links produced before the marker was introduced still resolve.
+//   3. Refusal to half-restore from a future shape: an unknown future `v` bails out, leaving
+//      queryModel at defaults rather than silently importing a partially-understood payload.
+// ---------------------------------------------------------------------------------------------
+test("URL_HASH_VERSION: queryModelToHash stamps the current version", () => {
+	const model = queryHelper.makeQueryModel();
+	const hash = queryHelper.queryModelToHash(undefined, model);
+	const decoded = JSON.parse(decodeURIComponent(hash.substring(1)));
+	expect(decoded.v).toBe(queryHelper.URL_HASH_VERSION);
+});
+
+test("URL_HASH_VERSION: legacy unversioned URL is accepted as if v=current", () => {
+	// A hash produced before the `v` marker was introduced — no `v` key at the outer object level.
+	const legacy = "#" + encodeURIComponent(JSON.stringify({ query: { columns: ["legacyCol"], measures: [], filter: {}, customMarkers: {}, options: [] } }));
+	const restored = queryHelper.makeQueryModel();
+	queryHelper.hashToQueryModel(decodeURIComponent(legacy), restored);
+	expect(restored.selectedColumns).toEqual({ legacyCol: true });
+});
+
+test("URL_HASH_VERSION: unknown future v leaves queryModel at defaults", () => {
+	const future =
+		"#" +
+		encodeURIComponent(
+			JSON.stringify({
+				v: queryHelper.URL_HASH_VERSION + 99,
+				// Even if `query` is syntactically valid for the current shape, we refuse to import
+				// it — the future client may have changed semantics underneath that we can't see.
+				query: { columns: ["someCol"], measures: [], filter: {}, customMarkers: {}, options: [] },
+			}),
+		);
+	const restored = queryHelper.makeQueryModel();
+	queryHelper.hashToQueryModel(decodeURIComponent(future), restored);
+	expect(restored.selectedColumns).toEqual({});
+});
+
+test("URL_HASH_VERSION: legacy URL is auto-upgraded to versioned on next emit", () => {
+	// Realistic round-trip: user opens a legacy link → query is restored → user edits something →
+	// the new hash carries the current `v`. No explicit migration step needed.
+	const legacy = "#" + encodeURIComponent(JSON.stringify({ query: { columns: ["a"], measures: [], filter: {}, customMarkers: {}, options: [] } }));
+	const restored = queryHelper.makeQueryModel();
+	queryHelper.hashToQueryModel(decodeURIComponent(legacy), restored);
+	const reemitted = queryHelper.queryModelToHash(decodeURIComponent(legacy), restored);
+	const decoded = JSON.parse(decodeURIComponent(reemitted.substring(1)));
+	expect(decoded.v).toBe(queryHelper.URL_HASH_VERSION);
 });
