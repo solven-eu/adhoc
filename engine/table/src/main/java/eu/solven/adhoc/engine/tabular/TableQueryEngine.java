@@ -91,6 +91,7 @@ import eu.solven.adhoc.engine.tabular.optimizer.ITableQueryFactory;
 import eu.solven.adhoc.engine.tabular.optimizer.SplitTableQueries;
 import eu.solven.adhoc.engine.tabular.optimizer.TableQueryV4Merger;
 import eu.solven.adhoc.eventbus.AdhocEventBusHelpersUnsafe;
+import eu.solven.adhoc.eventbus.AdhocEventsFromGuavaEventBusToSfl4j;
 import eu.solven.adhoc.eventbus.AdhocLogEvent;
 import eu.solven.adhoc.eventbus.IAdhocEventBus;
 import eu.solven.adhoc.eventbus.QueryStepIsCompleted;
@@ -782,19 +783,26 @@ public class TableQueryEngine implements ITableQueryEngine {
 			Map<TableQueryStep, ICuboid> oneQueryStepToValues) {
 		boolean isExplain = queryPod.isDebugOrExplain();
 
+		// Atomic EXPLAIN emission: the header ("/-- N inducers from ...") and the per-step rows are
+		// collected into a single buffer and posted as ONE AdhocLogEvent. Posting per-step events
+		// would let the SLF4J sink interleave rows from concurrent table queries, scrambling the
+		// ASCII-art block. Same rationale and downstream contract as DagExplainer.
+		StringBuilder explainLines = null;
 		if (isExplain) {
-			eventBus.post(AdhocLogEvent.builder()
-					.debug(queryPod.isDebug())
-					.explain(queryPod.isExplain())
-					.message("/-- %s inducers from %s".formatted(oneQueryStepToValues.size(), toPerfLog(tableQuery)))
-					.source(this)
-					.build());
+			explainLines = new StringBuilder();
+			explainLines.append("/-- ")
+					.append(oneQueryStepToValues.size())
+					.append(" inducers from ")
+					.append(toPerfLog(tableQuery));
 		}
 
 		int lastStepIndex = oneQueryStepToValues.size() - 1;
 		AtomicInteger queryStepIndex = new AtomicInteger();
 
-		oneQueryStepToValues.forEach((queryStep, column) -> {
+		for (Map.Entry<TableQueryStep, ICuboid> entry : oneQueryStepToValues.entrySet()) {
+			TableQueryStep queryStep = entry.getKey();
+			ICuboid column = entry.getValue();
+
 			eventBus.post(QueryStepIsCompleted.builder()
 					.querystep(queryStep)
 					.nbCells(column.size())
@@ -808,21 +816,20 @@ public class TableQueryEngine implements ITableQueryEngine {
 
 			if (isExplain) {
 				boolean isLast = queryStepIndex.getAndIncrement() == lastStepIndex;
-
-				String template;
-				if (isLast) {
-					template = "\\-- step %s";
-				} else {
-					template = "|\\- step %s";
-				}
-				eventBus.post(AdhocLogEvent.builder()
-						.debug(queryPod.isDebug())
-						.explain(queryPod.isExplain())
-						.message(template.formatted(toPerfLog(queryStep)))
-						.source(this)
-						.build());
+				String template = isLast ? "\\-- step %s" : "|\\- step %s";
+				explainLines.append(AdhocEventsFromGuavaEventBusToSfl4j.EOL)
+						.append(template.formatted(toPerfLog(queryStep)));
 			}
-		});
+		}
+
+		if (isExplain) {
+			eventBus.post(AdhocLogEvent.builder()
+					.debug(queryPod.isDebug())
+					.explain(queryPod.isExplain())
+					.message(explainLines.toString())
+					.source(this)
+					.build());
+		}
 	}
 
 	/**

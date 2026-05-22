@@ -39,6 +39,7 @@ import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.ICubeQuery;
 import eu.solven.adhoc.engine.step.ICubeQueryStep;
 import eu.solven.adhoc.engine.tabular.optimizer.IHasDagFromInducedToInducer;
+import eu.solven.adhoc.eventbus.AdhocEventsFromGuavaEventBusToSfl4j;
 import eu.solven.adhoc.eventbus.AdhocLogEvent;
 import eu.solven.adhoc.eventbus.AdhocLogEvent.AdhocLogEventBuilder;
 import eu.solven.adhoc.eventbus.IAdhocEventBus;
@@ -132,7 +133,15 @@ public class DagExplainer implements IDagExplainer {
 
 		DagExplainerState state = newDagExplainerState(queryId, dag);
 
-		printStepAndUnderlyings(state, FAKE_ROOT, Optional.empty(), true);
+		// Atomic emission: every step is appended to a single buffer, then the whole tree is posted
+		// as ONE AdhocLogEvent. Posting per-step events lets the slf4j sink interleave rows from
+		// concurrent explains on the same logger, scrambling the ASCII-art DAG. The downstream
+		// listener (`AdhocEventsFromGuavaEventBusToSfl4j.printLogEvent`) already splits multi-line
+		// EXPLAIN messages back into one log line per row, so the final SLF4J output is unchanged.
+		StringBuilder lines = new StringBuilder();
+		printStepAndUnderlyings(state, FAKE_ROOT, Optional.empty(), true, lines);
+
+		eventBus.post(openEventBuilder().message(lines.toString()).build());
 	}
 
 	protected void shortExplain(AdhocQueryId queryId, IHasDagFromInducedToInducer dag) {
@@ -163,18 +172,26 @@ public class DagExplainer implements IDagExplainer {
 	}
 
 	/**
-	 * 
+	 * Appends one row per step to {@code lines} (depth-first), with ASCII-art indentation. The caller (see
+	 * {@link #explain}) wraps the accumulated buffer into a single {@link AdhocLogEvent}.
+	 *
 	 * @param dagState
+	 *            mutable indentation/reference state shared across the recursion
 	 * @param step
-	 *            currently show queryStep
+	 *            currently shown queryStep
 	 * @param optParent
+	 *            parent step in the recursion (empty for {@link #FAKE_ROOT})
 	 * @param isLast
-	 *            true if this step is the last amongst its siblings.
+	 *            true if this step is the last amongst its siblings
+	 * @param lines
+	 *            output buffer; one row is appended per visited step, separated by
+	 *            {@link AdhocEventsFromGuavaEventBusToSfl4j#EOL}
 	 */
 	protected void printStepAndUnderlyings(DagExplainerState dagState,
 			ICubeQueryStep step,
 			Optional<ICubeQueryStep> optParent,
-			boolean isLast) {
+			boolean isLast,
+			StringBuilder lines) {
 		boolean isReferenced;
 		{
 			String indentation;
@@ -205,8 +222,10 @@ public class DagExplainer implements IDagExplainer {
 
 			String additionalStepInfo = additionalInfo(dagState, step, indentation, isLast, isReferenced);
 
-			eventBus.post(openEventBuilder().message("%s%s%s".formatted(indentation, stepAsString, additionalStepInfo))
-					.build());
+			if (lines.length() > 0) {
+				lines.append(AdhocEventsFromGuavaEventBusToSfl4j.EOL);
+			}
+			lines.append(indentation).append(stepAsString).append(additionalStepInfo);
 		}
 
 		if (!isReferenced) {
@@ -216,7 +235,7 @@ public class DagExplainer implements IDagExplainer {
 				ICubeQueryStep underlyingStep = underlyings.get(i);
 
 				boolean isLastUnderlying = i == underlyings.size() - 1;
-				printStepAndUnderlyings(dagState, underlyingStep, Optional.of(step), isLastUnderlying);
+				printStepAndUnderlyings(dagState, underlyingStep, Optional.of(step), isLastUnderlying, lines);
 			}
 		}
 	}

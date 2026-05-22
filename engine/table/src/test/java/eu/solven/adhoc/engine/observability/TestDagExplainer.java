@@ -163,4 +163,33 @@ public class TestDagExplainer implements IAdhocTestConstants {
 				|\\- !2
 				\\-- !3""");
 	}
+
+	// Regression: a single .explain() call must post a SINGLE AdhocLogEvent carrying the whole tree
+	// (one message line per step, joined by EOL). Multiple events would interleave with events from
+	// concurrent queries in the same eventBus, scrambling the ASCII-art DAG in the logs.
+	@Test
+	public void testExplain_singleEventPerCall() {
+		DagExplainer dagExplainer = DagExplainer.builder().eventBus(eventBus::post).build();
+
+		Aggregator k1 = Aggregator.sum("k1");
+		Aggregator k2 = Aggregator.sum("k2");
+		IMeasure sumK1K2 = ObservabilityCombinator.sum(k1.getName(), k2.getName());
+		Set<IMeasure> measures = ImmutableSet.<IMeasure>builder().add(k1, k2, sumK1K2).build();
+
+		IQueryPod queryPod = SimpleQueryPod.builder()
+				.table(InMemoryTable.builder().build())
+				.query(CubeQuery.builder().build())
+				.forest(UnsafeMeasureForest.fromMeasures(this.getClass().getSimpleName(), measures).build())
+				.build();
+		IQueryStepsDagBuilder builder = QueryStepsDagBuilder.make(AdhocFactories.builder().build(), queryPod);
+
+		builder.registerRootWithDescendants(Set.of(sumK1K2));
+
+		dagExplainer.explain(AdhocQueryIds.from("someCube", CubeQuery.builder().measure("m").build()),
+				builder.getQueryDag());
+
+		// Three step rows + the FAKE_ROOT header — but exactly ONE AdhocLogEvent carrying them all.
+		Assertions.assertThat(messagesExplain).hasSize(1);
+		Assertions.assertThat(messagesExplain.get(0).split(System.lineSeparator())).hasSize(4);
+	}
 }
