@@ -178,7 +178,7 @@ public class TestDagAggregations_RatioPairOfCountry extends ATestDagInMemory {
 		}
 
 		Assertions.assertThat(String.join("\n", messages))
-				.isEqualTo(
+				.isEqualToNormalizingNewlines(
 						"""
 								/-- #0 c=inMemory id=00000000-0000-0000-0000-000000000000
 								\\-- #1 m=FRoverUS(Combinator[DIVIDE]) filter=matchAll groupBy=grandTotal

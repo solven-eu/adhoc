@@ -319,7 +319,7 @@ public class TestDagTableQuery_DuckDb_CompositeCube extends ATestDagDuckDb imple
 				.hasSize(1);
 
 		Assertions.assertThat(String.join("\n", messages))
-				.isEqualTo(
+				.isEqualToNormalizingNewlines(
 						"""
 								/-- #0 c=composite id=00000000-0000-0000-0000-000000000000
 								\\-- #1 m=k1PlusK2AsExpr(Combinator[EXPRESSION]) filter=b==b1 groupBy=grandTotal

@@ -209,7 +209,7 @@ public class TestDagCubeQueryFx extends ATestDagInMemory implements IAdhocTestCo
 		cube().execute(CubeQuery.builder().measure(mName).customMarker(Optional.of("JPY")).explain(true).build());
 
 		Assertions.assertThat(String.join("\n", messages))
-				.isEqualTo(
+				.isEqualToNormalizingNewlines(
 						"""
 								/-- #0 c=inMemory id=00000000-0000-0000-0000-000000000000
 								\\-- #1 m=k1.CCY(Partitionor[FX][eu.solven.adhoc.measure.sum.SumElseSetAggregation]) filter=matchAll groupBy=grandTotal customMarker=JPY
@@ -237,7 +237,7 @@ public class TestDagCubeQueryFx extends ATestDagInMemory implements IAdhocTestCo
 				.build());
 
 		Assertions.assertThat(String.join("\n", messages))
-				.isEqualTo(
+				.isEqualToNormalizingNewlines(
 						"""
 								/-- #0 c=inMemory id=00000000-0000-0000-0000-000000000000
 								\\-- #1 m=k1.CCY(Partitionor[FX][eu.solven.adhoc.measure.sum.SumElseSetAggregation]) filter=color==red groupBy=(letter) customMarker=JPY

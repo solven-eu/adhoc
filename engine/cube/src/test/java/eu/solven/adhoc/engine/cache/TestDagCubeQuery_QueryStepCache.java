@@ -139,7 +139,7 @@ public class TestDagCubeQuery_QueryStepCache extends ATestDagInMemory implements
 			});
 		}
 		Assertions.assertThat(String.join("\n", messages))
-				.isEqualTo(
+				.isEqualToNormalizingNewlines(
 						"""
 								/-- #0 c=inMemory id=00000000-0000-0000-0000-000000000000
 								\\-- #1 m=k1PlusK2AsExpr(Combinator[EXPRESSION]) filter=matchAll groupBy=grandTotal
@@ -188,7 +188,7 @@ public class TestDagCubeQuery_QueryStepCache extends ATestDagInMemory implements
 			});
 		}
 		Assertions.assertThat(String.join("\n", messages))
-				.isEqualTo(
+				.isEqualToNormalizingNewlines(
 						"""
 								/-- #0 c=inMemory id=00000000-0000-0000-0000-000000000000
 								\\-- #1 m=k1PlusK2AsExpr(Combinator[EXPRESSION]) filter=matchAll groupBy=grandTotal
@@ -199,7 +199,9 @@ public class TestDagCubeQuery_QueryStepCache extends ATestDagInMemory implements
 								/-- #0 t=inMemory id=00000000-0000-0000-0000-000000000001 (parentId=00000000-0000-0000-0000-000000000000)
 								\\-- #1 m=k2(SUM) filter=matchAll groupBy=grandTotal""");
 
-		Assertions.assertThat(messages).hasSize(4 + 2 + 2);
+		// 1 event for the cube DagExplainer tree, 1 for the table-query "inducers from" + "step" report
+		// from TableQueryEngine (header + steps collapsed into a single event), 1 for the table DagExplainer tree.
+		Assertions.assertThat(messages).hasSize(1 + 1 + 1);
 	}
 
 }
