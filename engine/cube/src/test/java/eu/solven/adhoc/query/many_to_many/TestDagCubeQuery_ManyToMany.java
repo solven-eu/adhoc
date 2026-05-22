@@ -349,7 +349,7 @@ public class TestDagCubeQuery_ManyToMany extends ATestDagInMemory implements IAd
 		}
 
 		Assertions.assertThat(String.join("\n", messages))
-				.isEqualTo(
+				.isEqualToNormalizingNewlines(
 						"""
 								/-- #0 c=inMemory id=00000000-0000-0000-0000-000000000000
 								\\-- #1 m=k1.dispatched(Dispatchor[eu.solven.adhoc.measure.decomposition.many2many.ManyToMany1DDecomposition][SUM]) filter=matchAll groupBy=(country_groups)
