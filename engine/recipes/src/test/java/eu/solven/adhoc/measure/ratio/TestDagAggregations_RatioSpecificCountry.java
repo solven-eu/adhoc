@@ -129,7 +129,7 @@ public class TestDagAggregations_RatioSpecificCountry extends ATestDagInMemory {
 		}
 
 		Assertions.assertThat(String.join("\n", messages))
-				.isEqualTo(
+				.isEqualToNormalizingNewlines(
 						"""
 								/-- #0 c=inMemory id=00000000-0000-0000-0000-000000000000
 								\\-- #1 m=d_country=FR_ratio(Combinator[DIVIDE]) filter=color==blue groupBy=grandTotal

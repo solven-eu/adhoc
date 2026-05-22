@@ -161,7 +161,7 @@ public class TestDagAggregations_RatioCurrentCountry extends ATestDagInMemory {
 		}
 
 		Assertions.assertThat(String.join("\n", messages))
-				.isEqualTo(
+				.isEqualToNormalizingNewlines(
 						"""
 								/-- #0 c=inMemory id=00000000-0000-0000-0000-000000000000
 								\\-- #1 m=d_country=current_ratio(Columnator[SUM]) filter=country==US groupBy=grandTotal
@@ -195,7 +195,7 @@ public class TestDagAggregations_RatioCurrentCountry extends ATestDagInMemory {
 		}
 
 		Assertions.assertThat(String.join("\n", messages))
-				.isEqualTo(
+				.isEqualToNormalizingNewlines(
 						"""
 								/-- #0 c=inMemory id=00000000-0000-0000-0000-000000000000
 								|\\- #1 m=d(SUM) filter=country==US groupBy=grandTotal
