@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.assertj.core.api.Assertions;
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Test;
 
 import com.google.common.collect.ImmutableSet;
@@ -101,9 +102,11 @@ public class TestDagExplainer implements IAdhocTestConstants {
 		dagExplainer.explain(AdhocQueryIds.from("someCube", CubeQuery.builder().measure("m").build()),
 				builder.getQueryDag());
 
-		Assertions.assertThat(String.join("\n", messagesExplain)).isEqualTo("""
-				/-- #0 c=someCube id=00000000-0000-0000-0000-000000000000
-				\\-- #1 m=k(SUM) filter=matchAll groupBy=grandTotal""");
+		Assertions.assertThat(messagesExplain)
+				.singleElement(InstanceOfAssertFactories.STRING)
+				.isEqualToNormalizingNewlines("""
+						/-- #0 c=someCube id=00000000-0000-0000-0000-000000000000
+						\\-- #1 m=k(SUM) filter=matchAll groupBy=grandTotal""");
 	}
 
 	@Test
@@ -127,11 +130,13 @@ public class TestDagExplainer implements IAdhocTestConstants {
 		dagExplainer.explain(AdhocQueryIds.from("someCube", CubeQuery.builder().measure("m").build()),
 				builder.getQueryDag());
 
-		Assertions.assertThat(String.join("\n", messagesExplain)).isEqualTo("""
-				/-- #0 c=someCube id=00000000-0000-0000-0000-000000000000
-				\\-- #1 m=observability(k1,k2)(ObservabilityCombinator[SUM]) filter=matchAll groupBy=grandTotal
-				    |\\- #2 m=k1(SUM) filter=matchAll groupBy=grandTotal
-				    \\-- #3 m=k2(SUM) filter=matchAll groupBy=grandTotal""");
+		Assertions.assertThat(messagesExplain)
+				.singleElement(InstanceOfAssertFactories.STRING)
+				.isEqualToNormalizingNewlines("""
+						/-- #0 c=someCube id=00000000-0000-0000-0000-000000000000
+						\\-- #1 m=observability(k1,k2)(ObservabilityCombinator[SUM]) filter=matchAll groupBy=grandTotal
+						    |\\- #2 m=k1(SUM) filter=matchAll groupBy=grandTotal
+						    \\-- #3 m=k2(SUM) filter=matchAll groupBy=grandTotal""");
 	}
 
 	@Test
@@ -155,13 +160,15 @@ public class TestDagExplainer implements IAdhocTestConstants {
 		dagExplainer.explain(AdhocQueryIds.from("someCube", CubeQuery.builder().measure("m").build()),
 				builder.getQueryDag());
 
-		Assertions.assertThat(String.join("\n", messagesExplain)).isEqualTo("""
-				/-- #0 c=someCube id=00000000-0000-0000-0000-000000000000
-				|\\- #1 m=observability(k1,k2)(ObservabilityCombinator[SUM]) filter=matchAll groupBy=grandTotal
-				|   |\\- #2 m=k1(SUM) filter=matchAll groupBy=grandTotal
-				|   \\-- #3 m=k2(SUM) filter=matchAll groupBy=grandTotal
-				|\\- !2
-				\\-- !3""");
+		Assertions.assertThat(messagesExplain)
+				.singleElement(InstanceOfAssertFactories.STRING)
+				.isEqualToNormalizingNewlines("""
+						/-- #0 c=someCube id=00000000-0000-0000-0000-000000000000
+						|\\- #1 m=observability(k1,k2)(ObservabilityCombinator[SUM]) filter=matchAll groupBy=grandTotal
+						|   |\\- #2 m=k1(SUM) filter=matchAll groupBy=grandTotal
+						|   \\-- #3 m=k2(SUM) filter=matchAll groupBy=grandTotal
+						|\\- !2
+						\\-- !3""");
 	}
 
 	// Regression: a single .explain() call must post a SINGLE AdhocLogEvent carrying the whole tree
