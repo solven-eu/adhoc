@@ -33,6 +33,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.stream.IntStream;
 
@@ -428,7 +430,12 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 			log.info("[EXPLAIN] stepDag loaded {} steps from cache", queryStepToValues.size());
 		}
 
-		// Add values from table
+		IQueryStepCache queryStepCache = queryPod.getQueryStepCache();
+
+		// Add values from table. They are freshly computed (came straight from the table) so we push
+		// them to the cache eagerly here. Doing it before `walkUpDag` lets the per-step pruning that
+		// happens during the walk safely remove them from `queryStepToValues` once all consumers are
+		// done — the cache already holds a reference, so the eviction policy belongs to the cache.
 		executeTableQueries(queryPod, queryStepsDag).forEach((tableStep, cuboid) -> {
 			CubeQueryStep cubeStep = CubeQueryStep.edit(tableStep).build();
 			ICuboid previousCuboid = queryStepToValues.put(cubeStep, cuboid);
@@ -440,6 +447,7 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 						previousCuboid.size(),
 						cuboid.size());
 			}
+			queryStepCache.pushValue(cubeStep, cuboid, queryStepsDag.getStepToCost().get(cubeStep));
 		});
 
 		if (queryPod.isDebugOrExplain()) {
@@ -452,8 +460,6 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 
 		walkUpDag(queryPod, queryStepsDag, queryStepToValues);
 
-		registerResultsToCache(queryPod.getQueryStepCache(), queryStepsDag, queryStepToValues);
-
 		eventBus.post(AdhocQueryPhaseIsCompleted.builder().phase("transform").source(this).build());
 
 		ITabularView tabularView = toTabularView(queryPod, queryStepsDag, queryStepToValues);
@@ -461,30 +467,6 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 		eventBus.post(AdhocQueryPhaseIsCompleted.builder().phase("view").source(this).build());
 
 		return tabularView;
-	}
-
-	protected void registerResultsToCache(IQueryStepCache queryStepCache,
-			QueryStepsDag queryStepsDag,
-			Map<CubeQueryStep, ICuboid> queryStepToValues) {
-		// TODO Improve policy to detect which node should be put in cache
-		// Typically, we may prefer high-level measure not to go through large chunk of steps. We may also keep in cache
-		// steps which were slow to be computed.
-		// BEWARE This mono-threaded iteration helps pushing into cache with a specific order, given the `stepToValues`
-		// is typically a ConcurrenthashMap, hence with indeterministic order.
-		queryStepsDag.iteratorFromInducerToInduced().forEachRemaining(step -> {
-			if (queryStepsDag.getStepToValues().containsKey(step)) {
-				log.debug("Do not add an entry already in cache");
-				// Else it may force keeping the entry
-			} else {
-				SizeAndDuration cost = queryStepsDag.getStepToCost().get(step);
-				ICuboid value = queryStepToValues.get(step);
-				if (value == null) {
-					log.debug("This happens in {}", StandardQueryOptions.DRILLTHROUGH);
-				} else {
-					queryStepCache.pushValue(step, value, cost);
-				}
-			}
-		});
 	}
 
 	protected Map<TableQueryStep, ICuboid> executeTableQueries(QueryPod queryPod, QueryStepsDag queryStepsDag) {
@@ -539,9 +521,22 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 			return;
 		}
 
+		// Pruning bookkeeping: per-step counter of "remaining consumers" (i.e. downstream induceds
+		// that still need to read this step's cuboid). Initialised from the DAG's incoming-edge
+		// count on the multigraph (multi-edges included). Each `onQueryStep` decrements the counter
+		// for its underlyings; when one hits zero the underlying's cuboid is dropped from
+		// `queryStepToValues` so the GC can reclaim it before the whole walk finishes. Without
+		// this, a long chain of same-cardinality combinators accumulates every intermediate cuboid
+		// in memory and runs out of heap on large groupBy cardinalities.
+		ConcurrentMap<CubeQueryStep, AtomicInteger> remainingConsumers = new ConcurrentHashMap<>();
+		DirectedMultigraph<CubeQueryStep, DefaultEdge> multigraph = queryStepsDag.getMultigraph();
+		for (CubeQueryStep step : multigraph.vertexSet()) {
+			remainingConsumers.put(step, new AtomicInteger(multigraph.incomingEdgesOf(step).size()));
+		}
+
 		Consumer<? super CubeQueryStep> queryStepConsumer = queryStep -> {
 			try {
-				onQueryStep(queryPod, queryStepsDag, queryStepToValues, queryStep);
+				onQueryStep(queryPod, queryStepsDag, queryStepToValues, remainingConsumers, queryStep);
 			} catch (RuntimeException e) {
 				throw AdhocExceptionHelpers.wrap("Issue processing step=%s".formatted(queryStep), e);
 			}
@@ -553,10 +548,14 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 	protected void onQueryStep(QueryPod queryPod,
 			QueryStepsDag queryStepsDag,
 			Map<CubeQueryStep, ICuboid> queryStepToValues,
+			ConcurrentMap<CubeQueryStep, AtomicInteger> remainingConsumers,
 			CubeQueryStep step) {
 		if (queryStepToValues.containsKey(step)) {
 			// This typically happens on aggregator measures, as they are fed in a previous
-			// step. Here, we want to process a measure once its underlying steps are completed
+			// step. Here, we want to process a measure once its underlying steps are completed.
+			// Still need to maintain the consumer counters: the walk visits this step once, and if
+			// we skip the bookkeeping the underlyings' counters will never reach zero.
+			pruneUnderlyings(queryStepsDag, queryStepToValues, remainingConsumers, step);
 			return;
 		} else if (step.getMeasure() instanceof Aggregator a) {
 			throw new IllegalStateException("Missing a=%s cuboid for %s".formatted(a, step));
@@ -593,6 +592,38 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 			// dependents.
 			log.warn("A queryStep has been computed multiple times queryStep={}. Should not happen since 0.0.14",
 					queryPod);
+		}
+
+		// Push freshly-computed cuboids to the cache here, before any pruning. Values that came
+		// from the pre-loaded cache (optFromCache.isPresent()) are skipped — they are already
+		// there. The cache owns the eviction policy from this point on; our pruning of
+		// `queryStepToValues` below does not affect what the cache decides to keep.
+		if (optFromCache.isEmpty()) {
+			queryPod.getQueryStepCache().pushValue(step, outputColumn, queryStepsDag.getStepToCost().get(step));
+		}
+
+		pruneUnderlyings(queryStepsDag, queryStepToValues, remainingConsumers, step);
+	}
+
+	/**
+	 * Decrement the remaining-consumers counter for each underlying of {@code step}; when one hits zero, drop the
+	 * underlying's cuboid from {@code queryStepToValues} unless it is an explicit (user-requested) step that must
+	 * survive until {@link #toTabularView}. The cuboid is unaffected in the cache (see eager push in
+	 * {@link #onQueryStep}).
+	 */
+	protected void pruneUnderlyings(QueryStepsDag queryStepsDag,
+			Map<CubeQueryStep, ICuboid> queryStepToValues,
+			ConcurrentMap<CubeQueryStep, AtomicInteger> remainingConsumers,
+			CubeQueryStep step) {
+		ImmutableSet<CubeQueryStep> explicits = queryStepsDag.getExplicits();
+		for (CubeQueryStep underlying : queryStepsDag.underlyingSteps(step)) {
+			AtomicInteger counter = remainingConsumers.get(underlying);
+			if (counter == null) {
+				continue;
+			}
+			if (counter.decrementAndGet() == 0 && !explicits.contains(underlying)) {
+				queryStepToValues.remove(underlying);
+			}
 		}
 	}
 
