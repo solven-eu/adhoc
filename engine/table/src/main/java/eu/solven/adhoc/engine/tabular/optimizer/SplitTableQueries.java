@@ -26,14 +26,13 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import org.jspecify.annotations.NonNull;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.util.concurrent.ListeningExecutorService;
 
 import eu.solven.adhoc.engine.ISinkExecutionFeedback;
 import eu.solven.adhoc.engine.QueryStepsDag;
@@ -83,11 +82,14 @@ public class SplitTableQueries
 	@Singular
 	ImmutableMap<TableQueryStep, TableQueryV4> stepToTables;
 
+	// BEWARE Awkward design to enable adding some intermediates nodes lazily. It can be done lazily as tableQueries
+	// relies exclusively on leaves. It is done lazily as this step can be CPU-extensive, and we want to start
+	// tableQueries as early as possible.
 	@NonNull
-	// @Default
-	Function<ListeningExecutorService, IAdhocDag<TableQueryStep>> lazyGraph
-	// = __ -> getInducedToInducer()
-	;
+	@Default
+	Supplier<IAdhocDag<TableQueryStep>> lazyGraph = () -> {
+		throw new IllegalStateException("No lazyGraph");
+	};
 
 	@NonNull
 	@Default
@@ -100,7 +102,7 @@ public class SplitTableQueries
 
 	public static SplitTableQueries empty() {
 		IAdhocDag<TableQueryStep> dag = GraphHelpers.makeGraph();
-		return SplitTableQueries.builder().inducedToInducer(dag).lazyGraph(les -> GraphHelpers.immutable(dag)).build();
+		return SplitTableQueries.builder().inducedToInducer(dag).lazyGraph(() -> GraphHelpers.immutable(dag)).build();
 	}
 
 	@Override

@@ -29,7 +29,6 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.common.util.concurrent.MoreExecutors;
 
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.engine.dag.IAdhocDag;
@@ -311,7 +310,7 @@ public class TestInduceByAdhocMergingIntoSingle_groupByAggregator implements IAd
 
 		Assertions.assertThat(split.getInduceds()).hasSize(3).contains(tq1, tq2, tq3);
 
-		IAdhocDag<TableQueryStep> sharedGraph = split.getLazyGraph().apply(MoreExecutors.newDirectExecutorService());
+		IAdhocDag<TableQueryStep> sharedGraph = split.getLazyGraph().get();
 		SplitTableQueries splitWithShared = split.toBuilder().inducedToInducer(sharedGraph).build();
 
 		Assertions.assertThat(splitWithShared.getInduceds())
@@ -372,7 +371,7 @@ public class TestInduceByAdhocMergingIntoSingle_groupByAggregator implements IAd
 
 		Assertions.assertThat(split.getInduceds()).hasSize(5).contains(tq1, tq2, tq3, tq4, tq5);
 
-		IAdhocDag<TableQueryStep> sharedGraph = split.getLazyGraph().apply(MoreExecutors.newDirectExecutorService());
+		IAdhocDag<TableQueryStep> sharedGraph = split.getLazyGraph().get();
 		SplitTableQueries splitWithShared = split.toBuilder().inducedToInducer(sharedGraph).build();
 
 		Assertions.assertThat(splitWithShared.getInduceds())

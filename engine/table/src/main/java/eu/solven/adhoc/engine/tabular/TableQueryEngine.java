@@ -306,7 +306,7 @@ public class TableQueryEngine implements ITableQueryEngine {
 
 		// Evaluate shared nodes asynchronously, in parallel of tableQueries
 		ListenableFuture<IAdhocDag<TableQueryStep>> futureSharedGraph = queryPod.getExecutorService().submit(() -> {
-			return withoutShared.getLazyGraph().apply(queryPod.getExecutorService());
+			return withoutShared.getLazyGraph().get();
 		});
 
 		// Execute the actual tableQueries

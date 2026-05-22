@@ -117,7 +117,7 @@ public class TableQueryFactory extends ATableQueryFactory {
 				.explicits(tableSteps)
 				.inducedToInducer(inducedToInducer)
 				.stepToTables(leavesToTableQuery)
-				.lazyGraph(les -> splitter.getLazyGraph(hasOptions, inducedToInducer))
+				.lazyGraph(() -> splitter.getLazyGraph(hasOptions, inducedToInducer))
 				.build();
 
 		// Sanity checks will typically ensure the tableQueries covers all leaves inducers

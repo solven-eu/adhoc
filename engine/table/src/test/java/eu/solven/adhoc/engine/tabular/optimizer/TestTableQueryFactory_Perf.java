@@ -74,10 +74,7 @@ public class TestTableQueryFactory_Perf {
 		inducedToInducer.addVertex(inducedStep);
 		inducedToInducer.addEdge(inducedStep, inducerStep);
 
-		SplitTableQueries split = SplitTableQueries.builder()
-				.inducedToInducer(inducedToInducer)
-				.lazyGraph(__ -> inducedToInducer)
-				.build();
+		SplitTableQueries split = SplitTableQueries.builder().inducedToInducer(inducedToInducer).build();
 
 		IMultitypeColumnFastGet<ISlice> inducerValues = MultitypeHashColumn.<ISlice>builder().build();
 

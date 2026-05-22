@@ -75,8 +75,7 @@ public class TestBenchmarkTableQueryInducer extends ABenchmarkable {
 		ITableQueryInducer inducer = new TableQueryInducer(AdhocFactoriesUnsafe.getFactories());
 
 		IAdhocDag<TableQueryStep> dag = new AdhocDag<>();
-		SplitTableQueries inducerAndInduced =
-				SplitTableQueries.builder().inducedToInducer(dag).lazyGraph(__ -> GraphHelpers.immutable(dag)).build();
+		SplitTableQueries inducerAndInduced = SplitTableQueries.builder().inducedToInducer(dag).build();
 		Map<TableQueryStep, ICuboid> stepToValues = new LinkedHashMap<>();
 
 		TableQueryStep inducedGrandTotal = TableQueryStep.builder().aggregator(Aggregator.sum("v")).build();
