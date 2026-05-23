@@ -377,4 +377,54 @@ public class TestChunkedLongList {
 			Assertions.assertThat(list.getLong(i)).isEqualTo(i);
 		}
 	}
+
+	// Pins the append-cache invariants. The cache holds the chunk that contains the next-append position. set()
+	// does not move that position, so the cache must remain valid; mid-list insert and removeLong do (or may)
+	// shift it across a chunk boundary so they invalidate it. Crossing chunk boundaries during a long run of
+	// appends must transparently re-point the cache to the newly-allocated chunk.
+
+	@Test
+	public void testWriteCache_survivesSet() {
+		ChunkedLongList list = new ChunkedLongList();
+		LongStream.range(0, 200).forEach(list::add);
+		// Mutate a value via set() — the next-append position is index 200, unchanged.
+		list.set(50, 9999L);
+		// The very next add must land at index 200 with the expected value and reuse the cache.
+		list.add(424242L);
+		Assertions.assertThat(list.size()).isEqualTo(201);
+		Assertions.assertThat(list.getLong(50)).isEqualTo(9999L);
+		Assertions.assertThat(list.getLong(200)).isEqualTo(424242L);
+	}
+
+	@Test
+	public void testWriteCache_invalidatesOnMidListInsert() {
+		ChunkedLongList list = new ChunkedLongList();
+		LongStream.range(0, 200).forEach(list::add);
+		// Insert in the middle: shifts everything right by one, the next-append position moves to a slot the cache
+		// no longer describes (off-by-one inside the same chunk, but also one closer to the chunk boundary).
+		list.add(50, 7777L);
+		// A subsequent append must still place the new value at the right index (now 201).
+		list.add(424242L);
+		Assertions.assertThat(list.size()).isEqualTo(202);
+		Assertions.assertThat(list.getLong(50)).isEqualTo(7777L);
+		Assertions.assertThat(list.getLong(51)).isEqualTo(50L);
+		Assertions.assertThat(list.getLong(201)).isEqualTo(424242L);
+	}
+
+	@Test
+	public void testWriteCache_crossesChunkBoundary() {
+		// Spans head (size 128) → tail[0] (128) → tail[1] (256) → tail[2] (512). Three chunk boundaries means
+		// at least three append-cache refreshes during a single consecutive append run.
+		ChunkedLongList list = new ChunkedLongList();
+		int n = 1500;
+		for (int i = 0; i < n; i++) {
+			list.add(i * 2L);
+		}
+		Assertions.assertThat(list.size()).isEqualTo(n);
+		// Spot-check around each boundary plus the head and the tail.
+		int[] probes = { 0, 127, 128, 255, 256, 511, 512, 1023, 1024, n - 1 };
+		for (int idx : probes) {
+			Assertions.assertThat(list.getLong(idx)).as("index %d", idx).isEqualTo(idx * 2L);
+		}
+	}
 }

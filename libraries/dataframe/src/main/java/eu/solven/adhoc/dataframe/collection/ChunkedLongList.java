@@ -50,6 +50,11 @@ import it.unimi.dsi.fastutil.longs.LongList;
  * <p>
  * See {@link ChunkedArrays} for the index-arithmetic shared with {@link ChunkedList} and {@link ChunkedDoubleList}.
  *
+ * <p>
+ * Specialized for append-only workloads: {@link #add(long)} (and {@link #add(int, long)} when {@code index == size})
+ * hits an append-cache fast path that bypasses the per-cell chunk arithmetic. Mid-list inserts and removals work but
+ * invalidate the cache.
+ *
  * @author Benoit Lacelle
  */
 public class ChunkedLongList extends AbstractLongList implements IFreezable, ICompactable {
@@ -64,6 +69,16 @@ public class ChunkedLongList extends AbstractLongList implements IFreezable, ICo
 	// from the JDK pattern
 	@SuppressWarnings("PMD.AvoidFieldNameMatchingMethodName")
 	private int size;
+
+	// Append cache: chunk currently containing index `size` (the next append's destination), plus the global index
+	// of that chunk's slot 0. `appendChunk == null` means "uninitialised / invalidated" — the next add() falls through
+	// to the slow path which recomputes and repopulates the cache. The invariant is "valid for the NEXT append":
+	// `set` does not touch it (size unchanged), random `add(int, long)` and `removeLong` invalidate it because the
+	// chunk holding `size` may shift, `clear` resets `size` to 0 so the cache is recomputed on the next add.
+	// Without this, every tail-side append paid (adjusted, unitIndex, k, offset) twice — once in
+	// ensureTailChunkFor, once in writeAt — including a numberOfLeadingZeros intrinsic call.
+	private long @Nullable [] appendChunk;
+	private int appendChunkBase;
 
 	// private: one-way freeze transition must not be bypassed by subclasses
 	private boolean compacted;
@@ -103,19 +118,72 @@ public class ChunkedLongList extends AbstractLongList implements IFreezable, ICo
 		Objects.checkIndex(index, size);
 		long old = readAt(index);
 		writeAt(index, k);
+		// Cache stays valid: set() does not change `size`, so the chunk holding the next-write position is unchanged.
 		return old;
+	}
+
+	/**
+	 * Pure append. Hot path: bypasses the bounds check and {@code index == size} branch of {@link #add(int, long)} by
+	 * reading the cached {@code appendChunk} directly.
+	 */
+	@Override
+	public boolean add(long k) {
+		checkNotCompacted();
+		int s = size;
+		long[] wc = appendChunk;
+		if (wc != null && s - appendChunkBase < wc.length) {
+			wc[s - appendChunkBase] = k;
+			size = s + 1;
+			return true;
+		}
+		appendSlow(k);
+		return true;
 	}
 
 	@Override
 	public void add(int index, long k) {
 		checkNotCompacted();
-		Objects.checkIndex(index, size + 1);
-		ensureTailChunkFor(size);
-		for (int i = size; i > index; i--) {
+		int s = size;
+		Objects.checkIndex(index, s + 1);
+		if (index == s) {
+			// Append shape — try the cached fast path.
+			long[] wc = appendChunk;
+			if (wc != null && s - appendChunkBase < wc.length) {
+				wc[s - appendChunkBase] = k;
+				size = s + 1;
+				return;
+			}
+			appendSlow(k);
+			return;
+		}
+		// Mid-list insert: the chunk for the new `size` may differ from the cached one (a shift can roll
+		// the next-write position into the next chunk). Invalidating is the safest choice.
+		appendChunk = null;
+		ensureTailChunkFor(s);
+		for (int i = s; i > index; i--) {
 			writeAt(i, readAt(i - 1));
 		}
 		writeAt(index, k);
-		size++;
+		size = s + 1;
+	}
+
+	// Slow path for appends: ensure the destination chunk exists, write, then repoint the append cache so
+	// the next consecutive add stays on the fast path. Called when the cache is null (uninitialised, just
+	// invalidated, or a chunk boundary was just crossed).
+	private void appendSlow(long k) {
+		int s = size;
+		ensureTailChunkFor(s);
+		writeAt(s, k);
+		if (s < base) {
+			appendChunk = head;
+			appendChunkBase = 0;
+		} else {
+			int unitIndex = (s - base) >> log2Base;
+			int chunkIndex = ChunkedArrays.tailChunkIndex(unitIndex);
+			appendChunk = Objects.requireNonNull(Objects.requireNonNull(tail)[chunkIndex]);
+			appendChunkBase = base << chunkIndex;
+		}
+		size = s + 1;
 	}
 
 	@Override
@@ -127,6 +195,10 @@ public class ChunkedLongList extends AbstractLongList implements IFreezable, ICo
 			writeAt(i, readAt(i + 1));
 		}
 		size--;
+		// Conservative invalidation: the chunk for the new `size` still points at the same chunk in practice
+		// (size only shrinks), but nulling avoids one more invariant to reason about and the cost is paid on the
+		// next add — the common usage pattern is append-heavy, not append-after-remove.
+		appendChunk = null;
 		return old;
 	}
 
@@ -141,6 +213,9 @@ public class ChunkedLongList extends AbstractLongList implements IFreezable, ICo
 		// Primitive arrays need no nulling — we only reset the logical size.
 		// head stays allocated if it was ever written; subsequent writes reuse it.
 		size = 0;
+		// Reset the cache: the next-write position is back at index 0 (head). The slow path will
+		// re-point on the first add. Nulling here keeps the recompute on a single, well-known path.
+		appendChunk = null;
 	}
 
 	// --- compact ---
@@ -169,6 +244,9 @@ public class ChunkedLongList extends AbstractLongList implements IFreezable, ICo
 			}
 		}
 		compacted = true;
+		// compact() may have replaced head or the last tail chunk with a trimmed copy; any cached reference would
+		// dangle. The list is frozen against further writes anyway, but clearing keeps the invariant tidy.
+		appendChunk = null;
 	}
 
 	@Override
