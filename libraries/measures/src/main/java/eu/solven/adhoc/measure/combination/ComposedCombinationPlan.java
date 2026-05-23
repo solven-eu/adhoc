@@ -22,7 +22,9 @@
  */
 package eu.solven.adhoc.measure.combination;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
 import com.google.common.collect.ImmutableList;
 
@@ -68,6 +70,31 @@ public record ComposedCombinationPlan(int numLeaves, List<CombineStep> steps) {
 			if (inputSlots == null || inputSlots.length == 0) {
 				throw new IllegalArgumentException("inputSlots must be non-empty");
 			}
+		}
+
+		// The auto-generated record accessors / equals / hashCode / toString use Object.equals / Object.hashCode /
+		// Object.toString on `inputSlots`, which compare and render by reference identity — wrong for an int[] payload.
+		// Override all three with array-aware semantics so equal plans actually compare equal and EXPLAIN prints the
+		// slot indices instead of `[I@1234abcd`.
+		@Override
+		public boolean equals(Object o) {
+			if (this == o) {
+				return true;
+			}
+			if (!(o instanceof CombineStep other)) {
+				return false;
+			}
+			return Objects.equals(combinator, other.combinator) && Arrays.equals(inputSlots, other.inputSlots);
+		}
+
+		@Override
+		public int hashCode() {
+			return 31 * Objects.hashCode(combinator) + Arrays.hashCode(inputSlots);
+		}
+
+		@Override
+		public String toString() {
+			return "CombineStep[combinator=" + combinator + ", inputSlots=" + Arrays.toString(inputSlots) + "]";
 		}
 	}
 
