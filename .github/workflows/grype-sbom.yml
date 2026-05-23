@@ -1,6 +1,7 @@
-# Generates a CycloneDX SBOM via the cyclonedx-maven-plugin (bound to the verify phase)
-# and scans it with Grype for known vulnerabilities. Results are uploaded as a SARIF file
-# so they appear in the GitHub Security → Code scanning tab.
+# Generates a CycloneDX SBOM via the cyclonedx-maven-plugin (auto-bound makeAggregateBom
+# at the `package` phase) and scans it with Grype for known vulnerabilities. The root-level
+# aggregate BOM lives at target/classes/META-INF/sbom/application.cdx.json. Results are
+# uploaded as a SARIF file so they appear in the GitHub Security → Code scanning tab.
 #
 # Runs on every push to master and on every PR targeting master.
 
@@ -39,7 +40,8 @@ jobs:
           maven-grype-${{ runner.os }}-
 
     # Generate the SBOM. -Pfast skips tests and static analysis; the cyclonedx plugin
-    # is bound to verify so we need at least that phase. JaCoCo is skipped explicitly
+    # is bound to the `package` phase via its default execution so `verify` covers it.
+    # JaCoCo is skipped explicitly
     # because -Pfast sets maven.test.skip but JaCoCo's check goal still runs.
     # cyclonedx.skip=false re-enables the SBOM generation that -Pfast now disables
     # by default (see CHANGES.MD for 0.0.19).
@@ -50,7 +52,7 @@ jobs:
       uses: anchore/scan-action@e1165082ffb1fe366ebaf02d8526e7c4989ea9d2 # v7.4.0
       id: grype
       with:
-        sbom: target/bom.json
+        sbom: target/classes/META-INF/sbom/application.cdx.json
         fail-build: false          # advisory: don't block PRs yet, just surface findings
         output-format: sarif
 

@@ -237,7 +237,8 @@ public class ChunkedList<E> extends AbstractObjectList<E> implements RandomAcces
 	public boolean add(E e) {
 		checkNotCompacted();
 		int s = size;
-		Object[] wc = appendChunk;
+		@Nullable
+		Object @Nullable [] wc = appendChunk;
 		if (wc != null && s - appendChunkBase < wc.length) {
 			wc[s - appendChunkBase] = e;
 			size = s + 1;
@@ -254,7 +255,8 @@ public class ChunkedList<E> extends AbstractObjectList<E> implements RandomAcces
 		int s = size;
 		Objects.checkIndex(index, s + 1);
 		if (index == s) {
-			Object[] wc = appendChunk;
+			@Nullable
+			Object @Nullable [] wc = appendChunk;
 			if (wc != null && s - appendChunkBase < wc.length) {
 				wc[s - appendChunkBase] = element;
 				size = s + 1;
