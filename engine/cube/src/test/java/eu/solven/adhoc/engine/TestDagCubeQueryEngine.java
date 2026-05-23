@@ -41,6 +41,7 @@ import eu.solven.adhoc.engine.cache.GuavaQueryStepCache;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.engine.context.StandardQueryPreparator;
 import eu.solven.adhoc.engine.measure.IMeasureQueryStepFactory.IMeasureQueryStepOwnFactory;
+import eu.solven.adhoc.engine.optimizer.NoopQueryStepsDagOptimizer;
 import eu.solven.adhoc.engine.query.CubeQuery;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.tabular.TableQueryEngineFactory;
@@ -61,6 +62,22 @@ public class TestDagCubeQueryEngine extends ATestDagInMemory implements IAdhocTe
 	@Override
 	public void feedTable() {
 		// No need to feed
+	}
+
+	@Override
+	public CubeQueryEngine engine() {
+		// Disable the default DAG-level optimizer for this test class: `testThrowOnDeepMeasure` deliberately
+		// asserts the full path-from-root through a 4-deep combinator chain, which the default
+		// FoldLinearChainsOptimizer would collapse into one fused step. The other tests in this class do not chain
+		// foldable combinators, so the noop is a safe class-wide override.
+		return new CubeQueryEngine(makeFactories(), eventBus(), null) {
+			@Override
+			protected IQueryStepsDagBuilder makeQueryStepsDagsBuilder(QueryPod queryPod) {
+				IQueryStepsDagBuilder builder = super.makeQueryStepsDagsBuilder(queryPod);
+				((QueryStepsDagBuilder) builder).withOptimizer(new NoopQueryStepsDagOptimizer());
+				return builder;
+			}
+		};
 	}
 
 	@Test

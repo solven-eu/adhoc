@@ -63,7 +63,6 @@ public class TestDagExplainerForPerfs {
 		};
 
 		QueryStepsDagBuilder queryStepsDagBuilder = new QueryStepsDagBuilder(AdhocFactories.builder().build(),
-				"someCube",
 				canResolve,
 				CubeQuery.builder().measure("someMeasure").build(),
 				IQueryStepCache.noCache());

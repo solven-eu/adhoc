@@ -53,6 +53,8 @@ import eu.solven.adhoc.engine.cache.IQueryStepCache;
 import eu.solven.adhoc.engine.cache.TransverseCacheHelper;
 import eu.solven.adhoc.engine.dag.AdhocDag;
 import eu.solven.adhoc.engine.dag.IAdhocDag;
+import eu.solven.adhoc.engine.optimizer.FoldLinearChainsOptimizer;
+import eu.solven.adhoc.engine.optimizer.IQueryStepsDagOptimizer;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.IHasTransverseCache;
 import eu.solven.adhoc.engine.step.IWhereGroupByQuery;
@@ -87,7 +89,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class QueryStepsDagBuilder implements IQueryStepsDagBuilder, IHasTransverseCache {
 	final IAdhocFactories factories;
-	final String table;
+	// final String table;
 	final IWhereGroupByQuery query;
 	final IQueryStepCache queryStepCache;
 
@@ -110,6 +112,12 @@ public class QueryStepsDagBuilder implements IQueryStepsDagBuilder, IHasTransver
 	// From cache
 	final Map<CubeQueryStep, ICuboid> stepToValue = new LinkedHashMap<>();
 
+	// Pluggable DAG-level optimizer run after the DAG is fully populated and before getQueryDag() returns. Default
+	// is the linear-chain folder (see FoldLinearChainsOptimizer). Override via withOptimizer(...) for tests or for
+	// projects with their own rules; pass NoopQueryStepsDagOptimizer to disable.
+	@NonNull
+	IQueryStepsDagOptimizer optimizer = new FoldLinearChainsOptimizer();
+
 	// Used to store transient information, like slow-to-evaluate information
 	// Should be a threadSafe implementation
 	// It is a unique instance, available to all CubeQuerySteps
@@ -119,12 +127,12 @@ public class QueryStepsDagBuilder implements IQueryStepsDagBuilder, IHasTransver
 	final IMeasureResolver measureResolver;
 
 	public QueryStepsDagBuilder(IAdhocFactories factories,
-			String cube,
+			// String cube,
 			IMeasureResolver canResolveMeasures,
 			IWhereGroupByQuery query,
 			IQueryStepCache queryStepCache) {
 		this.factories = factories;
-		this.table = cube;
+		// this.table = cube;
 		this.measureResolver = canResolveMeasures;
 		this.query = query;
 		this.queryStepCache = queryStepCache;
@@ -426,6 +434,68 @@ public class QueryStepsDagBuilder implements IQueryStepsDagBuilder, IHasTransver
 		registerDescendants();
 
 		sanityChecks();
+
+		// Snapshot the leaves (out-degree 0 vertices) before the optimizer runs. A leaf cube-step is the one that
+		// will be routed to the table layer as a TableQueryStep; the cube-level optimizer must leave them untouched.
+		// We capture by identity here so the post-optimization sanity check can verify no leaf was dropped or
+		// rewired-into-a-non-leaf.
+		Set<CubeQueryStep> leavesBeforeOptimization = new LinkedHashSet<>();
+		for (CubeQueryStep step : multigraph.vertexSet()) {
+			if (multigraph.outgoingEdgesOf(step).isEmpty()) {
+				leavesBeforeOptimization.add(step);
+			}
+		}
+
+		// Apply pluggable DAG-level optimizations (e.g. folding linear combinator chains). The optimizer mutates
+		// `dag` and `multigraph` in place; `roots` and `stepToValue` are read-only inputs that constrain what may
+		// be removed. Tests / projects that need the un-optimised shape inject a NoopQueryStepsDagOptimizer via
+		// `withOptimizer(...)`.
+		optimizer.optimize(multigraph, dag, roots, stepToValue);
+
+		// Post-optimization invariants: an optimizer is free to add / remove / rewire intermediate nodes, but it
+		// must not touch the structural anchors of the DAG. Re-check them defensively so a buggy custom optimizer
+		// surfaces with a clear error here, not as a "missing cuboid" deep in the engine.
+		sanityCheckAfterOptimization(leavesBeforeOptimization);
+	}
+
+	/**
+	 * Verifies invariants that every {@link IQueryStepsDagOptimizer} must preserve:
+	 * <ul>
+	 * <li>every step in {@link #roots} (user-requested) is still in the graph with the same identity;</li>
+	 * <li>every leaf captured before the optimizer ran is still present — a leaf step represents the data the table
+	 * layer will fetch (it becomes a {@code TableQueryStep} on the table side) and the cube-level optimizer must leave
+	 * it untouched;</li>
+	 * <li>every pre-cached step is still in the graph — the engine relies on its cuboid being present.</li>
+	 * </ul>
+	 */
+	protected void sanityCheckAfterOptimization(Set<CubeQueryStep> leavesBeforeOptimization) {
+		for (CubeQueryStep root : roots) {
+			if (!multigraph.containsVertex(root)) {
+				throw new IllegalStateException("Optimizer removed an explicit (user-requested) step: " + root
+						+ ". Optimizers must leave roots untouched.");
+			}
+		}
+		for (CubeQueryStep cached : stepToValue.keySet()) {
+			if (!multigraph.containsVertex(cached)) {
+				throw new IllegalStateException("Optimizer removed a pre-cached step: " + cached
+						+ ". Optimizers must leave cache-loaded steps untouched.");
+			}
+		}
+		for (CubeQueryStep leaf : leavesBeforeOptimization) {
+			if (!multigraph.containsVertex(leaf)) {
+				throw new IllegalStateException("Optimizer removed a leaf step: " + leaf
+						+ ". Optimizers must leave table-layer leaves (out-degree 0) untouched.");
+			}
+		}
+	}
+
+	/**
+	 * Replace the default {@link IQueryStepsDagOptimizer} (a {@link FoldLinearChainsOptimizer}). Useful for tests that
+	 * want to inspect the un-optimised DAG, and for projects providing custom rewrite rules.
+	 */
+	public QueryStepsDagBuilder withOptimizer(IQueryStepsDagOptimizer optimizer) {
+		this.optimizer = optimizer;
+		return this;
 	}
 
 	protected void registerDescendants() {
@@ -482,7 +552,7 @@ public class QueryStepsDagBuilder implements IQueryStepsDagBuilder, IHasTransver
 
 	public static IQueryStepsDagBuilder make(IAdhocFactories factories, IQueryPod queryPod) {
 		return new QueryStepsDagBuilder(factories,
-				queryPod.getTable().getName(),
+				// queryPod.getTable().getName(),
 				queryPod::resolveIfRef,
 				queryPod.getQuery(),
 				queryPod.getQueryStepCache());

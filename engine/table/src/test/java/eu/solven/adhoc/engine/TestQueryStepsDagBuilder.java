@@ -80,7 +80,7 @@ public class TestQueryStepsDagBuilder {
 	@BeforeEach
 	void setUp() {
 		Mockito.when(cache.getValue(Mockito.any())).thenReturn(Optional.empty());
-		builder = new QueryStepsDagBuilder(factories, "testCube", measureResolver, query, cache);
+		builder = new QueryStepsDagBuilder(factories, measureResolver, query, cache);
 	}
 
 	/**
@@ -148,8 +148,7 @@ public class TestQueryStepsDagBuilder {
 								.build())
 						.build()))
 				.build();
-		QueryStepsDagBuilder localBuilder =
-				new QueryStepsDagBuilder(factories, "testCube", measureResolver, measureless, cache);
+		QueryStepsDagBuilder localBuilder = new QueryStepsDagBuilder(factories, measureResolver, measureless, cache);
 
 		Set<MeasurelessQuery> subQueries = localBuilder.rootMeasureless();
 
@@ -188,8 +187,7 @@ public class TestQueryStepsDagBuilder {
 						.calculatedCoordinate(CalculatedCoordinate.star())
 						.build()))
 				.build();
-		QueryStepsDagBuilder localBuilder =
-				new QueryStepsDagBuilder(factories, "testCube", measureResolver, measureless, cache);
+		QueryStepsDagBuilder localBuilder = new QueryStepsDagBuilder(factories, measureResolver, measureless, cache);
 
 		Set<MeasurelessQuery> subQueries = localBuilder.rootMeasureless();
 

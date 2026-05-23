@@ -38,7 +38,6 @@ import eu.solven.adhoc.dataframe.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.dataframe.column.IMultitypeMergeableColumn;
 import eu.solven.adhoc.dataframe.column.navigable_else_hash.MultitypeNavigableElseHashColumn;
 import eu.solven.adhoc.engine.dag.AdhocDag;
-import eu.solven.adhoc.engine.dag.GraphHelpers;
 import eu.solven.adhoc.engine.dag.IAdhocDag;
 import eu.solven.adhoc.engine.step.TableQueryStep;
 import eu.solven.adhoc.engine.tabular.inducer.ITableQueryInducer;
