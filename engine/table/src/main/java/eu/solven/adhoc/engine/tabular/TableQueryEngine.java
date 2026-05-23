@@ -34,7 +34,6 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -74,6 +73,7 @@ import eu.solven.adhoc.engine.dag.IAdhocDag;
 import eu.solven.adhoc.engine.observability.DagExplainer;
 import eu.solven.adhoc.engine.observability.DagExplainerForPerfs;
 import eu.solven.adhoc.engine.observability.SizeAndDuration;
+import eu.solven.adhoc.engine.observability.TableDagExplainer;
 import eu.solven.adhoc.engine.observability.plan.IQueryPlanRegistry;
 import eu.solven.adhoc.engine.observability.plan.NodeOperator;
 import eu.solven.adhoc.engine.observability.plan.NodeState;
@@ -782,19 +782,16 @@ public class TableQueryEngine implements ITableQueryEngine {
 			Map<TableQueryStep, ICuboid> oneQueryStepToValues) {
 		boolean isExplain = queryPod.isDebugOrExplain();
 
+		TableDagExplainer dagExplainer = TableDagExplainer.builder().oneQueryStepToValues(oneQueryStepToValues).build();
+
 		if (isExplain) {
-			eventBus.post(AdhocLogEvent.builder()
-					.debug(queryPod.isDebug())
-					.explain(queryPod.isExplain())
-					.message("/-- %s inducers from %s".formatted(oneQueryStepToValues.size(), toPerfLog(tableQuery)))
-					.source(this)
-					.build());
+			dagExplainer.header(toPerfLog(tableQuery));
 		}
 
-		int lastStepIndex = oneQueryStepToValues.size() - 1;
-		AtomicInteger queryStepIndex = new AtomicInteger();
+		for (Map.Entry<TableQueryStep, ICuboid> entry : oneQueryStepToValues.entrySet()) {
+			TableQueryStep queryStep = entry.getKey();
+			ICuboid column = entry.getValue();
 
-		oneQueryStepToValues.forEach((queryStep, column) -> {
 			eventBus.post(QueryStepIsCompleted.builder()
 					.querystep(queryStep)
 					.nbCells(column.size())
@@ -807,22 +804,18 @@ public class TableQueryEngine implements ITableQueryEngine {
 					SizeAndDuration.builder().size(column.size()).duration(elapsed).build());
 
 			if (isExplain) {
-				boolean isLast = queryStepIndex.getAndIncrement() == lastStepIndex;
-
-				String template;
-				if (isLast) {
-					template = "\\-- step %s";
-				} else {
-					template = "|\\- step %s";
-				}
-				eventBus.post(AdhocLogEvent.builder()
-						.debug(queryPod.isDebug())
-						.explain(queryPod.isExplain())
-						.message(template.formatted(toPerfLog(queryStep)))
-						.source(this)
-						.build());
+				dagExplainer.step(toPerfLog(queryStep));
 			}
-		});
+		}
+
+		if (isExplain) {
+			eventBus.post(AdhocLogEvent.builder()
+					.debug(queryPod.isDebug())
+					.explain(queryPod.isExplain())
+					.message(dagExplainer.toString())
+					.source(this)
+					.build());
+		}
 	}
 
 	/**
