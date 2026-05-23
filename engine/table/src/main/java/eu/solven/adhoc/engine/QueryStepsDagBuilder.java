@@ -53,8 +53,10 @@ import eu.solven.adhoc.engine.cache.IQueryStepCache;
 import eu.solven.adhoc.engine.cache.TransverseCacheHelper;
 import eu.solven.adhoc.engine.dag.AdhocDag;
 import eu.solven.adhoc.engine.dag.IAdhocDag;
+import eu.solven.adhoc.engine.optimizer.CompositeQueryStepsDagOptimizer;
 import eu.solven.adhoc.engine.optimizer.FoldCombinatorSubgraphsOptimizer;
 import eu.solven.adhoc.engine.optimizer.IQueryStepsDagOptimizer;
+import eu.solven.adhoc.engine.optimizer.PartitionorToCombinatorOptimizer;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.IHasTransverseCache;
 import eu.solven.adhoc.engine.step.IWhereGroupByQuery;
@@ -117,7 +119,8 @@ public class QueryStepsDagBuilder implements IQueryStepsDagBuilder, IHasTransver
 	// for
 	// projects with their own rules; pass NoopQueryStepsDagOptimizer to disable.
 	@NonNull
-	IQueryStepsDagOptimizer optimizer = new FoldCombinatorSubgraphsOptimizer();
+	IQueryStepsDagOptimizer optimizer = new CompositeQueryStepsDagOptimizer(new PartitionorToCombinatorOptimizer(),
+			new FoldCombinatorSubgraphsOptimizer());
 
 	// Used to store transient information, like slow-to-evaluate information
 	// Should be a threadSafe implementation
