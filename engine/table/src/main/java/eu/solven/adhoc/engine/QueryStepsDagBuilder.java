@@ -53,7 +53,7 @@ import eu.solven.adhoc.engine.cache.IQueryStepCache;
 import eu.solven.adhoc.engine.cache.TransverseCacheHelper;
 import eu.solven.adhoc.engine.dag.AdhocDag;
 import eu.solven.adhoc.engine.dag.IAdhocDag;
-import eu.solven.adhoc.engine.optimizer.FoldLinearChainsOptimizer;
+import eu.solven.adhoc.engine.optimizer.FoldCombinatorSubgraphsOptimizer;
 import eu.solven.adhoc.engine.optimizer.IQueryStepsDagOptimizer;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.IHasTransverseCache;
@@ -113,10 +113,11 @@ public class QueryStepsDagBuilder implements IQueryStepsDagBuilder, IHasTransver
 	final Map<CubeQueryStep, ICuboid> stepToValue = new LinkedHashMap<>();
 
 	// Pluggable DAG-level optimizer run after the DAG is fully populated and before getQueryDag() returns. Default
-	// is the linear-chain folder (see FoldLinearChainsOptimizer). Override via withOptimizer(...) for tests or for
+	// is the linear-chain folder (see FoldCombinatorSubgraphsOptimizer). Override via withOptimizer(...) for tests or
+	// for
 	// projects with their own rules; pass NoopQueryStepsDagOptimizer to disable.
 	@NonNull
-	IQueryStepsDagOptimizer optimizer = new FoldLinearChainsOptimizer();
+	IQueryStepsDagOptimizer optimizer = new FoldCombinatorSubgraphsOptimizer();
 
 	// Used to store transient information, like slow-to-evaluate information
 	// Should be a threadSafe implementation
@@ -490,8 +491,8 @@ public class QueryStepsDagBuilder implements IQueryStepsDagBuilder, IHasTransver
 	}
 
 	/**
-	 * Replace the default {@link IQueryStepsDagOptimizer} (a {@link FoldLinearChainsOptimizer}). Useful for tests that
-	 * want to inspect the un-optimised DAG, and for projects providing custom rewrite rules.
+	 * Replace the default {@link IQueryStepsDagOptimizer} (a {@link FoldCombinatorSubgraphsOptimizer}). Useful for
+	 * tests that want to inspect the un-optimised DAG, and for projects providing custom rewrite rules.
 	 */
 	public QueryStepsDagBuilder withOptimizer(IQueryStepsDagOptimizer optimizer) {
 		this.optimizer = optimizer;

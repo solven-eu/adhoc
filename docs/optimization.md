@@ -32,17 +32,25 @@ See `ChunkedList`, `ChunkedLongList`, `ChunkedDoubleList`. Each holds an `append
 `QueryStepsDagBuilder.registerRootWithDescendants` runs an `IQueryStepsDagOptimizer` after the DAG is built and before `getQueryDag()` returns. The interface lives in `eu.solven.adhoc.engine.optimizer` and exposes a single mutate-in-place entry point. Implementations available:
 
 - `NoopQueryStepsDagOptimizer` — for tests / projects that want the raw DAG.
-- `FoldLinearChainsOptimizer(minChainLength)` — collapses linear chains of single-underlying `Combinator` steps into one `ComposedCombination`-backed step. Default `minChainLength = 2`; the default-constructor optimizer is the one wired into the builder.
-- `CompositeQueryStepsDagOptimizer(IQueryStepsDagOptimizer...)` — sequences passes; useful when a future pass (e.g. `PartitionorToCombinatorOptimizer`) introduces more foldable Combinators that the linear-chain folder should then pick up.
+- `FoldCombinatorSubgraphsOptimizer(minChainLength)` — folds any connected subgraph of single-consumer `Combinator` steps (chain or tree) into one `ComposedCombination`-backed step. Default `minChainLength = 2`; the default-constructor optimizer is the one wired into the builder.
+- `CompositeQueryStepsDagOptimizer(IQueryStepsDagOptimizer...)` — sequences passes; useful when a future pass (e.g. `PartitionorToCombinatorOptimizer`) introduces more foldable Combinators that the subgraph folder should then pick up.
 
 Swap the default via `QueryStepsDagBuilder.withOptimizer(...)` — used by tests that need to assert on the un-optimised shape (e.g. error-path tests that exercise a deep measure chain).
 
 After the optimizer runs, the builder verifies three invariants: every user-requested root is still in the graph, every pre-cached step is still in the graph, and every leaf captured before optimization (the steps that become `TableQueryStep`s on the table side) is still present. A buggy custom optimizer surfaces with a clear error here, not as a "missing cuboid" deep in the engine.
 
-### Linear-combinator-chain folding
+### Combinator-subgraph folding
 
-A node is foldable iff its measure is a `Combinator` with exactly one underlying, it has exactly one incoming and one outgoing edge, it is not user-requested, and it is not pre-cached. A chain of `n >= minChainLength` consecutive foldable nodes is replaced by a single fused step whose combination is the composition of the chain's combinations applied bottom-up (closest-to-leaf first).
+A node is foldable iff its measure is a `Combinator` (any number of underlyings), it has exactly one incoming edge (single consumer), at least one outgoing edge, it is not user-requested, and it is not pre-cached. A connected subgraph of `n >= minChainLength` foldable nodes is replaced by a single fused step whose combination evaluates the captured subgraph in one per-cell pass.
 
-The fused step uses the topmost node's filter / groupBy / customMarker; chains with heterogeneous values on those dimensions are skipped (logged at DEBUG). The fused combination is a `ComposedCombination` resolving each constituent through the operator factory, so any combination type the project knows about composes transparently.
+The fused step's underlyings are the *distinct* boundary leaves of the subgraph (a non-foldable node reachable from one or more foldable internals). When the same boundary leaf is referenced from multiple foldable internals — e.g. `sum(branch_a, branch_b)` where both branches end at the same aggregator — it is registered once as an underlying, and the `ComposedCombinationPlan` routes both references through the same slot; the engine materialises that leaf's cuboid exactly once.
 
-See `TestFoldLinearChainsOptimizer` for the building-block contract and `TestDagCubeQuery_LongChainPruning` for an end-to-end benchmark (~46 % faster end-to-end with folding on, 10.3 s → 5.5 s).
+Linear chains are a degenerate case (every internal has exactly one underlying). Tree shapes (`Combinator.sum(chain_a, chain_b)`) and shared-leaf DAGs are handled by the same pass.
+
+The fused step uses the topmost node's filter / groupBy / customMarker; subgraphs with heterogeneous values on those dimensions are skipped (logged at DEBUG). The fused combination is a `ComposedCombination` resolving each constituent through the operator factory, so any combination type the project knows about composes transparently.
+
+### Why `ICombination` doesn't need to change
+
+The composition layer is `ComposedCombination` + `ComposedCombinationPlan`. The per-stage primitive — `ICombination.combine(slice, slicedRecord, receiver)` — already expresses exactly what a tree node needs: the `slicedRecord` represents that node's K immediate children's values, the `receiver` is where the node's output goes. There is no information a tree node lacks that an API change would provide; the tree shape, scratch slot allocation, and adapter pooling are entirely composition-layer concerns. The current API is the right primitive.
+
+See `TestFoldCombinatorSubgraphsOptimizer` for the optimizer contract, `TestComposedCombination` for chain / tree / shared-leaf plan evaluation, and `TestDagCubeQuery_LongChainPruning` for an end-to-end benchmark (~3.5× faster end-to-end with folding on, 10.3 s → 3.0 s).

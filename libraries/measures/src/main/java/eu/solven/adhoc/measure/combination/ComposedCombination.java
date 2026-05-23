@@ -29,6 +29,7 @@ import org.jspecify.annotations.Nullable;
 
 import eu.solven.adhoc.data.row.ISlicedRecord;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
+import eu.solven.adhoc.measure.combination.ComposedCombinationPlan.CombineStep;
 import eu.solven.adhoc.measure.operator.IOperatorFactory;
 import eu.solven.adhoc.measure.operator.StandardOperatorFactory;
 import eu.solven.adhoc.model.measure.Combinator;
@@ -38,119 +39,184 @@ import eu.solven.adhoc.util.map.AdhocMapPathGet;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Composes an ordered list of {@link ICombination}s into a single per-cell map: the first combination receives the
- * single underlying value, its result feeds the second, and so on. Used by the DAG-level linear-chain folding
- * optimization in {@code QueryStepsDagBuilder}: a chain of {@code n} single-underlying {@link Combinator}s
- * {@code A → c0 → c1 → … → cn} is rewritten to a single step that applies all {@code cᵢ}s in one pass over cells,
- * skipping the {@code n-1} intermediate cuboid materialisations.
+ * Evaluates a {@link ComposedCombinationPlan} per cell as a single {@link ICombination}. The plan represents an
+ * arbitrary expression tree (or DAG) over {@link ICombination}s; the chain case ({@code A → c0 → c1 → … → cn}) is one
+ * degenerate plan and the tree case ({@code Combinator.sum(branch_a, branch_b)} where each branch is itself a chain) is
+ * the general one.
  *
  * <p>
- * Construction reads {@value #K_CHAIN} (a {@code List<Combinator>}) and the
- * {@link StandardOperatorFactory#K_OPERATOR_FACTORY} provided by the enriching {@link IOperatorFactory}. Each
- * constituent's {@code combinationKey} + {@code combinationOptions} is resolved through the same factory at
- * construction time, so any combination type the project knows about composes transparently.
+ * Used by the DAG-level subgraph-folding optimization in {@code FoldCombinatorSubgraphsOptimizer}: a connected foldable
+ * subgraph of single-consumer {@link Combinator} steps is rewritten to one fused step whose combination is a
+ * {@link ComposedCombination} evaluating the captured subgraph in one pass per cell, skipping every intermediate cuboid
+ * materialisation.
+ *
+ * <p>
+ * Construction reads {@value #K_PLAN} (a {@link ComposedCombinationPlan}) and the
+ * {@link StandardOperatorFactory#K_OPERATOR_FACTORY} provided by the enriching {@link IOperatorFactory}. Each step's
+ * {@code combinator} is resolved to an {@link ICombination} through the same factory at construction time, so any
+ * combination type the project knows about composes transparently.
  *
  * <h3>Implementation</h3>
  *
  * <p>
  * The per-cell entry point is the primitive-friendly
- * {@link ICombination#combine(ISliceWithStep, ISlicedRecord, IValueReceiver)} shape. A pair of pre-allocated
- * {@link StageAdapter}s ping-pongs values through the chain: each adapter is both an {@link IValueReceiver} (to capture
- * a stage's output) and an {@link ISlicedRecord} (to feed it as input to the next stage). The pair is rotated so a
- * chain of arbitrary length runs with only two adapter instances per call — no per-stage {@code List.of(...)}
- * allocation, no per-stage {@code ProxyValueReceiver}, and primitive values stay on {@link IValueReceiver#onLong(long)}
- * / {@link IValueReceiver#onDouble(double)} when the constituent combinations support them.
- *
- * <p>
- * The two adapters are stored in a {@link ThreadLocal} so concurrent step evaluations on the same engine don't collide.
- * JIT escape analysis cannot eliminate the adapter allocations across the (slice, slicedRecord, receiver) call
- * boundary, hence the explicit pool.
+ * {@link ICombination#combine(ISliceWithStep, ISlicedRecord, IValueReceiver)} shape. A per-thread pool holds one
+ * {@link StageAdapter} per plan slot (each adapter is both an {@link IValueReceiver} that captures a value and a
+ * single-slot {@link ISlicedRecord} that exposes it) plus one {@link MultiSlotRecord} per combine step (a fixed view
+ * over the step's input slots). At evaluation time we copy the input record into the leaf slots, run each combine step
+ * writing to its scratch slot, and stream the root step's output directly into the caller's receiver — no intermediate
+ * {@code List.of(...)} allocation, no per-step {@code ProxyValueReceiver}, and primitive values stay on
+ * {@link IValueReceiver#onLong(long)} / {@link IValueReceiver#onDouble(double)} when constituent combinations support
+ * them.
  *
  * @author Benoit Lacelle
  */
 @Slf4j
 public class ComposedCombination implements ICombination {
-	/** Options key carrying the ordered {@code List<Combinator>} to compose. */
-	public static final String K_CHAIN = "chain";
 
-	final List<ICombination> chain;
+	/**
+	 * Options key carrying the {@link ComposedCombinationPlan} to evaluate.
+	 */
+	public static final String K_PLAN = "plan";
 
-	// Per-thread pair of adapters. We need TWO because at each stage we read from the "current" adapter and write
-	// to the "next" one — using a single instance would clobber the input before the inner combination has read it.
-	private final ThreadLocal<StageAdapter[]> adapterPool = ThreadLocal.withInitial(() -> {
-		StageAdapter[] pair = new StageAdapter[2];
-		pair[0] = new StageAdapter();
-		pair[1] = new StageAdapter();
-		return pair;
-	});
+	private final ComposedCombinationPlan plan;
+	private final ICombination[] stepCombinations;
+
+	// Per-thread scratch: one StageAdapter per plan slot + one MultiSlotRecord per combine step (each pre-bound
+	// to its inputSlots). Created lazily on first use and rotated via ThreadLocal so concurrent step evaluations on
+	// the same ComposedCombination instance don't collide. JIT escape analysis cannot collapse these allocations
+	// across the (slice, slicedRecord, receiver) call boundary, hence the explicit pool.
+	private final ThreadLocal<EvalContext> contextPool;
 
 	public ComposedCombination(Map<String, ?> options) {
 		IOperatorFactory opFactory = AdhocMapPathGet.getRequiredAs(options, StandardOperatorFactory.K_OPERATOR_FACTORY);
-		List<Combinator> chainMeasures = AdhocMapPathGet.getRequiredAs(options, K_CHAIN);
-		if (chainMeasures.isEmpty()) {
-			throw new IllegalArgumentException("ComposedCombination requires a non-empty chain");
+		this.plan = AdhocMapPathGet.getRequiredAs(options, K_PLAN);
+
+		// Resolve each step's combinator to a concrete ICombination via the operator factory. We hold the resolved
+		// instances in a parallel array so evaluation can index them positionally.
+		List<CombineStep> steps = plan.steps();
+		this.stepCombinations = new ICombination[steps.size()];
+		for (int i = 0; i < steps.size(); i++) {
+			Combinator combinator = steps.get(i).combinator();
+			this.stepCombinations[i] = opFactory.makeCombination(combinator.getCombinationKey(),
+					Combinator.makeAllOptions(combinator, combinator.getCombinationOptions()));
 		}
-		this.chain = chainMeasures.stream()
-				.map(m -> opFactory.makeCombination(m.getCombinationKey(),
-						Combinator.makeAllOptions(m, m.getCombinationOptions())))
-				.toList();
+
+		this.contextPool = ThreadLocal.withInitial(() -> new EvalContext(plan));
 	}
 
 	@Override
 	public void combine(ISliceWithStep slice, ISlicedRecord slicedRecord, IValueReceiver receiver) {
-		StageAdapter[] pair = adapterPool.get();
-		StageAdapter input = pair[0];
-		StageAdapter output = pair[1];
+		EvalContext ctx = contextPool.get();
+		StageAdapter[] slots = ctx.slots;
+		MultiSlotRecord[] views = ctx.views;
 
-		// Bootstrap: read the chain's single underlying value into `input` via the primitive path.
-		input.reset();
-		slicedRecord.read(0, input);
-
-		// Walk the chain. Each inner stage reads from `input` (acts as a 1-element ISlicedRecord) and writes to
-		// `output` (acts as an IValueReceiver). After each stage we swap the two so the next stage reads what the
-		// previous one just wrote, and writes back into the now-stale buffer.
-		int last = chain.size() - 1;
-		for (int i = 0; i < last; i++) {
-			output.reset();
-			chain.get(i).combine(slice, input, output);
-			StageAdapter tmp = input;
-			input = output;
-			output = tmp;
+		// Fill leaf slots from the input record.
+		int numLeaves = plan.numLeaves();
+		for (int i = 0; i < numLeaves; i++) {
+			slots[i].reset();
+			slicedRecord.read(i, slots[i]);
 		}
-		// Final stage writes directly to the caller's receiver — no intermediate adapter on the last hop.
-		chain.get(last).combine(slice, input, receiver);
+
+		// Run each combine step except the last, writing into its scratch slot.
+		List<CombineStep> steps = plan.steps();
+		int last = steps.size() - 1;
+		for (int k = 0; k < last; k++) {
+			StageAdapter target = slots[numLeaves + k];
+			target.reset();
+			stepCombinations[k].combine(slice, views[k], target);
+		}
+		// Final step writes directly to the caller's receiver — saves one StageAdapter copy on the last hop.
+		stepCombinations[last].combine(slice, views[last], receiver);
 	}
 
 	@Override
 	public @Nullable Object combine(ISliceWithStep slice, List<?> underlyingValues) {
-		// Override the boxed path too, so a caller invoking the deprecated `combine(slice, List)` route still goes
-		// through our primitive composition (rather than the ICombination default, which would re-wrap into a
-		// SlicedRecordFromArray + ProxyValueReceiver round-trip on top of our own).
-		StageAdapter[] pair = adapterPool.get();
-		StageAdapter input = pair[0];
-		input.reset();
-		input.onObject(underlyingValues.get(0));
+		// Override the boxed path so callers using the deprecated `combine(slice, List)` route still benefit from
+		// the primitive composition. We buffer the boxed inputs into the leaf StageAdapters, run the plan, then
+		// extract the root value via a final scratch capture.
+		EvalContext ctx = contextPool.get();
+		StageAdapter[] slots = ctx.slots;
+		MultiSlotRecord[] views = ctx.views;
 
-		StageAdapter output = pair[1];
-		int last = chain.size() - 1;
-		for (int i = 0; i < last; i++) {
-			output.reset();
-			chain.get(i).combine(slice, input, output);
-			StageAdapter tmp = input;
-			input = output;
-			output = tmp;
+		int numLeaves = plan.numLeaves();
+		for (int i = 0; i < numLeaves; i++) {
+			slots[i].reset();
+			slots[i].onObject(underlyingValues.get(i));
 		}
-		// For the last stage, capture the output through one more StageAdapter so we can extract a single value.
-		StageAdapter tail = (last % 2 == 0) ? pair[1] : pair[0];
-		tail.reset();
-		chain.get(last).combine(slice, input, tail);
-		return tail.asObject();
+
+		List<CombineStep> steps = plan.steps();
+		int last = steps.size() - 1;
+		for (int k = 0; k < last; k++) {
+			StageAdapter target = slots[numLeaves + k];
+			target.reset();
+			stepCombinations[k].combine(slice, views[k], target);
+		}
+		StageAdapter rootTarget = slots[numLeaves + last];
+		rootTarget.reset();
+		stepCombinations[last].combine(slice, views[last], rootTarget);
+		return rootTarget.asObject();
+	}
+
+	/** Per-thread evaluation buffers. Lazily allocated once per thread per ComposedCombination instance. */
+	private static final class EvalContext {
+		final StageAdapter[] slots;
+		final MultiSlotRecord[] views;
+
+		EvalContext(ComposedCombinationPlan plan) {
+			int total = plan.totalSlots();
+			this.slots = new StageAdapter[total];
+			for (int i = 0; i < total; i++) {
+				slots[i] = new StageAdapter();
+			}
+			List<CombineStep> steps = plan.steps();
+			this.views = new MultiSlotRecord[steps.size()];
+			for (int k = 0; k < steps.size(); k++) {
+				views[k] = new MultiSlotRecord(slots, steps.get(k).inputSlots());
+			}
+		}
 	}
 
 	/**
-	 * Pooled adapter that is simultaneously an {@link IValueReceiver} (captures a stage's output) and an
-	 * {@link ISlicedRecord} of size 1 (feeds the captured value as input to the next stage). Internal storage avoids
-	 * boxing for {@code long} / {@code double}; objects go through the generic slot.
+	 * View of selected slots as an {@link ISlicedRecord}. Pre-bound at construction to the step's {@code inputSlots},
+	 * so evaluation is one array lookup per position with no allocation on the hot path.
+	 */
+	private static final class MultiSlotRecord implements ISlicedRecord {
+		private final StageAdapter[] allSlots;
+		private final int[] selected;
+
+		MultiSlotRecord(StageAdapter[] allSlots, int[] selected) {
+			this.allSlots = allSlots;
+			this.selected = selected;
+		}
+
+		@Override
+		public int size() {
+			return selected.length;
+		}
+
+		@Override
+		public boolean isEmpty() {
+			return selected.length == 0;
+		}
+
+		@Override
+		public void read(int index, IValueReceiver target) {
+			allSlots[selected[index]].read(0, target);
+		}
+
+		@Override
+		public IValueProvider read(int index) {
+			// Cold path; modern combinations use the receiver-style above.
+			int slot = selected[index];
+			return target -> allSlots[slot].read(0, target);
+		}
+	}
+
+	/**
+	 * Pooled single-slot adapter that is simultaneously an {@link IValueReceiver} (captures a stage's output) and an
+	 * {@link ISlicedRecord} of size 1 (feeds the captured value as input to a downstream stage). Internal storage
+	 * avoids boxing for {@code long} / {@code double}; objects go through the generic slot.
 	 */
 	private static final class StageAdapter implements ISlicedRecord, IValueReceiver {
 		private static final byte TYPE_OBJECT = 0;
@@ -205,14 +271,11 @@ public class ComposedCombination implements ICombination {
 
 		@Override
 		public boolean isEmpty() {
-			// A StageAdapter always represents a single (possibly null-valued) slot — the chain's per-cell input.
 			return false;
 		}
 
 		@Override
 		public void read(int index, IValueReceiver target) {
-			// Single-underlying chain: every read is index 0. We don't validate to keep the hot path tight; a bug
-			// in a chained combination calling read(1, ...) would surface as a primitive type mismatch downstream.
 			switch (type) {
 			case TYPE_LONG -> target.onLong(longValue);
 			case TYPE_DOUBLE -> target.onDouble(doubleValue);
@@ -222,9 +285,6 @@ public class ComposedCombination implements ICombination {
 
 		@Override
 		public IValueProvider read(int index) {
-			// Provider-style path: rarely called by modern combinations (they prefer the receiver-style above).
-			// We return a small lambda that re-routes to the receiver-style; allocation is acceptable on this cold
-			// path since the chain folder targets combinations that go through the primitive path.
 			return target -> read(index, target);
 		}
 	}

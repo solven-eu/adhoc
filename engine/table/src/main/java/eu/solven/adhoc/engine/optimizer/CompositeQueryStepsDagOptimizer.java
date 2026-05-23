@@ -43,8 +43,8 @@ import eu.solven.adhoc.engine.step.CubeQueryStep;
  * <p>
  * Composition order matters: a later optimizer can take advantage of earlier ones. For example, a
  * {@code PartitionorToCombinatorOptimizer} (turning a Partitionor whose partitioning columns are already in the groupBy
- * into a plain Combinator) should run BEFORE {@link FoldLinearChainsOptimizer} so the newly-introduced Combinators
- * participate in the chain folding.
+ * into a plain Combinator) should run BEFORE {@link FoldCombinatorSubgraphsOptimizer} so the newly-introduced
+ * Combinators participate in the chain folding.
  *
  * @author Benoit Lacelle
  */
