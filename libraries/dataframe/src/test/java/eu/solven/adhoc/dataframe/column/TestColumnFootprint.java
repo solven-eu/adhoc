@@ -77,22 +77,22 @@ public class TestColumnFootprint {
 	private static final CubeQueryStep STEP = CubeQueryStep.builder().measure("a").build();
 
 	/**
-	 * Comparable stand-in for a two-dimensional {@code Map<String, Object>} slice: carries the
-	 * {@code color} (blue/red) and {@code rawIndex} dimensions the roadmap entry names. Implemented as a
-	 * {@code record} because {@link AggregatingColumnsDistinct} requires {@code T extends Comparable<T>} and a
-	 * raw {@link java.util.Map} is not {@link Comparable}.
+	 * Comparable stand-in for a two-dimensional {@code Map<String, Object>} slice: carries the {@code color} (blue/red)
+	 * and {@code rawIndex} dimensions the roadmap entry names. Implemented as a {@code record} because
+	 * {@link AggregatingColumnsDistinct} requires {@code T extends Comparable<T>} and a raw {@link java.util.Map} is
+	 * not {@link Comparable}.
 	 */
 	private record ColorIndexSlice(String color, int rawIndex) implements Comparable<ColorIndexSlice> {
 
-	@Override
-	public int compareTo(ColorIndexSlice o) {
-		int byColor = color.compareTo(o.color);
-		if (byColor != 0) {
-			return byColor;
-		} else {
-			return Integer.compare(rawIndex, o.rawIndex);
+		@Override
+		public int compareTo(ColorIndexSlice o) {
+			int byColor = color.compareTo(o.color);
+			if (byColor != 0) {
+				return byColor;
+			} else {
+				return Integer.compare(rawIndex, o.rawIndex);
+			}
 		}
-	}
 
 	}
 

@@ -49,12 +49,12 @@ import eu.solven.adhoc.util.AdhocBenchmark;
 @AdhocBenchmark
 public class TestDagCubeQuery_LongChainPruning extends ATestDagInMemory {
 	// Cardinality of the groupBy column. Each per-step cuboid carries this many cells.
-	private static final int N_ROWS = 6_000;
+	private static final int N_ROWS = 6000;
 	// Length of the +1 combinator chain. Holding the full chain at N_ROWS cells per step (no
 	// pruning) accumulates CHAIN_LENGTH * N_ROWS = 36M cells in memory simultaneously, enough to
 	// blow through the default 512 MiB heap. With pruning, only the two cuboids on either side
 	// of the current step survive.
-	private static final int CHAIN_LENGTH = 6_000;
+	private static final int CHAIN_LENGTH = 6000;
 	private static final String K = "k";
 	private static final String V = "v";
 

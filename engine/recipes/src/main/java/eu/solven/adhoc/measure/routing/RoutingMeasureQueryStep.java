@@ -101,7 +101,7 @@ public class RoutingMeasureQueryStep extends AMeasureQueryStep {
 			if (!measure.getUnderlyings().contains(mName)) {
 				throw new IllegalStateException(("RoutingMeasure '%s': routingLogic returned a step targeting measure"
 						+ " '%s', not in declared underlyings %s. step=%s")
-						.formatted(measure.getName(), mName, measure.getUnderlyings(), step));
+								.formatted(measure.getName(), mName, measure.getUnderlyings(), step));
 			}
 		}
 		return steps;

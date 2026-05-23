@@ -714,6 +714,7 @@
 							<cleanthat>
 								<sourceJdk>${maven.compiler.source}</sourceJdk>
 								<version>${cleanthat.version}</version>
+								<javaparserVersion>3.28.1</javaparserVersion>
 								<mutators>
 									<mutator>SafeAndConsensual</mutator>
 									<mutator>SafeButNotConsensual</mutator>

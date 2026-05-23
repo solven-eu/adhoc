@@ -336,8 +336,8 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 
 		// `GROUP BY ...` — the SECOND mode-specific axis. ROWS emits no GROUP BY at all.
 		ResultQuery<Record> beforeOrder = switch (mode) {
-		case SLICES ->
-			selectFromWhere.groupBy(makeGroupingFields(tableQuery, conditionAndNonPushdown.getNonPushdown()));
+		case SLICES -> selectFromWhere
+				.groupBy(makeGroupingFields(tableQuery, conditionAndNonPushdown.getNonPushdown()));
 		case ROWS -> selectFromWhere;
 		};
 

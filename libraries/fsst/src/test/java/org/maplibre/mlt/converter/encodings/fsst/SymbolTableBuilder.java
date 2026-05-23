@@ -347,29 +347,30 @@ class SymbolTableBuilder {
 
 	private record QSymbol(long gain, Symbol symbol) implements Comparable<QSymbol> {
 
-	@Override
-	public int compareTo(SymbolTableBuilder.QSymbol o) {
-		return Long.compare(o.gain, gain);
+		@Override
+		public int compareTo(SymbolTableBuilder.QSymbol o) {
+			return Long.compare(o.gain, gain);
+		}
+	}
+
+	static class Counters {
+		private final int[] count1 = new int[512];
+		private final int[] count2 = new int[512 * 512];
+
+		public void count1Inc(int pos1) {
+			count1[pos1]++;
+		}
+
+		public void count2Inc(int pos1, int pos2) {
+			count2[(pos1 << 9) | pos2]++;
+		}
+
+		public int count1GetNext(int pos1) {
+			return count1[pos1];
+		}
+
+		public int count2GetNext(int pos1, int pos2) {
+			return count2[(pos1 << 9) | pos2];
+		}
 	}
 }
-
-static class Counters {
-	private final int[] count1 = new int[512];
-	private final int[] count2 = new int[512 * 512];
-
-	public void count1Inc(int pos1) {
-		count1[pos1]++;
-	}
-
-	public void count2Inc(int pos1, int pos2) {
-		count2[(pos1 << 9) | pos2]++;
-	}
-
-	public int count1GetNext(int pos1) {
-		return count1[pos1];
-	}
-
-	public int count2GetNext(int pos1, int pos2) {
-		return count2[(pos1 << 9) | pos2];
-	}
-}}

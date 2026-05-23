@@ -249,8 +249,8 @@ public class SliceToJooqCondition implements ISliceToJooqCondition {
 		}
 		case EqualsMatcher equalsMatcher -> condition = wrap(hasParentNot, field, field.eq(equalsMatcher.getOperand()));
 		case LikeMatcher likeMatcher -> condition = wrap(hasParentNot, field, field.like(likeMatcher.getPattern()));
-		case StringMatcher stringMatcher ->
-			condition = wrap(hasParentNot, field, field.cast(String.class).eq(stringMatcher.getString()));
+		case StringMatcher stringMatcher -> condition =
+				wrap(hasParentNot, field, field.cast(String.class).eq(stringMatcher.getString()));
 
 		case ComparingMatcher comparingMatcher -> {
 			Object operand = comparingMatcher.getOperand();
