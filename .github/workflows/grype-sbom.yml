@@ -56,6 +56,17 @@ jobs:
         fail-build: false          # advisory: don't block PRs yet, just surface findings
         output-format: sarif
 
+    # Workaround for https://github.com/anchore/grype/issues/2235 — Grype omits
+    # `artifactLocation` in SARIF when scanning an SBOM (packages have no on-disk
+    # path), and GitHub Code Scanning rejects the upload with
+    # `locationFromSarifResult: expected artifact location`. Inject a stub URI
+    # pointing at the SBOM itself for every result missing one.
+    - name: Patch SARIF artifactLocation (Grype #2235)
+      run: |
+        jq '(.runs[].results[].locations[]?.physicalLocation) |= (if .artifactLocation? then . else . + {artifactLocation: {uri: "target/classes/META-INF/sbom/application.cdx.json"}} end)' \
+          "${{ steps.grype.outputs.sarif }}" > /tmp/patched.sarif
+        mv /tmp/patched.sarif "${{ steps.grype.outputs.sarif }}"
+
     - name: Upload Grype SARIF to GitHub Security
       uses: github/codeql-action/upload-sarif@9e0d7b8d25671d64c341c19c0152d693099fb5ba # v4.35.5
       with:
