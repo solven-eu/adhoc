@@ -118,8 +118,15 @@ public class QueryStepsDagBuilder implements IQueryStepsDagBuilder, IHasTransver
 
 	// Pluggable DAG-level optimizer run after the DAG is fully populated and before getQueryDag() returns. Default
 	// is the linear-chain folder (see FoldCombinatorSubgraphsOptimizer). Override via withOptimizer(...) for tests or
-	// for
-	// projects with their own rules; pass NoopQueryStepsDagOptimizer to disable.
+	// for projects with their own rules; pass NoopQueryStepsDagOptimizer to disable.
+	//
+	// BEWARE — Shiftor is intentionally absent from this chain even when its IFilterEditor would leave the step filter
+	// unchanged. ShiftorQueryStep.processSlicesMaterializedByFilters synthesizes slices for coordinates explicitly
+	// pinned in the user filter (Equals/In) but missing from the table, emitting a `null` value for them. A passthrough
+	// Combinator(COALESCE) would not — those slices would simply be absent from the output. That divergence is real
+	// when the table has gaps on user-pinned coordinates, so a Shiftor → Combinator rewrite is unsafe in the general
+	// case. TODO: lift the user-filter-slice synthesis to a single engine-level post-processing pass shared across
+	// measure types; once Shiftor no longer owns this concern, the rewrite becomes safe and can be added here.
 	@NonNull
 	IQueryStepsDagOptimizer optimizer = new CompositeQueryStepsDagOptimizer(new PartitionorToCombinatorOptimizer(),
 			new FiltratorToCombinatorOptimizer(),
