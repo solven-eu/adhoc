@@ -120,8 +120,7 @@ public class TestFoldCombinatorSubgraphsOptimizer {
 
 		Assertions.assertThat(mg.vertexSet()).hasSize(3).contains(step2, stepAgg);
 		CubeQueryStep fused = mg.vertexSet().stream().filter(s -> s != step2 && s != stepAgg).findFirst().orElseThrow();
-		Assertions.assertThat(((Combinator) fused.getMeasure()).getCombinationKey())
-				.isEqualTo(ComposedCombination.class.getName());
+		Assertions.assertThat(((Combinator) fused.getMeasure()).getCombinationKey()).isEqualTo(ComposedCombination.KEY);
 		Assertions.assertThat(mg.containsEdge(step2, fused)).isTrue();
 		Assertions.assertThat(mg.containsEdge(fused, stepAgg)).isTrue();
 	}
@@ -164,8 +163,7 @@ public class TestFoldCombinatorSubgraphsOptimizer {
 				.filter(s -> s != userRoot && s != stepA && s != stepB)
 				.findFirst()
 				.orElseThrow();
-		Assertions.assertThat(((Combinator) fused.getMeasure()).getCombinationKey())
-				.isEqualTo(ComposedCombination.class.getName());
+		Assertions.assertThat(((Combinator) fused.getMeasure()).getCombinationKey()).isEqualTo(ComposedCombination.KEY);
 		// The fused step has TWO underlyings (the distinct boundary leaves).
 		Assertions.assertThat(((Combinator) fused.getMeasure()).getUnderlyings()).containsExactlyInAnyOrder("A", "B");
 		// Edges: userRoot → fused, fused → stepA, fused → stepB.

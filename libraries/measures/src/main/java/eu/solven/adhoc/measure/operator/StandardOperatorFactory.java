@@ -37,6 +37,7 @@ import eu.solven.adhoc.measure.aggregation.comparable.MinAggregation;
 import eu.solven.adhoc.measure.aggregation.comparable.MinCombination;
 import eu.solven.adhoc.measure.aggregation.comparable.RankAggregation;
 import eu.solven.adhoc.measure.combination.CoalesceCombination;
+import eu.solven.adhoc.measure.combination.ComposedCombination;
 import eu.solven.adhoc.measure.combination.EvaluatedExpressionCombination;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.decomposition.IDecomposition;
@@ -150,6 +151,9 @@ public class StandardOperatorFactory implements IOperatorFactory {
 		}
 		case CoalesceCombination.KEY: {
 			yield new CoalesceCombination();
+		}
+		case ComposedCombination.KEY: {
+			yield new ComposedCombination(enrichedOptions);
 		}
 		default:
 

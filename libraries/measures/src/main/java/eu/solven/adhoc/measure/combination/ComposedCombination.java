@@ -75,6 +75,13 @@ import lombok.extern.slf4j.Slf4j;
 public class ComposedCombination implements ICombination {
 
 	/**
+	 * Short combination-key registered in {@link StandardOperatorFactory}. Used by
+	 * {@link eu.solven.adhoc.engine.optimizer.FoldCombinatorSubgraphsOptimizer} when assembling the fused step, so
+	 * EXPLAIN traces render {@code Combinator[COMPOSED]} rather than the fully-qualified class name.
+	 */
+	public static final String KEY = "COMPOSED";
+
+	/**
 	 * Options key carrying the {@link ComposedCombinationPlan} to evaluate.
 	 */
 	public static final String K_PLAN = "plan";

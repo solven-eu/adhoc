@@ -80,16 +80,22 @@ public class FoldCombinatorSubgraphsOptimizer implements IQueryStepsDagOptimizer
 	public static final int DEFAULT_MIN_CHAIN_LENGTH = 2;
 
 	private final int minChainLength;
+	private final IComposedNameStrategy nameStrategy;
 
 	public FoldCombinatorSubgraphsOptimizer() {
-		this(DEFAULT_MIN_CHAIN_LENGTH);
+		this(DEFAULT_MIN_CHAIN_LENGTH, IComposedNameStrategy.DEFAULT);
 	}
 
 	public FoldCombinatorSubgraphsOptimizer(int minChainLength) {
+		this(minChainLength, IComposedNameStrategy.DEFAULT);
+	}
+
+	public FoldCombinatorSubgraphsOptimizer(int minChainLength, IComposedNameStrategy nameStrategy) {
 		if (minChainLength < 2) {
 			throw new IllegalArgumentException("minChainLength must be >= 2, got: " + minChainLength);
 		}
 		this.minChainLength = minChainLength;
+		this.nameStrategy = nameStrategy;
 	}
 
 	@Override
@@ -257,11 +263,14 @@ public class FoldCombinatorSubgraphsOptimizer implements IQueryStepsDagOptimizer
 
 		ComposedCombinationPlan plan = new ComposedCombinationPlan(numLeaves, steps);
 
-		String fusedName =
-				subgraph.internals.stream().map(s -> s.getMeasure().getName()).collect(Collectors.joining(" ∘ "));
+		// Internals are iterated in BFS (top-down) order — top first, then its foldable children. We pass that order
+		// verbatim to the name strategy so its output is stable regardless of HashMap iteration vagaries.
+		List<Combinator> internalsTopDown =
+				subgraph.internals.stream().map(s -> (Combinator) s.getMeasure()).collect(Collectors.toList());
+		String fusedName = nameStrategy.name(internalsTopDown);
 		Combinator.CombinatorBuilder fusedBuilder = Combinator.builder()
 				.name(fusedName)
-				.combinationKey(ComposedCombination.class.getName())
+				.combinationKey(ComposedCombination.KEY)
 				.combinationOption(ComposedCombination.K_PLAN, plan);
 		for (CubeQueryStep leaf : subgraph.boundary) {
 			fusedBuilder.underlying(leaf.getMeasure().getName());
