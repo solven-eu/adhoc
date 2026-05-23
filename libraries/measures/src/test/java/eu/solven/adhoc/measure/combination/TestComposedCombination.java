@@ -144,4 +144,23 @@ public class TestComposedCombination {
 		Assertions.assertThatThrownBy(() -> new ComposedCombinationPlan(1, List.of()))
 				.isInstanceOf(IllegalArgumentException.class);
 	}
+
+	@Test
+	public void testCombineStep_equalsHashCodeToString_arrayAware() {
+		// Default record equals/hashCode/toString use Object identity on `int[]` — we override with Arrays-aware
+		// semantics. Cover both equal and not-equal sides plus the toString shape. Shared `Combinator` instance so
+		// the per-call lambda identity doesn't drift between `a` and `b`.
+		Combinator combinator = plus(1);
+		Combinator otherCombinator = plus(2);
+		CombineStep a = new CombineStep(combinator, new int[] { 0 });
+		CombineStep b = new CombineStep(combinator, new int[] { 0 });
+		CombineStep differentSlots = new CombineStep(combinator, new int[] { 1 });
+		CombineStep differentCombinator = new CombineStep(otherCombinator, new int[] { 0 });
+
+		Assertions.assertThat(a).isEqualTo(b).hasSameHashCodeAs(b);
+		Assertions.assertThat(a).isNotEqualTo(differentSlots).isNotEqualTo(differentCombinator);
+		Assertions.assertThat(a).isEqualTo(a);
+		Assertions.assertThat(a).isNotEqualTo(null).isNotEqualTo("not a CombineStep");
+		Assertions.assertThat(a.toString()).contains("CombineStep").contains("inputSlots=[0]");
+	}
 }

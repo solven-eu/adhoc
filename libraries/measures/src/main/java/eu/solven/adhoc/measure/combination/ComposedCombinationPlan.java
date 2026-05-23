@@ -89,7 +89,7 @@ public record ComposedCombinationPlan(int numLeaves, List<CombineStep> steps) {
 
 		@Override
 		public int hashCode() {
-			return 31 * Objects.hashCode(combinator) + Arrays.hashCode(inputSlots);
+			return Objects.hash(combinator, Arrays.hashCode(inputSlots));
 		}
 
 		@Override
