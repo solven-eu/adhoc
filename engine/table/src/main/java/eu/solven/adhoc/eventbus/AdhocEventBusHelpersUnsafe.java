@@ -42,7 +42,7 @@ public class AdhocEventBusHelpersUnsafe {
 	 * management.
 	 */
 	@RequiredArgsConstructor
-	private static class WrappingEventBusForSlf4jFQDN implements IAdhocEventBus {
+	private static final class WrappingEventBusForSlf4jFQDN implements IAdhocEventBus {
 		final IAdhocEventBus decorated;
 
 		@Override

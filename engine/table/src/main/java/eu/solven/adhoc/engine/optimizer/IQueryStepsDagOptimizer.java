@@ -47,6 +47,7 @@ import eu.solven.adhoc.engine.step.CubeQueryStep;
  *
  * @author Benoit Lacelle
  */
+@FunctionalInterface
 public interface IQueryStepsDagOptimizer {
 
 	/**

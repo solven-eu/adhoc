@@ -79,7 +79,9 @@ import it.unimi.dsi.fastutil.objects.AbstractObjectList;
  */
 // Relates with
 // https://github.com/eclipse-mat/mat/blob/master/plugins/org.eclipse.mat.report/src/org/eclipse/mat/collect/ArrayIntBig.java
-@SuppressWarnings("PMD.AvoidDuplicateLiterals")
+// PMD.NullAssignment: `appendChunk = null` is the documented way to invalidate the append-cache field after a mid-list
+// edit, clear, or compact — the field is the cache's sole tag and there is no sentinel `EMPTY` value to substitute.
+@SuppressWarnings({ "PMD.AvoidDuplicateLiterals", "PMD.NullAssignment" })
 public class ChunkedList<E> extends AbstractObjectList<E> implements RandomAccess, IFreezable, ICompactable {
 
 	/** Default {@code log2(base)}. Alias of {@link ChunkedArrays#LOG2_BASE_DEFAULT} kept for test access. */

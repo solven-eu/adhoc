@@ -57,6 +57,9 @@ import it.unimi.dsi.fastutil.longs.LongList;
  *
  * @author Benoit Lacelle
  */
+// `appendChunk = null` is the documented way to invalidate the append-cache field after a mid-list edit, clear, or
+// compact — the field is the cache's sole tag and there is no sentinel `EMPTY` value to substitute.
+@SuppressWarnings("PMD.NullAssignment")
 public class ChunkedLongList extends AbstractLongList implements IFreezable, ICompactable {
 
 	private final int log2Base;

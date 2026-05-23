@@ -55,9 +55,13 @@ import eu.solven.adhoc.model.measure.Combinator;
  *
  * @author Benoit Lacelle
  */
+// CHECKSTYLE:OFF — Spotless collapses record bodies onto single lines (LineLength/LeftCurly/RightCurly trip);
+// the formatter is the authority on this file, see SonarQube / spotless config for why records compact.
 public record ComposedCombinationPlan(int numLeaves,List<CombineStep>steps){
 
-/** Per-step entry in the plan. {@code combinator} is the per-cell map applied to the values at {@code inputSlots}. */
+/**
+ * Per-step entry in the plan. {@code combinator} is the per-cell map applied to the values at {@code inputSlots}.
+ */
 public record CombineStep(Combinator combinator,int[]inputSlots){public CombineStep{if(combinator==null){throw new IllegalArgumentException("combinator must not be null");}if(inputSlots==null||inputSlots.length==0){throw new IllegalArgumentException("inputSlots must be non-empty");}}}
 
 public ComposedCombinationPlan{if(numLeaves<0){throw new IllegalArgumentException("numLeaves must be >= 0, got: "+numLeaves);}steps=ImmutableList.copyOf(steps);if(steps.isEmpty()){throw new IllegalArgumentException("steps must be non-empty");}
@@ -70,3 +74,4 @@ public int totalSlots(){return numLeaves+steps.size();}
 
 /** @return slot index where the final result lands (the last combine step's target). */
 public int rootSlot(){return numLeaves+steps.size()-1;}}
+// CHECKSTYLE:ON

@@ -33,6 +33,7 @@ import eu.solven.adhoc.measure.combination.ComposedCombinationPlan.CombineStep;
 import eu.solven.adhoc.measure.operator.IOperatorFactory;
 import eu.solven.adhoc.measure.operator.StandardOperatorFactory;
 import eu.solven.adhoc.model.measure.Combinator;
+import eu.solven.adhoc.primitive.IMultitypeConstants;
 import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.primitive.IValueReceiver;
 import eu.solven.adhoc.util.map.AdhocMapPathGet;
@@ -192,6 +193,10 @@ public class ComposedCombination implements ICombination {
 		private final StageAdapter[] allSlots;
 		private final int[] selected;
 
+		// Internal pooled adapter — both arrays are owned by the enclosing EvalContext, never escape; defensive copy
+		// would defeat the per-thread reuse this class exists for. Last parameter stays a plain int[] for the same
+		// reason (callers build it via Arrays.copyOf, not literal list).
+		@SuppressWarnings({ "PMD.ArrayIsStoredDirectly", "PMD.UseVarargs" })
 		MultiSlotRecord(StageAdapter[] allSlots, int[] selected) {
 			this.allSlots = allSlots;
 			this.selected = selected;
@@ -225,26 +230,26 @@ public class ComposedCombination implements ICombination {
 	 * {@link ISlicedRecord} of size 1 (feeds the captured value as input to a downstream stage). Internal storage
 	 * avoids boxing for {@code long} / {@code double}; objects go through the generic slot.
 	 */
+	// TODO Similar with MultitypeCell
 	private static final class StageAdapter implements ISlicedRecord, IValueReceiver {
-		private static final byte TYPE_OBJECT = 0;
-		private static final byte TYPE_LONG = 1;
-		private static final byte TYPE_DOUBLE = 2;
 
 		private byte type;
 		private long longValue;
 		private double doubleValue;
 		private @Nullable Object objectValue;
 
+		// Null-assignment is the only way to release the previous reference so the GC can reclaim it across pool reuse.
+		@SuppressWarnings("PMD.NullAssignment")
 		void reset() {
-			type = TYPE_OBJECT;
+			type = IMultitypeConstants.MASK_OBJECT;
 			objectValue = null;
 		}
 
 		@Nullable
 		Object asObject() {
 			return switch (type) {
-			case TYPE_LONG -> Long.valueOf(longValue);
-			case TYPE_DOUBLE -> Double.valueOf(doubleValue);
+			case IMultitypeConstants.MASK_LONG -> longValue;
+			case IMultitypeConstants.MASK_DOUBLE -> doubleValue;
 			default -> objectValue;
 			};
 		}
@@ -253,19 +258,19 @@ public class ComposedCombination implements ICombination {
 
 		@Override
 		public void onLong(long v) {
-			type = TYPE_LONG;
+			type = IMultitypeConstants.MASK_LONG;
 			longValue = v;
 		}
 
 		@Override
 		public void onDouble(double v) {
-			type = TYPE_DOUBLE;
+			type = IMultitypeConstants.MASK_DOUBLE;
 			doubleValue = v;
 		}
 
 		@Override
 		public void onObject(@Nullable Object v) {
-			type = TYPE_OBJECT;
+			type = IMultitypeConstants.MASK_OBJECT;
 			objectValue = v;
 		}
 
@@ -284,8 +289,8 @@ public class ComposedCombination implements ICombination {
 		@Override
 		public void read(int index, IValueReceiver target) {
 			switch (type) {
-			case TYPE_LONG -> target.onLong(longValue);
-			case TYPE_DOUBLE -> target.onDouble(doubleValue);
+			case IMultitypeConstants.MASK_LONG -> target.onLong(longValue);
+			case IMultitypeConstants.MASK_DOUBLE -> target.onDouble(doubleValue);
 			default -> target.onObject(objectValue);
 			}
 		}

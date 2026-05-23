@@ -90,6 +90,10 @@ import lombok.extern.slf4j.Slf4j;
  * 
  * @author Benoit Lacelle
  */
+// PMD.GodClass: this builder centralises DAG construction (per-measure step expansion, root registration,
+// optimizer wiring, post-optimization sanity checks). The methods are cohesive around one task; splitting them into
+// helper classes would mostly move state into setters/getters without buying real decoupling.
+@SuppressWarnings("PMD.GodClass")
 @Slf4j
 public class QueryStepsDagBuilder implements IQueryStepsDagBuilder, IHasTransverseCache {
 	final IAdhocFactories factories;
