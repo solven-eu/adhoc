@@ -22,23 +22,18 @@
  */
 package eu.solven.adhoc.engine.dag.fuser;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
-import org.jgrapht.graph.DefaultEdge;
-import org.jgrapht.graph.DirectedMultigraph;
-
 import eu.solven.adhoc.cuboid.ICuboid;
-import eu.solven.adhoc.engine.dag.IAdhocDag;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.filter.editor.IFilterEditor;
 import eu.solven.adhoc.filter.editor.SimpleFilterEditor;
 import eu.solven.adhoc.measure.combination.CoalesceCombination;
 import eu.solven.adhoc.model.measure.Combinator;
+import eu.solven.adhoc.model.measure.IMeasure;
 import eu.solven.adhoc.model.measure.Unfiltrator;
 import lombok.extern.slf4j.Slf4j;
 
@@ -51,45 +46,38 @@ import lombok.extern.slf4j.Slf4j;
  * {@code combinationKey=COALESCE} does.
  *
  * <p>
- * Intended to run BEFORE {@link CombinatorSubgraphsFuser} in a {@link CompositeDagFuser}: the
- * resulting passthrough Combinators participate in chain / subgraph folding.
+ * Intended to run BEFORE {@link CombinatorSubgraphsFuser} in a {@link CompositeDagFuser}: the resulting passthrough
+ * Combinators participate in chain / subgraph folding.
  *
  * @author Benoit Lacelle
  */
 @Slf4j
-public class UnfiltratorToCombinatorFuser implements IQueryStepsDagFuser {
+public class UnfiltratorToCombinatorFuser extends AToCombinatorFuser {
 
 	@Override
-	public void fuse(DirectedMultigraph<CubeQueryStep, DefaultEdge> multigraph,
-			IAdhocDag<CubeQueryStep> dag,
+	protected boolean isCandidate(CubeQueryStep step,
 			Set<CubeQueryStep> roots,
 			Map<CubeQueryStep, ICuboid> stepToValue) {
-		List<CubeQueryStep> candidates = new ArrayList<>(multigraph.vertexSet());
-		for (CubeQueryStep step : candidates) {
-			if (!(step.getMeasure() instanceof Unfiltrator unfiltrator)) {
-				continue;
-			}
-			if (roots.contains(step)) {
-				continue;
-			}
-			if (stepToValue.containsKey(step)) {
-				continue;
-			}
-			if (!editorIsNoop(step.getFilter(), unfiltrator)) {
-				continue;
-			}
+		return step.getMeasure() instanceof Unfiltrator unfiltrator && !roots.contains(step)
+				&& !stepToValue.containsKey(step)
+				&& editorIsNoop(step.getFilter(), unfiltrator);
+	}
 
-			Combinator passthrough = Combinator.builder()
-					.name(unfiltrator.getName())
-					.underlying(unfiltrator.getUnderlying())
-					.combinationKey(CoalesceCombination.KEY)
-					.tags(unfiltrator.getTags())
-					.build();
-			DagOptimizerHelpers.replaceStepMeasure(multigraph, dag, step, passthrough);
+	@Override
+	protected Combinator buildReplacement(IMeasure original) {
+		Unfiltrator unfiltrator = (Unfiltrator) original;
+		return Combinator.builder()
+				.name(unfiltrator.getName())
+				.underlying(unfiltrator.getUnderlying())
+				.combinationKey(CoalesceCombination.KEY)
+				.tags(unfiltrator.getTags())
+				.build();
+	}
 
-			log.debug("Rewrote Unfiltrator step {} as passthrough Combinator (editor is a no-op on step filter)",
-					unfiltrator.getName());
-		}
+	@Override
+	protected void logRewrite(IMeasure original) {
+		log.debug("Rewrote Unfiltrator step {} as passthrough Combinator (editor is a no-op on step filter)",
+				original.getName());
 	}
 
 	/**

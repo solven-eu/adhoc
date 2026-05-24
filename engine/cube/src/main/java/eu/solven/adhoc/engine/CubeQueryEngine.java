@@ -322,25 +322,7 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 	public QueryStepsDag makeQueryStepsDag(QueryPod queryPod) {
 		IQueryStepsDagBuilder queryStepsDagBuilder = makeQueryStepsDagsBuilder(queryPod);
 
-		// Add explicitly requested steps
-		Set<IMeasure> queriedMeasures = getRootMeasures(queryPod);
-
-		long nbQueriedMeasures = queriedMeasures.stream().map(IMeasure::getName).distinct().count();
-		if (nbQueriedMeasures < queriedMeasures.size()) {
-			AtomicLongMap<String> nameToCount = AtomicLongMap.create();
-			queriedMeasures.forEach(m -> nameToCount.incrementAndGet(m.getName()));
-			// Remove not conflicting
-			nameToCount.asMap().keySet().forEach(nameToCount::decrementAndGet);
-			nameToCount.removeAllZeros();
-			nameToCount.asMap().keySet().forEach(nameToCount::incrementAndGet);
-
-			throw new IllegalArgumentException(
-					"Can not query multiple measures with same name: %s".formatted(nameToCount));
-		}
-
-		queryStepsDagBuilder.registerRootWithDescendants(queriedMeasures);
-
-		QueryStepsDag queryDag = queryStepsDagBuilder.getQueryDag();
+		QueryStepsDag queryDag = queryStepsDagBuilder.makeQueryDag();
 
 		if (queryPod.getOptions().contains(StandardQueryOptions.DRILLTHROUGH)) {
 			return restrictDagToTableQueries(queryDag);
@@ -403,7 +385,23 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 	}
 
 	protected IQueryStepsDagBuilder makeQueryStepsDagsBuilder(QueryPod queryPod) {
-		return QueryStepsDagBuilder.make(factories, queryPod);
+		// Add explicitly requested steps
+		Set<IMeasure> queriedMeasures = getRootMeasures(queryPod);
+
+		long nbQueriedMeasures = queriedMeasures.stream().map(IMeasure::getName).distinct().count();
+		if (nbQueriedMeasures < queriedMeasures.size()) {
+			AtomicLongMap<String> nameToCount = AtomicLongMap.create();
+			queriedMeasures.forEach(m -> nameToCount.incrementAndGet(m.getName()));
+			// Remove not conflicting
+			nameToCount.asMap().keySet().forEach(nameToCount::decrementAndGet);
+			nameToCount.removeAllZeros();
+			nameToCount.asMap().keySet().forEach(nameToCount::incrementAndGet);
+
+			throw new IllegalArgumentException(
+					"Can not query multiple measures with same name: %s".formatted(nameToCount));
+		}
+
+		return QueryStepsDagBuilder.make(factories, queryPod, queriedMeasures);
 	}
 
 	protected ITabularView executeDag(QueryPod queryPod, QueryStepsDag queryStepsDag) {

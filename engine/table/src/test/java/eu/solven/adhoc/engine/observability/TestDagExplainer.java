@@ -93,14 +93,11 @@ public class TestDagExplainer implements IAdhocTestConstants {
 				.table(InMemoryTable.builder().build())
 				.query(CubeQuery.builder().build())
 				.build();
-		IQueryStepsDagBuilder builder = QueryStepsDagBuilder.make(AdhocFactories.builder().build(), queryPod);
-
 		Set<IMeasure> measures = ImmutableSet.<IMeasure>builder().add(Aggregator.sum("k")).build();
-
-		builder.registerRootWithDescendants(measures);
+		IQueryStepsDagBuilder builder = QueryStepsDagBuilder.make(AdhocFactories.builder().build(), queryPod, measures);
 
 		dagExplainer.explain(AdhocQueryIds.from("someCube", CubeQuery.builder().measure("m").build()),
-				builder.getQueryDag());
+				builder.makeQueryDag());
 
 		Assertions.assertThat(messagesExplain)
 				.singleElement(InstanceOfAssertFactories.STRING)
@@ -123,12 +120,11 @@ public class TestDagExplainer implements IAdhocTestConstants {
 				.query(CubeQuery.builder().build())
 				.forest(UnsafeMeasureForest.fromMeasures(this.getClass().getSimpleName(), measures).build())
 				.build();
-		IQueryStepsDagBuilder builder = QueryStepsDagBuilder.make(AdhocFactories.builder().build(), queryPod);
-
-		builder.registerRootWithDescendants(Set.of(sumK1K2));
+		IQueryStepsDagBuilder builder =
+				QueryStepsDagBuilder.make(AdhocFactories.builder().build(), queryPod, Set.of(sumK1K2));
 
 		dagExplainer.explain(AdhocQueryIds.from("someCube", CubeQuery.builder().measure("m").build()),
-				builder.getQueryDag());
+				builder.makeQueryDag());
 
 		Assertions.assertThat(messagesExplain)
 				.singleElement(InstanceOfAssertFactories.STRING)
@@ -153,12 +149,10 @@ public class TestDagExplainer implements IAdhocTestConstants {
 				.query(CubeQuery.builder().build())
 				.forest(UnsafeMeasureForest.fromMeasures(this.getClass().getSimpleName(), measures).build())
 				.build();
-		IQueryStepsDagBuilder builder = QueryStepsDagBuilder.make(AdhocFactories.builder().build(), queryPod);
-
-		builder.registerRootWithDescendants(measures);
+		IQueryStepsDagBuilder builder = QueryStepsDagBuilder.make(AdhocFactories.builder().build(), queryPod, measures);
 
 		dagExplainer.explain(AdhocQueryIds.from("someCube", CubeQuery.builder().measure("m").build()),
-				builder.getQueryDag());
+				builder.makeQueryDag());
 
 		Assertions.assertThat(messagesExplain)
 				.singleElement(InstanceOfAssertFactories.STRING)
@@ -188,12 +182,11 @@ public class TestDagExplainer implements IAdhocTestConstants {
 				.query(CubeQuery.builder().build())
 				.forest(UnsafeMeasureForest.fromMeasures(this.getClass().getSimpleName(), measures).build())
 				.build();
-		IQueryStepsDagBuilder builder = QueryStepsDagBuilder.make(AdhocFactories.builder().build(), queryPod);
-
-		builder.registerRootWithDescendants(Set.of(sumK1K2));
+		IQueryStepsDagBuilder builder =
+				QueryStepsDagBuilder.make(AdhocFactories.builder().build(), queryPod, Set.of(sumK1K2));
 
 		dagExplainer.explain(AdhocQueryIds.from("someCube", CubeQuery.builder().measure("m").build()),
-				builder.getQueryDag());
+				builder.makeQueryDag());
 
 		// Three step rows + the FAKE_ROOT header — but exactly ONE AdhocLogEvent carrying them all.
 		Assertions.assertThat(messagesExplain).hasSize(1);

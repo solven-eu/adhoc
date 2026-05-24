@@ -33,6 +33,7 @@ import org.jgrapht.graph.DirectedMultigraph;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.cuboid.ICuboid;
+import eu.solven.adhoc.engine.QueryStepsDag;
 import eu.solven.adhoc.engine.dag.AdhocDag;
 import eu.solven.adhoc.engine.dag.IAdhocDag;
 import eu.solven.adhoc.engine.dag.fuser.CombinatorSubgraphsFuser;
@@ -72,7 +73,10 @@ public class TestFoldCombinatorSubgraphsOptimizer {
 		DirectedMultigraph<CubeQueryStep, DefaultEdge> mg = new DirectedMultigraph<>(DefaultEdge.class);
 		IAdhocDag<CubeQueryStep> dag = new AdhocDag<>();
 
-		new CombinatorSubgraphsFuser().fuse(mg, dag, Set.of(), Map.of());
+		QueryStepsDag fusedDag = new CombinatorSubgraphsFuser()
+				.fuse(QueryStepsDag.builder().multigraph(mg).inducedToInducer(dag).build());
+		mg = fusedDag.getMultigraph();
+		dag = fusedDag.getInducedToInducer();
 
 		Assertions.assertThat(mg.vertexSet()).isEmpty();
 	}
@@ -94,7 +98,10 @@ public class TestFoldCombinatorSubgraphsOptimizer {
 		addEdges(mg, dag, step1, step0);
 		addEdges(mg, dag, step0, stepAgg);
 
-		new CombinatorSubgraphsFuser().fuse(mg, dag, Set.of(step1), Map.of());
+		QueryStepsDag fusedDag = new CombinatorSubgraphsFuser()
+				.fuse(QueryStepsDag.builder().multigraph(mg).inducedToInducer(dag).explicits(Set.of(step1)).build());
+		mg = fusedDag.getMultigraph();
+		dag = fusedDag.getInducedToInducer();
 
 		Assertions.assertThat(mg.vertexSet()).containsExactlyInAnyOrder(step1, step0, stepAgg);
 	}
@@ -117,7 +124,10 @@ public class TestFoldCombinatorSubgraphsOptimizer {
 		addEdges(mg, dag, step1, step0);
 		addEdges(mg, dag, step0, stepAgg);
 
-		new CombinatorSubgraphsFuser().fuse(mg, dag, Set.of(step2), Map.of());
+		QueryStepsDag fusedDag = new CombinatorSubgraphsFuser()
+				.fuse(QueryStepsDag.builder().multigraph(mg).inducedToInducer(dag).explicits(Set.of(step2)).build());
+		mg = fusedDag.getMultigraph();
+		dag = fusedDag.getInducedToInducer();
 
 		Assertions.assertThat(mg.vertexSet()).hasSize(3).contains(step2, stepAgg);
 		CubeQueryStep fused = mg.vertexSet().stream().filter(s -> s != step2 && s != stepAgg).findFirst().orElseThrow();
@@ -154,7 +164,10 @@ public class TestFoldCombinatorSubgraphsOptimizer {
 		addEdges(mg, dag, stepCa, stepA);
 		addEdges(mg, dag, stepCb, stepB);
 
-		new CombinatorSubgraphsFuser().fuse(mg, dag, Set.of(userRoot), Map.of());
+		QueryStepsDag fusedDag = new CombinatorSubgraphsFuser()
+				.fuse(QueryStepsDag.builder().multigraph(mg).inducedToInducer(dag).explicits(Set.of(userRoot)).build());
+		mg = fusedDag.getMultigraph();
+		dag = fusedDag.getInducedToInducer();
 
 		// The three foldable internals (stepRoot, stepCa, stepCb) fold into one fused step; userRoot, stepA, stepB
 		// survive.
@@ -198,7 +211,10 @@ public class TestFoldCombinatorSubgraphsOptimizer {
 		addEdges(mg, dag, stepCa, stepA);
 		addEdges(mg, dag, stepCb, stepA);
 
-		new CombinatorSubgraphsFuser().fuse(mg, dag, Set.of(userRoot), Map.of());
+		QueryStepsDag fusedDag = new CombinatorSubgraphsFuser()
+				.fuse(QueryStepsDag.builder().multigraph(mg).inducedToInducer(dag).explicits(Set.of(userRoot)).build());
+		mg = fusedDag.getMultigraph();
+		dag = fusedDag.getInducedToInducer();
 
 		// userRoot + stepA + fused = 3 vertices.
 		Assertions.assertThat(mg.vertexSet()).hasSize(3).contains(userRoot, stepA);
@@ -224,7 +240,10 @@ public class TestFoldCombinatorSubgraphsOptimizer {
 		}
 		addEdges(mg, dag, step0, stepAgg);
 
-		new CombinatorSubgraphsFuser().fuse(mg, dag, Set.of(step0), Map.of());
+		QueryStepsDag fusedDag = new CombinatorSubgraphsFuser()
+				.fuse(QueryStepsDag.builder().multigraph(mg).inducedToInducer(dag).explicits(Set.of(step0)).build());
+		mg = fusedDag.getMultigraph();
+		dag = fusedDag.getInducedToInducer();
 
 		Assertions.assertThat(mg.vertexSet()).containsExactlyInAnyOrder(step0, stepAgg);
 	}
@@ -247,9 +266,18 @@ public class TestFoldCombinatorSubgraphsOptimizer {
 		addEdges(mg, dag, step1, step0);
 		addEdges(mg, dag, step0, stepAgg);
 
+		// QueryStepsDag.stepToValues is ImmutableMap (no null values). The fuser only inspects keys, so a Mockito
+		// mock stands in for the cached cuboid.
 		Map<CubeQueryStep, ICuboid> cached = new LinkedHashMap<>();
-		cached.put(step1, null);
-		new CombinatorSubgraphsFuser().fuse(mg, dag, Set.of(step2), cached);
+		cached.put(step1, org.mockito.Mockito.mock(ICuboid.class));
+		QueryStepsDag fusedDag = new CombinatorSubgraphsFuser().fuse(QueryStepsDag.builder()
+				.multigraph(mg)
+				.inducedToInducer(dag)
+				.explicits(Set.of(step2))
+				.stepToValues(cached)
+				.build());
+		mg = fusedDag.getMultigraph();
+		dag = fusedDag.getInducedToInducer();
 
 		Assertions.assertThat(mg.vertexSet()).containsExactlyInAnyOrder(step2, step1, step0, stepAgg);
 	}
@@ -280,11 +308,12 @@ public class TestFoldCombinatorSubgraphsOptimizer {
 		addEdges(mg, dag, step0, stepAgg);
 
 		CombinatorSubgraphsFuser optimizer = new CombinatorSubgraphsFuser();
-		optimizer.fuse(mg, dag, Set.of(step2), Map.of());
-		Set<CubeQueryStep> afterFirst = new LinkedHashSet<>(mg.vertexSet());
+		QueryStepsDag first = optimizer
+				.fuse(QueryStepsDag.builder().multigraph(mg).inducedToInducer(dag).explicits(Set.of(step2)).build());
+		Set<CubeQueryStep> afterFirst = new LinkedHashSet<>(first.getMultigraph().vertexSet());
 
-		optimizer.fuse(mg, dag, Set.of(step2), Map.of());
+		QueryStepsDag second = optimizer.fuse(first);
 
-		Assertions.assertThat(mg.vertexSet()).isEqualTo(afterFirst);
+		Assertions.assertThat(second.getMultigraph().vertexSet()).isEqualTo(afterFirst);
 	}
 }

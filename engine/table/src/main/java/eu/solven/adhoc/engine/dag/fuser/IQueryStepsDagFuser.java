@@ -22,28 +22,26 @@
  */
 package eu.solven.adhoc.engine.dag.fuser;
 
-import java.util.Map;
-import java.util.Set;
-
-import org.jgrapht.graph.DefaultEdge;
-import org.jgrapht.graph.DirectedMultigraph;
-
-import eu.solven.adhoc.cuboid.ICuboid;
-import eu.solven.adhoc.engine.dag.IAdhocDag;
-import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.engine.QueryStepsDag;
 
 /**
- * Pluggable optimizer pass over an in-progress query-steps DAG. The {@code QueryStepsDagBuilder} runs the configured
- * optimizer after the DAG is fully populated and before {@code QueryStepsDag} is returned; the optimizer mutates
- * {@code multigraph} and {@code dag} in place.
+ * Pluggable optimizer pass over an in-progress query-steps DAG. {@code QueryStepsDagBuilder} threads the configured
+ * fuser chain over the DAG after it is fully populated and before {@code QueryStepsDag} is returned.
  *
  * <p>
- * Implementations should not mutate {@code roots} or {@code stepToValue}: those are passed for read-only inspection (an
- * optimizer may need to know which steps are user-requested or pre-cached and therefore must not be removed).
+ * The contract is purely functional: a fuser receives an immutable {@link QueryStepsDag} and returns a possibly
+ * different one. Implementations that need to mutate the graph or DAG must do so on a defensive copy and assemble a new
+ * {@link QueryStepsDag} via {@link QueryStepsDag#toBuilder()}. Returning the input unchanged is the natural no-op
+ * outcome when no candidate is found.
  *
  * <p>
- * Implementations should be idempotent: running the same optimizer twice on the same DAG must produce the same result
- * as running it once.
+ * Implementations must preserve the explicits (user-requested steps) and the leaves (out-degree-zero steps that the
+ * table layer will materialize) — only internal structure may change. Pre-cached steps (keys of {@code stepToValues})
+ * must also survive.
+ *
+ * <p>
+ * Implementations should be idempotent: running the same fuser twice on the same DAG must produce the same result as
+ * running it once.
  *
  * @author Benoit Lacelle
  */
@@ -51,23 +49,11 @@ import eu.solven.adhoc.engine.step.CubeQueryStep;
 public interface IQueryStepsDagFuser {
 
 	/**
-	 * Apply this optimizer's rewrites to the in-progress DAG.
-	 * 
-	 * Explicits (roots) and leaves nodes must remain unchanged ; only the internal structure may change.
+	 * Apply this fuser's rewrites to {@code input} and return the result.
 	 *
-	 * @param multigraph
-	 *            mutable multigraph (mutated in place)
-	 * @param dag
-	 *            mutable DAG view (mutated in place; must stay in sync with {@code multigraph})
-	 * @param roots
-	 *            user-requested steps; read-only. A step listed here must survive the optimization (its cuboid is
-	 *            required by {@code toTabularView}).
-	 * @param stepToValue
-	 *            pre-loaded cache entries; read-only. A step keyed here was loaded from the cache and must not be
-	 *            removed by the optimizer.
+	 * @param input
+	 *            the DAG before this fuser ran
+	 * @return the DAG after this fuser ran. Returning {@code input} unchanged is allowed when no rewrite applied.
 	 */
-	void fuse(DirectedMultigraph<CubeQueryStep, DefaultEdge> multigraph,
-			IAdhocDag<CubeQueryStep> dag,
-			Set<CubeQueryStep> roots,
-			Map<CubeQueryStep, ICuboid> stepToValue);
+	QueryStepsDag fuse(QueryStepsDag input);
 }

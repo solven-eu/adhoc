@@ -22,18 +22,13 @@
  */
 package eu.solven.adhoc.engine.dag.fuser;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.jgrapht.graph.DefaultEdge;
-import org.jgrapht.graph.DirectedMultigraph;
-
 import eu.solven.adhoc.cuboid.ICuboid;
-import eu.solven.adhoc.engine.dag.IAdhocDag;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.model.measure.Combinator;
+import eu.solven.adhoc.model.measure.IMeasure;
 import eu.solven.adhoc.model.measure.Partitionor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -44,47 +39,41 @@ import lombok.extern.slf4j.Slf4j;
  * underlyings at the same granularity a Combinator would request.
  *
  * <p>
- * Intended to run BEFORE {@link CombinatorSubgraphsFuser} in a {@link CompositeDagFuser}: the
- * rewritten Combinators become eligible for chain / subgraph folding.
+ * Intended to run BEFORE {@link CombinatorSubgraphsFuser} in a {@link CompositeDagFuser}: the rewritten Combinators
+ * become eligible for chain / subgraph folding.
  *
  * @author Benoit Lacelle
  */
 @Slf4j
-public class PartitionorToCombinatorFuser implements IQueryStepsDagFuser {
+public class PartitionorToCombinatorFuser extends AToCombinatorFuser {
 
 	@Override
-	public void fuse(DirectedMultigraph<CubeQueryStep, DefaultEdge> multigraph,
-			IAdhocDag<CubeQueryStep> dag,
+	protected boolean isCandidate(CubeQueryStep step,
 			Set<CubeQueryStep> roots,
 			Map<CubeQueryStep, ICuboid> stepToValue) {
-		List<CubeQueryStep> candidates = new ArrayList<>(multigraph.vertexSet());
-		for (CubeQueryStep step : candidates) {
-			if (!(step.getMeasure() instanceof Partitionor partitionor)) {
-				continue;
-			}
-			if (roots.contains(step)) {
-				continue;
-			}
-			if (stepToValue.containsKey(step)) {
-				continue;
-			}
-			if (!step.getGroupBy().getSortedColumns().containsAll(partitionor.getGroupBy().getSortedColumns())) {
-				continue;
-			}
+		return step.getMeasure() instanceof Partitionor partitionor && !roots.contains(step)
+				&& !stepToValue.containsKey(step)
+				&& step.getGroupBy().getSortedColumns().containsAll(partitionor.getGroupBy().getSortedColumns());
+	}
 
-			Combinator.CombinatorBuilder builder = Combinator.builder()
-					.name(partitionor.getName())
-					.combinationKey(partitionor.getCombinationKey())
-					.tags(partitionor.getTags());
-			for (String underlying : partitionor.getUnderlyings()) {
-				builder.underlying(underlying);
-			}
-			for (Map.Entry<String, ?> opt : partitionor.getCombinationOptions().entrySet()) {
-				builder.combinationOption(opt.getKey(), opt.getValue());
-			}
-			DagOptimizerHelpers.replaceStepMeasure(multigraph, dag, step, builder.build());
-
-			log.debug("Rewrote Partitionor step {} as Combinator", partitionor.getName());
+	@Override
+	protected Combinator buildReplacement(IMeasure original) {
+		Partitionor partitionor = (Partitionor) original;
+		Combinator.CombinatorBuilder builder = Combinator.builder()
+				.name(partitionor.getName())
+				.combinationKey(partitionor.getCombinationKey())
+				.tags(partitionor.getTags());
+		for (String underlying : partitionor.getUnderlyings()) {
+			builder.underlying(underlying);
 		}
+		for (Map.Entry<String, ?> opt : partitionor.getCombinationOptions().entrySet()) {
+			builder.combinationOption(opt.getKey(), opt.getValue());
+		}
+		return builder.build();
+	}
+
+	@Override
+	protected void logRewrite(IMeasure original) {
+		log.debug("Rewrote Partitionor step {} as Combinator", original.getName());
 	}
 }

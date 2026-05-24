@@ -22,7 +22,6 @@
  */
 package eu.solven.adhoc.engine;
 
-import java.util.Optional;
 import java.util.Set;
 
 import org.assertj.core.api.Assertions;
@@ -31,6 +30,8 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import eu.solven.adhoc.column.coordinate.CalculatedCoordinate;
+import eu.solven.adhoc.engine.InitialQueryStepsDagBuilder.Maker;
+import eu.solven.adhoc.engine.cache.EmptyQueryStepCache;
 import eu.solven.adhoc.engine.cache.IQueryStepCache;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.IWhereGroupByQuery;
@@ -45,19 +46,21 @@ import eu.solven.adhoc.model.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.MeasurelessQuery;
 
 /**
- * Unit tests for {@link QueryStepsDagBuilder#registerUnderlying}: verifies that self-loops, direct cycles, and indirect
- * cycles all produce targeted, readable error messages via {@link QueryStepsDagBuilder#buildAddEdgeException}.
+ * Unit tests for {@link InitialQueryStepsDagBuilder#registerUnderlying}: verifies that self-loops, direct cycles, and
+ * indirect cycles all produce targeted, readable error messages via
+ * {@link InitialQueryStepsDagBuilder#buildAddEdgeException}.
  *
  * @author Benoit Lacelle
  */
-public class TestQueryStepsDagBuilder {
+public class TestInitialQueryStepsDagBuilder {
 
 	AdhocFactories factories = AdhocFactories.builder().build();
-	IQueryStepCache cache = Mockito.mock(IQueryStepCache.class);
+	IQueryStepCache cache = new EmptyQueryStepCache();
 	IMeasureResolver measureResolver = Mockito.mock(IMeasureResolver.class);
-	IWhereGroupByQuery query = Mockito.mock(IWhereGroupByQuery.class);
+	IWhereGroupByQuery query =
+			MeasurelessQuery.builder().filter(ISliceFilter.MATCH_ALL).groupBy(IGroupBy.GRAND_TOTAL).build();
 
-	QueryStepsDagBuilder builder;
+	InitialQueryStepsDagBuilder builder;
 
 	CubeQueryStep stepA = CubeQueryStep.builder()
 			.filter(ISliceFilter.MATCH_ALL)
@@ -79,8 +82,7 @@ public class TestQueryStepsDagBuilder {
 
 	@BeforeEach
 	void setUp() {
-		Mockito.when(cache.getValue(Mockito.any())).thenReturn(Optional.empty());
-		builder = new QueryStepsDagBuilder(factories, measureResolver, query, cache);
+		builder = new InitialQueryStepsDagBuilder(factories, measureResolver, query, Set.of(), cache);
 	}
 
 	/**
@@ -88,9 +90,10 @@ public class TestQueryStepsDagBuilder {
 	 */
 	@Test
 	public void testRegisterUnderlying_selfLoop() {
-		builder.addVertex(stepA);
+		Maker dagBuilder = builder.prepareDagBuilder();
+		dagBuilder.addVertex(stepA);
 
-		Assertions.assertThatThrownBy(() -> builder.registerUnderlying(stepA, stepA))
+		Assertions.assertThatThrownBy(() -> dagBuilder.registerUnderlying(stepA, stepA))
 				.isInstanceOf(IllegalStateException.class)
 				.hasMessageContaining("own underlying")
 				.hasMessageContaining(stepA.getMeasure().getName());
@@ -101,10 +104,11 @@ public class TestQueryStepsDagBuilder {
 	 */
 	@Test
 	public void testRegisterUnderlying_directCycle() {
-		builder.addVertex(stepA);
-		builder.registerUnderlying(stepA, stepB);
+		Maker dagBuilder = builder.prepareDagBuilder();
+		dagBuilder.addVertex(stepA);
+		dagBuilder.registerUnderlying(stepA, stepB);
 
-		Assertions.assertThatThrownBy(() -> builder.registerUnderlying(stepB, stepA))
+		Assertions.assertThatThrownBy(() -> dagBuilder.registerUnderlying(stepB, stepA))
 				.isInstanceOf(IllegalStateException.class)
 				.hasMessageContaining("cycle")
 				.hasMessageContaining(stepA.getMeasure().getName())
@@ -116,11 +120,12 @@ public class TestQueryStepsDagBuilder {
 	 */
 	@Test
 	public void testRegisterUnderlying_indirectCycle() {
-		builder.addVertex(stepA);
-		builder.registerUnderlying(stepA, stepB);
-		builder.registerUnderlying(stepB, stepC);
+		Maker dagBuilder = builder.prepareDagBuilder();
+		dagBuilder.addVertex(stepA);
+		dagBuilder.registerUnderlying(stepA, stepB);
+		dagBuilder.registerUnderlying(stepB, stepC);
 
-		Assertions.assertThatThrownBy(() -> builder.registerUnderlying(stepC, stepA))
+		Assertions.assertThatThrownBy(() -> dagBuilder.registerUnderlying(stepC, stepA))
 				.isInstanceOf(IllegalStateException.class)
 				.hasMessageContaining("cycle")
 				.hasMessageContaining(stepA.getMeasure().getName())
@@ -133,8 +138,8 @@ public class TestQueryStepsDagBuilder {
 	 * filtered to exclude any row whose coordinate value matches one of the declared calculated- coordinate names.
 	 * Without this exclusion the natural and calculated rows would collide on the same slice key and crash the
 	 * downstream merge in {@code MapBasedTabularView.appendSlice}. This test pins the wiring at the
-	 * {@link QueryStepsDagBuilder#rootMeasureless} level so a future change that drops or reshapes the {@code NOT IN}
-	 * filter is caught here rather than via the slower DuckDB cube tests.
+	 * {@link InitialQueryStepsDagBuilder#rootMeasureless} level so a future change that drops or reshapes the
+	 * {@code NOT IN} filter is caught here rather than via the slower DuckDB cube tests.
 	 */
 	@Test
 	public void testRootMeasureless_calculatedCoordinatesAddNotInFilterToNaturalSubQuery() {
@@ -148,7 +153,8 @@ public class TestQueryStepsDagBuilder {
 								.build())
 						.build()))
 				.build();
-		QueryStepsDagBuilder localBuilder = new QueryStepsDagBuilder(factories, measureResolver, measureless, cache);
+		InitialQueryStepsDagBuilder localBuilder =
+				new InitialQueryStepsDagBuilder(factories, measureResolver, measureless, Set.of(), cache);
 
 		Set<MeasurelessQuery> subQueries = localBuilder.rootMeasureless();
 
@@ -187,7 +193,8 @@ public class TestQueryStepsDagBuilder {
 						.calculatedCoordinate(CalculatedCoordinate.star())
 						.build()))
 				.build();
-		QueryStepsDagBuilder localBuilder = new QueryStepsDagBuilder(factories, measureResolver, measureless, cache);
+		InitialQueryStepsDagBuilder localBuilder =
+				new InitialQueryStepsDagBuilder(factories, measureResolver, measureless, Set.of(), cache);
 
 		Set<MeasurelessQuery> subQueries = localBuilder.rootMeasureless();
 

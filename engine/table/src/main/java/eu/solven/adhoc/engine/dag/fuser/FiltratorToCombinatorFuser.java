@@ -22,17 +22,11 @@
  */
 package eu.solven.adhoc.engine.dag.fuser;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
-import org.jgrapht.graph.DefaultEdge;
-import org.jgrapht.graph.DirectedMultigraph;
-
 import eu.solven.adhoc.cuboid.ICuboid;
-import eu.solven.adhoc.engine.dag.IAdhocDag;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.filter.AdhocFilterUnsafe;
 import eu.solven.adhoc.filter.FilterBuilder;
@@ -41,6 +35,7 @@ import eu.solven.adhoc.filter.optimizer.IFilterOptimizer;
 import eu.solven.adhoc.measure.combination.CoalesceCombination;
 import eu.solven.adhoc.model.measure.Combinator;
 import eu.solven.adhoc.model.measure.Filtrator;
+import eu.solven.adhoc.model.measure.IMeasure;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -52,47 +47,38 @@ import lombok.extern.slf4j.Slf4j;
  * {@code combinationKey=COALESCE} does.
  *
  * <p>
- * Intended to run BEFORE {@link CombinatorSubgraphsFuser} in a {@link CompositeDagFuser}: the
- * resulting passthrough Combinators participate in chain / subgraph folding, so a redundant Filtrator no longer breaks
- * the foldability of its surroundings.
+ * Intended to run BEFORE {@link CombinatorSubgraphsFuser} in a {@link CompositeDagFuser}: the resulting passthrough
+ * Combinators participate in chain / subgraph folding, so a redundant Filtrator no longer breaks the foldability of its
+ * surroundings.
  *
  * @author Benoit Lacelle
  */
 @Slf4j
-public class FiltratorToCombinatorFuser implements IQueryStepsDagFuser {
+public class FiltratorToCombinatorFuser extends AToCombinatorFuser {
 
 	@Override
-	public void fuse(DirectedMultigraph<CubeQueryStep, DefaultEdge> multigraph,
-			IAdhocDag<CubeQueryStep> dag,
+	protected boolean isCandidate(CubeQueryStep step,
 			Set<CubeQueryStep> roots,
 			Map<CubeQueryStep, ICuboid> stepToValue) {
-		List<CubeQueryStep> candidates = new ArrayList<>(multigraph.vertexSet());
-		for (CubeQueryStep step : candidates) {
-			if (!(step.getMeasure() instanceof Filtrator filtrator)) {
-				continue;
-			}
-			if (roots.contains(step)) {
-				continue;
-			}
-			if (stepToValue.containsKey(step)) {
-				continue;
-			}
-			if (!filterIsRedundant(step.getFilter(), filtrator.getFilter())) {
-				continue;
-			}
+		return step.getMeasure() instanceof Filtrator filtrator && !roots.contains(step)
+				&& !stepToValue.containsKey(step)
+				&& filterIsRedundant(step.getFilter(), filtrator.getFilter());
+	}
 
-			// Filtrator's per-cell impl is CoalesceCombination (passthrough) on its single underlying.
-			Combinator passthrough = Combinator.builder()
-					.name(filtrator.getName())
-					.underlying(filtrator.getUnderlying())
-					.combinationKey(CoalesceCombination.KEY)
-					.tags(filtrator.getTags())
-					.build();
-			DagOptimizerHelpers.replaceStepMeasure(multigraph, dag, step, passthrough);
+	@Override
+	protected Combinator buildReplacement(IMeasure original) {
+		Filtrator filtrator = (Filtrator) original;
+		return Combinator.builder()
+				.name(filtrator.getName())
+				.underlying(filtrator.getUnderlying())
+				.combinationKey(CoalesceCombination.KEY)
+				.tags(filtrator.getTags())
+				.build();
+	}
 
-			log.debug("Rewrote Filtrator step {} as passthrough Combinator (filter already implied)",
-					filtrator.getName());
-		}
+	@Override
+	protected void logRewrite(IMeasure original) {
+		log.debug("Rewrote Filtrator step {} as passthrough Combinator (filter already implied)", original.getName());
 	}
 
 	/**

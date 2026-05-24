@@ -28,8 +28,8 @@ import java.util.stream.Collectors;
 import eu.solven.adhoc.model.measure.Combinator;
 
 /**
- * Builds the name of the fused {@link Combinator} produced by {@link CombinatorSubgraphsFuser}. Receives the
- * subgraph internals in top-down (BFS) order — top first, then each foldable child.
+ * Builds the name of the fused {@link Combinator} produced by {@link CombinatorSubgraphsFuser}. Receives the subgraph
+ * internals in top-down (BFS) order — top first, then each foldable child.
  *
  * <p>
  * The default implementation preserves both each internal's {@code name} and its {@code combinationKey}, so the fused

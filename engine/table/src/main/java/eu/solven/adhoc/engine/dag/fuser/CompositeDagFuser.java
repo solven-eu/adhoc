@@ -24,27 +24,20 @@ package eu.solven.adhoc.engine.dag.fuser;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
-import org.jgrapht.graph.DefaultEdge;
-import org.jgrapht.graph.DirectedMultigraph;
 
 import com.google.common.collect.ImmutableList;
 
-import eu.solven.adhoc.cuboid.ICuboid;
-import eu.solven.adhoc.engine.dag.IAdhocDag;
-import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.engine.QueryStepsDag;
 
 /**
- * Runs a sequence of {@link IQueryStepsDagFuser}s in order. Useful when several independent rewrites should apply
- * to the same DAG; each delegate sees the output of the previous one.
+ * Runs a sequence of {@link IQueryStepsDagFuser}s in order. Each delegate's output is fed as the next delegate's input,
+ * making the composite equivalent to {@code f_n ∘ … ∘ f_1}.
  *
  * <p>
- * Composition order matters: a later optimizer can take advantage of earlier ones. For example, a
- * {@code PartitionorToCombinatorOptimizer} (turning a Partitionor whose partitioning columns are already in the groupBy
- * into a plain Combinator) should run BEFORE {@link CombinatorSubgraphsFuser} so the newly-introduced
- * Combinators participate in the chain folding.
+ * Composition order matters: a later fuser can take advantage of earlier ones. For example, a
+ * {@link PartitionorToCombinatorFuser} (turning a Partitionor whose partitioning columns are already in the groupBy
+ * into a plain Combinator) should run BEFORE {@link CombinatorSubgraphsFuser} so the newly-introduced Combinators
+ * participate in the chain folding.
  *
  * @author Benoit Lacelle
  */
@@ -61,12 +54,11 @@ public class CompositeDagFuser implements IQueryStepsDagFuser {
 	}
 
 	@Override
-	public void fuse(DirectedMultigraph<CubeQueryStep, DefaultEdge> multigraph,
-			IAdhocDag<CubeQueryStep> dag,
-			Set<CubeQueryStep> roots,
-			Map<CubeQueryStep, ICuboid> stepToValue) {
+	public QueryStepsDag fuse(QueryStepsDag input) {
+		QueryStepsDag current = input;
 		for (IQueryStepsDagFuser delegate : delegates) {
-			delegate.fuse(multigraph, dag, roots, stepToValue);
+			current = delegate.fuse(current);
 		}
+		return current;
 	}
 }

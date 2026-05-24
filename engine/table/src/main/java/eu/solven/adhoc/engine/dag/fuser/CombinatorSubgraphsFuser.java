@@ -39,6 +39,7 @@ import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.DirectedMultigraph;
 
 import eu.solven.adhoc.cuboid.ICuboid;
+import eu.solven.adhoc.engine.QueryStepsDag;
 import eu.solven.adhoc.engine.dag.IAdhocDag;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.combination.ComposedCombination;
@@ -99,22 +100,23 @@ public class CombinatorSubgraphsFuser implements IQueryStepsDagFuser {
 	}
 
 	@Override
-	public void fuse(DirectedMultigraph<CubeQueryStep, DefaultEdge> multigraph,
-			IAdhocDag<CubeQueryStep> dag,
-			Set<CubeQueryStep> roots,
-			Map<CubeQueryStep, ICuboid> stepToValue) {
+	public QueryStepsDag fuse(QueryStepsDag input) {
 		// Snapshot of currently foldable nodes. Foldability is a function of the graph at this instant; we recompute
 		// only at the start because each subgraph rewrite is self-contained — removing internals does not change the
 		// foldability of any node outside the subgraph (internals had degree 1 incoming, so no edge crossed in).
-		Set<CubeQueryStep> foldable = new LinkedHashSet<>();
-		for (CubeQueryStep step : multigraph.vertexSet()) {
-			if (isFoldable(step, multigraph, roots, stepToValue)) {
-				foldable.add(step);
-			}
-		}
+		Set<CubeQueryStep> foldable = input.getMultigraph()
+				.vertexSet()
+				.stream()
+				.filter(step -> isFoldable(step, input.getMultigraph(), input.getExplicits(), input.getStepToValues()))
+				.collect(Collectors.toCollection(LinkedHashSet::new));
 		if (foldable.isEmpty()) {
-			return;
+			return input;
 		}
+
+		DirectedMultigraph<CubeQueryStep, DefaultEdge> multigraph =
+				DagFuserHelpers.copyMultigraph(input.getMultigraph());
+		IAdhocDag<CubeQueryStep> dag = DagFuserHelpers.copyDag(input.getInducedToInducer());
+		boolean changed = false;
 
 		Set<CubeQueryStep> processed = new HashSet<>();
 		for (CubeQueryStep seed : foldable) {
@@ -131,8 +133,13 @@ public class CombinatorSubgraphsFuser implements IQueryStepsDagFuser {
 			if (subgraph.internals.size() < minChainLength) {
 				continue;
 			}
-			rewrite(top, subgraph, multigraph, dag);
+			changed |= rewrite(top, subgraph, multigraph, dag);
 		}
+
+		if (!changed) {
+			return input;
+		}
+		return input.toBuilder().multigraph(multigraph).inducedToInducer(dag).build();
 	}
 
 	/**
@@ -143,22 +150,10 @@ public class CombinatorSubgraphsFuser implements IQueryStepsDagFuser {
 			DirectedMultigraph<CubeQueryStep, DefaultEdge> multigraph,
 			Set<CubeQueryStep> roots,
 			Map<CubeQueryStep, ICuboid> stepToValue) {
-		if (!(step.getMeasure() instanceof Combinator)) {
-			return false;
-		}
-		if (multigraph.incomingEdgesOf(step).size() != 1) {
-			return false;
-		}
-		if (multigraph.outgoingEdgesOf(step).isEmpty()) {
-			return false;
-		}
-		if (roots.contains(step)) {
-			return false;
-		}
-		if (stepToValue.containsKey(step)) {
-			return false;
-		}
-		return true;
+		return step.getMeasure() instanceof Combinator && multigraph.incomingEdgesOf(step).size() == 1
+				&& !multigraph.outgoingEdgesOf(step).isEmpty()
+				&& !roots.contains(step)
+				&& !stepToValue.containsKey(step);
 	}
 
 	private CubeQueryStep topmostFoldable(CubeQueryStep seed,
@@ -212,8 +207,10 @@ public class CombinatorSubgraphsFuser implements IQueryStepsDagFuser {
 	/**
 	 * Build the {@link ComposedCombinationPlan}, assemble the fused step, and rewrite {@code multigraph} + {@code dag}
 	 * accordingly.
+	 *
+	 * @return true iff a fold was applied; false if the subgraph was rejected (e.g. heterogeneous filter/groupBy).
 	 */
-	private void rewrite(CubeQueryStep top,
+	private boolean rewrite(CubeQueryStep top,
 			Subgraph subgraph,
 			DirectedMultigraph<CubeQueryStep, DefaultEdge> multigraph,
 			IAdhocDag<CubeQueryStep> dag) {
@@ -224,7 +221,7 @@ public class CombinatorSubgraphsFuser implements IQueryStepsDagFuser {
 			if (!step.getFilter().equals(top.getFilter()) || !step.getGroupBy().equals(top.getGroupBy())
 					|| !Objects.equals(step.getCustomMarker(), top.getCustomMarker())) {
 				log.debug("Heterogeneous filter/groupBy/customMarker in subgraph anchored at {} — skipping fold", top);
-				return;
+				return false;
 			}
 		}
 
@@ -297,6 +294,7 @@ public class CombinatorSubgraphsFuser implements IQueryStepsDagFuser {
 				subgraph.internals.size(),
 				subgraph.boundary.size(),
 				fusedStep);
+		return true;
 	}
 
 	private record Subgraph(Set<CubeQueryStep> internals, Set<CubeQueryStep> boundary) {

@@ -27,9 +27,11 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.jgrapht.Graphs;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.DirectedMultigraph;
 
+import eu.solven.adhoc.engine.dag.AdhocDag;
 import eu.solven.adhoc.engine.dag.IAdhocDag;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.model.measure.IMeasure;
@@ -41,7 +43,22 @@ import lombok.experimental.UtilityClass;
  * @author Benoit Lacelle
  */
 @UtilityClass
-final class DagOptimizerHelpers {
+final class DagFuserHelpers {
+
+	/** Shallow copy of {@code src}: same vertex / edge references, new graph container. */
+	static DirectedMultigraph<CubeQueryStep, DefaultEdge> copyMultigraph(
+			DirectedMultigraph<CubeQueryStep, DefaultEdge> src) {
+		DirectedMultigraph<CubeQueryStep, DefaultEdge> copy = new DirectedMultigraph<>(DefaultEdge.class);
+		Graphs.addGraph(copy, src);
+		return copy;
+	}
+
+	/** Shallow copy of {@code src}: same vertex references, new DAG container. */
+	static IAdhocDag<CubeQueryStep> copyDag(IAdhocDag<CubeQueryStep> src) {
+		AdhocDag<CubeQueryStep> copy = new AdhocDag<>();
+		Graphs.addGraph(copy, src);
+		return copy;
+	}
 
 	/**
 	 * Replace the measure carried by {@code oldStep} with {@code newMeasure}, preserving every consumer's outgoing-edge

@@ -22,7 +22,6 @@
  */
 package eu.solven.adhoc.engine.optimizer;
 
-import java.util.Map;
 import java.util.Set;
 
 import org.assertj.core.api.Assertions;
@@ -30,6 +29,7 @@ import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.DirectedMultigraph;
 import org.junit.jupiter.api.Test;
 
+import eu.solven.adhoc.engine.QueryStepsDag;
 import eu.solven.adhoc.engine.dag.AdhocDag;
 import eu.solven.adhoc.engine.dag.IAdhocDag;
 import eu.solven.adhoc.engine.dag.fuser.UnfiltratorToCombinatorFuser;
@@ -75,7 +75,10 @@ public class TestUnfiltratorToCombinatorOptimizer {
 		addEdges(mg, dag, stepConsumer, stepUnfiltrator);
 		addEdges(mg, dag, stepUnfiltrator, stepAgg);
 
-		new UnfiltratorToCombinatorFuser().fuse(mg, dag, Set.of(stepConsumer), Map.of());
+		QueryStepsDag fused = new UnfiltratorToCombinatorFuser().fuse(
+				QueryStepsDag.builder().multigraph(mg).inducedToInducer(dag).explicits(Set.of(stepConsumer)).build());
+		mg = fused.getMultigraph();
+		dag = fused.getInducedToInducer();
 
 		Assertions.assertThat(mg.vertexSet()).hasSize(3).contains(stepConsumer, stepAgg);
 		CubeQueryStep rewritten =
@@ -111,7 +114,10 @@ public class TestUnfiltratorToCombinatorOptimizer {
 		addEdges(mg, dag, stepConsumer, stepUnfiltrator);
 		addEdges(mg, dag, stepUnfiltrator, stepAgg);
 
-		new UnfiltratorToCombinatorFuser().fuse(mg, dag, Set.of(stepConsumer), Map.of());
+		QueryStepsDag fused = new UnfiltratorToCombinatorFuser().fuse(
+				QueryStepsDag.builder().multigraph(mg).inducedToInducer(dag).explicits(Set.of(stepConsumer)).build());
+		mg = fused.getMultigraph();
+		dag = fused.getInducedToInducer();
 
 		Assertions.assertThat(mg.vertexSet()).hasSize(3).contains(stepConsumer, stepAgg);
 		CubeQueryStep rewritten =
@@ -142,7 +148,10 @@ public class TestUnfiltratorToCombinatorOptimizer {
 		addEdges(mg, dag, stepConsumer, stepUnfiltrator);
 		addEdges(mg, dag, stepUnfiltrator, stepAgg);
 
-		new UnfiltratorToCombinatorFuser().fuse(mg, dag, Set.of(stepConsumer), Map.of());
+		QueryStepsDag fused = new UnfiltratorToCombinatorFuser().fuse(
+				QueryStepsDag.builder().multigraph(mg).inducedToInducer(dag).explicits(Set.of(stepConsumer)).build());
+		mg = fused.getMultigraph();
+		dag = fused.getInducedToInducer();
 
 		Assertions.assertThat(mg.vertexSet()).containsExactlyInAnyOrder(stepConsumer, stepUnfiltrator, stepAgg);
 		Assertions.assertThat(stepUnfiltrator.getMeasure()).isInstanceOf(Unfiltrator.class);
@@ -171,7 +180,10 @@ public class TestUnfiltratorToCombinatorOptimizer {
 		addEdges(mg, dag, stepConsumer, stepUnfiltrator);
 		addEdges(mg, dag, stepUnfiltrator, stepAgg);
 
-		new UnfiltratorToCombinatorFuser().fuse(mg, dag, Set.of(stepConsumer), Map.of());
+		QueryStepsDag fused = new UnfiltratorToCombinatorFuser().fuse(
+				QueryStepsDag.builder().multigraph(mg).inducedToInducer(dag).explicits(Set.of(stepConsumer)).build());
+		mg = fused.getMultigraph();
+		dag = fused.getInducedToInducer();
 
 		Assertions.assertThat(mg.vertexSet()).hasSize(3).contains(stepConsumer, stepAgg);
 		CubeQueryStep rewritten =
@@ -197,7 +209,13 @@ public class TestUnfiltratorToCombinatorOptimizer {
 		}
 		addEdges(mg, dag, stepUnfiltrator, stepAgg);
 
-		new UnfiltratorToCombinatorFuser().fuse(mg, dag, Set.of(stepUnfiltrator), Map.of());
+		QueryStepsDag fused = new UnfiltratorToCombinatorFuser().fuse(QueryStepsDag.builder()
+				.multigraph(mg)
+				.inducedToInducer(dag)
+				.explicits(Set.of(stepUnfiltrator))
+				.build());
+		mg = fused.getMultigraph();
+		dag = fused.getInducedToInducer();
 
 		Assertions.assertThat(mg.vertexSet()).containsExactlyInAnyOrder(stepUnfiltrator, stepAgg);
 		Assertions.assertThat(stepUnfiltrator.getMeasure()).isInstanceOf(Unfiltrator.class);

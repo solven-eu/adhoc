@@ -22,7 +22,6 @@
  */
 package eu.solven.adhoc.engine.optimizer;
 
-import java.util.Map;
 import java.util.Set;
 
 import org.assertj.core.api.Assertions;
@@ -30,6 +29,7 @@ import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.DirectedMultigraph;
 import org.junit.jupiter.api.Test;
 
+import eu.solven.adhoc.engine.QueryStepsDag;
 import eu.solven.adhoc.engine.dag.AdhocDag;
 import eu.solven.adhoc.engine.dag.IAdhocDag;
 import eu.solven.adhoc.engine.dag.fuser.FiltratorToCombinatorFuser;
@@ -73,7 +73,10 @@ public class TestFiltratorToCombinatorOptimizer {
 		addEdges(mg, dag, stepConsumer, stepFiltrator);
 		addEdges(mg, dag, stepFiltrator, stepAgg);
 
-		new FiltratorToCombinatorFuser().fuse(mg, dag, Set.of(stepConsumer), Map.of());
+		QueryStepsDag fused = new FiltratorToCombinatorFuser().fuse(
+				QueryStepsDag.builder().multigraph(mg).inducedToInducer(dag).explicits(Set.of(stepConsumer)).build());
+		mg = fused.getMultigraph();
+		dag = fused.getInducedToInducer();
 
 		// The Filtrator step is replaced by a passthrough Combinator. Consumer and underlying survive; the new
 		// vertex sits between them with the same edges.
@@ -110,7 +113,10 @@ public class TestFiltratorToCombinatorOptimizer {
 		addEdges(mg, dag, stepConsumer, stepFiltrator);
 		addEdges(mg, dag, stepFiltrator, stepAgg);
 
-		new FiltratorToCombinatorFuser().fuse(mg, dag, Set.of(stepConsumer), Map.of());
+		QueryStepsDag fused = new FiltratorToCombinatorFuser().fuse(
+				QueryStepsDag.builder().multigraph(mg).inducedToInducer(dag).explicits(Set.of(stepConsumer)).build());
+		mg = fused.getMultigraph();
+		dag = fused.getInducedToInducer();
 
 		// The Filtrator's filter is identical to the step's filter, so it's redundant. Rewritten.
 		Assertions.assertThat(mg.vertexSet()).hasSize(3).contains(stepConsumer, stepAgg);
@@ -141,7 +147,10 @@ public class TestFiltratorToCombinatorOptimizer {
 		addEdges(mg, dag, stepConsumer, stepFiltrator);
 		addEdges(mg, dag, stepFiltrator, stepAgg);
 
-		new FiltratorToCombinatorFuser().fuse(mg, dag, Set.of(stepConsumer), Map.of());
+		QueryStepsDag fused = new FiltratorToCombinatorFuser().fuse(
+				QueryStepsDag.builder().multigraph(mg).inducedToInducer(dag).explicits(Set.of(stepConsumer)).build());
+		mg = fused.getMultigraph();
+		dag = fused.getInducedToInducer();
 
 		// Filtrator narrows the query, so it MUST stay — original measure preserved.
 		Assertions.assertThat(mg.vertexSet()).containsExactlyInAnyOrder(stepConsumer, stepFiltrator, stepAgg);
@@ -165,7 +174,10 @@ public class TestFiltratorToCombinatorOptimizer {
 		}
 		addEdges(mg, dag, stepFiltrator, stepAgg);
 
-		new FiltratorToCombinatorFuser().fuse(mg, dag, Set.of(stepFiltrator), Map.of());
+		QueryStepsDag fused = new FiltratorToCombinatorFuser().fuse(
+				QueryStepsDag.builder().multigraph(mg).inducedToInducer(dag).explicits(Set.of(stepFiltrator)).build());
+		mg = fused.getMultigraph();
+		dag = fused.getInducedToInducer();
 
 		Assertions.assertThat(mg.vertexSet()).containsExactlyInAnyOrder(stepFiltrator, stepAgg);
 		Assertions.assertThat(stepFiltrator.getMeasure()).isInstanceOf(Filtrator.class);

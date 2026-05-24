@@ -22,28 +22,17 @@
  */
 package eu.solven.adhoc.engine.dag.fuser;
 
-import java.util.Map;
-import java.util.Set;
-
-import org.jgrapht.graph.DefaultEdge;
-import org.jgrapht.graph.DirectedMultigraph;
-
-import eu.solven.adhoc.cuboid.ICuboid;
-import eu.solven.adhoc.engine.dag.IAdhocDag;
-import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.engine.QueryStepsDag;
 
 /**
- * No-op optimizer. Useful for tests and for projects that want to disable all DAG-level optimizations and run against
- * the raw user-built shape.
+ * No-op fuser. Useful for tests and for projects that want to disable all DAG-level optimizations and run against the
+ * raw user-built shape.
  *
  * @author Benoit Lacelle
  */
 public class NoopDagFuser implements IQueryStepsDagFuser {
 	@Override
-	public void fuse(DirectedMultigraph<CubeQueryStep, DefaultEdge> multigraph,
-			IAdhocDag<CubeQueryStep> dag,
-			Set<CubeQueryStep> roots,
-			Map<CubeQueryStep, ICuboid> stepToValue) {
-		// intentionally empty
+	public QueryStepsDag fuse(QueryStepsDag input) {
+		return input;
 	}
 }
