@@ -48,12 +48,12 @@ import lombok.extern.slf4j.Slf4j;
 
 /**
  * A page in a structure representing a table with given columns. It has fixed capacity.
- * 
+ *
  * It is not thread-safe. Especially due to lack of synchronization between `columns` and `columnNames`.
  *
  * It has thread-safety requirements when being read-only. Typically, `TablePageRow.freeze` must be thread-safe: it
  * implies the freezing process may be executed by a different thread.
- * 
+ *
  * @author Benoit Lacelle
  */
 @Slf4j
@@ -207,7 +207,10 @@ public class AppendableTablePage implements IAppendableTablePage {
 			// When it is still non-null the page was never fully frozen — the freezer chain
 			// (FsstFreezingWithContext / Utf8ToStringFreezer) never ran — so raw IByteSlice values
 			// may remain. Normalise them here so callers always receive plain Java types.
-			if (columnsWrite.get() != null && value instanceof IByteSlice bs) {
+			if (
+			// TODO Are we winning or losing CPU by checking columnsWrite.get()?
+			// columnsWrite.get() != null &&
+			value instanceof IByteSlice bs) {
 				return bs.toString();
 			}
 			return value;

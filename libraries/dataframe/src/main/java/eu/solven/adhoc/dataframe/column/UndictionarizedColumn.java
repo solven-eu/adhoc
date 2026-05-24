@@ -206,8 +206,8 @@ public class UndictionarizedColumn<T> implements IMultitypeColumnFastGet<T>, ICo
 		return switch (strategy) {
 		case StreamStrategy.ALL -> column.onValue(index);
 		case StreamStrategy.SORTED_SUB -> sortedLeg.test(index) ? column.onValue(index) : IValueProvider.NULL;
-		case StreamStrategy.SORTED_SUB_COMPLEMENT ->
-			!sortedLeg.test(index) ? column.onValue(index) : IValueProvider.NULL;
+		case StreamStrategy.SORTED_SUB_COMPLEMENT -> !sortedLeg.test(index) ? column.onValue(index)
+				: IValueProvider.NULL;
 		};
 	}
 

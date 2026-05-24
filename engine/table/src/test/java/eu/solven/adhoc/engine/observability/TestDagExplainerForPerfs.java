@@ -62,12 +62,6 @@ public class TestDagExplainerForPerfs {
 			}
 		};
 
-		QueryStepsDagBuilder queryStepsDagBuilder = new QueryStepsDagBuilder(AdhocFactories.builder().build(),
-				"someCube",
-				canResolve,
-				CubeQuery.builder().measure("someMeasure").build(),
-				IQueryStepCache.noCache());
-
 		ObservabilityCombinator root = ObservabilityCombinator.builder()
 				.name("root")
 				.underlying("underlying1")
@@ -104,9 +98,13 @@ public class TestDagExplainerForPerfs {
 		refToMeasure.put("underlying22", underlying22);
 		refToMeasure.put("a", aggregator111);
 
-		queryStepsDagBuilder.registerRootWithDescendants(Set.of(root));
+		QueryStepsDagBuilder queryStepsDagBuilder = new QueryStepsDagBuilder(AdhocFactories.builder().build(),
+				canResolve,
+				CubeQuery.builder().measure("someMeasure").build(),
+				Set.of(root),
+				IQueryStepCache.noCache());
 
-		QueryStepsDag dag = queryStepsDagBuilder.getQueryDag();
+		QueryStepsDag dag = queryStepsDagBuilder.makeQueryDag();
 
 		dagExplainer.explain(AdhocQueryIds.from("someCube", "someQueryObject"), dag);
 

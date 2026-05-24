@@ -121,6 +121,54 @@ public class MultitypeArray implements IMultitypeArray, ICompactable {
 		};
 	}
 
+	/**
+	 * Specialized append-at-end variant of {@link #add(int)}. Skips the {@code (index == size)} branch and the bounds
+	 * check inside each {@code Chunked*List}, going straight to their pure-append fast path (which reads the cached
+	 * {@code appendChunk} and short-circuits the {@code (adjusted, k, offset)} arithmetic). Used by callers that know
+	 * they are appending at the end — e.g. {@code MultitypeNavigableColumn.onAppendLast}.
+	 */
+	@Override
+	public IValueReceiver add() {
+		// BEWARE Must not clean nulls, as we need to detect after hand a null to also clear the key.
+		return CleaningValueReceiver.cleaning(cleanDirty, false, new IValueReceiver() {
+
+			@Override
+			public void onLong(long v) {
+				if (valuesType == IMultitypeConstants.MASK_EMPTY) {
+					checkSizeBeforeAdd(IMultitypeConstants.MASK_LONG);
+					valuesType = IMultitypeConstants.MASK_LONG;
+					valuesL.add(v);
+				} else if (valuesType == IMultitypeConstants.MASK_LONG) {
+					valuesL.add(v);
+				} else {
+					onObject(v);
+				}
+			}
+
+			@Override
+			public void onDouble(double v) {
+				if (valuesType == IMultitypeConstants.MASK_EMPTY) {
+					checkSizeBeforeAdd(IMultitypeConstants.MASK_DOUBLE);
+					valuesType = IMultitypeConstants.MASK_DOUBLE;
+					valuesD.add(v);
+				} else if (valuesType == IMultitypeConstants.MASK_DOUBLE) {
+					valuesD.add(v);
+				} else {
+					onObject(v);
+				}
+			}
+
+			@Override
+			public void onObject(@Nullable Object v) {
+				ensureObject();
+
+				checkSizeBeforeAdd(IMultitypeConstants.MASK_OBJECT);
+				valuesO.add(v);
+			}
+
+		});
+	}
+
 	@Override
 	public IValueReceiver add(int insertionIndex) {
 		// BEWARE Must not clean nulls, as we need to detect after hand a null to also clear the key

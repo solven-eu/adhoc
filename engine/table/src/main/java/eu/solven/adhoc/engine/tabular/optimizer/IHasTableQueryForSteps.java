@@ -44,8 +44,7 @@ public interface IHasTableQueryForSteps {
 	boolean containsStep(TableQueryStep queryStep);
 
 	/**
-	 * Combines a {@link FilteredAggregator} aliased in a {@link TableQueryV4} with the matching
-	 * {@link TableQueryStep}.
+	 * Combines a {@link FilteredAggregator} aliased in a {@link TableQueryV4} with the matching {@link TableQueryStep}.
 	 */
 	record StepAndFilteredAggregator(FilteredAggregator aggregator, TableQueryStep step) {
 

@@ -70,7 +70,6 @@ public class TestSplitTableQueries {
 
 		SplitTableQueries split = SplitTableQueries.builder()
 				.inducedToInducer(GraphHelpers.empty())
-				.lazyGraph(__ -> GraphHelpers.empty())
 				.stepToTable(step, tableQueryV4)
 				.build();
 

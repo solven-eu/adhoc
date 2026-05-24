@@ -88,7 +88,7 @@ public abstract class AMeasureQueryStep implements IMeasureQueryStep {
 			}
 
 			if (Integer.bitCount(slicesDone.incrementAndGet()) == 1 && isDebug()) {
-				log.info("[DEBUG] Done processing {} slices", slicesDone);
+				log.info("[DEBUG] Done processing {} slices by step={}", slicesDone, getStep());
 			}
 		});
 

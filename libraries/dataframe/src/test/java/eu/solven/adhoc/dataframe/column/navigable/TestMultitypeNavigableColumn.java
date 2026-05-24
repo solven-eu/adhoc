@@ -255,18 +255,23 @@ public class TestMultitypeNavigableColumn {
 
 	@Test
 	public void testCapacity() {
-		Assertions.assertThat(PepperFootprintHelper.deepSize(column.keys)).isEqualTo(40);
-		Assertions.assertThat(PepperFootprintHelper.deepSize(column.values)).isEqualTo(152);
+		// All three Chunked*List variants gained a per-instance append cache: a chunk reference + an int chunk-base
+		// (8 bytes total with alignment per list). `keys` is a ChunkedList<T> (+8). `values` is a MultitypeArray
+		// which transitively holds one ChunkedLongList, one ChunkedDoubleList and one ChunkedList — its deepSize
+		// therefore picks up 3 × 8 = 24 bytes. The cache short-circuits the (adjusted, k, offset) arithmetic on
+		// consecutive appends. Baselines before the cache: keys 40 / 616 / 616 ; values 152 / 1192 / 176.
+		Assertions.assertThat(PepperFootprintHelper.deepSize(column.keys)).isEqualTo(48);
+		Assertions.assertThat(PepperFootprintHelper.deepSize(column.values)).isEqualTo(176);
 
 		column.append("k").onLong(7L);
 
-		Assertions.assertThat(PepperFootprintHelper.deepSize(column.keys)).isEqualTo(616);
-		Assertions.assertThat(PepperFootprintHelper.deepSize(column.values)).isEqualTo(1192L);
+		Assertions.assertThat(PepperFootprintHelper.deepSize(column.keys)).isEqualTo(624);
+		Assertions.assertThat(PepperFootprintHelper.deepSize(column.values)).isEqualTo(1216L);
 
 		column.compact();
 
-		Assertions.assertThat(PepperFootprintHelper.deepSize(column.keys)).isEqualTo(616);
-		Assertions.assertThat(PepperFootprintHelper.deepSize(column.values)).isEqualTo(176L);
+		Assertions.assertThat(PepperFootprintHelper.deepSize(column.keys)).isEqualTo(624);
+		Assertions.assertThat(PepperFootprintHelper.deepSize(column.values)).isEqualTo(200L);
 
 	}
 

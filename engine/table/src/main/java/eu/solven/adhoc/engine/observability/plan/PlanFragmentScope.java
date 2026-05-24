@@ -41,7 +41,8 @@ import lombok.experimental.UtilityClass;
  * Usage from an extension:
  *
  * <pre>{@code
- * public class MyCalculatedColumn implements ICalculatedColumn { @Override
+ * public class MyCalculatedColumn implements ICalculatedColumn {
+ * 	@Override
  * 	public Object computeCoordinate(ISliceWithStep slice) {
  * 		IPlanFragmentSink sink = PlanFragmentScope.current();
  * 		sink.publishLeaf(slice.getStep(), // anchor = the cube step we serve

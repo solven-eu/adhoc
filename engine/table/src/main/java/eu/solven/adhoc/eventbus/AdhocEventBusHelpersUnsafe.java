@@ -22,8 +22,6 @@
  */
 package eu.solven.adhoc.eventbus;
 
-import java.util.List;
-
 import com.google.common.eventbus.EventBus;
 
 import lombok.RequiredArgsConstructor;
@@ -44,7 +42,7 @@ public class AdhocEventBusHelpersUnsafe {
 	 * management.
 	 */
 	@RequiredArgsConstructor
-	public static class WrappingEventBusForSlf4jFQDN implements IAdhocEventBus {
+	private static final class WrappingEventBusForSlf4jFQDN implements IAdhocEventBus {
 		final IAdhocEventBus decorated;
 
 		@Override
@@ -60,21 +58,6 @@ public class AdhocEventBusHelpersUnsafe {
 
 	public static IAdhocEventBus safeWrapper(IAdhocEventBus eventBus) {
 		return new WrappingEventBusForSlf4jFQDN(eventBus);
-	}
-
-	/**
-	 * To be added to `LoggerContext#getFrameworkPackages()` in LogBack.
-	 * 
-	 * @param frameworkPackages
-	 */
-	public static void addToFrameworkPackages(List<String> frameworkPackages) {
-		frameworkPackages.add("jdk.internal.reflect");
-		frameworkPackages.add("java.lang.reflect");
-		frameworkPackages.add("com.google.common.eventbus.Subscriber");
-		frameworkPackages.add("com.google.common.util.concurrent.DirectExecutor");
-		frameworkPackages.add("com.google.common.eventbus.Dispatcher");
-		frameworkPackages.add("com.google.common.eventbus.EventBus");
-		frameworkPackages.add(AdhocEventBusHelpersUnsafe.class.getName());
 	}
 
 	/**

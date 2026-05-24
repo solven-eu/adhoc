@@ -23,15 +23,10 @@
 package eu.solven.adhoc.engine.step;
 
 import java.util.Map;
-import java.util.function.Supplier;
 
 import org.jspecify.annotations.NonNull;
 
-import com.google.common.base.Suppliers;
-
 import eu.solven.adhoc.cuboid.slice.ISlice;
-import eu.solven.adhoc.filter.FilterBuilder;
-import eu.solven.adhoc.filter.ISliceFilter;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.ToString;
@@ -52,37 +47,6 @@ public class SliceAsMapWithStep implements ISliceWithStep {
 	@NonNull
 	@Getter
 	final CubeQueryStep queryStep;
-
-	// This cache is relevant as some transformator may request the filter multiple times, to extract multiple columns.
-	// Excluded from @ToString: the field holds a Guava memoize wrapper whose default toString leaks a Lambda
-	// reference (`Suppliers.memoize(…$$Lambda/0x…@hash)`) which is noisy and adds no information beyond what
-	// `slice` and `queryStep` already convey — the filter is entirely derived from those two fields.
-	@ToString.Exclude
-	final Supplier<ISliceFilter> filterSupplier = Suppliers.memoize(this::asFilterNoCache);
-
-	@Override
-	public ISliceFilter asFilter() {
-		return filterSupplier.get();
-	}
-
-	public ISliceFilter asFilterNoCache() {
-		// AND the slice with the step as the step may express some filters which are not in the slice
-		// e.g. if we filter color=red and groupBy country: slice would express only country=FR
-		ISliceFilter filter = FilterBuilder.and(slice.asFilter(), queryStep.getFilter()).optimize();
-
-		if (filter.isMatchNone()) {
-			// These cases are unclear.
-			// One occurrence was due to improper type conversion
-			// e.g. a filter with wrong type `y=2025` as String, while receiving a slice with `y=2025` as long.
-			// Another occurrence is Dispatchor writing into Slice which are filtered out. May happen on simple but
-			// inefficient IDecomposition writing in filtered slices.
-			throw new IllegalStateException("AND between slice=`%s` and query.filter=`%s` led to .matchNone"
-					.formatted(slice.asFilter(), queryStep.getFilter()));
-		}
-
-		// BEWARE We should also check it is always an `AND` of `EQUALS`.
-		return filter;
-	}
 
 	@Override
 	public ISliceReader sliceReader() {

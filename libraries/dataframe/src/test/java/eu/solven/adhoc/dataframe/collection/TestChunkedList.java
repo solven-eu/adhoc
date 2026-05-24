@@ -572,4 +572,43 @@ public class TestChunkedList {
 		Assertions.assertThat((List) list).hasSize(n);
 		IntStream.range(0, n).forEach(i -> Assertions.assertThat(list.get(i)).isEqualTo(i));
 	}
+
+	// Pins the append-cache invariants — see TestChunkedLongList for the rationale (same shape).
+
+	@Test
+	public void testWriteCache_survivesSet() {
+		ChunkedList<Integer> list = new ChunkedList<>();
+		IntStream.range(0, 200).forEach(list::add);
+		list.set(50, 9999);
+		list.add(424_242);
+		Assertions.assertThat(list.size()).isEqualTo(201);
+		Assertions.assertThat(list.get(50)).isEqualTo(9999);
+		Assertions.assertThat(list.get(200)).isEqualTo(424_242);
+	}
+
+	@Test
+	public void testWriteCache_invalidatesOnMidListInsert() {
+		ChunkedList<Integer> list = new ChunkedList<>();
+		IntStream.range(0, 200).forEach(list::add);
+		list.add(50, 7777);
+		list.add(424_242);
+		Assertions.assertThat(list.size()).isEqualTo(202);
+		Assertions.assertThat(list.get(50)).isEqualTo(7777);
+		Assertions.assertThat(list.get(51)).isEqualTo(50);
+		Assertions.assertThat(list.get(201)).isEqualTo(424_242);
+	}
+
+	@Test
+	public void testWriteCache_crossesChunkBoundary() {
+		ChunkedList<Integer> list = new ChunkedList<>();
+		int n = 1500;
+		for (int i = 0; i < n; i++) {
+			list.add(i * 2);
+		}
+		Assertions.assertThat(list.size()).isEqualTo(n);
+		int[] probes = { 0, 127, 128, 255, 256, 511, 512, 1023, 1024, n - 1 };
+		for (int idx : probes) {
+			Assertions.assertThat(list.get(idx)).as("index %d", idx).isEqualTo(idx * 2);
+		}
+	}
 }

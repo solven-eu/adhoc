@@ -56,7 +56,7 @@ import lombok.extern.slf4j.Slf4j;
  * @see QueryStepsDagBuilder
  */
 @Value
-@Builder
+@Builder(toBuilder = true)
 @Slf4j
 public class QueryStepsDag implements ISinkExecutionFeedback, IHasDagFromInducedToInducer<CubeQueryStep> {
 	// The DAG of a given IAdhocQuery, from queried to aggregators. It does not accept multiple times the same edge

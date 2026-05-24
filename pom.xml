@@ -483,22 +483,14 @@
 				</plugin>
 				<plugin>
 					<!-- https://github.com/CycloneDX/cyclonedx-maven-plugin -->
-					<!-- Generates a CycloneDX SBOM (Software Bill of Materials) in target/bom.json.
-					     Bound to the verify phase so it runs after tests but before install/deploy. -->
+					<!-- Generates a CycloneDX SBOM at target/classes/META-INF/sbom/application.cdx.json (shipped inside the jar).
+					     On the reactor root, this file is the project-wide aggregate scanned by .github/workflows/grype-sbom.yml.
+						     Relies on the plugin's auto-bound makeAggregateBom (default) execution at phase `package`. -->
 					<groupId>org.cyclonedx</groupId>
 					<artifactId>cyclonedx-maven-plugin</artifactId>
 					<configuration>
 						<skipNotDeployed>false</skipNotDeployed>
 					</configuration>
-					<executions>
-						<execution>
-							<id>sbom</id>
-							<goals>
-								<goal>makeBom</goal>
-							</goals>
-							<phase>verify</phase>
-						</execution>
-					</executions>
 				</plugin>
 				<plugin>
 					<!--
@@ -714,6 +706,7 @@
 							<cleanthat>
 								<sourceJdk>${maven.compiler.source}</sourceJdk>
 								<version>${cleanthat.version}</version>
+								<javaparserVersion>3.28.1</javaparserVersion>
 								<mutators>
 									<mutator>SafeAndConsensual</mutator>
 									<mutator>SafeButNotConsensual</mutator>
@@ -740,10 +733,7 @@
 
 							<eclipse>
 								<!-- matches the version of Eclipse IDE-->
-								<!--
-								https://download.eclipse.org/eclipse/downloads/ -->
-								<!-- 4.39 is broken
-								https://github.com/diffplug/spotless/issues/2897 -->
+								<!-- https://download.eclipse.org/eclipse/downloads/ -->
 								<version>4.39</version>
 								<file>${maven.multiModuleProjectDirectory}/.cleanthat/eclipse_java_code_formatter.xml</file>
 							</eclipse>

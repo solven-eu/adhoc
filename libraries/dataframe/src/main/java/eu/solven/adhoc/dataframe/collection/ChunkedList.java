@@ -67,14 +67,21 @@ import it.unimi.dsi.fastutil.objects.AbstractObjectList;
  * offset    = (unitIndex − (1 << k) + 1) · base + (adjusted &amp; (base − 1))
  * </pre>
  *
+ * <p>
+ * Specialized for append-only workloads: {@link #add(Object)} (and {@link #add(int, Object)} when
+ * {@code index == size}) hits an append-cache fast path that bypasses the per-cell chunk arithmetic. Mid-list inserts
+ * and removals work but invalidate the cache.
+ *
  * @param <E>
  *            the type of elements held in this list
- * 
+ *
  * @author Benoit Lacelle
  */
 // Relates with
 // https://github.com/eclipse-mat/mat/blob/master/plugins/org.eclipse.mat.report/src/org/eclipse/mat/collect/ArrayIntBig.java
-@SuppressWarnings("PMD.AvoidDuplicateLiterals")
+// PMD.NullAssignment: `appendChunk = null` is the documented way to invalidate the append-cache field after a mid-list
+// edit, clear, or compact — the field is the cache's sole tag and there is no sentinel `EMPTY` value to substitute.
+@SuppressWarnings({ "PMD.AvoidDuplicateLiterals", "PMD.NullAssignment" })
 public class ChunkedList<E> extends AbstractObjectList<E> implements RandomAccess, IFreezable, ICompactable {
 
 	/** Default {@code log2(base)}. Alias of {@link ChunkedArrays#LOG2_BASE_DEFAULT} kept for test access. */
@@ -112,6 +119,17 @@ public class ChunkedList<E> extends AbstractObjectList<E> implements RandomAcces
 	// from the JDK pattern
 	@SuppressWarnings("PMD.AvoidFieldNameMatchingMethodName")
 	private int size;
+
+	/**
+	 * Append cache: the chunk currently containing index {@code size} (the next append's destination), plus the global
+	 * index of that chunk's slot 0. {@code appendChunk == null} means "uninitialised / invalidated" — the next
+	 * {@link #add} falls through to the slow path which recomputes and repopulates the cache. The invariant is "valid
+	 * for the NEXT append": {@link #set} does not touch it (size unchanged), random {@link #add(int, Object)},
+	 * {@link #remove(int)} and {@link #clear} invalidate it, and {@link #compact} clears it defensively. See
+	 * {@link ChunkedLongList} for the same shape on primitive {@code long}.
+	 */
+	private @Nullable Object @Nullable [] appendChunk;
+	private int appendChunkBase;
 
 	/**
 	 * Set to {@code true} after {@link #compact()} is called. When {@code true}, all mutating operations throw
@@ -206,19 +224,27 @@ public class ChunkedList<E> extends AbstractObjectList<E> implements RandomAcces
 		Objects.checkIndex(index, size);
 		Object old = readAt(index);
 		writeAt(index, element);
+		// Cache stays valid: set() does not change `size`.
 		return (E) old;
 	}
 
 	/**
 	 * Appends {@code e} to the end of this list. Amortized O(1): a new tail chunk is allocated only when the previous
-	 * chunk is exactly full.
+	 * chunk is exactly full. Hot path uses the {@code appendChunk} cache so consecutive appends skip the
+	 * {@code (adjusted, k, offset)} arithmetic.
 	 */
 	@Override
 	public boolean add(E e) {
 		checkNotCompacted();
-		ensureTailChunkFor(size);
-		writeAt(size, e);
-		size++;
+		int s = size;
+		@Nullable
+		Object @Nullable [] wc = appendChunk;
+		if (wc != null && s - appendChunkBase < wc.length) {
+			wc[s - appendChunkBase] = e;
+			size = s + 1;
+			return true;
+		}
+		appendSlow(e);
 		return true;
 	}
 
@@ -226,13 +252,45 @@ public class ChunkedList<E> extends AbstractObjectList<E> implements RandomAcces
 	@Override
 	public void add(int index, E element) {
 		checkNotCompacted();
-		Objects.checkIndex(index, size + 1);
-		ensureTailChunkFor(size);
-		for (int i = size; i > index; i--) {
+		int s = size;
+		Objects.checkIndex(index, s + 1);
+		if (index == s) {
+			@Nullable
+			Object @Nullable [] wc = appendChunk;
+			if (wc != null && s - appendChunkBase < wc.length) {
+				wc[s - appendChunkBase] = element;
+				size = s + 1;
+				return;
+			}
+			appendSlow(element);
+			return;
+		}
+		// Mid-list insert: the chunk for the new `size` may differ from the cached one.
+		appendChunk = null;
+		ensureTailChunkFor(s);
+		for (int i = s; i > index; i--) {
 			writeAt(i, readAt(i - 1));
 		}
 		writeAt(index, element);
-		size++;
+		size = s + 1;
+	}
+
+	// Slow path: ensure the destination chunk exists, write, then repoint the cache so consecutive appends stay
+	// on the fast path. See {@link ChunkedLongList#appendSlow} for the same logic on primitive `long`.
+	private void appendSlow(@Nullable E e) {
+		int s = size;
+		ensureTailChunkFor(s);
+		writeAt(s, e);
+		if (s < base) {
+			appendChunk = head;
+			appendChunkBase = 0;
+		} else {
+			int unitIndex = (s - base) >> log2Base;
+			int chunkIndex = ChunkedArrays.tailChunkIndex(unitIndex);
+			appendChunk = Objects.requireNonNull(Objects.requireNonNull(tail)[chunkIndex]);
+			appendChunkBase = base << chunkIndex;
+		}
+		size = s + 1;
 	}
 
 	/** Removes and returns the element at {@code index}, shifting subsequent elements left. O(n). */
@@ -248,6 +306,7 @@ public class ChunkedList<E> extends AbstractObjectList<E> implements RandomAcces
 		// Null out the vacated last slot to allow GC.
 		writeAt(size - 1, null);
 		size--;
+		appendChunk = null;
 		return (E) old;
 	}
 
@@ -270,6 +329,7 @@ public class ChunkedList<E> extends AbstractObjectList<E> implements RandomAcces
 			}
 		}
 		size = 0;
+		appendChunk = null;
 	}
 
 	// --- compact ---
@@ -310,6 +370,7 @@ public class ChunkedList<E> extends AbstractObjectList<E> implements RandomAcces
 			}
 		}
 		compacted = true;
+		appendChunk = null;
 	}
 
 	@Override

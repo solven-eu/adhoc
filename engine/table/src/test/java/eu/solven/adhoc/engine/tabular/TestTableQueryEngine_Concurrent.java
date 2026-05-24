@@ -57,7 +57,6 @@ public class TestTableQueryEngine_Concurrent {
 
 	@Test
 	public void testConcurrentTableQueries() throws InterruptedException {
-
 		ITableWrapper tableWrapper = Mockito.mock(ITableWrapper.class);
 		Mockito.when(tableWrapper.getName()).thenReturn("someTableName");
 
@@ -92,7 +91,6 @@ public class TestTableQueryEngine_Concurrent {
 			TableQueryStep stepB = TableQueryStep.builder().aggregator(Aggregator.sum("b")).build();
 			SplitTableQueries split = SplitTableQueries.builder()
 					.inducedToInducer(GraphHelpers.empty())
-					.lazyGraph(les -> GraphHelpers.empty())
 					.stepToTable(stepA,
 							TableQueryV4.builder()
 									.groupByToAggregator(IGroupBy.GRAND_TOTAL,

@@ -48,39 +48,69 @@ package eu.solven.adhoc.pivotable.chat;
  * @author Benoit Lacelle
  */
 // `LeftCurly` needed until Eclipse4.39?
-@SuppressWarnings({"checkstyle:LeftCurly","checkstyle:RightCurly","checkstyle:LineLength","checkstyle:MagicNumber"})public record ChatAvailability(boolean enabled,String reason,Long retryAfterSeconds){
+@SuppressWarnings({ "checkstyle:LeftCurly",
+		"checkstyle:RightCurly",
+		"checkstyle:LineLength",
+		"checkstyle:MagicNumber" })
+public record ChatAvailability(boolean enabled, String reason, Long retryAfterSeconds) {
 
-/** No API key (or OAuth token) is configured — the chat will never reach Anthropic until configuration changes. */
-public static final String REASON_NOT_CONFIGURED="NOT_CONFIGURED";
+	/** No API key (or OAuth token) is configured — the chat will never reach Anthropic until configuration changes. */
+	public static final String REASON_NOT_CONFIGURED = "NOT_CONFIGURED";
 
-/** API key is present but {@code adhoc.pivotable.chat.enabled=false} explicitly disables the assistant. */
-public static final String REASON_DISABLED_BY_CONFIG="DISABLED_BY_CONFIG";
+	/** API key is present but {@code adhoc.pivotable.chat.enabled=false} explicitly disables the assistant. */
+	public static final String REASON_DISABLED_BY_CONFIG = "DISABLED_BY_CONFIG";
 
-/** {@link ChatAvailabilityGuard} is in an active cooldown window after a long-term upstream failure. */
-public static final String REASON_COOLDOWN="COOLDOWN";
+	/** {@link ChatAvailabilityGuard} is in an active cooldown window after a long-term upstream failure. */
+	public static final String REASON_COOLDOWN = "COOLDOWN";
 
-/** Convert to the {@code Retry-After} header value, in seconds, or 0 when not in a cooldown state. */
-public long retryAfterSecondsOrZero(){if(retryAfterSeconds==null){return 0L;}else{return retryAfterSeconds;}}
+	/** Convert to the {@code Retry-After} header value, in seconds, or 0 when not in a cooldown state. */
+	public long retryAfterSecondsOrZero() {
+		if (retryAfterSeconds == null) {
+			return 0L;
+		} else {
+			return retryAfterSeconds;
+		}
+	}
 
-public static ChatAvailability ofEnabled(){return new ChatAvailability(true,null,null);}
+	public static ChatAvailability ofEnabled() {
+		return new ChatAvailability(true, null, null);
+	}
 
-public static ChatAvailability ofNotConfigured(){return new ChatAvailability(false,REASON_NOT_CONFIGURED,null);}
+	public static ChatAvailability ofNotConfigured() {
+		return new ChatAvailability(false, REASON_NOT_CONFIGURED, null);
+	}
 
-public static ChatAvailability ofDisabledByConfig(){return new ChatAvailability(false,REASON_DISABLED_BY_CONFIG,null);}
+	public static ChatAvailability ofDisabledByConfig() {
+		return new ChatAvailability(false, REASON_DISABLED_BY_CONFIG, null);
+	}
 
-public static ChatAvailability ofCooldown(long retryAfterSeconds){return new ChatAvailability(false,REASON_COOLDOWN,retryAfterSeconds);}
+	public static ChatAvailability ofCooldown(long retryAfterSeconds) {
+		return new ChatAvailability(false, REASON_COOLDOWN, retryAfterSeconds);
+	}
 
-/**
- * Resolve the current availability by combining static config (API key presence, explicit on/off toggle) with the
- * runtime cooldown maintained by {@link ChatAvailabilityGuard}. Cheap pure function — callers can invoke this on every
- * request without caching concerns.
- *
- * @param apiKey
- *            the configured Anthropic API key / OAuth token; {@code null} or blank means "not configured"
- * @param enabledByConfig
- *            mirrors {@code adhoc.pivotable.chat.enabled}; {@code false} disables chat even when the key is set
- * @param guard
- *            the runtime cooldown tracker (must not be {@code null})
- * @return the current {@link ChatAvailability} snapshot
- */
-public static ChatAvailability resolve(String apiKey,boolean enabledByConfig,ChatAvailabilityGuard guard){if(apiKey==null||apiKey.isBlank()){return ofNotConfigured();}if(!enabledByConfig){return ofDisabledByConfig();}return guard.disabledUntil().map(until->{long retry=Math.max(0L,until.getEpochSecond()-System.currentTimeMillis()/1000L);return ofCooldown(retry);}).orElseGet(ChatAvailability::ofEnabled);}}
+	/**
+	 * Resolve the current availability by combining static config (API key presence, explicit on/off toggle) with the
+	 * runtime cooldown maintained by {@link ChatAvailabilityGuard}. Cheap pure function — callers can invoke this on
+	 * every request without caching concerns.
+	 *
+	 * @param apiKey
+	 *            the configured Anthropic API key / OAuth token; {@code null} or blank means "not configured"
+	 * @param enabledByConfig
+	 *            mirrors {@code adhoc.pivotable.chat.enabled}; {@code false} disables chat even when the key is set
+	 * @param guard
+	 *            the runtime cooldown tracker (must not be {@code null})
+	 * @return the current {@link ChatAvailability} snapshot
+	 */
+	public static ChatAvailability resolve(String apiKey, boolean enabledByConfig, ChatAvailabilityGuard guard) {
+		if (apiKey == null || apiKey.isBlank()) {
+			return ofNotConfigured();
+		}
+		if (!enabledByConfig) {
+			return ofDisabledByConfig();
+		}
+		return guard.disabledUntil().map(until -> {
+			long retry = Math.max(0L, until.getEpochSecond() - System.currentTimeMillis() / 1000L);
+			return ofCooldown(retry);
+		}).orElseGet(ChatAvailability::ofEnabled);
+	}
+}

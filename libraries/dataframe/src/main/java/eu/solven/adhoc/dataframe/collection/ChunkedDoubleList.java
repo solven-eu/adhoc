@@ -50,8 +50,16 @@ import it.unimi.dsi.fastutil.doubles.DoubleList;
  * <p>
  * See {@link ChunkedArrays} for the index-arithmetic shared with {@link ChunkedList} and {@link ChunkedLongList}.
  *
+ * <p>
+ * Specialized for append-only workloads: {@link #add(double)} (and {@link #add(int, double)} when
+ * {@code index == size}) hits an append-cache fast path that bypasses the per-cell chunk arithmetic. Mid-list inserts
+ * and removals work but invalidate the cache.
+ *
  * @author Benoit Lacelle
  */
+// `appendChunk = null` is the documented way to invalidate the append-cache field after a mid-list edit, clear, or
+// compact — the field is the cache's sole tag and there is no sentinel `EMPTY` value to substitute.
+@SuppressWarnings("PMD.NullAssignment")
 public class ChunkedDoubleList extends AbstractDoubleList implements IFreezable, ICompactable {
 
 	private final int log2Base;
@@ -64,6 +72,11 @@ public class ChunkedDoubleList extends AbstractDoubleList implements IFreezable,
 	// from the JDK pattern
 	@SuppressWarnings("PMD.AvoidFieldNameMatchingMethodName")
 	private int size;
+
+	// Append cache: chunk currently containing index `size` (the next append's destination), plus the global index
+	// of that chunk's slot 0. See {@link ChunkedLongList} for the full invariant — same shape applies here.
+	private double @Nullable [] appendChunk;
+	private int appendChunkBase;
 
 	// private: one-way freeze transition must not be bypassed by subclasses
 	private boolean compacted;
@@ -103,19 +116,69 @@ public class ChunkedDoubleList extends AbstractDoubleList implements IFreezable,
 		Objects.checkIndex(index, size);
 		double old = readAt(index);
 		writeAt(index, k);
+		// Cache stays valid: set() does not change `size`.
 		return old;
+	}
+
+	/**
+	 * Pure append. Hot path: bypasses the bounds check and {@code index == size} branch of {@link #add(int, double)} by
+	 * reading the cached {@code appendChunk} directly.
+	 */
+	@Override
+	public boolean add(double k) {
+		checkNotCompacted();
+		int s = size;
+		double[] wc = appendChunk;
+		if (wc != null && s - appendChunkBase < wc.length) {
+			wc[s - appendChunkBase] = k;
+			size = s + 1;
+			return true;
+		}
+		appendSlow(k);
+		return true;
 	}
 
 	@Override
 	public void add(int index, double k) {
 		checkNotCompacted();
-		Objects.checkIndex(index, size + 1);
-		ensureTailChunkFor(size);
-		for (int i = size; i > index; i--) {
+		int s = size;
+		Objects.checkIndex(index, s + 1);
+		if (index == s) {
+			double[] wc = appendChunk;
+			if (wc != null && s - appendChunkBase < wc.length) {
+				wc[s - appendChunkBase] = k;
+				size = s + 1;
+				return;
+			}
+			appendSlow(k);
+			return;
+		}
+		// Mid-list insert: the chunk for the new `size` may differ from the cached one.
+		appendChunk = null;
+		ensureTailChunkFor(s);
+		for (int i = s; i > index; i--) {
 			writeAt(i, readAt(i - 1));
 		}
 		writeAt(index, k);
-		size++;
+		size = s + 1;
+	}
+
+	// Slow path: ensure the destination chunk exists, write, then repoint the cache so consecutive appends stay
+	// on the fast path. See {@link ChunkedLongList#appendSlow} for the same logic on `long`.
+	private void appendSlow(double k) {
+		int s = size;
+		ensureTailChunkFor(s);
+		writeAt(s, k);
+		if (s < base) {
+			appendChunk = head;
+			appendChunkBase = 0;
+		} else {
+			int unitIndex = (s - base) >> log2Base;
+			int chunkIndex = ChunkedArrays.tailChunkIndex(unitIndex);
+			appendChunk = Objects.requireNonNull(Objects.requireNonNull(tail)[chunkIndex]);
+			appendChunkBase = base << chunkIndex;
+		}
+		size = s + 1;
 	}
 
 	@Override
@@ -127,6 +190,7 @@ public class ChunkedDoubleList extends AbstractDoubleList implements IFreezable,
 			writeAt(i, readAt(i + 1));
 		}
 		size--;
+		appendChunk = null;
 		return old;
 	}
 
@@ -140,6 +204,7 @@ public class ChunkedDoubleList extends AbstractDoubleList implements IFreezable,
 		checkNotCompacted();
 		// Primitive arrays need no nulling — we only reset the logical size.
 		size = 0;
+		appendChunk = null;
 	}
 
 	// --- compact ---
@@ -167,6 +232,7 @@ public class ChunkedDoubleList extends AbstractDoubleList implements IFreezable,
 			}
 		}
 		compacted = true;
+		appendChunk = null;
 	}
 
 	@Override
