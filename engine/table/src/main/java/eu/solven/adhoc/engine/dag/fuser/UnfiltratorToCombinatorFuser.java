@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.engine.optimizer;
+package eu.solven.adhoc.engine.dag.fuser;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -51,16 +51,16 @@ import lombok.extern.slf4j.Slf4j;
  * {@code combinationKey=COALESCE} does.
  *
  * <p>
- * Intended to run BEFORE {@link FoldCombinatorSubgraphsOptimizer} in a {@link CompositeQueryStepsDagOptimizer}: the
+ * Intended to run BEFORE {@link CombinatorSubgraphsFuser} in a {@link CompositeDagFuser}: the
  * resulting passthrough Combinators participate in chain / subgraph folding.
  *
  * @author Benoit Lacelle
  */
 @Slf4j
-public class UnfiltratorToCombinatorOptimizer implements IQueryStepsDagOptimizer {
+public class UnfiltratorToCombinatorFuser implements IQueryStepsDagFuser {
 
 	@Override
-	public void optimize(DirectedMultigraph<CubeQueryStep, DefaultEdge> multigraph,
+	public void fuse(DirectedMultigraph<CubeQueryStep, DefaultEdge> multigraph,
 			IAdhocDag<CubeQueryStep> dag,
 			Set<CubeQueryStep> roots,
 			Map<CubeQueryStep, ICuboid> stepToValue) {
@@ -85,7 +85,7 @@ public class UnfiltratorToCombinatorOptimizer implements IQueryStepsDagOptimizer
 					.combinationKey(CoalesceCombination.KEY)
 					.tags(unfiltrator.getTags())
 					.build();
-			OptimizerHelpers.replaceStepMeasure(multigraph, dag, step, passthrough);
+			DagOptimizerHelpers.replaceStepMeasure(multigraph, dag, step, passthrough);
 
 			log.debug("Rewrote Unfiltrator step {} as passthrough Combinator (editor is a no-op on step filter)",
 					unfiltrator.getName());

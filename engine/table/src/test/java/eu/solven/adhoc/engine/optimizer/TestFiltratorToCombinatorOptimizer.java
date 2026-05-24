@@ -32,6 +32,7 @@ import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.engine.dag.AdhocDag;
 import eu.solven.adhoc.engine.dag.IAdhocDag;
+import eu.solven.adhoc.engine.dag.fuser.FiltratorToCombinatorFuser;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.filter.ColumnFilter;
 import eu.solven.adhoc.filter.ISliceFilter;
@@ -72,7 +73,7 @@ public class TestFiltratorToCombinatorOptimizer {
 		addEdges(mg, dag, stepConsumer, stepFiltrator);
 		addEdges(mg, dag, stepFiltrator, stepAgg);
 
-		new FiltratorToCombinatorOptimizer().optimize(mg, dag, Set.of(stepConsumer), Map.of());
+		new FiltratorToCombinatorFuser().fuse(mg, dag, Set.of(stepConsumer), Map.of());
 
 		// The Filtrator step is replaced by a passthrough Combinator. Consumer and underlying survive; the new
 		// vertex sits between them with the same edges.
@@ -109,7 +110,7 @@ public class TestFiltratorToCombinatorOptimizer {
 		addEdges(mg, dag, stepConsumer, stepFiltrator);
 		addEdges(mg, dag, stepFiltrator, stepAgg);
 
-		new FiltratorToCombinatorOptimizer().optimize(mg, dag, Set.of(stepConsumer), Map.of());
+		new FiltratorToCombinatorFuser().fuse(mg, dag, Set.of(stepConsumer), Map.of());
 
 		// The Filtrator's filter is identical to the step's filter, so it's redundant. Rewritten.
 		Assertions.assertThat(mg.vertexSet()).hasSize(3).contains(stepConsumer, stepAgg);
@@ -140,7 +141,7 @@ public class TestFiltratorToCombinatorOptimizer {
 		addEdges(mg, dag, stepConsumer, stepFiltrator);
 		addEdges(mg, dag, stepFiltrator, stepAgg);
 
-		new FiltratorToCombinatorOptimizer().optimize(mg, dag, Set.of(stepConsumer), Map.of());
+		new FiltratorToCombinatorFuser().fuse(mg, dag, Set.of(stepConsumer), Map.of());
 
 		// Filtrator narrows the query, so it MUST stay — original measure preserved.
 		Assertions.assertThat(mg.vertexSet()).containsExactlyInAnyOrder(stepConsumer, stepFiltrator, stepAgg);
@@ -164,7 +165,7 @@ public class TestFiltratorToCombinatorOptimizer {
 		}
 		addEdges(mg, dag, stepFiltrator, stepAgg);
 
-		new FiltratorToCombinatorOptimizer().optimize(mg, dag, Set.of(stepFiltrator), Map.of());
+		new FiltratorToCombinatorFuser().fuse(mg, dag, Set.of(stepFiltrator), Map.of());
 
 		Assertions.assertThat(mg.vertexSet()).containsExactlyInAnyOrder(stepFiltrator, stepAgg);
 		Assertions.assertThat(stepFiltrator.getMeasure()).isInstanceOf(Filtrator.class);

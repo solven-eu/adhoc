@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.engine.optimizer;
+package eu.solven.adhoc.engine.dag.fuser;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -74,7 +74,7 @@ import lombok.extern.slf4j.Slf4j;
  * @author Benoit Lacelle
  */
 @Slf4j
-public class FoldCombinatorSubgraphsOptimizer implements IQueryStepsDagOptimizer {
+public class CombinatorSubgraphsFuser implements IQueryStepsDagFuser {
 
 	/** Default minimum number of folded internals — per {@code docs/optimization.md}, n=2 is the right threshold. */
 	public static final int DEFAULT_MIN_CHAIN_LENGTH = 2;
@@ -82,15 +82,15 @@ public class FoldCombinatorSubgraphsOptimizer implements IQueryStepsDagOptimizer
 	private final int minChainLength;
 	private final IComposedNameStrategy nameStrategy;
 
-	public FoldCombinatorSubgraphsOptimizer() {
+	public CombinatorSubgraphsFuser() {
 		this(DEFAULT_MIN_CHAIN_LENGTH, IComposedNameStrategy.DEFAULT);
 	}
 
-	public FoldCombinatorSubgraphsOptimizer(int minChainLength) {
+	public CombinatorSubgraphsFuser(int minChainLength) {
 		this(minChainLength, IComposedNameStrategy.DEFAULT);
 	}
 
-	public FoldCombinatorSubgraphsOptimizer(int minChainLength, IComposedNameStrategy nameStrategy) {
+	public CombinatorSubgraphsFuser(int minChainLength, IComposedNameStrategy nameStrategy) {
 		if (minChainLength < 2) {
 			throw new IllegalArgumentException("minChainLength must be >= 2, got: " + minChainLength);
 		}
@@ -99,7 +99,7 @@ public class FoldCombinatorSubgraphsOptimizer implements IQueryStepsDagOptimizer
 	}
 
 	@Override
-	public void optimize(DirectedMultigraph<CubeQueryStep, DefaultEdge> multigraph,
+	public void fuse(DirectedMultigraph<CubeQueryStep, DefaultEdge> multigraph,
 			IAdhocDag<CubeQueryStep> dag,
 			Set<CubeQueryStep> roots,
 			Map<CubeQueryStep, ICuboid> stepToValue) {

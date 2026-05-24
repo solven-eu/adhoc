@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.engine.optimizer;
+package eu.solven.adhoc.engine.dag.fuser;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -44,16 +44,16 @@ import lombok.extern.slf4j.Slf4j;
  * underlyings at the same granularity a Combinator would request.
  *
  * <p>
- * Intended to run BEFORE {@link FoldCombinatorSubgraphsOptimizer} in a {@link CompositeQueryStepsDagOptimizer}: the
+ * Intended to run BEFORE {@link CombinatorSubgraphsFuser} in a {@link CompositeDagFuser}: the
  * rewritten Combinators become eligible for chain / subgraph folding.
  *
  * @author Benoit Lacelle
  */
 @Slf4j
-public class PartitionorToCombinatorOptimizer implements IQueryStepsDagOptimizer {
+public class PartitionorToCombinatorFuser implements IQueryStepsDagFuser {
 
 	@Override
-	public void optimize(DirectedMultigraph<CubeQueryStep, DefaultEdge> multigraph,
+	public void fuse(DirectedMultigraph<CubeQueryStep, DefaultEdge> multigraph,
 			IAdhocDag<CubeQueryStep> dag,
 			Set<CubeQueryStep> roots,
 			Map<CubeQueryStep, ICuboid> stepToValue) {
@@ -82,7 +82,7 @@ public class PartitionorToCombinatorOptimizer implements IQueryStepsDagOptimizer
 			for (Map.Entry<String, ?> opt : partitionor.getCombinationOptions().entrySet()) {
 				builder.combinationOption(opt.getKey(), opt.getValue());
 			}
-			OptimizerHelpers.replaceStepMeasure(multigraph, dag, step, builder.build());
+			DagOptimizerHelpers.replaceStepMeasure(multigraph, dag, step, builder.build());
 
 			log.debug("Rewrote Partitionor step {} as Combinator", partitionor.getName());
 		}

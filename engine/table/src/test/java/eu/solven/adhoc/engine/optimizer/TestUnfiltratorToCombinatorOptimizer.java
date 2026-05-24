@@ -32,6 +32,7 @@ import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.engine.dag.AdhocDag;
 import eu.solven.adhoc.engine.dag.IAdhocDag;
+import eu.solven.adhoc.engine.dag.fuser.UnfiltratorToCombinatorFuser;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.filter.ColumnFilter;
 import eu.solven.adhoc.filter.ISliceFilter;
@@ -74,7 +75,7 @@ public class TestUnfiltratorToCombinatorOptimizer {
 		addEdges(mg, dag, stepConsumer, stepUnfiltrator);
 		addEdges(mg, dag, stepUnfiltrator, stepAgg);
 
-		new UnfiltratorToCombinatorOptimizer().optimize(mg, dag, Set.of(stepConsumer), Map.of());
+		new UnfiltratorToCombinatorFuser().fuse(mg, dag, Set.of(stepConsumer), Map.of());
 
 		Assertions.assertThat(mg.vertexSet()).hasSize(3).contains(stepConsumer, stepAgg);
 		CubeQueryStep rewritten =
@@ -110,7 +111,7 @@ public class TestUnfiltratorToCombinatorOptimizer {
 		addEdges(mg, dag, stepConsumer, stepUnfiltrator);
 		addEdges(mg, dag, stepUnfiltrator, stepAgg);
 
-		new UnfiltratorToCombinatorOptimizer().optimize(mg, dag, Set.of(stepConsumer), Map.of());
+		new UnfiltratorToCombinatorFuser().fuse(mg, dag, Set.of(stepConsumer), Map.of());
 
 		Assertions.assertThat(mg.vertexSet()).hasSize(3).contains(stepConsumer, stepAgg);
 		CubeQueryStep rewritten =
@@ -141,7 +142,7 @@ public class TestUnfiltratorToCombinatorOptimizer {
 		addEdges(mg, dag, stepConsumer, stepUnfiltrator);
 		addEdges(mg, dag, stepUnfiltrator, stepAgg);
 
-		new UnfiltratorToCombinatorOptimizer().optimize(mg, dag, Set.of(stepConsumer), Map.of());
+		new UnfiltratorToCombinatorFuser().fuse(mg, dag, Set.of(stepConsumer), Map.of());
 
 		Assertions.assertThat(mg.vertexSet()).containsExactlyInAnyOrder(stepConsumer, stepUnfiltrator, stepAgg);
 		Assertions.assertThat(stepUnfiltrator.getMeasure()).isInstanceOf(Unfiltrator.class);
@@ -170,7 +171,7 @@ public class TestUnfiltratorToCombinatorOptimizer {
 		addEdges(mg, dag, stepConsumer, stepUnfiltrator);
 		addEdges(mg, dag, stepUnfiltrator, stepAgg);
 
-		new UnfiltratorToCombinatorOptimizer().optimize(mg, dag, Set.of(stepConsumer), Map.of());
+		new UnfiltratorToCombinatorFuser().fuse(mg, dag, Set.of(stepConsumer), Map.of());
 
 		Assertions.assertThat(mg.vertexSet()).hasSize(3).contains(stepConsumer, stepAgg);
 		CubeQueryStep rewritten =
@@ -196,7 +197,7 @@ public class TestUnfiltratorToCombinatorOptimizer {
 		}
 		addEdges(mg, dag, stepUnfiltrator, stepAgg);
 
-		new UnfiltratorToCombinatorOptimizer().optimize(mg, dag, Set.of(stepUnfiltrator), Map.of());
+		new UnfiltratorToCombinatorFuser().fuse(mg, dag, Set.of(stepUnfiltrator), Map.of());
 
 		Assertions.assertThat(mg.vertexSet()).containsExactlyInAnyOrder(stepUnfiltrator, stepAgg);
 		Assertions.assertThat(stepUnfiltrator.getMeasure()).isInstanceOf(Unfiltrator.class);

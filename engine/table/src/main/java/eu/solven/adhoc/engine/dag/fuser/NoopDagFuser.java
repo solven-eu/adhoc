@@ -20,53 +20,30 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.engine.optimizer;
+package eu.solven.adhoc.engine.dag.fuser;
 
-import java.util.Arrays;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.DirectedMultigraph;
 
-import com.google.common.collect.ImmutableList;
-
 import eu.solven.adhoc.cuboid.ICuboid;
 import eu.solven.adhoc.engine.dag.IAdhocDag;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 
 /**
- * Runs a sequence of {@link IQueryStepsDagOptimizer}s in order. Useful when several independent rewrites should apply
- * to the same DAG; each delegate sees the output of the previous one.
- *
- * <p>
- * Composition order matters: a later optimizer can take advantage of earlier ones. For example, a
- * {@code PartitionorToCombinatorOptimizer} (turning a Partitionor whose partitioning columns are already in the groupBy
- * into a plain Combinator) should run BEFORE {@link FoldCombinatorSubgraphsOptimizer} so the newly-introduced
- * Combinators participate in the chain folding.
+ * No-op optimizer. Useful for tests and for projects that want to disable all DAG-level optimizations and run against
+ * the raw user-built shape.
  *
  * @author Benoit Lacelle
  */
-public class CompositeQueryStepsDagOptimizer implements IQueryStepsDagOptimizer {
-
-	private final List<IQueryStepsDagOptimizer> delegates;
-
-	public CompositeQueryStepsDagOptimizer(IQueryStepsDagOptimizer... delegates) {
-		this(Arrays.asList(delegates));
-	}
-
-	public CompositeQueryStepsDagOptimizer(List<? extends IQueryStepsDagOptimizer> delegates) {
-		this.delegates = ImmutableList.copyOf(delegates);
-	}
-
+public class NoopDagFuser implements IQueryStepsDagFuser {
 	@Override
-	public void optimize(DirectedMultigraph<CubeQueryStep, DefaultEdge> multigraph,
+	public void fuse(DirectedMultigraph<CubeQueryStep, DefaultEdge> multigraph,
 			IAdhocDag<CubeQueryStep> dag,
 			Set<CubeQueryStep> roots,
 			Map<CubeQueryStep, ICuboid> stepToValue) {
-		for (IQueryStepsDagOptimizer delegate : delegates) {
-			delegate.optimize(multigraph, dag, roots, stepToValue);
-		}
+		// intentionally empty
 	}
 }

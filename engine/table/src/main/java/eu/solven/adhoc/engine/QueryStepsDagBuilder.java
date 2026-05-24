@@ -53,12 +53,12 @@ import eu.solven.adhoc.engine.cache.IQueryStepCache;
 import eu.solven.adhoc.engine.cache.TransverseCacheHelper;
 import eu.solven.adhoc.engine.dag.AdhocDag;
 import eu.solven.adhoc.engine.dag.IAdhocDag;
-import eu.solven.adhoc.engine.optimizer.CompositeQueryStepsDagOptimizer;
-import eu.solven.adhoc.engine.optimizer.FiltratorToCombinatorOptimizer;
-import eu.solven.adhoc.engine.optimizer.FoldCombinatorSubgraphsOptimizer;
-import eu.solven.adhoc.engine.optimizer.IQueryStepsDagOptimizer;
-import eu.solven.adhoc.engine.optimizer.PartitionorToCombinatorOptimizer;
-import eu.solven.adhoc.engine.optimizer.UnfiltratorToCombinatorOptimizer;
+import eu.solven.adhoc.engine.dag.fuser.CompositeDagFuser;
+import eu.solven.adhoc.engine.dag.fuser.FiltratorToCombinatorFuser;
+import eu.solven.adhoc.engine.dag.fuser.CombinatorSubgraphsFuser;
+import eu.solven.adhoc.engine.dag.fuser.IQueryStepsDagFuser;
+import eu.solven.adhoc.engine.dag.fuser.PartitionorToCombinatorFuser;
+import eu.solven.adhoc.engine.dag.fuser.UnfiltratorToCombinatorFuser;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.IHasTransverseCache;
 import eu.solven.adhoc.engine.step.IWhereGroupByQuery;
@@ -132,10 +132,10 @@ public class QueryStepsDagBuilder implements IQueryStepsDagBuilder, IHasTransver
 	// case. TODO: lift the user-filter-slice synthesis to a single engine-level post-processing pass shared across
 	// measure types; once Shiftor no longer owns this concern, the rewrite becomes safe and can be added here.
 	@NonNull
-	IQueryStepsDagOptimizer optimizer = new CompositeQueryStepsDagOptimizer(new PartitionorToCombinatorOptimizer(),
-			new FiltratorToCombinatorOptimizer(),
-			new UnfiltratorToCombinatorOptimizer(),
-			new FoldCombinatorSubgraphsOptimizer());
+	IQueryStepsDagFuser optimizer = new CompositeDagFuser(new PartitionorToCombinatorFuser(),
+			new FiltratorToCombinatorFuser(),
+			new UnfiltratorToCombinatorFuser(),
+			new CombinatorSubgraphsFuser());
 
 	// Used to store transient information, like slow-to-evaluate information
 	// Should be a threadSafe implementation
@@ -469,7 +469,7 @@ public class QueryStepsDagBuilder implements IQueryStepsDagBuilder, IHasTransver
 		// `dag` and `multigraph` in place; `roots` and `stepToValue` are read-only inputs that constrain what may
 		// be removed. Tests / projects that need the un-optimised shape inject a NoopQueryStepsDagOptimizer via
 		// `withOptimizer(...)`.
-		optimizer.optimize(multigraph, dag, roots, stepToValue);
+		optimizer.fuse(multigraph, dag, roots, stepToValue);
 
 		// Post-optimization invariants: an optimizer is free to add / remove / rewire intermediate nodes, but it
 		// must not touch the structural anchors of the DAG. Re-check them defensively so a buggy custom optimizer
@@ -478,7 +478,7 @@ public class QueryStepsDagBuilder implements IQueryStepsDagBuilder, IHasTransver
 	}
 
 	/**
-	 * Verifies invariants that every {@link IQueryStepsDagOptimizer} must preserve:
+	 * Verifies invariants that every {@link IQueryStepsDagFuser} must preserve:
 	 * <ul>
 	 * <li>every step in {@link #roots} (user-requested) is still in the graph with the same identity;</li>
 	 * <li>every leaf captured before the optimizer ran is still present — a leaf step represents the data the table
@@ -509,10 +509,10 @@ public class QueryStepsDagBuilder implements IQueryStepsDagBuilder, IHasTransver
 	}
 
 	/**
-	 * Replace the default {@link IQueryStepsDagOptimizer} (a {@link FoldCombinatorSubgraphsOptimizer}). Useful for
+	 * Replace the default {@link IQueryStepsDagFuser} (a {@link CombinatorSubgraphsFuser}). Useful for
 	 * tests that want to inspect the un-optimised DAG, and for projects providing custom rewrite rules.
 	 */
-	public QueryStepsDagBuilder withOptimizer(IQueryStepsDagOptimizer optimizer) {
+	public QueryStepsDagBuilder withOptimizer(IQueryStepsDagFuser optimizer) {
 		this.optimizer = optimizer;
 		return this;
 	}

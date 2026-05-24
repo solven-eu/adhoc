@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.engine.optimizer;
+package eu.solven.adhoc.engine.dag.fuser;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -33,16 +33,15 @@ import org.jgrapht.graph.DirectedMultigraph;
 import eu.solven.adhoc.engine.dag.IAdhocDag;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.model.measure.IMeasure;
+import lombok.experimental.UtilityClass;
 
 /**
- * Shared utilities for {@link IQueryStepsDagOptimizer} implementations.
+ * Shared utilities for {@link IQueryStepsDagFuser} implementations.
  *
  * @author Benoit Lacelle
  */
-final class OptimizerHelpers {
-
-	private OptimizerHelpers() {
-	}
+@UtilityClass
+final class DagOptimizerHelpers {
 
 	/**
 	 * Replace the measure carried by {@code oldStep} with {@code newMeasure}, preserving every consumer's outgoing-edge

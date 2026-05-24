@@ -20,30 +20,53 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.engine.optimizer;
+package eu.solven.adhoc.engine.dag.fuser;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.DirectedMultigraph;
 
+import com.google.common.collect.ImmutableList;
+
 import eu.solven.adhoc.cuboid.ICuboid;
 import eu.solven.adhoc.engine.dag.IAdhocDag;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 
 /**
- * No-op optimizer. Useful for tests and for projects that want to disable all DAG-level optimizations and run against
- * the raw user-built shape.
+ * Runs a sequence of {@link IQueryStepsDagFuser}s in order. Useful when several independent rewrites should apply
+ * to the same DAG; each delegate sees the output of the previous one.
+ *
+ * <p>
+ * Composition order matters: a later optimizer can take advantage of earlier ones. For example, a
+ * {@code PartitionorToCombinatorOptimizer} (turning a Partitionor whose partitioning columns are already in the groupBy
+ * into a plain Combinator) should run BEFORE {@link CombinatorSubgraphsFuser} so the newly-introduced
+ * Combinators participate in the chain folding.
  *
  * @author Benoit Lacelle
  */
-public class NoopQueryStepsDagOptimizer implements IQueryStepsDagOptimizer {
+public class CompositeDagFuser implements IQueryStepsDagFuser {
+
+	private final List<IQueryStepsDagFuser> delegates;
+
+	public CompositeDagFuser(IQueryStepsDagFuser... delegates) {
+		this(Arrays.asList(delegates));
+	}
+
+	public CompositeDagFuser(List<? extends IQueryStepsDagFuser> delegates) {
+		this.delegates = ImmutableList.copyOf(delegates);
+	}
+
 	@Override
-	public void optimize(DirectedMultigraph<CubeQueryStep, DefaultEdge> multigraph,
+	public void fuse(DirectedMultigraph<CubeQueryStep, DefaultEdge> multigraph,
 			IAdhocDag<CubeQueryStep> dag,
 			Set<CubeQueryStep> roots,
 			Map<CubeQueryStep, ICuboid> stepToValue) {
-		// intentionally empty
+		for (IQueryStepsDagFuser delegate : delegates) {
+			delegate.fuse(multigraph, dag, roots, stepToValue);
+		}
 	}
 }

@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.engine.optimizer;
+package eu.solven.adhoc.engine.dag.fuser;
 
 import java.util.Map;
 import java.util.Set;
@@ -48,10 +48,12 @@ import eu.solven.adhoc.engine.step.CubeQueryStep;
  * @author Benoit Lacelle
  */
 @FunctionalInterface
-public interface IQueryStepsDagOptimizer {
+public interface IQueryStepsDagFuser {
 
 	/**
 	 * Apply this optimizer's rewrites to the in-progress DAG.
+	 * 
+	 * Explicits (roots) and leaves nodes must remain unchanged ; only the internal structure may change.
 	 *
 	 * @param multigraph
 	 *            mutable multigraph (mutated in place)
@@ -64,7 +66,7 @@ public interface IQueryStepsDagOptimizer {
 	 *            pre-loaded cache entries; read-only. A step keyed here was loaded from the cache and must not be
 	 *            removed by the optimizer.
 	 */
-	void optimize(DirectedMultigraph<CubeQueryStep, DefaultEdge> multigraph,
+	void fuse(DirectedMultigraph<CubeQueryStep, DefaultEdge> multigraph,
 			IAdhocDag<CubeQueryStep> dag,
 			Set<CubeQueryStep> roots,
 			Map<CubeQueryStep, ICuboid> stepToValue);

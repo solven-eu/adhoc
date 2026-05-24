@@ -40,8 +40,8 @@ import eu.solven.adhoc.dataframe.tabular.ITabularView;
 import eu.solven.adhoc.engine.cache.GuavaQueryStepCache;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.engine.context.StandardQueryPreparator;
+import eu.solven.adhoc.engine.dag.fuser.NoopDagFuser;
 import eu.solven.adhoc.engine.measure.IMeasureQueryStepFactory.IMeasureQueryStepOwnFactory;
-import eu.solven.adhoc.engine.optimizer.NoopQueryStepsDagOptimizer;
 import eu.solven.adhoc.engine.query.CubeQuery;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.tabular.TableQueryEngineFactory;
@@ -74,7 +74,7 @@ public class TestDagCubeQueryEngine extends ATestDagInMemory implements IAdhocTe
 			@Override
 			protected IQueryStepsDagBuilder makeQueryStepsDagsBuilder(QueryPod queryPod) {
 				IQueryStepsDagBuilder builder = super.makeQueryStepsDagsBuilder(queryPod);
-				((QueryStepsDagBuilder) builder).withOptimizer(new NoopQueryStepsDagOptimizer());
+				((QueryStepsDagBuilder) builder).withOptimizer(new NoopDagFuser());
 				return builder;
 			}
 		};

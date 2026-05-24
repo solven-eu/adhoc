@@ -35,6 +35,7 @@ import org.junit.jupiter.api.Test;
 import eu.solven.adhoc.cuboid.ICuboid;
 import eu.solven.adhoc.engine.dag.AdhocDag;
 import eu.solven.adhoc.engine.dag.IAdhocDag;
+import eu.solven.adhoc.engine.dag.fuser.CombinatorSubgraphsFuser;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.combination.ComposedCombination;
 import eu.solven.adhoc.measure.sum.SumAggregation;
@@ -71,7 +72,7 @@ public class TestFoldCombinatorSubgraphsOptimizer {
 		DirectedMultigraph<CubeQueryStep, DefaultEdge> mg = new DirectedMultigraph<>(DefaultEdge.class);
 		IAdhocDag<CubeQueryStep> dag = new AdhocDag<>();
 
-		new FoldCombinatorSubgraphsOptimizer().optimize(mg, dag, Set.of(), Map.of());
+		new CombinatorSubgraphsFuser().fuse(mg, dag, Set.of(), Map.of());
 
 		Assertions.assertThat(mg.vertexSet()).isEmpty();
 	}
@@ -93,7 +94,7 @@ public class TestFoldCombinatorSubgraphsOptimizer {
 		addEdges(mg, dag, step1, step0);
 		addEdges(mg, dag, step0, stepAgg);
 
-		new FoldCombinatorSubgraphsOptimizer().optimize(mg, dag, Set.of(step1), Map.of());
+		new CombinatorSubgraphsFuser().fuse(mg, dag, Set.of(step1), Map.of());
 
 		Assertions.assertThat(mg.vertexSet()).containsExactlyInAnyOrder(step1, step0, stepAgg);
 	}
@@ -116,7 +117,7 @@ public class TestFoldCombinatorSubgraphsOptimizer {
 		addEdges(mg, dag, step1, step0);
 		addEdges(mg, dag, step0, stepAgg);
 
-		new FoldCombinatorSubgraphsOptimizer().optimize(mg, dag, Set.of(step2), Map.of());
+		new CombinatorSubgraphsFuser().fuse(mg, dag, Set.of(step2), Map.of());
 
 		Assertions.assertThat(mg.vertexSet()).hasSize(3).contains(step2, stepAgg);
 		CubeQueryStep fused = mg.vertexSet().stream().filter(s -> s != step2 && s != stepAgg).findFirst().orElseThrow();
@@ -153,7 +154,7 @@ public class TestFoldCombinatorSubgraphsOptimizer {
 		addEdges(mg, dag, stepCa, stepA);
 		addEdges(mg, dag, stepCb, stepB);
 
-		new FoldCombinatorSubgraphsOptimizer().optimize(mg, dag, Set.of(userRoot), Map.of());
+		new CombinatorSubgraphsFuser().fuse(mg, dag, Set.of(userRoot), Map.of());
 
 		// The three foldable internals (stepRoot, stepCa, stepCb) fold into one fused step; userRoot, stepA, stepB
 		// survive.
@@ -197,7 +198,7 @@ public class TestFoldCombinatorSubgraphsOptimizer {
 		addEdges(mg, dag, stepCa, stepA);
 		addEdges(mg, dag, stepCb, stepA);
 
-		new FoldCombinatorSubgraphsOptimizer().optimize(mg, dag, Set.of(userRoot), Map.of());
+		new CombinatorSubgraphsFuser().fuse(mg, dag, Set.of(userRoot), Map.of());
 
 		// userRoot + stepA + fused = 3 vertices.
 		Assertions.assertThat(mg.vertexSet()).hasSize(3).contains(userRoot, stepA);
@@ -223,7 +224,7 @@ public class TestFoldCombinatorSubgraphsOptimizer {
 		}
 		addEdges(mg, dag, step0, stepAgg);
 
-		new FoldCombinatorSubgraphsOptimizer().optimize(mg, dag, Set.of(step0), Map.of());
+		new CombinatorSubgraphsFuser().fuse(mg, dag, Set.of(step0), Map.of());
 
 		Assertions.assertThat(mg.vertexSet()).containsExactlyInAnyOrder(step0, stepAgg);
 	}
@@ -248,14 +249,14 @@ public class TestFoldCombinatorSubgraphsOptimizer {
 
 		Map<CubeQueryStep, ICuboid> cached = new LinkedHashMap<>();
 		cached.put(step1, null);
-		new FoldCombinatorSubgraphsOptimizer().optimize(mg, dag, Set.of(step2), cached);
+		new CombinatorSubgraphsFuser().fuse(mg, dag, Set.of(step2), cached);
 
 		Assertions.assertThat(mg.vertexSet()).containsExactlyInAnyOrder(step2, step1, step0, stepAgg);
 	}
 
 	@Test
 	public void testMinChainLength_validation() {
-		Assertions.assertThatThrownBy(() -> new FoldCombinatorSubgraphsOptimizer(1))
+		Assertions.assertThatThrownBy(() -> new CombinatorSubgraphsFuser(1))
 				.isInstanceOf(IllegalArgumentException.class)
 				.hasMessageContaining("minChainLength");
 	}
@@ -278,11 +279,11 @@ public class TestFoldCombinatorSubgraphsOptimizer {
 		addEdges(mg, dag, step1, step0);
 		addEdges(mg, dag, step0, stepAgg);
 
-		FoldCombinatorSubgraphsOptimizer optimizer = new FoldCombinatorSubgraphsOptimizer();
-		optimizer.optimize(mg, dag, Set.of(step2), Map.of());
+		CombinatorSubgraphsFuser optimizer = new CombinatorSubgraphsFuser();
+		optimizer.fuse(mg, dag, Set.of(step2), Map.of());
 		Set<CubeQueryStep> afterFirst = new LinkedHashSet<>(mg.vertexSet());
 
-		optimizer.optimize(mg, dag, Set.of(step2), Map.of());
+		optimizer.fuse(mg, dag, Set.of(step2), Map.of());
 
 		Assertions.assertThat(mg.vertexSet()).isEqualTo(afterFirst);
 	}
