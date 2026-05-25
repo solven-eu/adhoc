@@ -25,14 +25,12 @@ package eu.solven.adhoc.encoding.dictionary;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 
 import com.google.common.collect.ImmutableList;
 
 import eu.solven.adhoc.encoding.column.IAppendableColumn;
 import eu.solven.adhoc.encoding.column.IReadableColumn;
 import eu.solven.adhoc.encoding.column.ObjectArrayColumn;
-import eu.solven.adhoc.encoding.column.freezer.FreezerHelpers;
 import eu.solven.adhoc.encoding.column.freezer.IFreezingWithContext;
 
 /**
