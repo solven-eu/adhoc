@@ -25,13 +25,14 @@ module eu.solven.adhoc.encoding {
 	requires org.agrona;
 	requires it.unimi.dsi.fastutil;
 	requires me.lemire.integercompression;
-	requires datasketches.java;
+	// https://github.com/apache/datasketches-java/issues/731
+	// requires datasketches.java;
 
 	// Runtime via Lombok @Slf4j
 	requires org.slf4j;
 
 	// https://stackoverflow.com/questions/47460373/module-info-java-does-not-work-with-lombok-in-java-9/59976234#59976234
-    requires static lombok;
+	requires static lombok;
 
 	// Annotation-only (compile-time)
 	requires static com.fasterxml.jackson.annotation;

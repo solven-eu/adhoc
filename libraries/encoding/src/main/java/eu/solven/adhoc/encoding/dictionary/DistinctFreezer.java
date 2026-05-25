@@ -27,10 +27,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-import org.apache.datasketches.hll.HllSketch;
-import org.apache.datasketches.hll.TgtHllType;
-import org.apache.datasketches.theta.UpdatableThetaSketch;
-
 import com.google.common.collect.ImmutableList;
 
 import eu.solven.adhoc.encoding.column.IAppendableColumn;
@@ -81,17 +77,18 @@ public final class DistinctFreezer implements IFreezingWithContext {
 	}
 
 	long countDistinctWithLimit(Map<String, Object> freezingContext, List<?> array, int limitForDictionary) {
-		Set<?> classes = FreezerHelpers.classesWithContext(freezingContext, array);
+		// https://github.com/apache/datasketches-java/issues/731
+		// Set<?> classes = FreezerHelpers.classesWithContext(freezingContext, array);
 
 		return (long) freezingContext.computeIfAbsent("count_distinct_" + limitForDictionary, _ -> {
-			if (classes.stream().anyMatch(clazz -> clazz != null && clazz != String.class)) {
-				// At least one is neither null nor String
-				return cappedDistinctCount(array, limitForDictionary);
-			} else {
-				// Only String or null
-				List<String> arrayString = array.stream().map(String.class::cast).toList();
-				return estimateDistinctHLL(arrayString);
-			}
+			// if (classes.stream().anyMatch(clazz -> clazz != null && clazz != String.class)) {
+			// At least one is neither null nor String
+			return cappedDistinctCount(array, limitForDictionary);
+			// } else {
+			// // Only String or null
+			// List<String> arrayString = array.stream().map(String.class::cast).toList();
+			// return estimateDistinctHLL(arrayString);
+			// }
 		});
 	}
 
@@ -103,31 +100,33 @@ public final class DistinctFreezer implements IFreezingWithContext {
 				.count();
 	}
 
-	@SuppressWarnings("checkstyle:MagicNumber")
-	static long estimateDistinctHLL(List<String> items) {
-		// Create HLL sketch (log2m = 12, type HLL_4)
-		HllSketch sketch = new HllSketch(12, TgtHllType.HLL_4);
+	// https://github.com/apache/datasketches-java/issues/731
+	// @SuppressWarnings("checkstyle:MagicNumber")
+	// static long estimateDistinctHLL(List<String> items) {
+	// // Create HLL sketch (log2m = 12, type HLL_4)
+	// HllSketch sketch = new HllSketch(12, TgtHllType.HLL_4);
+	//
+	// // Add items to sketch
+	// for (String s : items) {
+	// sketch.update(s);
+	// }
+	//
+	// // Return estimated cardinality
+	// return (long) sketch.getEstimate();
+	// }
 
-		// Add items to sketch
-		for (String s : items) {
-			sketch.update(s);
-		}
-
-		// Return estimated cardinality
-		return (long) sketch.getEstimate();
-	}
-
-	@SuppressWarnings("checkstyle:MagicNumber")
-	static long estimateDistinctKMV(List<String> items) {
-		// Create a Theta sketch with nominal entries = 1024
-		UpdatableThetaSketch sketch = UpdatableThetaSketch.builder().setNominalEntries(1024).build();
-
-		// Add items to the sketch
-		for (String s : items) {
-			sketch.update(s);
-		}
-
-		// Return estimated cardinality
-		return (long) sketch.getEstimate();
-	}
+	// https://github.com/apache/datasketches-java/issues/731
+	// @SuppressWarnings("checkstyle:MagicNumber")
+	// static long estimateDistinctKMV(List<String> items) {
+	// // Create a Theta sketch with nominal entries = 1024
+	// UpdatableThetaSketch sketch = UpdatableThetaSketch.builder().setNominalEntries(1024).build();
+	//
+	// // Add items to the sketch
+	// for (String s : items) {
+	// sketch.update(s);
+	// }
+	//
+	// // Return estimated cardinality
+	// return (long) sketch.getEstimate();
+	// }
 }
