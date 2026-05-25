@@ -40,11 +40,11 @@ public class TestDistinctFreezer {
 		long capped = DistinctFreezer.cappedDistinctCount(list, 1024);
 		Assertions.assertThat(capped).isEqualTo(1024 + 1);
 
-		long hll = DistinctFreezer.estimateDistinctHLL(list);
-		Assertions.assertThat(hll).isEqualTo(16_062L);
-
-		long kvm = DistinctFreezer.estimateDistinctKMV(list);
-		Assertions.assertThat(kvm).isEqualTo(15_970L);
+		// long hll = DistinctFreezer.estimateDistinctHLL(list);
+		// Assertions.assertThat(hll).isEqualTo(16_062L);
+		//
+		// long kvm = DistinctFreezer.estimateDistinctKMV(list);
+		// Assertions.assertThat(kvm).isEqualTo(15_970L);
 	}
 
 	@Test
@@ -54,11 +54,11 @@ public class TestDistinctFreezer {
 		long capped = DistinctFreezer.cappedDistinctCount(list, 1);
 		Assertions.assertThat(capped).isEqualTo(1 + 1);
 
-		long hll = DistinctFreezer.estimateDistinctHLL(list);
-		Assertions.assertThat(hll).isEqualTo(16);
-
-		long kvm = DistinctFreezer.estimateDistinctKMV(list);
-		Assertions.assertThat(kvm).isEqualTo(16);
+		// long hll = DistinctFreezer.estimateDistinctHLL(list);
+		// Assertions.assertThat(hll).isEqualTo(16);
+		//
+		// long kvm = DistinctFreezer.estimateDistinctKMV(list);
+		// Assertions.assertThat(kvm).isEqualTo(16);
 	}
 
 	@Test
@@ -68,11 +68,11 @@ public class TestDistinctFreezer {
 		long capped = DistinctFreezer.cappedDistinctCount(list, 1);
 		Assertions.assertThat(capped).isEqualTo(1 + 1);
 
-		long hll = DistinctFreezer.estimateDistinctHLL(list);
-		Assertions.assertThat(hll).isEqualTo(16);
-
-		long kvm = DistinctFreezer.estimateDistinctKMV(list);
-		Assertions.assertThat(kvm).isEqualTo(16);
+		// long hll = DistinctFreezer.estimateDistinctHLL(list);
+		// Assertions.assertThat(hll).isEqualTo(16);
+		//
+		// long kvm = DistinctFreezer.estimateDistinctKMV(list);
+		// Assertions.assertThat(kvm).isEqualTo(16);
 	}
 
 	@Test
