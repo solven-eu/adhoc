@@ -59,9 +59,14 @@ The style is ensured with Spotless, and various sub-plugins. Just run `mvn spotl
 
 # Make a release
 
-    mvn release:clean release:prepare -Pfast release:perform -Pactiveviam
+    ./scripts/release.sh
 
-Note that `-Pfast` on cli applies only to `prepare`, not to `perform`.
+The script verifies the preconditions (on `master`, clean tree, in sync with `origin/master`, SNAPSHOT root version, no
+pre-existing `vX.Y.Z` tag or `release/vX.Y.Z` branch), creates a dedicated `release/vX.Y.Z` branch off `master`, then
+drives the maven-release-plugin from that branch (`-Pfast` for `prepare`, `-Pactiveviam` for `perform`).
+
+`master` is protected, so the script never pushes to it — the release commits and the next-SNAPSHOT bump land on the
+`release/vX.Y.Z` branch, which is then opened as a PR for review.
 
 ## In case of error:
 
