@@ -49,6 +49,15 @@ public class TestSerializedLambda_ToString {
 		public static Object lambdaAsMethodInNested(ISliceWithStep slice, List<?> values) {
 			return "outputValue";
 		}
+
+		public Object lambdaAsMethodInNestedNotStatic(ISliceWithStep slice, List<?> values) {
+			return "outputValueNotStatic";
+		}
+
+		@Override
+		public String toString() {
+			return "theNestedInstance";
+		}
 	}
 
 	@Test
@@ -90,6 +99,26 @@ public class TestSerializedLambda_ToString {
 				  "tags" : [ ],
 				  "underlyings" : [ ]
 				}""");
+	}
+
+	@Test
+	public void testLambda_Serializable_boundInstanceRef() {
+		NestedClass instance = new NestedClass();
+		ILambdaCombinationS lambda = instance::lambdaAsMethodInNestedNotStatic;
+		Assertions.assertThat(lambdaToString(lambda))
+				.isEqualTo(
+						"eu.solven.adhoc.measure.TestSerializedLambda_ToString$NestedClass::lambdaAsMethodInNested(theNestedInstance)");
+	}
+
+	@Test
+	public void testLambda_Serializable_capturedArgs() {
+		String capturedStr = "hello";
+		int capturedInt = 42;
+		ILambdaCombinationS lambda = (slice, values) -> capturedStr + capturedInt;
+		// Method name varies between IDE and CLI (lambda index), so we use a pattern match
+		Assertions.assertThat(lambdaToString(lambda))
+				.matches(
+						"eu\\.solven\\.adhoc\\.measure\\.TestSerializedLambda_ToString::lambda\\$.*\\(hello,42\\)");
 	}
 
 	/**
