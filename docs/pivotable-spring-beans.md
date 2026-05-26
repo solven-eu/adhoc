@@ -12,11 +12,11 @@ singletons:
 ```java
 @Bean
 public ICubeQueryEngine myEngine(IAdhocEventBus eventBus, IAdhocFactories factories) {
-    return CubeQueryEngine.builder()
-            .eventBus(eventBus)
-            .factories(factories)
-            // ← no .queryPlanRegistry(...) — falls back to a noop instance
-            .build();
+	return CubeQueryEngine.builder()
+			.eventBus(eventBus)
+			.factories(factories)
+			// ← no .queryPlanRegistry(...) — falls back to a noop instance
+			.build();
 }
 ```
 
@@ -29,13 +29,13 @@ collaborator rather than constructing your own.**
 
 ## Singleton-shared beans
 
-| Bean                  | Writer                                | Reader / subscriber                                        | What breaks if you don't share it                                                                  |
-|-----------------------|---------------------------------------|------------------------------------------------------------|----------------------------------------------------------------------------------------------------|
-| `IQueryPlanRegistry`  | `CubeQueryEngine` (via `QueryPod`)    | `PivotablePlanController` / `PivotablePlanHandler`         | `/api/v1/cubes/queries/{id}/plan/*` endpoints return empty; UI Live View shows nothing             |
-| `IQueryStepCache`     | `StandardQueryPreparator`             | `CubeQueryEngine` (per-step lookup)                        | Cache hit-rate drops to 0; every query recomputes from scratch                                     |
-| `IAdhocEventBus`      | `CubeQueryEngine`, table-layer hooks  | `AdhocEventsFromGuavaEventBusToSfl4j`, custom subscribers  | Engine events (EXPLAIN, perf, fragments) never reach the SLF4J sink or any custom subscriber       |
-| `IImplicitOptions`    | `StandardQueryPreparator`             | Per-query options merge                                    | Per-request defaults (e.g. `debug=true` from request header) silently ignored                      |
-| `IImplicitFilter`     | `StandardQueryPreparator`             | Per-query filter merge                                     | Authorization filters (rights management) silently dropped — security regression                   |
+|         Bean         |                Writer                |                    Reader / subscriber                    |                              What breaks if you don't share it                               |
+|----------------------|--------------------------------------|-----------------------------------------------------------|----------------------------------------------------------------------------------------------|
+| `IQueryPlanRegistry` | `CubeQueryEngine` (via `QueryPod`)   | `PivotablePlanController` / `PivotablePlanHandler`        | `/api/v1/cubes/queries/{id}/plan/*` endpoints return empty; UI Live View shows nothing       |
+| `IQueryStepCache`    | `StandardQueryPreparator`            | `CubeQueryEngine` (per-step lookup)                       | Cache hit-rate drops to 0; every query recomputes from scratch                               |
+| `IAdhocEventBus`     | `CubeQueryEngine`, table-layer hooks | `AdhocEventsFromGuavaEventBusToSfl4j`, custom subscribers | Engine events (EXPLAIN, perf, fragments) never reach the SLF4J sink or any custom subscriber |
+| `IImplicitOptions`   | `StandardQueryPreparator`            | Per-query options merge                                   | Per-request defaults (e.g. `debug=true` from request header) silently ignored                |
+| `IImplicitFilter`    | `StandardQueryPreparator`            | Per-query filter merge                                    | Authorization filters (rights management) silently dropped — security regression             |
 
 ## Higher-level beans that aggregate the above
 
@@ -51,13 +51,13 @@ Concrete shape that works:
 ```java
 @Bean
 public AdhocSchema mySchema(ICubeQueryEngine engine,           // ← auto-configured, do not rebuild
-                            IQueryPreparator queryPreparator,  // ← auto-configured, do not rebuild
-                            Environment env) {
-    return AdhocSchema.builder()
-            .engine(engine)
-            .queryPreparator(queryPreparator)
-            .env(env)
-            .build();
+							IQueryPreparator queryPreparator,  // ← auto-configured, do not rebuild
+							Environment env) {
+	return AdhocSchema.builder()
+			.engine(engine)
+			.queryPreparator(queryPreparator)
+			.env(env)
+			.build();
 }
 ```
 

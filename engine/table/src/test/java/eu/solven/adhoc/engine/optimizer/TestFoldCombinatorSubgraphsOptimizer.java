@@ -292,11 +292,11 @@ public class TestFoldCombinatorSubgraphsOptimizer {
 
 	/**
 	 * A consumer Combinator has two underlyings where the foldable chain is at position 0 (FIRST underlying). After
-	 * folding, the consumer's outgoing edges must stay in the original positional order ({@code [fused, leaf]})
-	 * because the engine matches them positionally against {@link Combinator#getUnderlyings()}. The fuser snapshots
-	 * the consumer's outgoing-edge order before mutating and rebuilds it with {@code top → fusedStep} substituted,
-	 * so the slot the original top occupied carries the fused replacement. Without this, every position-sensitive
-	 * combination (DIVIDE, SUBTRACT, …) on a measure shaped this way would silently swap its operands.
+	 * folding, the consumer's outgoing edges must stay in the original positional order ({@code [fused, leaf]}) because
+	 * the engine matches them positionally against {@link Combinator#getUnderlyings()}. The fuser snapshots the
+	 * consumer's outgoing-edge order before mutating and rebuilds it with {@code top → fusedStep} substituted, so the
+	 * slot the original top occupied carries the fused replacement. Without this, every position-sensitive combination
+	 * (DIVIDE, SUBTRACT, …) on a measure shaped this way would silently swap its operands.
 	 */
 	@Test
 	public void testConsumerOutgoingEdgeOrder_preservedAfterFold() {
@@ -357,8 +357,8 @@ public class TestFoldCombinatorSubgraphsOptimizer {
 	 * <p>
 	 * The math: folding {@code {B, C, D}} into a single {@code fusedStep} preserves the output. {@code fusedStep}'s
 	 * value equals {@code B}'s former value (the composition is mathematically equivalent to walking B's subgraph).
-	 * Rewiring {@code A → fusedStep} (in B's slot) and {@code E → fusedStep} gives both consumers B's value, same
-	 * as before. One cuboid materialisation, two reads — no duplication, no semantic drift.
+	 * Rewiring {@code A → fusedStep} (in B's slot) and {@code E → fusedStep} gives both consumers B's value, same as
+	 * before. One cuboid materialisation, two reads — no duplication, no semantic drift.
 	 */
 	@Test
 	public void testMultiConsumerTop_foldsThroughBothConsumers() {
@@ -390,11 +390,8 @@ public class TestFoldCombinatorSubgraphsOptimizer {
 		addEdges(mg, dag, stepC, stepD);
 		addEdges(mg, dag, stepD, stepLeaf);
 
-		QueryStepsDag fusedDag = new CombinatorSubgraphsFuser().fuse(QueryStepsDag.builder()
-				.multigraph(mg)
-				.inducedToInducer(dag)
-				.explicits(Set.of(stepA))
-				.build());
+		QueryStepsDag fusedDag = new CombinatorSubgraphsFuser()
+				.fuse(QueryStepsDag.builder().multigraph(mg).inducedToInducer(dag).explicits(Set.of(stepA)).build());
 
 		// All three chain nodes (B, C, D) fold into ONE fused step.
 		Assertions.assertThat(fusedDag.getMultigraph().vertexSet())
@@ -421,7 +418,8 @@ public class TestFoldCombinatorSubgraphsOptimizer {
 				.map(e -> fusedDag.getMultigraph().getEdgeTarget(e))
 				.toList();
 		Assertions.assertThat(eTargets).hasSize(1);
-		Assertions.assertThat(eTargets.get(0)).as("E's underlying must be the SAME fused step A points to (no duplication)")
+		Assertions.assertThat(eTargets.get(0))
+				.as("E's underlying must be the SAME fused step A points to (no duplication)")
 				.isEqualTo(aTargets.get(0));
 	}
 

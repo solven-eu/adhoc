@@ -61,16 +61,14 @@ public class TestCubeQueryEngine_RethrowWithDetails {
 			multigraph.addVertex(step);
 		});
 		for (int i = 0; i < chainLength - 1; i++) {
-			// Edge from the consumer (i) down to its inducer (i + 1), matching the IAdhocDag induced→inducer convention.
+			// Edge from the consumer (i) down to its inducer (i + 1), matching the IAdhocDag induced→inducer
+			// convention.
 			dag.addEdge(chain.get(i), chain.get(i + 1));
 			multigraph.addEdge(chain.get(i), chain.get(i + 1));
 		}
 
-		QueryStepsDag qsd = QueryStepsDag.builder()
-				.inducedToInducer(dag)
-				.multigraph(multigraph)
-				.explicit(chain.get(0))
-				.build();
+		QueryStepsDag qsd =
+				QueryStepsDag.builder().inducedToInducer(dag).multigraph(multigraph).explicit(chain.get(0)).build();
 
 		CubeQueryEngine engine = CubeQueryEngine.builder().build();
 		IllegalStateException thrown =

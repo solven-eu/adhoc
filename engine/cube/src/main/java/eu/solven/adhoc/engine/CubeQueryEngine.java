@@ -40,6 +40,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.stream.IntStream;
 
+import org.jgrapht.GraphPath;
 import org.jgrapht.alg.interfaces.ShortestPathAlgorithm;
 import org.jgrapht.alg.shortestpath.JohnsonShortestPaths;
 import org.jgrapht.graph.DefaultEdge;
@@ -772,7 +773,7 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 					.filter(Objects::nonNull)
 					// Return the shortest path, as it is the simplest to analyze by a human
 					.min(Comparator.comparing(gp -> gp.getVertexList().size()))
-					.map(gp -> gp.getVertexList())
+					.map(GraphPath::getVertexList)
 					.orElse(List.of());
 		}
 		if (!pathFromRoot.isEmpty()) {
@@ -799,7 +800,7 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 		reversed.add(queryStep);
 		CubeQueryStep current = queryStep;
 		int maxHops = dag.vertexSet().size();
-		while (maxHops-- > 0) {
+		for (int hop = 0; hop < maxHops; hop++) {
 			Set<DefaultEdge> incoming = dag.incomingEdgesOf(current);
 			if (incoming.isEmpty()) {
 				break;
