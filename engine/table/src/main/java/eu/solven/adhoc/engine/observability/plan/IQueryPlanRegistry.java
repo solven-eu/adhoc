@@ -49,6 +49,14 @@ import eu.solven.adhoc.query.AdhocQueryId;
  * small plans accumulates freely while a single 20k-node plan eats its fair share of the budget. Eviction is LRU on
  * completed plans; in-flight plans (state != DONE / FAILED) are never evicted.
  *
+ * <p>
+ * <strong>Spring wiring caveat</strong>: this interface must resolve to a <em>single</em> bean instance shared between
+ * the cube engine (writer) and Pivotable's HTTP plan handlers (readers). If you override a downstream bean (e.g.
+ * {@code IQueryPreparator}, {@code ICubeQueryEngine}, {@code AdhocSchema}) in your own configuration, inject the
+ * auto-configured {@code IQueryPlanRegistry} rather than constructing a new one inline — otherwise the engine writes to
+ * one instance while the HTTP handlers read from another, and Pivotable's plan endpoints return empty. See
+ * {@code docs/pivotable-spring-beans.md} for the full list of singleton-sharing beans.
+ *
  * @author Benoit Lacelle
  */
 // TODO Roadmap: rendering helpers. A textual plan dump (current `DagExplainer` style — fits in a log) and a

@@ -23,6 +23,8 @@
 package eu.solven.adhoc.engine;
 
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -152,7 +154,13 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 	@NonNull
 	@VisibleForTesting
 	@Getter
-	ITableQueryEngineFactory tableQueryEngine;
+	final ITableQueryEngineFactory tableQueryEngine;
+
+	/**
+	 * Above this many edges, {@link #rethrowWithDetails} skips {@code JohnsonShortestPaths} (whose memory footprint is
+	 * O(V*V)) and falls back to a naive first-incoming-edge walk.
+	 */
+	private static final int SHORTEST_PATH_MAX_EDGES = 1024;
 
 	protected CubeQueryEngine(IAdhocFactories factories,
 			IAdhocEventBus eventBus,
@@ -746,32 +754,64 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 				underlyingSteps.stream().map(this::dense).toList())).append(System.lineSeparator());
 
 		IAdhocDag<CubeQueryStep> inducedToInducers = queryStepsDag.getInducedToInducer();
-		if (inducedToInducers.edgeSet().size() > 1024) {
-			// `shortestPaths.getPaths` may consume a lot of RAM: we skip this step if the DAG is too big
-			describeStep.append("#steps=").append(inducedToInducers.edgeSet().size());
+		List<CubeQueryStep> pathFromRoot;
+		if (inducedToInducers.edgeSet().size() > SHORTEST_PATH_MAX_EDGES) {
+			// `shortestPaths.getPaths` may consume a lot of RAM on a large DAG. Fall back to a naive
+			// first-incoming-edge walk from `queryStep` up to whatever ancestor has no further incoming edge. The
+			// picked path is not guaranteed to be the shortest, but a single concrete trace is far more useful than
+			// none — the engine error message is the primary debug surface when a step fails on a real production DAG.
+			describeStep.append("#steps=").append(inducedToInducers.edgeSet().size()).append(System.lineSeparator());
+			pathFromRoot = naivePathFromRoot(inducedToInducers, queryStep);
 		} else {
 			ShortestPathAlgorithm<CubeQueryStep, DefaultEdge> shortestPaths =
 					new JohnsonShortestPaths<>(inducedToInducers);
 
-			queryStepsDag.getExplicits()
+			pathFromRoot = queryStepsDag.getExplicits()
 					.stream()
 					.map(queriedStep -> shortestPaths.getPaths(queriedStep).getPath(queryStep))
 					.filter(Objects::nonNull)
-					// Return the shorted path, as it is the simpler to analyze by a human
+					// Return the shortest path, as it is the simplest to analyze by a human
 					.min(Comparator.comparing(gp -> gp.getVertexList().size()))
-					.ifPresent(shortestPath -> {
-						describeStep.append("Path from root:");
-
-						List<CubeQueryStep> vertexList = shortestPath.getVertexList();
-						for (int i = 0; i < vertexList.size(); i++) {
-							describeStep.append(System.lineSeparator());
-							IntStream.range(0, i).forEach(tabIndex -> describeStep.append('\t'));
-							describeStep.append("\\-").append(vertexList.get(i));
-						}
-					});
+					.map(gp -> gp.getVertexList())
+					.orElse(List.of());
+		}
+		if (!pathFromRoot.isEmpty()) {
+			describeStep.append("Path from root:");
+			for (int i = 0; i < pathFromRoot.size(); i++) {
+				describeStep.append(System.lineSeparator());
+				IntStream.range(0, i).forEach(tabIndex -> describeStep.append('\t'));
+				describeStep.append("\\-").append(pathFromRoot.get(i));
+			}
 		}
 
 		return new IllegalStateException(describeStep.toString(), e);
+	}
+
+	/**
+	 * Best-effort fallback used when the DAG is too large for {@link JohnsonShortestPaths}. Walks {@code queryStep}
+	 * backward through {@code dag} by following the first incoming edge at each hop, stopping when the current vertex
+	 * has no parent or after one full pass over the vertex set (defensive cap; the DAG is acyclic by construction so
+	 * the natural exit condition is "no incoming edge"). The returned list runs from the discovered ancestor down to
+	 * {@code queryStep}; empty when {@code queryStep} itself has no parent.
+	 */
+	protected List<CubeQueryStep> naivePathFromRoot(IAdhocDag<CubeQueryStep> dag, CubeQueryStep queryStep) {
+		List<CubeQueryStep> reversed = new ArrayList<>();
+		reversed.add(queryStep);
+		CubeQueryStep current = queryStep;
+		int maxHops = dag.vertexSet().size();
+		while (maxHops-- > 0) {
+			Set<DefaultEdge> incoming = dag.incomingEdgesOf(current);
+			if (incoming.isEmpty()) {
+				break;
+			}
+			current = dag.getEdgeSource(incoming.iterator().next());
+			reversed.add(current);
+		}
+		if (reversed.size() == 1) {
+			return List.of();
+		}
+		Collections.reverse(reversed);
+		return reversed;
 	}
 
 	/**
