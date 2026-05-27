@@ -47,6 +47,16 @@
 		</dependency>
 
 		<dependency>
+			<!-- Carries MeasureForestExcelLogicExporter (the Excel formula exporter). Optional so projects
+			that don't want POI on their classpath can omit it; the export endpoint is gated on the exporter
+			class being present at runtime (@ConditionalOnClass). -->
+			<groupId>eu.solven.adhoc</groupId>
+			<artifactId>adhoc-experimental</artifactId>
+			<version>${project.version}</version>
+			<optional>true</optional>
+		</dependency>
+
+		<dependency>
 			<groupId>com.ezylang</groupId>
 			<artifactId>EvalEx</artifactId>
 			<version>${evalex.ezylang.version}</version>

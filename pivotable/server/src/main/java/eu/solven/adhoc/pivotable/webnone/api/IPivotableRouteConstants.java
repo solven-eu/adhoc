@@ -44,4 +44,12 @@ public interface IPivotableRouteConstants {
 	 * {@code QueryPlanSummary} — the lightweight shape suited for polling.
 	 */
 	String R_CUBE_PLAN_CHILDREN = "/cubes/queries/{queryUuid}/plan/children";
+
+	/**
+	 * Excel-export endpoint — returns an {@code .xlsx} workbook whose cells mirror the cube's measure logic as Excel
+	 * formulas (leaf aggregators carry the engine-computed numeric value; intermediate combinators carry a formula
+	 * referencing other cells). Wired only when the {@code adhoc-experimental} jar (which carries
+	 * {@code MeasureForestExcelLogicExporter} and Apache POI) is on the classpath.
+	 */
+	String R_CUBE_EXPORT_EXCEL = "/cubes/export/excel";
 }

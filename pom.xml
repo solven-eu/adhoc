@@ -502,7 +502,7 @@
 					so then are re-used by explicit invocation (vs lifecycle
 					phase) -->
 					<configuration>
-						<excludes>**/generated/**,**/me/lemire/integercompression/**</excludes>
+						<excludes>**/generated/**</excludes>
 
 						<configLocation>${maven.multiModuleProjectDirectory}/.cleanthat/checkstyle.xml</configLocation>
 						<!-- https://github.com/redisson/redisson/issues/2048 -->
@@ -568,7 +568,6 @@
 						</rulesets>
 						<excludes>
 							<exclude>**/generated/**</exclude>
-							<exclude>**/me/lemire/integercompression/**</exclude>
 						</excludes>
 					</configuration>
 					<dependencies>
@@ -695,7 +694,6 @@
 								<!-- TestCases needs to remains not
 								formatted/cleaned -->
 								<exclude>**/do_not_format_me/**</exclude>
-								<exclude>**/me/lemire/integercompression/**</exclude>
 								<exclude>**/TransitiveReductionV2.java</exclude>
 
 								<!-- As there is no Javadoc, it would lead to a
@@ -823,13 +821,6 @@
 					<groupId>org.jacoco</groupId>
 					<artifactId>jacoco-maven-plugin</artifactId>
 					<version>0.8.14</version>
-					<configuration>
-						<excludes>
-							<!-- Vendored third-party sources, excluded from
-							coverage -->
-							<exclude>**/me/lemire/integercompression/**</exclude>
-						</excludes>
-					</configuration>
 					<executions>
 						<execution>
 							<id>default-prepare-agent</id>
