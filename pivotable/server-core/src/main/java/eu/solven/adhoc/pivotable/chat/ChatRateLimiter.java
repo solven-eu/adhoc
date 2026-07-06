@@ -27,7 +27,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayDeque;
 import java.util.Deque;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -59,7 +59,7 @@ public class ChatRateLimiter {
 
 	private final Clock clock;
 
-	private final Map<String, Deque<Instant>> hitsByKey = new HashMap<>();
+	private final Map<String, Deque<Instant>> hitsByKey = new LinkedHashMap<>();
 
 	private final ReentrantLock lock = new ReentrantLock();
 
