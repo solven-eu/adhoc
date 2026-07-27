@@ -49,7 +49,7 @@ public final class DistinctFreezer implements IFreezingWithContext {
 	private final List<IFreezingWithContext> dictionaryFreezers;
 
 	public DistinctFreezer() {
-		this(List.of());
+		this(ImmutableList.of());
 	}
 
 	public DistinctFreezer(List<IFreezingWithContext> dictionaryFreezers) {
