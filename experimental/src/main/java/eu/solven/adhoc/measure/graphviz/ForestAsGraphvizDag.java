@@ -29,6 +29,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.measure.forest.IMeasureForest;
 import eu.solven.adhoc.measure.transformator.IHasUnderlyingMeasures;
@@ -96,7 +97,7 @@ public class ForestAsGraphvizDag {
 	 * regular shape/fill-color styling so the node type remains readable.
 	 */
 	@Builder.Default
-	private final Set<String> highlightedMeasures = Set.of();
+	private final Set<String> highlightedMeasures = ImmutableSet.of();
 
 	private MutableGraph defaultproperties(MutableGraph named) {
 		return named.setDirected(true)

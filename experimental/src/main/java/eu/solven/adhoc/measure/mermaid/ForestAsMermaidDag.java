@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.Set;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.measure.forest.IMeasureForest;
 import eu.solven.adhoc.measure.transformator.IHasUnderlyingMeasures;
@@ -111,7 +112,7 @@ public class ForestAsMermaidDag {
 	 * a heavier red stroke.
 	 */
 	@Builder.Default
-	private final Set<String> highlightedMeasures = Set.of();
+	private final Set<String> highlightedMeasures = ImmutableSet.of();
 
 	/**
 	 * Renders a whole {@link MeasureForests} as a single Mermaid diagram, using one {@code subgraph} block per forest.
