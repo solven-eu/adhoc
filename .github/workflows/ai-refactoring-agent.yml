@@ -43,11 +43,10 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-      - name: Create and push agent branch
-        run: |
-          BRANCH="ai-refactoring-agent/nightly-${{ github.run_id }}"
-          git checkout -b "$BRANCH"
-          git push origin "$BRANCH"
+      - name: Create agent branch (local only — pushed only if changes are made)
+        # The remote branch is created by the first push in "Detect and commit changes",
+        # so a run where Claude finds nothing leaves no branch behind on the remote.
+        run: git checkout -b "ai-refactoring-agent/nightly-${{ github.run_id }}"
 
       - name: Compile project (gives Claude full symbol context)
         run: mvn package -Pfast --file pom.xml --batch-mode -q
