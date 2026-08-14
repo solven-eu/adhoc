@@ -26,7 +26,6 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Deque;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -295,7 +294,7 @@ public class CombinatorSubgraphsFuser implements IQueryStepsDagFuser {
 		List<CubeQueryStep> postOrder = new ArrayList<>(subgraph.internals);
 		Collections.reverse(postOrder);
 
-		Map<CubeQueryStep, Integer> internalIndex = new HashMap<>();
+		Map<CubeQueryStep, Integer> internalIndex = new LinkedHashMap<>();
 		for (int i = 0; i < postOrder.size(); i++) {
 			internalIndex.put(postOrder.get(i), i);
 		}
