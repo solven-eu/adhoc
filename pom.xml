@@ -82,7 +82,7 @@
 		take SpringBoot default-->
 		<jooq.version>3.21.4</jooq.version>
 
-		<spotless.version>3.5.1</spotless.version>
+		<spotless.version>3.9.0</spotless.version>
 		<cleanthat.version>2.24</cleanthat.version>
 
 		<!-- Optional dependencies -->
