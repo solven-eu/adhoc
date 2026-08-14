@@ -52,11 +52,10 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-      - name: Create and push agent branch
-        run: |
-          BRANCH="ai-coverage-agent/weekly-${{ github.run_id }}"
-          git checkout -b "$BRANCH"
-          git push origin "$BRANCH"
+      - name: Create agent branch (local only — pushed only if changes are made)
+        # The remote branch is created by the first push in "Detect and commit changes",
+        # so a run where Claude finds nothing leaves no branch behind on the remote.
+        run: git checkout -b "ai-coverage-agent/weekly-${{ github.run_id }}"
 
       - name: Run tests and generate JaCoCo coverage reports
         # Use -Pnostyle to skip style checks; exclude benchmarks as they are not unit tests.
