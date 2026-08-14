@@ -140,6 +140,8 @@ jobs:
             echo "No changes produced — violations may require manual attention."
           else
             git add -A
-            git commit -m "fix: resolve static-analysis violations introduced by Renovate update [skip ci]"
+            # No [skip ci] marker: this commit becomes the PR head, and the Renovate PR
+            # stays blocked unless its required checks re-run against the repaired tree.
+            git commit -m "fix: resolve static-analysis violations introduced by Renovate update"
             git push
           fi
