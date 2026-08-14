@@ -25,8 +25,6 @@ package eu.solven.adhoc.engine.dag.fuser;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -118,7 +116,7 @@ public class CombinatorSubgraphsFuser implements IQueryStepsDagFuser {
 		IAdhocDag<CubeQueryStep> dag = DagFuserHelpers.copyDag(input.getInducedToInducer());
 		boolean changed = false;
 
-		Set<CubeQueryStep> processed = new HashSet<>();
+		Set<CubeQueryStep> processed = new LinkedHashSet<>();
 		for (CubeQueryStep seed : foldable) {
 			if (processed.contains(seed)) {
 				continue;
@@ -236,7 +234,7 @@ public class CombinatorSubgraphsFuser implements IQueryStepsDagFuser {
 		List<CubeQueryStep> postOrder = new ArrayList<>(subgraph.internals);
 		java.util.Collections.reverse(postOrder);
 
-		Map<CubeQueryStep, Integer> internalIndex = new HashMap<>();
+		Map<CubeQueryStep, Integer> internalIndex = new LinkedHashMap<>();
 		for (int i = 0; i < postOrder.size(); i++) {
 			internalIndex.put(postOrder.get(i), i);
 		}

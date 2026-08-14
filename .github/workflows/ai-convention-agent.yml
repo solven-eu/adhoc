@@ -106,14 +106,16 @@ jobs:
           ref: master
           fetch-depth: 0
 
-      - name: Switch to agent branch (create if ai-only mode)
+      - name: Switch to agent branch (create locally when auto-format pushed nothing)
+        # The branch exists on the remote only when auto-format found something to commit.
+        # Otherwise it is recreated local-only: the push in "Detect and commit changes"
+        # creates it remotely, so a run producing no changes leaves no branch behind.
         run: |
           BRANCH="ai-quality-agent/nightly-${{ github.run_id }}"
           if git fetch origin "$BRANCH" 2>/dev/null; then
             git checkout "$BRANCH"
           else
             git checkout -b "$BRANCH"
-            git push origin "$BRANCH"
           fi
 
       - name: Set up JDK 25
