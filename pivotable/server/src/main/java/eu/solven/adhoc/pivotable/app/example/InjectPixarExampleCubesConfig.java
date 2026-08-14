@@ -29,7 +29,6 @@ import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Stream;
 
 import org.duckdb.DuckDBConnection;
@@ -186,7 +185,7 @@ public class InjectPixarExampleCubesConfig {
 							.aliaser(MapTableAliaser.builder().aliasToOriginals(films.getAliasToOriginal()).build())
 							.build())
 					.build();
-			schemaRegistrer.registerCube(filmsCube).tagCube(filmsCube.getName(), Set.of("duckdb"));
+			schemaRegistrer.registerCube(filmsCube).tagCube(filmsCube.getName(), ImmutableSet.of("duckdb"));
 		}
 
 		CubeWrapper peopleCube;
@@ -217,7 +216,7 @@ public class InjectPixarExampleCubesConfig {
 							.aliaser(MapTableAliaser.builder().aliasToOriginals(people.getAliasToOriginal()).build())
 							.build())
 					.build();
-			schemaRegistrer.registerCube(peopleCube).tagCube(filmsCube.getName(), Set.of("duckdb"));
+			schemaRegistrer.registerCube(peopleCube).tagCube(filmsCube.getName(), ImmutableSet.of("duckdb"));
 		}
 
 		{
