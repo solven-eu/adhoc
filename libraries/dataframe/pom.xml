@@ -59,7 +59,7 @@
 			<artifactId>RoaringBitmap</artifactId>
 			<!-- Can not upgrade due to
 			https://github.com/RoaringBitmap/RoaringBitmap/issues/749 -->
-			<version>1.6.14</version>
+			<version>1.6.20</version>
 		</dependency>
 
 		<dependency>
