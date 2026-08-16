@@ -49,6 +49,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.google.common.collect.ImmutableMap;
+
 import eu.solven.adhoc.app.IPivotableSpringProfiles;
 import eu.solven.adhoc.pivotable.account.PivotableUserDetails;
 import eu.solven.adhoc.pivotable.account.PivotableUserRawRaw;
@@ -61,7 +63,6 @@ import eu.solven.adhoc.pivotable.security.LoginRouteButNotAuthenticatedException
 import eu.solven.adhoc.pivotable.webnone.api.IPivotableLoginConstants;
 import eu.solven.adhoc.pivotable.webnone.api.PivotableUserUpdate;
 import eu.solven.adhoc.pivotable.webnone.security.oauth2.PivotableOAuth2UserWebnoneService;
-import graphql.com.google.common.collect.ImmutableMap;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import lombok.AllArgsConstructor;
@@ -120,14 +121,14 @@ public class PivotableLoginWebmvcController {
 			// `false` so we never force-create a session just to answer a status probe.
 			HttpSession session = request.getSession(false);
 			if (session == null) {
-				return Map.of(IPivotableLoginConstants.K_LOGIN, HttpStatus.OK.value());
+				return ImmutableMap.of(IPivotableLoginConstants.K_LOGIN, HttpStatus.OK.value());
 			}
 			return ImmutableMap.<String, Object>builder()
 					.put(IPivotableLoginConstants.K_LOGIN, HttpStatus.OK.value())
 					.put("session", sessionInfo(session))
 					.build();
 		} else {
-			return Map.of(IPivotableLoginConstants.K_LOGIN, HttpStatus.UNAUTHORIZED.value());
+			return ImmutableMap.of(IPivotableLoginConstants.K_LOGIN, HttpStatus.UNAUTHORIZED.value());
 		}
 	}
 
