@@ -24,6 +24,7 @@ package eu.solven.adhoc.engine.optimizer;
 
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -287,6 +288,139 @@ public class TestFoldCombinatorSubgraphsOptimizer {
 		Assertions.assertThatThrownBy(() -> new CombinatorSubgraphsFuser(1))
 				.isInstanceOf(IllegalArgumentException.class)
 				.hasMessageContaining("minChainLength");
+	}
+
+	/**
+	 * A consumer Combinator has two underlyings where the foldable chain is at position 0 (FIRST underlying). After
+	 * folding, the consumer's outgoing edges must stay in the original positional order ({@code [fused, leaf]}) because
+	 * the engine matches them positionally against {@link Combinator#getUnderlyings()}. The fuser snapshots the
+	 * consumer's outgoing-edge order before mutating and rebuilds it with {@code top → fusedStep} substituted, so the
+	 * slot the original top occupied carries the fused replacement. Without this, every position-sensitive combination
+	 * (DIVIDE, SUBTRACT, …) on a measure shaped this way would silently swap its operands.
+	 */
+	@Test
+	public void testConsumerOutgoingEdgeOrder_preservedAfterFold() {
+		// consumer = Combinator with two underlyings, the FIRST one being foldable.
+		Aggregator aggA = Aggregator.builder().name("a").aggregationKey(SumAggregation.KEY).build();
+		Aggregator aggV = Aggregator.builder().name("v").aggregationKey(SumAggregation.KEY).build();
+		CubeQueryStep stepA = CubeQueryStep.builder().measure(aggA).build();
+		CubeQueryStep stepV = CubeQueryStep.builder().measure(aggV).build();
+		// c0 → c1 is a 2-step foldable chain ending at the leaf v.
+		CubeQueryStep step0 = step(combinator("c0", "v"));
+		CubeQueryStep step1 = step(combinator("c1", "c0"));
+		// consumer is a two-underlying Combinator: underlying[0]="c1" (foldable chain top), underlying[1]="a".
+		CubeQueryStep consumer = step(twoUnderlyingCombinator("user", "c1", "a"));
+
+		DirectedMultigraph<CubeQueryStep, DefaultEdge> mg = new DirectedMultigraph<>(DefaultEdge.class);
+		IAdhocDag<CubeQueryStep> dag = new AdhocDag<>();
+		for (CubeQueryStep s : new CubeQueryStep[] { consumer, step1, step0, stepA, stepV }) {
+			mg.addVertex(s);
+			dag.addVertex(s);
+		}
+		// Order matters here: step1 edge added FIRST (position 0 — the foldable chain), stepA edge SECOND (position 1).
+		addEdges(mg, dag, consumer, step1);
+		addEdges(mg, dag, consumer, stepA);
+		addEdges(mg, dag, step1, step0);
+		addEdges(mg, dag, step0, stepV);
+
+		QueryStepsDag fusedDag = new CombinatorSubgraphsFuser()
+				.fuse(QueryStepsDag.builder().multigraph(mg).inducedToInducer(dag).explicits(Set.of(consumer)).build());
+
+		// Consumer survives, with its two outgoing edges. The fused step must occupy what used to be step1's slot
+		// (position 0 — the foldable chain's original position); the leaf Aggregator a must stay at position 1.
+		List<CubeQueryStep> consumerTargets = fusedDag.getMultigraph()
+				.outgoingEdgesOf(consumer)
+				.stream()
+				.map(e -> fusedDag.getMultigraph().getEdgeTarget(e))
+				.toList();
+		Assertions.assertThat(consumerTargets).hasSize(2);
+		Assertions.assertThat(consumerTargets.get(0))
+				.as("position 0 must be the fused step (replacing the originally-first underlying 'c1')")
+				.isNotEqualTo(stepA)
+				.satisfies(target -> Assertions.assertThat(((Combinator) target.getMeasure()).getCombinationKey())
+						.isEqualTo(ComposedCombination.KEY));
+		Assertions.assertThat(consumerTargets.get(1))
+				.as("position 1 must still be the original leaf Aggregator 'a'")
+				.isEqualTo(stepA);
+	}
+
+	/**
+	 * The fuser folds a subgraph whose <em>top</em> has multiple consumers. Each consumer gets rewired to the same
+	 * fused step.
+	 *
+	 * <p>
+	 * Shape: {@code A → B → C → D → leaf} and {@code A → E → B}. {@code A} has two underlyings, {@code [B, E]}.
+	 * {@code E} has one underlying, {@code [B]}. So {@code B} has two incoming edges (one from {@code A}, one from
+	 * {@code E}). {@code B}, {@code C}, {@code D} are foldable Combinators; {@code B} is the top of a fold whose
+	 * internals are {@code {B, C, D}} and boundary is {@code {leaf}}.
+	 *
+	 * <p>
+	 * The math: folding {@code {B, C, D}} into a single {@code fusedStep} preserves the output. {@code fusedStep}'s
+	 * value equals {@code B}'s former value (the composition is mathematically equivalent to walking B's subgraph).
+	 * Rewiring {@code A → fusedStep} (in B's slot) and {@code E → fusedStep} gives both consumers B's value, same as
+	 * before. One cuboid materialisation, two reads — no duplication, no semantic drift.
+	 */
+	@Test
+	public void testMultiConsumerTop_foldsThroughBothConsumers() {
+		// Leaf below the foldable chain.
+		Aggregator aggLeaf = Aggregator.builder().name("v").aggregationKey(SumAggregation.KEY).build();
+		CubeQueryStep stepLeaf = CubeQueryStep.builder().measure(aggLeaf).build();
+		// Foldable chain B → C → D.
+		CubeQueryStep stepD = step(combinator("D", "v"));
+		CubeQueryStep stepC = step(combinator("C", "D"));
+		CubeQueryStep stepB = step(combinator("B", "C"));
+		// E is a Combinator consuming B (single underlying).
+		CubeQueryStep stepE = step(combinator("E", "B"));
+		// A is the user-requested measure: two underlyings, [B, E] in that positional order.
+		CubeQueryStep stepA = step(twoUnderlyingCombinator("A", "B", "E"));
+
+		DirectedMultigraph<CubeQueryStep, DefaultEdge> mg = new DirectedMultigraph<>(DefaultEdge.class);
+		IAdhocDag<CubeQueryStep> dag = new AdhocDag<>();
+		for (CubeQueryStep s : new CubeQueryStep[] { stepA, stepE, stepB, stepC, stepD, stepLeaf }) {
+			mg.addVertex(s);
+			dag.addVertex(s);
+		}
+		// A → B (position 0), A → E (position 1).
+		addEdges(mg, dag, stepA, stepB);
+		addEdges(mg, dag, stepA, stepE);
+		// E → B (E's single underlying).
+		addEdges(mg, dag, stepE, stepB);
+		// B → C → D → leaf — the foldable chain.
+		addEdges(mg, dag, stepB, stepC);
+		addEdges(mg, dag, stepC, stepD);
+		addEdges(mg, dag, stepD, stepLeaf);
+
+		QueryStepsDag fusedDag = new CombinatorSubgraphsFuser()
+				.fuse(QueryStepsDag.builder().multigraph(mg).inducedToInducer(dag).explicits(Set.of(stepA)).build());
+
+		// All three chain nodes (B, C, D) fold into ONE fused step.
+		Assertions.assertThat(fusedDag.getMultigraph().vertexSet())
+				.contains(stepA, stepE, stepLeaf)
+				.doesNotContain(stepB, stepC, stepD);
+
+		// A's outgoing edges in positional order: [fusedStep (slot 0, replacing B), stepE (slot 1, unchanged)].
+		List<CubeQueryStep> aTargets = fusedDag.getMultigraph()
+				.outgoingEdgesOf(stepA)
+				.stream()
+				.map(e -> fusedDag.getMultigraph().getEdgeTarget(e))
+				.toList();
+		Assertions.assertThat(aTargets).hasSize(2);
+		Assertions.assertThat(aTargets.get(0))
+				.as("A's position-0 underlying (originally B) must be the fused step")
+				.satisfies(t -> Assertions.assertThat(((Combinator) t.getMeasure()).getCombinationKey())
+						.isEqualTo(ComposedCombination.KEY));
+		Assertions.assertThat(aTargets.get(1)).as("A's position-1 underlying (E) survives untouched").isEqualTo(stepE);
+
+		// E's outgoing edge now points at the same fused step that A's slot-0 points to.
+		List<CubeQueryStep> eTargets = fusedDag.getMultigraph()
+				.outgoingEdgesOf(stepE)
+				.stream()
+				.map(e -> fusedDag.getMultigraph().getEdgeTarget(e))
+				.toList();
+		Assertions.assertThat(eTargets).hasSize(1);
+		Assertions.assertThat(eTargets.get(0))
+				.as("E's underlying must be the SAME fused step A points to (no duplication)")
+				.isEqualTo(aTargets.get(0));
 	}
 
 	@Test

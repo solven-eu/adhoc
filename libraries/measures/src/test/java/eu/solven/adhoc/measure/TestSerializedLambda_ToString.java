@@ -49,6 +49,15 @@ public class TestSerializedLambda_ToString {
 		public static Object lambdaAsMethodInNested(ISliceWithStep slice, List<?> values) {
 			return "outputValue";
 		}
+
+		public Object lambdaAsMethodInNestedNotStatic(ISliceWithStep slice, List<?> values) {
+			return "outputValueNotStatic";
+		}
+
+		@Override
+		public String toString() {
+			return "theNestedInstance";
+		}
 	}
 
 	@Test
@@ -92,6 +101,25 @@ public class TestSerializedLambda_ToString {
 				}""");
 	}
 
+	@Test
+	public void testLambda_Serializable_boundInstanceRef() {
+		NestedClass instance = new NestedClass();
+		ILambdaCombinationS lambda = instance::lambdaAsMethodInNestedNotStatic;
+		Assertions.assertThat(lambdaToString(lambda))
+				.isEqualTo(
+						"eu.solven.adhoc.measure.TestSerializedLambda_ToString$NestedClass::lambdaAsMethodInNestedNotStatic(theNestedInstance)");
+	}
+
+	@Test
+	public void testLambda_Serializable_capturedArgs() {
+		String capturedStr = "hello";
+		int capturedInt = 42;
+		ILambdaCombinationS lambda = (slice, values) -> capturedStr + capturedInt;
+		// Method name varies between IDE and CLI (lambda index), so we use a pattern match
+		Assertions.assertThat(lambdaToString(lambda))
+				.matches("eu\\.solven\\.adhoc\\.measure\\.TestSerializedLambda_ToString::lambda\\$.*\\(hello,42\\)");
+	}
+
 	/**
 	 * Combines a Lambda with a {@link Serializable} contract, enabling access to {@link SerializedLambda}.
 	 */
@@ -108,7 +136,22 @@ public class TestSerializedLambda_ToString {
 
 			// `getCapturingClass` returns the root class but not the nested class if any
 			String capturingClassWithPackage = serializedLambda.getImplClass().replace('/', '.');
-			return capturingClassWithPackage + "::" + serializedLambda.getImplMethodName();
+			String base = capturingClassWithPackage + "::" + serializedLambda.getImplMethodName();
+
+			// Captured args: bound receiver for `instance::method`, or local variables closed over by a lambda body.
+			// Rendered as `(arg1,arg2,…)` — relies on each arg's toString.
+			int captured = serializedLambda.getCapturedArgCount();
+			if (captured == 0) {
+				return base;
+			}
+			StringBuilder sb = new StringBuilder(base).append('(');
+			for (int i = 0; i < captured; i++) {
+				if (i > 0) {
+					sb.append(',');
+				}
+				sb.append(serializedLambda.getCapturedArg(i));
+			}
+			return sb.append(')').toString();
 		} catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
 			log.warn("Issue with SerializedLambda", e);
 			return "TODO lambdaToString";

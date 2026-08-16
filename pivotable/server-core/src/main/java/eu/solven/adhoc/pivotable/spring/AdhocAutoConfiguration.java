@@ -88,6 +88,15 @@ public class AdhocAutoConfiguration {
 	 * is the query doing right now" indicator. The default cap of 200k nodes is large enough to retain a handful of
 	 * 20k-step plans simultaneously without unbounded growth.
 	 *
+	 * <p>
+	 * <strong>Singleton-shared bean.</strong> The cube engine writes plan fragments here while the Pivotable HTTP plan
+	 * handlers read from it; both consumers MUST receive the same instance. Users may override this bean (e.g. with a
+	 * {@code NoopQueryPlanRegistry} for production setups that don't need the feature), but if they ALSO override a
+	 * downstream bean such as {@link IQueryPreparator}, {@link ICubeQueryEngine}, or {@code AdhocSchema}, they must
+	 * inject this bean into the override rather than constructing a fresh registry inline. Otherwise the engine writes
+	 * to one instance, the handlers read from another, and the plan endpoints silently return empty. See
+	 * {@code docs/pivotable-spring-beans.md} for the full list of singleton-sharing beans.
+	 *
 	 * @return a {@link BoundedQueryPlanRegistry}; users can override with their own bean (e.g. a no-op for production
 	 *         setups that don't need the feature).
 	 */

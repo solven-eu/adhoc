@@ -15,6 +15,8 @@
 	<!-- Default jar packaging: the module ships an (essentially empty) jar so consumers can depend on it with the
 	     default <type>jar</type>. The value is in the transitive <dependencies>, not in classes. -->
 	<properties>
+		<!-- Workaround `groups/excludedGroups require TestNG, JUnit48+ or JUnit 5 (a specific engine required on classpath) on project test classpath`: this module has no test sources and pulls no JUnit Platform engine. -->
+		<maven.test.skip>true</maven.test.skip>
 		<automatic.module.name>eu.solven.adhoc.pivotable.mcp.webmvc</automatic.module.name>
 	</properties>
 

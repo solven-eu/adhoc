@@ -139,6 +139,15 @@
 			<optional>true</optional>
 		</dependency>
 
+		<dependency>
+			<!-- Used by MeasureForestExcelLogicExporter to write .xlsx
+			workbooks that mirror a measure forest as Excel formulas. -->
+			<groupId>org.apache.poi</groupId>
+			<artifactId>poi-ooxml</artifactId>
+			<version>5.4.0</version>
+			<optional>true</optional>
+		</dependency>
+
 		<!--
 		https://mvnrepository.com/artifact/com.github.javaparser/javaparser-core -->
 		<dependency>

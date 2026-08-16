@@ -24,6 +24,7 @@ package eu.solven.adhoc.engine.dag.fuser;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Deque;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -35,6 +36,9 @@ import java.util.stream.Collectors;
 
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.DirectedMultigraph;
+import org.jgrapht.traverse.TopologicalOrderIterator;
+
+import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.cuboid.ICuboid;
 import eu.solven.adhoc.engine.QueryStepsDag;
@@ -53,11 +57,15 @@ import lombok.extern.slf4j.Slf4j;
  * sub-tree) — even DAGs when a non-foldable boundary leaf is shared between two foldable internals.
  *
  * <p>
- * A node is foldable iff: its measure is a {@link Combinator}, it has exactly one incoming edge (single consumer) and
- * at least one outgoing edge, it is not user-requested (not in {@code roots}) and it is not pre-loaded from cache (not
- * in {@code stepToValue}). A connected subgraph of {@code n >= minChainLength} foldable nodes is replaced by a single
- * fused step whose combination evaluates the captured subgraph in one per-cell pass — skipping every intermediate
- * cuboid materialisation.
+ * A node is foldable iff: its measure is a {@link Combinator}, it has at least one incoming and at least one outgoing
+ * edge, it is not user-requested (not in {@code roots}) and it is not pre-loaded from cache (not in
+ * {@code stepToValue}). A foldable subgraph is then formed by walking down from the topmost foldable ancestor, with one
+ * extra constraint on the descendants: an internal (non-top) node must have exactly ONE incoming edge — otherwise
+ * folding it away would orphan whichever consumer of it sits outside the subgraph. Multi-consumer nodes that fail this
+ * test are demoted to boundary leaves of the fold. The TOP of the subgraph IS allowed to have multiple incoming edges;
+ * every consumer of top gets rewired to the fused step (one cuboid materialisation, N reads — no duplication). A
+ * connected subgraph of {@code n >= minChainLength} internals is replaced by a single fused step whose combination
+ * evaluates the captured subgraph in one per-cell pass — skipping every intermediate cuboid materialisation.
  *
  * <p>
  * The fused step's underlyings are the <em>distinct</em> boundary leaves of the subgraph (a non-foldable node reachable
@@ -72,14 +80,19 @@ import lombok.extern.slf4j.Slf4j;
  *
  * @author Benoit Lacelle
  */
+// PMD.GodClass: the fuser owns one cohesive task (fold maximal foldable subgraphs into a single fused step); the
+// methods are intentionally split so each step of the rewrite — preflight check, plan build, fused-step build,
+// consumer snapshot, mutation apply — is named and locally reviewable. Splitting further would push trivial state
+// (multigraph + dag references) through more parameters without buying real decoupling.
+@SuppressWarnings("PMD.GodClass")
 @Slf4j
 public class CombinatorSubgraphsFuser implements IQueryStepsDagFuser {
 
 	/** Default minimum number of folded internals — per {@code docs/optimization.md}, n=2 is the right threshold. */
 	public static final int DEFAULT_MIN_CHAIN_LENGTH = 2;
 
-	private final int minChainLength;
-	private final IComposedNameStrategy nameStrategy;
+	protected final int minChainLength;
+	protected final IComposedNameStrategy nameStrategy;
 
 	public CombinatorSubgraphsFuser() {
 		this(DEFAULT_MIN_CHAIN_LENGTH, IComposedNameStrategy.DEFAULT);
@@ -101,12 +114,13 @@ public class CombinatorSubgraphsFuser implements IQueryStepsDagFuser {
 	public QueryStepsDag fuse(QueryStepsDag input) {
 		// Snapshot of currently foldable nodes. Foldability is a function of the graph at this instant; we recompute
 		// only at the start because each subgraph rewrite is self-contained — removing internals does not change the
-		// foldability of any node outside the subgraph (internals had degree 1 incoming, so no edge crossed in).
+		// foldability of any node outside the subgraph (internals had degree 1 incoming by collectSubgraph's check, so
+		// no edge crossed in).
 		Set<CubeQueryStep> foldable = input.getMultigraph()
 				.vertexSet()
 				.stream()
 				.filter(step -> isFoldable(step, input.getMultigraph(), input.getExplicits(), input.getStepToValues()))
-				.collect(Collectors.toCollection(LinkedHashSet::new));
+				.collect(ImmutableSet.toImmutableSet());
 		if (foldable.isEmpty()) {
 			return input;
 		}
@@ -116,9 +130,17 @@ public class CombinatorSubgraphsFuser implements IQueryStepsDagFuser {
 		IAdhocDag<CubeQueryStep> dag = DagFuserHelpers.copyDag(input.getInducedToInducer());
 		boolean changed = false;
 
+		// Iterate in forward topological order over the original DAG (roots first). This makes the search converge
+		// on the right top on the first seed: an ancestor that is the top of its fold is visited before its
+		// descendants, so subsequent seeds in the same subgraph are short-circuited via `processed`. Without this
+		// guarantee, processing a deep seed first could spend an iteration on a too-small subgraph before its proper
+		// top is reached on a later seed (still correct, just wasteful).
 		Set<CubeQueryStep> processed = new LinkedHashSet<>();
-		for (CubeQueryStep seed : foldable) {
-			if (processed.contains(seed)) {
+		TopologicalOrderIterator<CubeQueryStep, DefaultEdge> topo =
+				new TopologicalOrderIterator<>(input.getInducedToInducer());
+		while (topo.hasNext()) {
+			CubeQueryStep seed = topo.next();
+			if (!foldable.contains(seed) || processed.contains(seed)) {
 				continue;
 			}
 			// Find topmost foldable ancestor of seed: walk up while the parent is in `foldable`.
@@ -141,20 +163,22 @@ public class CombinatorSubgraphsFuser implements IQueryStepsDagFuser {
 	}
 
 	/**
-	 * A node is foldable when (a) its measure is a {@link Combinator}, (b) it has exactly one incoming and at least one
-	 * outgoing edge, (c) it is neither user-requested nor pre-cached.
+	 * A node is foldable when (a) its measure is a {@link Combinator}, (b) it has at least one incoming and at least
+	 * one outgoing edge, (c) it is neither user-requested nor pre-cached. The "at least one incoming" check tolerates
+	 * multi-consumer tops; the additional "exactly one incoming" constraint for non-top internals is enforced inside
+	 * {@link #collectSubgraph(CubeQueryStep, Set, DirectedMultigraph)}.
 	 */
 	protected boolean isFoldable(CubeQueryStep step,
 			DirectedMultigraph<CubeQueryStep, DefaultEdge> multigraph,
 			Set<CubeQueryStep> roots,
 			Map<CubeQueryStep, ICuboid> stepToValue) {
-		return step.getMeasure() instanceof Combinator && multigraph.incomingEdgesOf(step).size() == 1
+		return step.getMeasure() instanceof Combinator && !multigraph.incomingEdgesOf(step).isEmpty()
 				&& !multigraph.outgoingEdgesOf(step).isEmpty()
 				&& !roots.contains(step)
 				&& !stepToValue.containsKey(step);
 	}
 
-	private CubeQueryStep topmostFoldable(CubeQueryStep seed,
+	protected CubeQueryStep topmostFoldable(CubeQueryStep seed,
 			Set<CubeQueryStep> foldable,
 			DirectedMultigraph<CubeQueryStep, DefaultEdge> multigraph) {
 		CubeQueryStep top = seed;
@@ -174,10 +198,17 @@ public class CombinatorSubgraphsFuser implements IQueryStepsDagFuser {
 
 	/**
 	 * BFS down from {@code top}, accumulating every reachable foldable descendant into {@code internals} and every
-	 * non-foldable child into {@code boundary} (deduplicated; iteration order preserved so the fused step's underlying
-	 * list is deterministic).
+	 * non-foldable (or multi-consumer) child into {@code boundary} (deduplicated; iteration order preserved so the
+	 * fused step's underlying list is deterministic).
+	 *
+	 * <p>
+	 * A child is admitted as an internal only if it is foldable AND has exactly one incoming edge — i.e. its sole
+	 * consumer is the foldable parent that just brought it into the BFS. A multi-consumer child is downgraded to a
+	 * boundary leaf even when its measure is foldable, because folding it away would orphan whichever consumer sits
+	 * outside the subgraph. The top itself is exempt: its consumers are tracked separately in {@link #rewrite} and
+	 * rewired to the fused step.
 	 */
-	private Subgraph collectSubgraph(CubeQueryStep top,
+	protected Subgraph collectSubgraph(CubeQueryStep top,
 			Set<CubeQueryStep> foldable,
 			DirectedMultigraph<CubeQueryStep, DefaultEdge> multigraph) {
 		Set<CubeQueryStep> internals = new LinkedHashSet<>();
@@ -192,7 +223,7 @@ public class CombinatorSubgraphsFuser implements IQueryStepsDagFuser {
 			}
 			for (DefaultEdge outEdge : multigraph.outgoingEdgesOf(node)) {
 				CubeQueryStep child = multigraph.getEdgeTarget(outEdge);
-				if (foldable.contains(child)) {
+				if (foldable.contains(child) && multigraph.incomingEdgesOf(child).size() == 1) {
 					work.add(child);
 				} else {
 					boundary.add(child);
@@ -208,21 +239,50 @@ public class CombinatorSubgraphsFuser implements IQueryStepsDagFuser {
 	 *
 	 * @return true iff a fold was applied; false if the subgraph was rejected (e.g. heterogeneous filter/groupBy).
 	 */
-	private boolean rewrite(CubeQueryStep top,
+	protected boolean rewrite(CubeQueryStep top,
 			Subgraph subgraph,
 			DirectedMultigraph<CubeQueryStep, DefaultEdge> multigraph,
 			IAdhocDag<CubeQueryStep> dag) {
-		// Preflight: heterogeneous filter / groupBy / customMarker across the subgraph indicates a node whose
-		// IMeasureQueryStep manipulates the slice shape (a Filtrator-like behaviour wrapped in a Combinator). Refuse
-		// to fold in that case — the per-cell composition would produce wrong values.
-		for (CubeQueryStep step : subgraph.internals) {
+		if (!isHomogeneous(top, subgraph.internals)) {
+			log.debug("Heterogeneous filter/groupBy/customMarker in subgraph anchored at {} — skipping fold", top);
+			return false;
+		}
+
+		ComposedCombinationPlan plan = buildComposedPlan(subgraph, multigraph);
+		CubeQueryStep fusedStep = buildFusedStep(top, plan, subgraph);
+		Map<CubeQueryStep, List<CubeQueryStep>> consumerOutgoingTargets = snapshotConsumerOutgoing(top, multigraph);
+
+		applyMutation(top, fusedStep, subgraph, multigraph, dag, consumerOutgoingTargets);
+
+		log.debug("Folded subgraph of {} internals + {} boundary leaves into {}",
+				subgraph.internals.size(),
+				subgraph.boundary.size(),
+				fusedStep);
+		return true;
+	}
+
+	/**
+	 * Preflight: heterogeneous filter / groupBy / customMarker across the subgraph indicates a node whose
+	 * {@code IMeasureQueryStep} manipulates the slice shape (a Filtrator-like behaviour wrapped in a Combinator).
+	 * Refuse to fold in that case — the per-cell composition would produce wrong values.
+	 */
+	protected boolean isHomogeneous(CubeQueryStep top, Set<CubeQueryStep> internals) {
+		for (CubeQueryStep step : internals) {
 			if (!step.getFilter().equals(top.getFilter()) || !step.getGroupBy().equals(top.getGroupBy())
 					|| !Objects.equals(step.getCustomMarker(), top.getCustomMarker())) {
-				log.debug("Heterogeneous filter/groupBy/customMarker in subgraph anchored at {} — skipping fold", top);
 				return false;
 			}
 		}
+		return true;
+	}
 
+	/**
+	 * Build the {@link ComposedCombinationPlan} for {@code subgraph}: post-order over internals (children before
+	 * parents), with each step's {@code inputSlots} resolved against the leaf index (boundary leaves take slots
+	 * {@code [0, numLeaves)}) or the internal index (internals take slots {@code [numLeaves, …)}).
+	 */
+	protected ComposedCombinationPlan buildComposedPlan(Subgraph subgraph,
+			DirectedMultigraph<CubeQueryStep, DefaultEdge> multigraph) {
 		// Assign each boundary leaf a stable index (= position in the fused step's `underlyings` list).
 		Map<CubeQueryStep, Integer> leafIndex = new LinkedHashMap<>();
 		for (CubeQueryStep leaf : subgraph.boundary) {
@@ -232,7 +292,7 @@ public class CombinatorSubgraphsFuser implements IQueryStepsDagFuser {
 		// Post-order over internals: a step's children come before it in `steps`, so `inputSlots` always references
 		// earlier slots. Plain reverse-BFS works because `internals` is in BFS order (parents-before-children).
 		List<CubeQueryStep> postOrder = new ArrayList<>(subgraph.internals);
-		java.util.Collections.reverse(postOrder);
+		Collections.reverse(postOrder);
 
 		Map<CubeQueryStep, Integer> internalIndex = new LinkedHashMap<>();
 		for (int i = 0; i < postOrder.size(); i++) {
@@ -242,22 +302,38 @@ public class CombinatorSubgraphsFuser implements IQueryStepsDagFuser {
 		int numLeaves = leafIndex.size();
 		List<CombineStep> steps = new ArrayList<>(postOrder.size());
 		for (CubeQueryStep node : postOrder) {
-			Combinator combinator = (Combinator) node.getMeasure();
-			List<DefaultEdge> outEdges = new ArrayList<>(multigraph.outgoingEdgesOf(node));
-			int[] inputSlots = new int[outEdges.size()];
-			for (int i = 0; i < outEdges.size(); i++) {
-				CubeQueryStep underlying = multigraph.getEdgeTarget(outEdges.get(i));
-				if (leafIndex.containsKey(underlying)) {
-					inputSlots[i] = leafIndex.get(underlying);
-				} else {
-					inputSlots[i] = numLeaves + internalIndex.get(underlying);
-				}
-			}
-			steps.add(new CombineStep(combinator, inputSlots));
+			steps.add(makeCombineStep(node, multigraph, leafIndex, internalIndex, numLeaves));
 		}
+		return new ComposedCombinationPlan(numLeaves, steps);
+	}
 
-		ComposedCombinationPlan plan = new ComposedCombinationPlan(numLeaves, steps);
+	private CombineStep makeCombineStep(CubeQueryStep node,
+			DirectedMultigraph<CubeQueryStep, DefaultEdge> multigraph,
+			Map<CubeQueryStep, Integer> leafIndex,
+			Map<CubeQueryStep, Integer> internalIndex,
+			int numLeaves) {
+		Combinator combinator = (Combinator) node.getMeasure();
+		List<DefaultEdge> outEdges = new ArrayList<>(multigraph.outgoingEdgesOf(node));
+		int[] inputSlots = new int[outEdges.size()];
+		for (int i = 0; i < outEdges.size(); i++) {
+			CubeQueryStep underlying = multigraph.getEdgeTarget(outEdges.get(i));
+			Integer leafSlot = leafIndex.get(underlying);
+			if (leafSlot != null) {
+				inputSlots[i] = leafSlot;
+			} else {
+				inputSlots[i] = numLeaves + internalIndex.get(underlying);
+			}
+		}
+		return new CombineStep(combinator, inputSlots);
+	}
 
+	/**
+	 * Build the single {@link CubeQueryStep} that will replace the entire foldable subgraph in the DAG. Inherits
+	 * {@code top}'s filter/groupBy/customMarker; carries the composed {@link Combinator} backed by {@code plan}; and
+	 * lists every distinct boundary leaf as an underlying so the engine resolves the fused step's underlyings
+	 * positionally against {@code plan}'s leaf slots.
+	 */
+	protected CubeQueryStep buildFusedStep(CubeQueryStep top, ComposedCombinationPlan plan, Subgraph subgraph) {
 		// Internals are iterated in BFS (top-down) order — top first, then its foldable children. We pass that order
 		// verbatim to the name strategy so its output is stable regardless of HashMap iteration vagaries.
 		List<Combinator> internalsTopDown =
@@ -270,15 +346,48 @@ public class CombinatorSubgraphsFuser implements IQueryStepsDagFuser {
 		for (CubeQueryStep leaf : subgraph.boundary) {
 			fusedBuilder.underlying(leaf.getMeasure().getName());
 		}
-		CubeQueryStep fusedStep = CubeQueryStep.edit(top).measure(fusedBuilder.build()).build();
+		return CubeQueryStep.edit(top).measure(fusedBuilder.build()).build();
+	}
 
-		// Mutate graphs: add the fused node + boundary edges, then drop every internal (which sweeps its edges).
-		// Consumer edge (above top) survives because we recreate it pointing at the fused step.
-		CubeQueryStep consumer = multigraph.getEdgeSource(multigraph.incomingEdgesOf(top).iterator().next());
+	/**
+	 * Snapshot every consumer's outgoing-edge order BEFORE mutating so we can rebuild each with {@code top} substituted
+	 * by the fused step. A naive {@code addEdge(consumer, fusedStep)} + later {@code removeVertex(top)} would append
+	 * the new edge to the END of the consumer's outgoing-edge set, breaking the positional contract the engine relies
+	 * on to map each outgoing edge to {@link Combinator#getUnderlyings()}. Top may have multiple consumers (each
+	 * rewired to the same fused step), so we capture the full set. See {@code DagFuserHelpers.replaceStepMeasure} for
+	 * the same pattern on the A-to-Combinator fusers.
+	 */
+	protected Map<CubeQueryStep, List<CubeQueryStep>> snapshotConsumerOutgoing(CubeQueryStep top,
+			DirectedMultigraph<CubeQueryStep, DefaultEdge> multigraph) {
+		Set<CubeQueryStep> consumers = new LinkedHashSet<>();
+		for (DefaultEdge in : multigraph.incomingEdgesOf(top)) {
+			consumers.add(multigraph.getEdgeSource(in));
+		}
+		Map<CubeQueryStep, List<CubeQueryStep>> consumerOutgoingTargets = new LinkedHashMap<>();
+		for (CubeQueryStep consumer : consumers) {
+			List<CubeQueryStep> targets = new ArrayList<>();
+			for (DefaultEdge e : multigraph.outgoingEdgesOf(consumer)) {
+				targets.add(multigraph.getEdgeTarget(e));
+			}
+			consumerOutgoingTargets.put(consumer, targets);
+		}
+		return consumerOutgoingTargets;
+	}
+
+	/**
+	 * Apply the snapshotted plan to {@code multigraph} and {@code dag}: add the fused vertex + its boundary edges, drop
+	 * every internal vertex, then rebuild each consumer's outgoing edges in the snapshotted order with
+	 * {@code top → fusedStep} substituted.
+	 */
+	protected void applyMutation(CubeQueryStep top,
+			CubeQueryStep fusedStep,
+			Subgraph subgraph,
+			DirectedMultigraph<CubeQueryStep, DefaultEdge> multigraph,
+			IAdhocDag<CubeQueryStep> dag,
+			Map<CubeQueryStep, List<CubeQueryStep>> consumerOutgoingTargets) {
 		multigraph.addVertex(fusedStep);
 		dag.addVertex(fusedStep);
-		multigraph.addEdge(consumer, fusedStep);
-		dag.addEdge(consumer, fusedStep);
+
 		for (CubeQueryStep leaf : subgraph.boundary) {
 			multigraph.addEdge(fusedStep, leaf);
 			dag.addEdge(fusedStep, leaf);
@@ -288,13 +397,38 @@ public class CombinatorSubgraphsFuser implements IQueryStepsDagFuser {
 			dag.removeVertex(node);
 		}
 
-		log.debug("Folded subgraph of {} internals + {} boundary leaves into {}",
-				subgraph.internals.size(),
-				subgraph.boundary.size(),
-				fusedStep);
-		return true;
+		// Rebuild each consumer's outgoing edges in the snapshotted order, substituting `top` → `fusedStep`. Use
+		// `.equals()` not `==` : JGraphT canonicalises vertices via `.equals/.hashCode`, so a snapshotted target may
+		// be a different instance than `top` even when they represent the same vertex.
+		for (Map.Entry<CubeQueryStep, List<CubeQueryStep>> entry : consumerOutgoingTargets.entrySet()) {
+			rebuildConsumerOutgoing(entry.getKey(), entry.getValue(), top, fusedStep, multigraph, dag);
+		}
 	}
 
-	private record Subgraph(Set<CubeQueryStep> internals, Set<CubeQueryStep> boundary) {
+	private void rebuildConsumerOutgoing(CubeQueryStep consumer,
+			List<CubeQueryStep> snapshottedTargets,
+			CubeQueryStep top,
+			CubeQueryStep fusedStep,
+			DirectedMultigraph<CubeQueryStep, DefaultEdge> multigraph,
+			IAdhocDag<CubeQueryStep> dag) {
+		for (DefaultEdge e : new ArrayList<>(multigraph.outgoingEdgesOf(consumer))) {
+			multigraph.removeEdge(e);
+		}
+		for (DefaultEdge e : new ArrayList<>(dag.outgoingEdgesOf(consumer))) {
+			dag.removeEdge(e);
+		}
+		for (CubeQueryStep target : snapshottedTargets) {
+			CubeQueryStep effective;
+			if (top.equals(target)) {
+				effective = fusedStep;
+			} else {
+				effective = target;
+			}
+			multigraph.addEdge(consumer, effective);
+			dag.addEdge(consumer, effective);
+		}
+	}
+
+	protected record Subgraph(Set<CubeQueryStep> internals, Set<CubeQueryStep> boundary) {
 	}
 }

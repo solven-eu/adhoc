@@ -103,11 +103,6 @@ public class StandardQueryPreparator implements IQueryPreparator {
 	 * The {@link IQueryPlanRegistry} the prepared {@link QueryPod} carries — the engine, lower-layer table wrappers and
 	 * any extension publishing plan fragments pull it from {@code queryPod.getQueryPlanRegistry()}. Defaults to
 	 * {@link NoopQueryPlanRegistry#INSTANCE} so callers that don't observe the plan pay nothing.
-	 *
-	 * <p>
-	 * Lives on the preparator (not on {@code CubeQueryEngine}) so the engine never has to rebuild a {@link QueryPod}
-	 * just to inject the registry. The previous design did {@code queryPod.toBuilder().queryPlanRegistry(...).build()}
-	 * inside {@code CubeQueryEngine.execute}, which violated "the engine consumes the pod, the preparator builds it".
 	 */
 	@NonNull
 	@Default
