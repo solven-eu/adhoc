@@ -84,7 +84,9 @@ jobs:
             echo "changed=false" >> "$GITHUB_OUTPUT"
           else
             git add -A
-            git commit -m "chore: auto-format via Spotless and Prettier [skip ci]"
+            # No [skip ci] marker: this commit becomes the PR head, and the required
+            # status checks only ever run if the pull_request event is allowed to fire.
+            git commit -m "chore: auto-format via Spotless and Prettier"
             git push origin "$BRANCH"
             echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
@@ -221,7 +223,9 @@ jobs:
             echo "changed=false" >> "$GITHUB_OUTPUT"
           else
             git add -A
-            git commit -m "chore: AI code quality improvements via Claude [skip ci]"
+            # No [skip ci] marker: this commit becomes the PR head, and the required
+            # status checks only ever run if the pull_request event is allowed to fire.
+            git commit -m "chore: AI code quality improvements via Claude"
             git push origin HEAD
             echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
