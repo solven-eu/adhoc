@@ -135,13 +135,13 @@ public class PivotableLoginWebnoneController {
 		// Support both servlet (WebMVC) and reactive (WebFlux) client registration repositories
 		// BEWARE If the following fails, you probably lacks some oauth2 registrations, as suggested in
 		// application-pivotable-demo_external_oauth2.yml
-		Optional<? extends Iterable<ClientRegistration>> optClientRegistrations =
-				List.of(InMemoryClientRegistrationRepository.class, InMemoryReactiveClientRegistrationRepository.class)
-						.stream()
-						.map(c -> appContext.getBeanProvider(c))
-						.map(a -> a.getIfAvailable())
-						.filter(Objects::nonNull)
-						.findFirst();
+		Optional<? extends Iterable<ClientRegistration>> optClientRegistrations = ImmutableList
+				.of(InMemoryClientRegistrationRepository.class, InMemoryReactiveClientRegistrationRepository.class)
+				.stream()
+				.map(c -> appContext.getBeanProvider(c))
+				.map(a -> a.getIfAvailable())
+				.filter(Objects::nonNull)
+				.findFirst();
 
 		if (optClientRegistrations.isEmpty()) {
 			log.info("Not a single `Iterable<ClientRegistration>`. You may want to set explicitly {}=false",

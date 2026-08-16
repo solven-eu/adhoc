@@ -25,7 +25,6 @@ package eu.solven.adhoc.engine.observability.plan;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -319,7 +318,7 @@ public class QueryPlanProjector {
 	protected static final class ProjectionState {
 		final Map<ICubeQueryStep, SizeAndDuration> stepToCost;
 		final Map<Object, List<QueryPlanNode>> fragments;
-		final Map<Object, String> subjectToId = new HashMap<>();
+		final Map<Object, String> subjectToId = new LinkedHashMap<>();
 		final List<QueryPlanNode> nodes = new ArrayList<>();
 		final List<QueryPlanEdge> edges = new ArrayList<>();
 
