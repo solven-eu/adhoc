@@ -361,10 +361,30 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 				.build();
 	}
 
+	protected IQueryStepsDagBuilder makeQueryStepsDagsBuilder(QueryPod queryPod) {
+		// Add explicitly requested steps
+		Set<IMeasure> queriedMeasures = getRootMeasures(queryPod);
+
+		long nbQueriedMeasures = queriedMeasures.stream().map(IMeasure::getName).distinct().count();
+		if (nbQueriedMeasures < queriedMeasures.size()) {
+			AtomicLongMap<String> nameToCount = AtomicLongMap.create();
+			queriedMeasures.forEach(m -> nameToCount.incrementAndGet(m.getName()));
+			// Remove not conflicting
+			nameToCount.asMap().keySet().forEach(nameToCount::decrementAndGet);
+			nameToCount.removeAllZeros();
+			nameToCount.asMap().keySet().forEach(nameToCount::incrementAndGet);
+
+			throw new IllegalArgumentException(
+					"Can not query multiple measures with same name: %s".formatted(nameToCount));
+		}
+
+		return QueryStepsDagBuilder.make(factories, queryPod, queriedMeasures);
+	}
+
 	/**
 	 * This is especially important to manage the case where no measure is requested, and we have to add some default
 	 * measure.
-	 * 
+	 *
 	 * @param queryPod
 	 * @return the {@link Set} of root measures
 	 */
@@ -386,31 +406,11 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 
 	/**
 	 * This measure is used to materialize slices. Typically used to list coordinates along a column.
-	 * 
+	 *
 	 * @return the measure to be considered if not measure is provided to the query
 	 */
 	protected IMeasure defaultMeasure() {
 		return Aggregator.empty().toBuilder().name(emptyMeasureName).build();
-	}
-
-	protected IQueryStepsDagBuilder makeQueryStepsDagsBuilder(QueryPod queryPod) {
-		// Add explicitly requested steps
-		Set<IMeasure> queriedMeasures = getRootMeasures(queryPod);
-
-		long nbQueriedMeasures = queriedMeasures.stream().map(IMeasure::getName).distinct().count();
-		if (nbQueriedMeasures < queriedMeasures.size()) {
-			AtomicLongMap<String> nameToCount = AtomicLongMap.create();
-			queriedMeasures.forEach(m -> nameToCount.incrementAndGet(m.getName()));
-			// Remove not conflicting
-			nameToCount.asMap().keySet().forEach(nameToCount::decrementAndGet);
-			nameToCount.removeAllZeros();
-			nameToCount.asMap().keySet().forEach(nameToCount::incrementAndGet);
-
-			throw new IllegalArgumentException(
-					"Can not query multiple measures with same name: %s".formatted(nameToCount));
-		}
-
-		return QueryStepsDagBuilder.make(factories, queryPod, queriedMeasures);
 	}
 
 	protected ITabularView executeDag(QueryPod queryPod, QueryStepsDag queryStepsDag) {

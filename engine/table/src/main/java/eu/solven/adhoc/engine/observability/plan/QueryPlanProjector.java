@@ -311,7 +311,7 @@ public class QueryPlanProjector {
 	 * <p>
 	 * The {@code subjectToId} map is the cycle guard: any revisit of an already-allocated subject returns the existing
 	 * id without recursing, breaking infinite loops naturally (no need for an {@code inProgress} stack like the
-	 * previous tree-based projector required). It is value-equality-based ({@code HashMap}, not
+	 * previous tree-based projector required). It is value-equality-based ({@code LinkedHashMap}, not
 	 * {@code IdentityHashMap}) because two distinct Java instances with the same {@code subject.equals(...)} value
 	 * represent the same logical step — the projector's whole point is to recognise that.
 	 */
