@@ -6,7 +6,7 @@
     "devDependencies": {
         "@playwright/test": "1.60.0",
         "@types/lodash": "4.17.25",
-        "@types/node": "24.12.4",
+        "@types/node": "24.13.3",
         "@types/sortablejs": "1.15.9",
         "@vitejs/plugin-vue": "6.0.8",
         "@vitest/coverage-v8": "4.1.10",
