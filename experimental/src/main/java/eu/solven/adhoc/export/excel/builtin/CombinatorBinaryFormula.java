@@ -1,0 +1,63 @@
+/**
+ * The MIT License
+ * Copyright (c) 2026 Benoit Chatain Lacelle - SOLVEN
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
+package eu.solven.adhoc.export.excel.builtin;
+
+import java.util.List;
+import java.util.Optional;
+
+import eu.solven.adhoc.export.excel.IMeasureExcelFormula;
+import eu.solven.adhoc.export.excel.RowContext;
+import eu.solven.adhoc.model.measure.Combinator;
+import eu.solven.adhoc.model.measure.IMeasure;
+import lombok.RequiredArgsConstructor;
+
+/**
+ * Translator for {@link Combinator}s whose combination is a left-associative binary infix operator (e.g. {@code A+B+C},
+ * {@code A*B*C}, {@code A/B}, {@code A-B}). The infix string is supplied by subclasses; this class owns the
+ * operand-joining and matching logic.
+ *
+ * @author Benoit Lacelle
+ */
+@RequiredArgsConstructor
+public abstract class CombinatorBinaryFormula implements IMeasureExcelFormula {
+
+	private final String combinationKey;
+	private final String infix;
+
+	@Override
+	public final boolean supports(IMeasure measure) {
+		return measure instanceof Combinator combinator && combinationKey.equals(combinator.getCombinationKey());
+	}
+
+	@Override
+	public final Optional<String> translate(IMeasure measure, RowContext ctx) {
+		List<String> underlyingCellRefs = ctx.getUnderlyingCellRefs();
+		if (underlyingCellRefs.isEmpty()) {
+			throw new IllegalArgumentException("Combinator[" + combinationKey
+					+ "] "
+					+ measure
+					+ " has no underlyings; cannot translate to Excel formula.");
+		}
+		return Optional.of(String.join(infix, underlyingCellRefs));
+	}
+}

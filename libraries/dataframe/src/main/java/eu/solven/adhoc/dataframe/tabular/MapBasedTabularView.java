@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.stream.Stream;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.primitives.Ints;
 
 import eu.solven.adhoc.cuboid.IColumnScanner;
@@ -127,7 +128,7 @@ public class MapBasedTabularView extends ATabularView implements ITabularView {
 	}
 
 	public void appendSlice(ISlice slice, String measure, Object value) {
-		coordinatesToValues.merge(slice.asAdhocMap(), Map.of(measure, value), AdhocMapHelpers::aggregateMaps);
+		coordinatesToValues.merge(slice.asAdhocMap(), ImmutableMap.of(measure, value), AdhocMapHelpers::aggregateMaps);
 	}
 
 	@Override
@@ -136,10 +137,10 @@ public class MapBasedTabularView extends ATabularView implements ITabularView {
 			if (o == null) {
 				// Materialize the slice. Especially useful with EmptyAggregation as defaultMeasure
 				if (materializeNull) {
-					appendSlice(slice, Map.of());
+					appendSlice(slice, ImmutableMap.of());
 				}
 			} else {
-				appendSlice(slice, Map.of(measureName, o));
+				appendSlice(slice, ImmutableMap.of(measureName, o));
 			}
 		};
 	}

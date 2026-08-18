@@ -66,6 +66,15 @@ export default {
 		<div v-else>
 			<ul>
 				<li><AdhocQueryChip :cubeId="cubeId" :endpointId="endpointId" :withDescription="false" v-if="showEndpoint" /></li>
+				<li>
+					<a
+						:href="'/api/v1/cubes/export/excel?endpoint_id=' + encodeURIComponent(endpointId) + '&cube=' + encodeURIComponent(cubeId)"
+						download
+						title="Download an Excel workbook mirroring this cube's measure logic. Leaf aggregators carry engine-computed values; combinators carry formulas referencing other cells."
+					>
+						<i class="bi bi-file-earmark-excel"></i> Export {{cubeId}} to Excel
+					</a>
+				</li>
 			</ul>
 		</div>
 	`,
