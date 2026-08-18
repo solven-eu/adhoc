@@ -294,11 +294,9 @@ public class FsstTrainer {
 
 		// initialize code 1, as then we loop from consecutive code1->code2
 		int code1 = t.findLongestSymbol(Symbol.fromBytes(sample, cur));
-		{
-			cur += t.symbols[code1].length();
-			encodedLength += encodedLength(code1);
-			codeUsed[code1] = true;
-		}
+		cur += t.symbols[code1].length();
+		encodedLength += encodedLength(code1);
+		codeUsed[code1] = true;
 
 		int start = 0;
 
@@ -357,11 +355,9 @@ public class FsstTrainer {
 
 		// initialize code 1, as then we loop from consecutive code1->code2
 		int code1 = t.findLongestSymbol(Symbol.fromBytes(sampleAsArray, cur));
-		{
-			cur += t.symbols[code1].length();
-			encodedLength += encodedLength(code1);
-			codeUsed[code1] = true;
-		}
+		cur += t.symbols[code1].length();
+		encodedLength += encodedLength(code1);
+		codeUsed[code1] = true;
 
 		int start = 0;
 

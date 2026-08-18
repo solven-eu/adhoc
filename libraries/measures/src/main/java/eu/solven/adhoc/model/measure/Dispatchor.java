@@ -134,19 +134,14 @@ public class Dispatchor
 		if (!tags.isEmpty()) {
 			sb.append(", tags=").append(tags);
 		}
-		sb.append(", underlying=").append(underlying);
-
-		{
-			sb.append(", aggregationKey=").append(aggregationKey);
-			if (!aggregationOptions.isEmpty()) {
-				sb.append(", aggregationOptions=").append(aggregationOptions);
-			}
+		sb.append(", underlying=").append(underlying).append(", aggregationKey=").append(aggregationKey);
+		if (!aggregationOptions.isEmpty()) {
+			sb.append(", aggregationOptions=").append(aggregationOptions);
 		}
-		{
-			sb.append(", decompositionKey=").append(decompositionKey);
-			if (!decompositionOptions.isEmpty()) {
-				sb.append(", decompositionOptions=").append(decompositionOptions);
-			}
+
+		sb.append(", decompositionKey=").append(decompositionKey);
+		if (!decompositionOptions.isEmpty()) {
+			sb.append(", decompositionOptions=").append(decompositionOptions);
 		}
 		return sb.append(')').toString();
 	}
