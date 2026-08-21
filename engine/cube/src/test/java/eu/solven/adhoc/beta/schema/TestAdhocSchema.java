@@ -51,6 +51,7 @@ import eu.solven.adhoc.measure.operator.IOperatorFactory;
 import eu.solven.adhoc.measure.operator.StandardOperatorFactory;
 import eu.solven.adhoc.model.measure.Aggregator;
 import eu.solven.adhoc.model.measure.Combinator;
+import eu.solven.adhoc.model.measure.IAdhocTags;
 import eu.solven.adhoc.table.InMemoryTable;
 
 public class TestAdhocSchema {
@@ -152,6 +153,40 @@ public class TestAdhocSchema {
 				-1);
 		Assertions.assertThat(sample.getCoordinates()).containsExactly("v");
 		Assertions.assertThat(sample.getEstimatedCardinality()).isEqualTo(1L);
+	}
+
+	@Test
+	public void testTagDescriptions_bakedInAreReportedOutOfTheBox() {
+		EndpointSchemaMetadata metadata = schema.getMetadata(AdhocSchemaQuery.builder().build(), true);
+
+		Assertions.assertThat(metadata.getTagDescriptions())
+				.containsKeys(IAdhocTags.TAG_ESSENTIAL, IAdhocTags.TAG_HIDDEN, IAdhocTags.TAG_TECHNICAL)
+				.containsAllEntriesOf(IAdhocTags.TAG_DESCRIPTIONS);
+	}
+
+	@Test
+	public void testTagDescriptions_projectAddsItsOwn() {
+		schema.describeTag("risk", "Measures owned by the risk department");
+
+		EndpointSchemaMetadata metadata = schema.getMetadata(AdhocSchemaQuery.builder().build(), true);
+
+		Assertions.assertThat(metadata.getTagDescriptions())
+				.containsEntry("risk", "Measures owned by the risk department")
+				// The baked-in vocabulary survives a project adding to it.
+				.containsEntry(IAdhocTags.TAG_ESSENTIAL, IAdhocTags.TAG_DESCRIPTIONS.get(IAdhocTags.TAG_ESSENTIAL));
+	}
+
+	/**
+	 * Describing a baked-in tag is how a project states its own wording for a concept Adhoc already names.
+	 */
+	@Test
+	public void testTagDescriptions_projectOverridesABakedInOne() {
+		schema.describeTag(IAdhocTags.TAG_ESSENTIAL, "The measures our traders actually look at");
+
+		EndpointSchemaMetadata metadata = schema.getMetadata(AdhocSchemaQuery.builder().build(), true);
+
+		Assertions.assertThat(metadata.getTagDescriptions())
+				.containsEntry(IAdhocTags.TAG_ESSENTIAL, "The measures our traders actually look at");
 	}
 
 	@Test

@@ -39,11 +39,10 @@ export default {
 			return collectCubeTags(store.schemas[props.endpointId]?.cubes[props.cubeId]);
 		};
 
-		// Tooltip explaining what a tag means. Cube-declared descriptions win over Pivotable's built-in knowledge;
-		// until the cube description API carries them, only the baked-in tags resolve to anything.
+		// Tooltip explaining what a tag means. Served by the schema, which merges Adhoc's baked-in vocabulary with
+		// whatever the project described — so a project's own tags are explained without any SPA change.
 		const tagDescription = function (tag) {
-			const cube = store.schemas[props.endpointId]?.cubes[props.cubeId];
-			return describeTag(tag, cube?.tagDescriptions);
+			return describeTag(tag, store.schemas[props.endpointId]?.tagDescriptions);
 		};
 
 		const filteredTags = function () {

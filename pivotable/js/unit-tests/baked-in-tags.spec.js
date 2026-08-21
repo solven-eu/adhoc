@@ -24,11 +24,15 @@ describe("describeTag", () => {
 		}
 	});
 
-	it("prefers a cube-declared description over the baked-in one", () => {
+	it("prefers the schema-served description over the local fallback", () => {
 		expect(describeTag("meta", { meta: "Our own meaning" })).toBe("Our own meaning");
 	});
 
-	it("falls back to the baked-in description when the cube describes other tags", () => {
+	it("explains a project's own tag, which the SPA cannot know about", () => {
+		expect(describeTag("risk", { risk: "Owned by the risk department" })).toBe("Owned by the risk department");
+	});
+
+	it("falls back locally when the schema reports nothing for that tag", () => {
 		expect(describeTag("meta", { risk: "…" })).toBe(describeTag("meta", null));
 	});
 

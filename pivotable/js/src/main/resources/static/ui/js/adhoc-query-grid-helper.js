@@ -847,7 +847,8 @@ export default {
 			columnDetailsModel.details = null;
 			columnDetailsModel.error = "";
 			columnDetailsModel.loading = true;
-			columnDetailsModel.tagDescriptions = store.schemas[ids.endpointId]?.cubes[ids.cubeId]?.tagDescriptions;
+			// Schema-level, not per-cube: a tag names the same concept across every cube of a schema.
+			columnDetailsModel.tagDescriptions = store.schemas[ids.endpointId]?.tagDescriptions;
 			columnDetailsModal.show();
 
 			store

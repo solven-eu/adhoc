@@ -22,6 +22,10 @@
  */
 package eu.solven.adhoc.model.measure;
 
+import java.util.Map;
+
+import com.google.common.collect.ImmutableMap;
+
 /**
  * The tags carrying a meaning beyond a cube author's own classification.
  *
@@ -79,4 +83,32 @@ public interface IAdhocTags {
 	 * Engine plumbing, carrying no business meaning.
 	 */
 	String TAG_TECHNICAL = "technical";
+
+	/**
+	 * A human-readable note per baked-in tag, so a client can explain a tag it did not choose without hard-coding a
+	 * copy of this vocabulary.
+	 *
+	 * <p>
+	 * Kept next to the constants deliberately: a description living apart from the tag it documents drifts from it. A
+	 * project describes its own tags through {@code IAdhocSchemaRegistrer#describeTag(String, String)}, which also
+	 * allows overriding any entry here.
+	 * </p>
+	 *
+	 * <p>
+	 * The wording states what a tag <em>means</em>, not what a given client does about it: what Pivotable does with
+	 * {@link #TAG_ESSENTIAL} is Pivotable's to describe, and another client may reasonably act differently.
+	 * </p>
+	 */
+	Map<String, String> TAG_DESCRIPTIONS = ImmutableMap.<String, String>builder()
+			.put(TAG_ESSENTIAL,
+					"Useful in most cases. A good starting point on a cube carrying too many entries to browse.")
+			.put(TAG_HIDDEN, "Should stay out of the way unless explicitly asked for.")
+			.put(TAG_DEBUG,
+					"Evaluation is traced by the engine, whether or not the query itself asks for debug output.")
+			.put(TAG_CALCULATED, "Computed by the cube rather than read from the underlying table.")
+			.put(TAG_GENERATED, "Coordinates are produced by a column generator rather than stored in the table.")
+			.put(TAG_META, "Describes the cube itself, such as which sub-cube a row came from.")
+			.put(TAG_COMPOSITE_FULL, "Present in every sub-cube of a composite cube, as opposed to only some of them.")
+			.put(TAG_TECHNICAL, "Engine plumbing, carrying no business meaning.")
+			.build();
 }

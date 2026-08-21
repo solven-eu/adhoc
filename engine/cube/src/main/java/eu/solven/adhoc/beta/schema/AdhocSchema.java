@@ -62,6 +62,7 @@ import eu.solven.adhoc.engine.step.ICubeQuery;
 import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.filter.value.IValueMatcher;
 import eu.solven.adhoc.measure.forest.IMeasureForest;
+import eu.solven.adhoc.model.measure.IAdhocTags;
 import eu.solven.adhoc.model.measure.IMeasure;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.transcoder.ITableAliaser;
@@ -134,6 +135,10 @@ public class AdhocSchema implements IAdhocSchema, IAdhocSchemaRegistrer {
 	// Cube-level tags live ONLY on the schema; ICubeWrapper is intentionally not extended to carry tags so a single
 	// cube can be presented under different tag sets in different schemas without modifying its identity.
 	final Map<String, Set<String>> cubeToTags = new ConcurrentHashMap<>();
+
+	// Schema-wide: a tag names the same concept across every cube. Seeded with the baked-in vocabulary so a client
+	// gets those for free; a project adds its own, or overwrites a default, through `describeTag`.
+	final Map<String, String> tagToDescription = new ConcurrentHashMap<>(IAdhocTags.TAG_DESCRIPTIONS);
 
 	/**
 	 * Used as key to identify in which context/cube given customMarker is relevant.
@@ -289,6 +294,9 @@ public class AdhocSchema implements IAdhocSchema, IAdhocSchemaRegistrer {
 		// nameToQuery.forEach((name, query) -> {
 		// metadata.query(name, AdhocQuery.edit(query).build());
 		// });
+
+		// Reported whatever the query selects: a client rendering any tag needs the vocabulary to explain it.
+		metadata.tagDescriptions(tagToDescription);
 
 		return metadata.build();
 	}
@@ -467,6 +475,13 @@ public class AdhocSchema implements IAdhocSchema, IAdhocSchemaRegistrer {
 	@Override
 	public IAdhocSchemaRegistrer tagCube(String cubeName, Set<String> tags) {
 		cubeToTags.computeIfAbsent(cubeName, k -> new ConcurrentSkipListSet<>()).addAll(tags);
+		return this;
+	}
+
+	@Override
+	public IAdhocSchemaRegistrer describeTag(String tag, String description) {
+		// put, not computeIfAbsent: describing a baked-in tag is how a project overrides the default wording.
+		tagToDescription.put(tag, description);
 		return this;
 	}
 

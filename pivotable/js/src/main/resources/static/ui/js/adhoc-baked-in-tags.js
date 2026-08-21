@@ -16,8 +16,11 @@ export const TAG_ESSENTIAL = "essential";
 export const TAG_HIDDEN = "hidden";
 
 /**
- * Descriptions for the tags Pivotable knows about. A cube may describe its own tags through the cube description API;
- * those take precedence, see {@link describeTag}.
+ * Fallback descriptions, used only when the backend reports none.
+ *
+ * The schema is the source of truth: it carries the baked-in vocabulary plus whatever the project described, so these
+ * copies exist purely so an older backend still yields a tooltip. Do not extend this map for a new tag — describe it
+ * server-side, where a project can override it.
  *
  * @type {Record<string, string>}
  */
@@ -33,16 +36,19 @@ export const BAKED_IN_TAG_DESCRIPTIONS = {
 };
 
 /**
- * The description to show for a tag, preferring what the cube says about its own tags over Pivotable's built-in
- * knowledge — a cube author naming a tag `meta` for their own purposes should win over our reading of it.
+ * The description to show for a tag.
+ *
+ * The schema's map wins: it already merges Adhoc's baked-in vocabulary with whatever the project described, including
+ * a project's own wording for a baked-in tag. The local map is consulted only when the backend reported nothing, so a
+ * custom tag needs no SPA change to be explained.
  *
  * @param {string} tag
- * @param {Record<string, string> | undefined | null} cubeTagDescriptions descriptions carried by the cube description
+ * @param {Record<string, string> | undefined | null} schemaTagDescriptions `tagDescriptions` from the schema metadata
  * @returns {string} the description, or an empty string when nothing describes this tag
  */
-export const describeTag = function (tag, cubeTagDescriptions) {
-	if (cubeTagDescriptions && typeof cubeTagDescriptions[tag] === "string") {
-		return cubeTagDescriptions[tag];
+export const describeTag = function (tag, schemaTagDescriptions) {
+	if (schemaTagDescriptions && typeof schemaTagDescriptions[tag] === "string") {
+		return schemaTagDescriptions[tag];
 	}
 	return BAKED_IN_TAG_DESCRIPTIONS[tag] || "";
 };
