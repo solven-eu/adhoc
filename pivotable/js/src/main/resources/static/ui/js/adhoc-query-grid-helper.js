@@ -18,6 +18,7 @@ import { Modal } from "bootstrap";
 
 import { computeMeasureStats, computeParentSliceStats, heatmapColor, secondaryHeatmapFill } from "./adhoc-query-grid-heatmap.js";
 import { headerNameWithCopyIcon, registerCopyNameDelegation } from "./adhoc-query-grid-clipboard.js";
+import { keepOnlyMeasure } from "./adhoc-query-keep-only-measure.js";
 import { registerHeaderResizeAutoFit } from "./adhoc-query-grid-autofit.js";
 import { extractCellText, isCopyShortcut } from "./adhoc-query-grid-copy-cell.js";
 
@@ -543,6 +544,11 @@ export default {
 				// dynamically in `registerHeaderButtons` by reading `column.__menuItems`.
 				column.__menuItems = [
 					{ label: "Show DAG", icon: "bi-question-circle", command: "info-measure" },
+					// "Keep only" is the pivot-tool name for narrowing to a single item; it is the
+					// bulk complement of "Remove measure" when a query carries many measures.
+					// Destructive for the same reason as removal, and more so: it deselects every
+					// other measure rather than one.
+					{ label: "Keep only this measure", icon: "bi-bullseye", command: "keep-only-measure", destructive: true },
 					{ label: "Remove measure", icon: "bi-x-circle", command: "remove-measure", destructive: true },
 				];
 				column.header = {
@@ -832,6 +838,8 @@ export default {
 				columnFilterModal.show();
 			} else if (command === "remove-measure") {
 				queryModel.selectedMeasures[column.id] = false;
+			} else if (command === "keep-only-measure") {
+				keepOnlyMeasure(queryModel.selectedMeasures, column.id);
 			} else if (command === "info-measure") {
 				measuresDagModel.main = column.id;
 				measuresDagModal.show();
