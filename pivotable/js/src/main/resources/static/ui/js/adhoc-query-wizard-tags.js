@@ -4,6 +4,7 @@ import { reactive, ref } from "vue";
 import { useAdhocStore } from "./store-adhoc.js";
 
 import { toggleTag } from "./adhoc-query-wizard-tag-toggle.js";
+import { collectCubeTags, describeTag } from "./adhoc-baked-in-tags.js";
 
 import AdhocQueryWizardMeasureTag from "./adhoc-query-wizard-measure-tag.js";
 
@@ -35,24 +36,14 @@ export default {
 		const tagFilter = ref("");
 
 		const availableTags = function () {
-			// https://developer.mozilla.org/fr/docs/Web/JavaScript/Reference/Global_Objects/Set
-			const tags = new Set();
+			return collectCubeTags(store.schemas[props.endpointId]?.cubes[props.cubeId]);
+		};
 
+		// Tooltip explaining what a tag means. Cube-declared descriptions win over Pivotable's built-in knowledge;
+		// until the cube description API carries them, only the baked-in tags resolve to anything.
+		const tagDescription = function (tag) {
 			const cube = store.schemas[props.endpointId]?.cubes[props.cubeId];
-			for (const measure of Object.values(cube.measures)) {
-				for (const tag of measure.tags) {
-					tags.add(tag);
-				}
-			}
-			for (const column of Object.values(cube.columns.columns)) {
-				// tags may be empty in case of error column
-				for (const tag of column.tags || []) {
-					tags.add(tag);
-				}
-			}
-
-			// https://stackoverflow.com/questions/20069828/how-to-convert-set-to-array
-			return Array.from(tags);
+			return describeTag(tag, cube?.tagDescriptions);
 		};
 
 		const filteredTags = function () {
@@ -74,6 +65,7 @@ export default {
 			availableTags,
 			filteredTags,
 			tagFilter,
+			tagDescription,
 			toggle,
 		};
 	},
@@ -103,7 +95,8 @@ export default {
 					<li><hr class="dropdown-divider" /></li>
 					<!-- One tag per row, so the whole row toggles it rather than the badge alone being a target. -->
 					<li v-for="tag in filteredTags()">
-						<button type="button" class="dropdown-item" @click.prevent="toggle(tag)">
+						<!-- Description as a tooltip rather than a second line: the menu is already height-capped. -->
+						<button type="button" class="dropdown-item" :title="tagDescription(tag)" @click.prevent="toggle(tag)">
 							<AdhocQueryWizardMeasureTag :tag="tag" :searchOptions="searchOptions" />
 						</button>
 					</li>
