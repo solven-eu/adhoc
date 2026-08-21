@@ -27,6 +27,7 @@ import AdhocQueryChatbot from "./adhoc-query-chatbot.js";
 import AdhocQueryPlanLive from "./adhoc-query-plan-live.js";
 import AdhocQueryHistoryChips from "./adhoc-query-history-chips.js";
 import AdhocQueryHistoryModal from "./adhoc-query-history-modal.js";
+import AdhocQueryInvolvedEditor from "./adhoc-query-involved-editor.js";
 
 import { defaultExecutorBus } from "./adhoc-executor-bus.js";
 
@@ -43,6 +44,7 @@ export default {
 		AdhocQueryPlanLive,
 		AdhocQueryHistoryChips,
 		AdhocQueryHistoryModal,
+		AdhocQueryInvolvedEditor,
 	},
 	// https://vuejs.org/guide/components/props.html
 	props: {
@@ -517,6 +519,8 @@ export default {
 								<summary class="small text-decoration-underline" style="cursor:pointer">Server stack trace</summary>
 								<pre class="small mt-1 mb-0" style="white-space:pre-wrap;max-height:20rem;overflow:auto">{{tabularView.errorStack}}</pre>
 							</details>
+							<!-- What the failing query carries, so the offending entry can be dropped without leaving the error. -->
+							<AdhocQueryInvolvedEditor :queryModel="queryModel" :errorMessage="tabularView.error" />
 						</div>
 						<button
 							v-if="lastSuccessfulQuery"
