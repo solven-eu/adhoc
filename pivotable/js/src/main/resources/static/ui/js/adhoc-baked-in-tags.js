@@ -24,6 +24,7 @@ export const TAG_HIDDEN = "hidden";
 export const BAKED_IN_TAG_DESCRIPTIONS = {
 	[TAG_ESSENTIAL]: "Useful in most cases. Selected by default on your first visit, so a large cube opens on a workable subset.",
 	[TAG_HIDDEN]: "Kept out of the wizard unless this tag is selected. Typically plumbing a cube author does not want surfaced.",
+	debug: "Measure whose evaluation is traced by the engine, whether or not the query itself asks for debug output.",
 	calculated: "Column computed by the cube rather than read from the underlying table.",
 	generated: "Column whose coordinates are produced by a column generator rather than stored in the table.",
 	meta: "Column describing the cube itself, such as which sub-cube a row came from.",

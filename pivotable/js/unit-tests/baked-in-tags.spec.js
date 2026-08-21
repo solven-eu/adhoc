@@ -16,6 +16,14 @@ describe("describeTag", () => {
 		expect(describeTag("composite-full", null)).toContain("every sub-cube");
 	});
 
+	// Mirrors IAdhocTags on the Java side: a tag documented there but absent here would show in the wizard with no
+	// explanation, which is the drift the single-source design exists to prevent.
+	it("describes every tag declared by IAdhocTags", () => {
+		for (const tag of ["essential", "hidden", "debug", "calculated", "generated", "meta", "composite-full", "technical"]) {
+			expect(describeTag(tag, null), `no description for baked-in tag ${tag}`).not.toBe("");
+		}
+	});
+
 	it("prefers a cube-declared description over the baked-in one", () => {
 		expect(describeTag("meta", { meta: "Our own meaning" })).toBe("Our own meaning");
 	});
