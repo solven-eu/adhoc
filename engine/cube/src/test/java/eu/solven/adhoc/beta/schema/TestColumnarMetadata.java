@@ -95,4 +95,33 @@ public class TestColumnarMetadata {
 					.containsEntry("tags", Set.of("someTag"));
 		});
 	}
+
+	@Test
+	public void testGetColumns_aliases() {
+		ColumnarMetadata columnar = ColumnarMetadata
+				.from(List
+						.of(ColumnMetadata.builder().name("c").tag("someTag").alias("t.c").alias("someAlias").build()))
+				.build();
+
+		Assertions.assertThat(columnar.getColumns()).hasSize(1).hasEntrySatisfying("c", map -> {
+			Assertions.assertThat(map)
+					.asInstanceOf(InstanceOfAssertFactories.MAP)
+					.hasSize(3)
+					.containsEntry("aliases", Set.of("t.c", "someAlias"));
+		});
+	}
+
+	/**
+	 * A column carrying no alias reports no `aliases` entry at all, so a client can tell it apart from a holder which
+	 * does not report aliases.
+	 */
+	@Test
+	public void testGetColumns_noAlias() {
+		ColumnarMetadata columnar =
+				ColumnarMetadata.from(List.of(ColumnMetadata.builder().name("c").tag("someTag").build())).build();
+
+		Assertions.assertThat(columnar.getColumns()).hasEntrySatisfying("c", map -> {
+			Assertions.assertThat(map).asInstanceOf(InstanceOfAssertFactories.MAP).doesNotContainKey("aliases");
+		});
+	}
 }

@@ -19,6 +19,7 @@ import { Modal } from "bootstrap";
 import { computeMeasureStats, computeParentSliceStats, heatmapColor, secondaryHeatmapFill } from "./adhoc-query-grid-heatmap.js";
 import { headerNameWithCopyIcon, registerCopyNameDelegation } from "./adhoc-query-grid-clipboard.js";
 import { keepOnlyMeasure } from "./adhoc-query-keep-only-measure.js";
+import { useAdhocStore } from "./store-adhoc.js";
 import { registerHeaderResizeAutoFit } from "./adhoc-query-grid-autofit.js";
 import { extractCellText, isCopyShortcut } from "./adhoc-query-grid-copy-cell.js";
 
@@ -483,6 +484,7 @@ export default {
 				// disappeared). The menu is populated dynamically in `registerHeaderButtons` by
 				// reading `column.__menuItems`.
 				column.__menuItems = [
+					{ label: "Column details", icon: "bi-info-circle", command: "details-column" },
 					{ label: "Filter…", icon: "bi-filter-circle", command: "filter-column" },
 					{ label: "Remove from groupBy", icon: "bi-x-circle", command: "remove-column", destructive: true },
 				];
@@ -827,6 +829,40 @@ export default {
 		const measureStatsModal = measureStatsEl ? new Modal(measureStatsEl, {}) : null;
 		const measureStatsModel = inject("measureStatsModel", null);
 
+		// Per-column Details modal — same singleton shape as measureStats, but its payload is fetched on open rather
+		// than read from the rendered view.
+		const columnDetailsEl = document.getElementById("columnDetailsModal");
+		const columnDetailsModal = columnDetailsEl ? new Modal(columnDetailsEl, {}) : null;
+		const columnDetailsModel = inject("columnDetailsModel", null);
+		const store = useAdhocStore();
+
+		/**
+		 * Opens the Details modal for a column, then fills it from `/schemas/columns`. The modal is shown before the
+		 * fetch resolves so the user gets immediate feedback, and it renders its own spinner meanwhile.
+		 *
+		 * @param {string} column
+		 */
+		const showColumnDetails = function (column) {
+			columnDetailsModel.column = column;
+			columnDetailsModel.details = null;
+			columnDetailsModel.error = "";
+			columnDetailsModel.loading = true;
+			columnDetailsModel.tagDescriptions = store.schemas[ids.endpointId]?.cubes[ids.cubeId]?.tagDescriptions;
+			columnDetailsModal.show();
+
+			store
+				.loadColumnCoordinatesIfMissing(ids.cubeId, ids.endpointId, column)
+				.then((details) => {
+					columnDetailsModel.details = details;
+				})
+				.catch((e) => {
+					columnDetailsModel.error = e?.message || String(e);
+				})
+				.finally(() => {
+					columnDetailsModel.loading = false;
+				});
+		};
+
 		// Per-column action dispatcher. Shared between the legacy `onCommand` (in case some
 		// pre-existing call site still fires a direct command) and the new 3-dot-menu items.
 		const dispatchColumnCommand = function (command, column) {
@@ -836,6 +872,8 @@ export default {
 			} else if (command === "filter-column") {
 				columnFilterModel.column = column.id;
 				columnFilterModal.show();
+			} else if (command === "details-column") {
+				showColumnDetails(column.id);
 			} else if (command === "remove-measure") {
 				queryModel.selectedMeasures[column.id] = false;
 			} else if (command === "keep-only-measure") {

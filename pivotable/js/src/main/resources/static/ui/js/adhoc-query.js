@@ -119,6 +119,18 @@ export default {
 		});
 		provide("measureStatsModel", measureStatsModel);
 
+		// Shared model driving the per-column Details modal. Unlike measureStats, whose numbers are already in the
+		// rendered view, column details are fetched from `/schemas/columns` when the modal opens — hence `loading`
+		// and `error` alongside the payload.
+		const columnDetailsModel = reactive({
+			column: "",
+			details: null,
+			loading: false,
+			error: "",
+			tagDescriptions: null,
+		});
+		provide("columnDetailsModel", columnDetailsModel);
+
 		/** @type {any} reactive container — `view`, `error`, `timing`, `loading` are filled in by the executor */
 		const tabularView = reactive({});
 
