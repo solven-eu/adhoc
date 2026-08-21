@@ -67,4 +67,30 @@ public class CubeSchemaMetadata {
 	@Singular
 	@NonNull
 	ImmutableSet<String> tags;
+
+	/**
+	 * Column name to a human-readable note stating what it holds, attached at the {@link IAdhocSchema} level. Empty
+	 * when nothing was described.
+	 *
+	 * <p>
+	 * Per-cube, unlike {@link EndpointSchemaMetadata#getTagDescriptions()}: the same physical column can mean
+	 * different things in two cubes, so a description belongs to the pairing rather than to the column name.
+	 * </p>
+	 */
+	@Singular
+	@NonNull
+	ImmutableMap<String, String> columnDescriptions;
+
+	/**
+	 * Measure name to a human-readable note stating what it computes, attached at the {@link IAdhocSchema} level. Empty
+	 * when nothing was described.
+	 *
+	 * <p>
+	 * As for tags, the measure object is not modified: describing is a schema-side concern, so one measure can be
+	 * presented differently in two schemas without changing its identity.
+	 * </p>
+	 */
+	@Singular
+	@NonNull
+	ImmutableMap<String, String> measureDescriptions;
 }

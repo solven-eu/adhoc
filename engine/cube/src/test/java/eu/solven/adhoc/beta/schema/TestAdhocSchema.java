@@ -189,6 +189,58 @@ public class TestAdhocSchema {
 				.containsEntry(IAdhocTags.TAG_ESSENTIAL, "The measures our traders actually look at");
 	}
 
+	/**
+	 * Column descriptions are scoped to their holder: the same column name in another cube is a different thing, and
+	 * must not inherit the description.
+	 */
+	@Test
+	public void testColumnDescriptions_areScopedToTheirCube() {
+		registerSimpleCube("cubeA");
+		registerSimpleCube("cubeB");
+
+		schema.describeColumn(
+				ColumnIdentifier.builder().isCubeElseTable(true).holder("cubeA").column("k").build(),
+				"The k of cubeA");
+
+		EndpointSchemaMetadata metadata = schema.getMetadata(AdhocSchemaQuery.builder().build(), true);
+
+		Assertions.assertThat(metadata.getCubes().get("cubeA").getColumnDescriptions())
+				.containsEntry("k", "The k of cubeA");
+		Assertions.assertThat(metadata.getCubes().get("cubeB").getColumnDescriptions()).isEmpty();
+	}
+
+	@Test
+	public void testMeasureDescriptions_areScopedToTheirCube() {
+		registerSimpleCube("cubeA");
+		registerSimpleCube("cubeB");
+
+		schema.describeMeasure(MeasureIdentifier.builder().cube("cubeA").measure("k").build(), "The k of cubeA");
+
+		EndpointSchemaMetadata metadata = schema.getMetadata(AdhocSchemaQuery.builder().build(), true);
+
+		Assertions.assertThat(metadata.getCubes().get("cubeA").getMeasureDescriptions())
+				.containsEntry("k", "The k of cubeA");
+		Assertions.assertThat(metadata.getCubes().get("cubeB").getMeasureDescriptions()).isEmpty();
+	}
+
+	@Test
+	public void testDescriptions_absentByDefault() {
+		registerSimpleCube("cubeA");
+
+		EndpointSchemaMetadata metadata = schema.getMetadata(AdhocSchemaQuery.builder().build(), true);
+
+		Assertions.assertThat(metadata.getCubes().get("cubeA").getColumnDescriptions()).isEmpty();
+		Assertions.assertThat(metadata.getCubes().get("cubeA").getMeasureDescriptions()).isEmpty();
+	}
+
+	private void registerSimpleCube(String cubeName) {
+		InMemoryTable table = InMemoryTable.builder().name(cubeName + "Table").build();
+		table.add(Map.of("k", "v"));
+		schema.registerTable(table);
+		schema.registerForest(MeasureForest.fromMeasures(cubeName + "Forest", List.of(Aggregator.sum("k"))));
+		schema.registerCube(cubeName, cubeName + "Table", cubeName + "Forest");
+	}
+
 	@Test
 	public void testRegisterCube_unknownTable_throws() {
 		schema.registerForest(MeasureForest.builder().name("f").build());

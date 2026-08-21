@@ -75,6 +75,10 @@ export default {
 						</div>
 						<table v-else class="table table-sm align-middle">
 							<tbody>
+								<tr v-if="detailsModel.description">
+									<th class="text-muted" style="width: 30%">Description</th>
+									<td>{{detailsModel.description}}</td>
+								</tr>
 								<tr>
 									<th class="text-muted" style="width: 30%">Holder</th>
 									<td>

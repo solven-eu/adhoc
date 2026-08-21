@@ -849,6 +849,8 @@ export default {
 			columnDetailsModel.loading = true;
 			// Schema-level, not per-cube: a tag names the same concept across every cube of a schema.
 			columnDetailsModel.tagDescriptions = store.schemas[ids.endpointId]?.tagDescriptions;
+			// Column descriptions ARE per-cube: the same column name means something else in another cube.
+			columnDetailsModel.description = store.schemas[ids.endpointId]?.cubes[ids.cubeId]?.columnDescriptions?.[column];
 			columnDetailsModal.show();
 
 			store

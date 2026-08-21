@@ -124,6 +124,8 @@ export default {
 		// and `error` alongside the payload.
 		const columnDetailsModel = reactive({
 			column: "",
+			// Per-cube, and already in the store with the cube schema — unlike `details`, which is fetched on open.
+			description: "",
 			details: null,
 			loading: false,
 			error: "",

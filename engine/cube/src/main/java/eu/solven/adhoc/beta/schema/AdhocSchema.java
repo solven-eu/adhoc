@@ -140,6 +140,12 @@ public class AdhocSchema implements IAdhocSchema, IAdhocSchemaRegistrer {
 	// gets those for free; a project adds its own, or overwrites a default, through `describeTag`.
 	final Map<String, String> tagToDescription = new ConcurrentHashMap<>(IAdhocTags.TAG_DESCRIPTIONS);
 
+	// Per-holder, unlike tag descriptions: the same physical column can mean different things in two cubes, so the
+	// description belongs to the (holder, column) pairing. Same rationale as the tag maps above — the cube and measure
+	// objects are left untouched, so one can be presented differently in two schemas.
+	final Map<ColumnIdentifier, String> columnToDescription = new ConcurrentHashMap<>();
+	final Map<MeasureIdentifier, String> measureToDescription = new ConcurrentHashMap<>();
+
 	/**
 	 * Used as key to identify in which context/cube given customMarker is relevant.
 	 * 
@@ -267,6 +273,9 @@ public class AdhocSchema implements IAdhocSchema, IAdhocSchemaRegistrer {
 					if (tags != null && !tags.isEmpty()) {
 						cubeSchema.tags(ImmutableSet.copyOf(tags));
 					}
+
+					cubeSchema.columnDescriptions(getColumnDescriptions(cubeName));
+					cubeSchema.measureDescriptions(getMeasureDescriptions(cubeName));
 
 					metadata.cube(cubeName, cubeSchema.build());
 				});
@@ -483,6 +492,52 @@ public class AdhocSchema implements IAdhocSchema, IAdhocSchemaRegistrer {
 		// put, not computeIfAbsent: describing a baked-in tag is how a project overrides the default wording.
 		tagToDescription.put(tag, description);
 		return this;
+	}
+
+	@Override
+	public IAdhocSchemaRegistrer describeColumn(ColumnIdentifier columnIdentifier, String description) {
+		columnToDescription.put(columnIdentifier, description);
+		return this;
+	}
+
+	@Override
+	public IAdhocSchemaRegistrer describeMeasure(MeasureIdentifier measureIdentifier, String description) {
+		measureToDescription.put(measureIdentifier, description);
+		return this;
+	}
+
+	/**
+	 * @param cubeName
+	 *            name of the cube being described
+	 * @return the described columns of this cube, keyed by column name. Empty when none was described.
+	 */
+	protected Map<String, String> getColumnDescriptions(String cubeName) {
+		Map<String, String> columnToText = new TreeMap<>();
+
+		columnToDescription.forEach((columnIdentifier, description) -> {
+			if (columnIdentifier.isCubeElseTable() && cubeName.equals(columnIdentifier.getHolder())) {
+				columnToText.put(columnIdentifier.getColumn(), description);
+			}
+		});
+
+		return columnToText;
+	}
+
+	/**
+	 * @param cubeName
+	 *            name of the cube being described
+	 * @return the described measures of this cube, keyed by measure name. Empty when none was described.
+	 */
+	protected Map<String, String> getMeasureDescriptions(String cubeName) {
+		Map<String, String> measureToText = new TreeMap<>();
+
+		measureToDescription.forEach((measureIdentifier, description) -> {
+			if (cubeName.equals(measureIdentifier.getCube())) {
+				measureToText.put(measureIdentifier.getMeasure(), description);
+			}
+		});
+
+		return measureToText;
 	}
 
 	/**
