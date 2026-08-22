@@ -18,7 +18,7 @@
         "eslint-config-prettier": "10.1.8",
         "eslint-plugin-prettier": "5.5.6",
         "eslint-plugin-vue": "10.10.0",
-        "globals": "17.6.0",
+        "globals": "17.11.0",
         "mermaid": "11.15.0",
         "pinia": "3.0.4",
         "prettier": "3.8.3",
