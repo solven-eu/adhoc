@@ -198,8 +198,7 @@ public class TestAdhocSchema {
 		registerSimpleCube("cubeA");
 		registerSimpleCube("cubeB");
 
-		schema.describeColumn(
-				ColumnIdentifier.builder().isCubeElseTable(true).holder("cubeA").column("k").build(),
+		schema.describeColumn(ColumnIdentifier.builder().isCubeElseTable(true).holder("cubeA").column("k").build(),
 				"The k of cubeA");
 
 		EndpointSchemaMetadata metadata = schema.getMetadata(AdhocSchemaQuery.builder().build(), true);

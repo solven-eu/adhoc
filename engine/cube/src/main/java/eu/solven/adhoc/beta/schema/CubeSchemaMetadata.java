@@ -73,8 +73,8 @@ public class CubeSchemaMetadata {
 	 * when nothing was described.
 	 *
 	 * <p>
-	 * Per-cube, unlike {@link EndpointSchemaMetadata#getTagDescriptions()}: the same physical column can mean
-	 * different things in two cubes, so a description belongs to the pairing rather than to the column name.
+	 * Per-cube, unlike {@link EndpointSchemaMetadata#getTagDescriptions()}: the same physical column can mean different
+	 * things in two cubes, so a description belongs to the pairing rather than to the column name.
 	 * </p>
 	 */
 	@Singular
