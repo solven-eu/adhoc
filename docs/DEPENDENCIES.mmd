@@ -1,13 +1,22 @@
 flowchart LR
+    adhoc_atoti["adhoc-atoti"]
+    adhoc_bom["adhoc-bom"]
+    adhoc_calcite["adhoc-calcite"]
     adhoc_cell["adhoc-cell"]
     adhoc_cube["adhoc-cube"]
     adhoc_dataframe["adhoc-dataframe"]
     adhoc_encoding["adhoc-encoding"]
+    adhoc_engine["adhoc-engine"]
+    adhoc_experimental["adhoc-experimental"]
     adhoc_filters["adhoc-filters"]
     adhoc_fsst["adhoc-fsst"]
+    adhoc_libraries["adhoc-libraries"]
     adhoc_measures["adhoc-measures"]
+    adhoc_model["adhoc-model"]
     adhoc_recipes["adhoc-recipes"]
+    adhoc_spring["adhoc-spring"]
     adhoc_table["adhoc-table"]
+    pivotable["pivotable"]
     pivotable_bom["pivotable-bom"]
     pivotable_infra["pivotable-infra"]
     pivotable_js["pivotable-js"]
@@ -21,16 +30,8 @@ flowchart LR
     pivotable_server_webflux["pivotable-server-webflux"]
     pivotable_server_webmvc["pivotable-server-webmvc"]
 
-    subgraph aggregator-adhoc
-        adhoc_atoti["adhoc-atoti"]
-        adhoc_bom["adhoc-bom"]
-        adhoc_calcite["adhoc-calcite"]
-        adhoc_engine["adhoc-engine"]
-        adhoc_experimental["adhoc-experimental"]
-        adhoc_libraries["adhoc-libraries"]
-        adhoc_model["adhoc-model"]
-        adhoc_spring["adhoc-spring"]
-        pivotable["pivotable"]
+    subgraph spring-boot-starter-parent
+        aggregator_adhoc["aggregator-adhoc"]
     end
 
     adhoc_atoti --> adhoc_recipes
