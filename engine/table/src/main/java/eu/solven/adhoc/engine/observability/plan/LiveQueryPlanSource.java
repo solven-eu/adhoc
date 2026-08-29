@@ -34,6 +34,8 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.jspecify.annotations.Nullable;
 
+import com.google.common.collect.ImmutableList;
+
 import eu.solven.adhoc.engine.QueryStepsDag;
 import eu.solven.adhoc.query.AdhocQueryId;
 import lombok.Builder;
@@ -243,7 +245,7 @@ public class LiveQueryPlanSource implements IPlanSource {
 		fragmentsByAnchor.compute(anchor, (a, existing) -> {
 			List<QueryPlanNode> base;
 			if (existing == null) {
-				base = List.of();
+				base = ImmutableList.of();
 			} else {
 				base = existing;
 			}
