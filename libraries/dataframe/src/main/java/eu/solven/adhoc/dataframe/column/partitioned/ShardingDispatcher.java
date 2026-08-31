@@ -34,6 +34,8 @@ import java.util.function.ToIntFunction;
 
 import org.jspecify.annotations.Nullable;
 
+import com.google.common.collect.ImmutableList;
+
 import eu.solven.adhoc.stream.IConsumingStream;
 import lombok.extern.slf4j.Slf4j;
 
@@ -61,7 +63,7 @@ class ShardingDispatcher<T> {
 	private final BlockingDeque<List<Object>>[] queues;
 
 	/** Empty list sentinel signals end-of-stream to consumer threads. */
-	private static final List<Object> POISON = List.of();
+	private static final List<Object> POISON = ImmutableList.of();
 
 	/**
 	 * Creates a dispatcher from the given parameters.
