@@ -1,0 +1,101 @@
+import { describe, it, expect } from "vitest";
+
+import {
+	TAG_ESSENTIAL,
+	TAG_HIDDEN,
+	describeTag,
+	hasTag,
+	isExcludedAsHidden,
+	collectCubeTags,
+	defaultSelectedTags,
+} from "../src/main/resources/static/ui/js/adhoc-baked-in-tags.js";
+
+describe("describeTag", () => {
+	it("describes the baked-in tags", () => {
+		expect(describeTag(TAG_ESSENTIAL, null)).toContain("Useful in most cases");
+		expect(describeTag("composite-full", null)).toContain("every sub-cube");
+	});
+
+	// Mirrors IAdhocTags on the Java side: a tag documented there but absent here would show in the wizard with no
+	// explanation, which is the drift the single-source design exists to prevent.
+	it("describes every tag declared by IAdhocTags", () => {
+		for (const tag of ["essential", "hidden", "debug", "calculated", "generated", "meta", "composite-full", "technical"]) {
+			expect(describeTag(tag, null), `no description for baked-in tag ${tag}`).not.toBe("");
+		}
+	});
+
+	it("prefers the schema-served description over the local fallback", () => {
+		expect(describeTag("meta", { meta: "Our own meaning" })).toBe("Our own meaning");
+	});
+
+	it("explains a project's own tag, which the SPA cannot know about", () => {
+		expect(describeTag("risk", { risk: "Owned by the risk department" })).toBe("Owned by the risk department");
+	});
+
+	it("falls back locally when the schema reports nothing for that tag", () => {
+		expect(describeTag("meta", { risk: "…" })).toBe(describeTag("meta", null));
+	});
+
+	it("returns an empty string for an unknown tag, so the tooltip is simply absent", () => {
+		expect(describeTag("pnl", null)).toBe("");
+	});
+});
+
+describe("hasTag", () => {
+	it("tolerates an item without tags, as an error column carries none", () => {
+		expect(hasTag({}, TAG_HIDDEN)).toBe(false);
+		expect(hasTag(null, TAG_HIDDEN)).toBe(false);
+	});
+
+	it("detects a carried tag", () => {
+		expect(hasTag({ tags: ["a", TAG_HIDDEN] }, TAG_HIDDEN)).toBe(true);
+	});
+});
+
+describe("isExcludedAsHidden", () => {
+	it("excludes a hidden item by default", () => {
+		expect(isExcludedAsHidden({ tags: [TAG_HIDDEN] }, [])).toBe(true);
+	});
+
+	it("keeps a hidden item once the hidden tag is explicitly selected", () => {
+		expect(isExcludedAsHidden({ tags: [TAG_HIDDEN] }, [TAG_HIDDEN])).toBe(false);
+	});
+
+	it("never excludes an item which is not hidden", () => {
+		expect(isExcludedAsHidden({ tags: ["essential"] }, [])).toBe(false);
+		expect(isExcludedAsHidden({}, [])).toBe(false);
+	});
+
+	it("still excludes when other tags are selected", () => {
+		expect(isExcludedAsHidden({ tags: [TAG_HIDDEN, "risk"] }, ["risk"])).toBe(true);
+	});
+});
+
+describe("collectCubeTags", () => {
+	it("unions measure and column tags", () => {
+		const cube = {
+			measures: { delta: { tags: ["greeks", "essential"] } },
+			columns: { columns: { ccy: { tags: ["essential"] } } },
+		};
+
+		expect(collectCubeTags(cube).sort()).toEqual(["essential", "greeks"]);
+	});
+
+	it("tolerates a missing cube, missing measures and untagged columns", () => {
+		expect(collectCubeTags(null)).toEqual([]);
+		expect(collectCubeTags({})).toEqual([]);
+		expect(collectCubeTags({ columns: { columns: { broken: {} } } })).toEqual([]);
+	});
+});
+
+describe("defaultSelectedTags", () => {
+	it("preselects essential when the cube declares it", () => {
+		expect(defaultSelectedTags(["greeks", TAG_ESSENTIAL])).toEqual([TAG_ESSENTIAL]);
+	});
+
+	it("preselects nothing when no item is essential, so the wizard is never filtered down to an empty list", () => {
+		expect(defaultSelectedTags(["greeks"])).toEqual([]);
+		expect(defaultSelectedTags([])).toEqual([]);
+		expect(defaultSelectedTags(null)).toEqual([]);
+	});
+});

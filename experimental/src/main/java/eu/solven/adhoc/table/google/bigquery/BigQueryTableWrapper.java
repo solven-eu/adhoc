@@ -166,20 +166,18 @@ public class BigQueryTableWrapper extends JooqTableWrapper {
 		Set<String> groupedByColumns = tabularRecordFactory.getColumns();
 		IMapBuilderPreKeys slice = queryPod.getSliceFactory().newMapBuilder(groupedByColumns);
 
-		{
-			for (int i = 0; i < groupedByColumns.size(); i++) {
-				Field field = schema.getFields().get(groupedByColumns.size() + i);
+		for (int i = 0; i < groupedByColumns.size(); i++) {
+			Field field = schema.getFields().get(groupedByColumns.size() + i);
 
-				Object value;
-				FieldValue fieldValue = row.get(groupedByColumns.size() + i);
-				if (LegacySQLTypeName.INTEGER.equals(field.getType())) {
-					value = fieldValue.getLongValue();
-				} else {
-					value = fieldValue.getValue();
-				}
-
-				slice.append(value);
+			Object value;
+			FieldValue fieldValue = row.get(groupedByColumns.size() + i);
+			if (LegacySQLTypeName.INTEGER.equals(field.getType())) {
+				value = fieldValue.getLongValue();
+			} else {
+				value = fieldValue.getValue();
 			}
+
+			slice.append(value);
 		}
 
 		return TabularRecordOverMaps.builder()

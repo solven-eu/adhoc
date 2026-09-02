@@ -222,26 +222,20 @@ public class TableQueryFactory extends ATableQueryFactory {
 		Set<TableQueryStep> missingFromTable = Sets.difference(requestedStepFromDag, stepsInducedFromTable);
 		if (!missingFromTable.isEmpty()) {
 			int nbMissing = missingFromTable.size();
-			{
-				log.warn("Missing {} steps from tableQueries to fill cube DAG roots", nbMissing);
-				forEachIndexed(missingFromTable, (indexMissing, missingStep) -> {
-					log.warn("Missing {}/{}: {}", indexMissing, nbMissing, missingStep);
-				});
-			}
+			log.warn("Missing {} steps from tableQueries to fill cube DAG roots", nbMissing);
+			forEachIndexed(missingFromTable, (indexMissing, missingStep) -> {
+				log.warn("Missing {}/{}: {}", indexMissing, nbMissing, missingStep);
+			});
 
-			{
-				log.warn("requested steps (from cube DAG):");
-				forEachIndexed(requestedStepFromDag, (indexRequested, availableStep) -> {
-					log.warn("Requested {}/{}: {}", indexRequested, requestedStepFromDag.size(), availableStep);
-				});
-			}
+			log.warn("requested steps (from cube DAG):");
+			forEachIndexed(requestedStepFromDag, (indexRequested, availableStep) -> {
+				log.warn("Requested {}/{}: {}", indexRequested, requestedStepFromDag.size(), availableStep);
+			});
 
-			{
-				log.warn("provided steps (from tableQueries):");
-				forEachIndexed(stepsInducedFromTable, (indexExpected, availableStep) -> {
-					log.warn("Provided {}/{}: {}", indexExpected, stepsInducedFromTable.size(), availableStep);
-				});
-			}
+			log.warn("provided steps (from tableQueries):");
+			forEachIndexed(stepsInducedFromTable, (indexExpected, availableStep) -> {
+				log.warn("Provided {}/{}: {}", indexExpected, stepsInducedFromTable.size(), availableStep);
+			});
 
 			// Take the shorter/simpler problematic entry
 			TableQueryStep firstMissing =

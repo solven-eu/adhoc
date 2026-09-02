@@ -74,6 +74,13 @@ public class ColumnarMetadata {
 	@Singular
 	ImmutableMap<String, Set<String>> columnToTags;
 
+	/**
+	 * The alternative names a column answers to, e.g. the qualified {@code table.column} behind an unqualified alias.
+	 * Not necessarily exhaustive, as {@link ColumnMetadata#getAliases()} is not.
+	 */
+	@Singular
+	ImmutableMap<String, Set<String>> columnToAliases;
+
 	public Map<String, ? extends Map<String, ?>> getColumns() {
 		Map<String, Map<String, Object>> columnToProperties = new TreeMap<>();
 
@@ -81,6 +88,13 @@ public class ColumnarMetadata {
 				(column, type) -> columnToProperties.computeIfAbsent(column, k -> new TreeMap<>()).put("type", type));
 		columnToTags.forEach((column, tags) -> columnToProperties.computeIfAbsent(column, k -> new TreeMap<>())
 				.put("tags", new TreeSet<>(tags)));
+		// Absent rather than empty when a column has no alias, so a client can tell "no aliases" from "this holder
+		// does not report aliases at all".
+		columnToAliases.forEach((column, aliases) -> {
+			if (!aliases.isEmpty()) {
+				columnToProperties.computeIfAbsent(column, k -> new TreeMap<>()).put("aliases", new TreeSet<>(aliases));
+			}
+		});
 
 		return columnToProperties;
 	}
@@ -107,6 +121,8 @@ public class ColumnarMetadata {
 			builder.columnToType(column.getName(), typeAsString(column.getName(), column.getType()));
 
 			builder.columnToTag(column.getName(), column.getTags());
+
+			builder.columnToAlias(column.getName(), column.getAliases());
 		});
 
 		return builder;

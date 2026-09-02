@@ -64,12 +64,10 @@ public class AdhocCollectionHelpers {
 		}
 
 		// Optimistic path: manage the case we receive a single entry
-		{
-			if (collection.size() == 1) {
-				Object singleElement = collection.iterator().next();
-				if (singleElement instanceof Collection<?> singleCollection) {
-					return unnestAsCollection(singleCollection);
-				}
+		if (collection.size() == 1) {
+			Object singleElement = collection.iterator().next();
+			if (singleElement instanceof Collection<?> singleCollection) {
+				return unnestAsCollection(singleCollection);
 			}
 		}
 		// Optimistic path: in most cases, there is no nesting

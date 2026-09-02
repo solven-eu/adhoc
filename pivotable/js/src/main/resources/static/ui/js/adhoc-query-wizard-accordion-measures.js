@@ -6,6 +6,8 @@ import AdhocQueryWizardColumn from "./adhoc-query-wizard-column.js";
 
 import wizardHelper from "./adhoc-query-wizard-helper.js";
 
+import { useAdhocStore } from "./store-adhoc.js";
+
 export default {
 	// https://vuejs.org/guide/components/registration#local-registration
 	components: {
@@ -56,6 +58,12 @@ export default {
 			return wizardHelper.clearFilters(props.searchOptions);
 		};
 
+		// Measure descriptions are per-cube — the same measure name in another cube is a different measure.
+		const store = useAdhocStore();
+		const descriptionOf = function (measureName) {
+			return store.schemas[props.endpointId]?.cubes[props.cubeId]?.measureDescriptions?.[measureName] || "";
+		};
+
 		// Local toggle — controls the grey description line rendered under each measure name.
 		// Default OFF for a denser, scannable list; users who want extra context can flip it on.
 		// Kept local (not in searchOptions) because it's a pure UI preference with no side effects
@@ -66,6 +74,7 @@ export default {
 			filtered,
 			queried,
 			clearFilters,
+			descriptionOf,
 			queryModel,
 			showMeasureDetails,
 		};
@@ -126,6 +135,7 @@ export default {
 								>
 									<AdhocMeasure
 										:measure="measure"
+										:description="descriptionOf(measure.name)"
 										:showDetails="showMeasureDetails"
 										:searchOptions="searchOptions"
 										:matchScore="measure._matchScore"

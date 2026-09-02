@@ -18,6 +18,8 @@ import { Modal } from "bootstrap";
 
 import { computeMeasureStats, computeParentSliceStats, heatmapColor, secondaryHeatmapFill } from "./adhoc-query-grid-heatmap.js";
 import { headerNameWithCopyIcon, registerCopyNameDelegation } from "./adhoc-query-grid-clipboard.js";
+import { keepOnlyMeasure } from "./adhoc-query-keep-only-measure.js";
+import { useAdhocStore } from "./store-adhoc.js";
 import { registerHeaderResizeAutoFit } from "./adhoc-query-grid-autofit.js";
 import { extractCellText, isCopyShortcut } from "./adhoc-query-grid-copy-cell.js";
 
@@ -482,6 +484,7 @@ export default {
 				// disappeared). The menu is populated dynamically in `registerHeaderButtons` by
 				// reading `column.__menuItems`.
 				column.__menuItems = [
+					{ label: "Column details", icon: "bi-info-circle", command: "details-column" },
 					{ label: "Filter…", icon: "bi-filter-circle", command: "filter-column" },
 					{ label: "Remove from groupBy", icon: "bi-x-circle", command: "remove-column", destructive: true },
 				];
@@ -543,6 +546,11 @@ export default {
 				// dynamically in `registerHeaderButtons` by reading `column.__menuItems`.
 				column.__menuItems = [
 					{ label: "Show DAG", icon: "bi-question-circle", command: "info-measure" },
+					// "Keep only" is the pivot-tool name for narrowing to a single item; it is the
+					// bulk complement of "Remove measure" when a query carries many measures.
+					// Destructive for the same reason as removal, and more so: it deselects every
+					// other measure rather than one.
+					{ label: "Keep only this measure", icon: "bi-bullseye", command: "keep-only-measure", destructive: true },
 					{ label: "Remove measure", icon: "bi-x-circle", command: "remove-measure", destructive: true },
 				];
 				column.header = {
@@ -821,6 +829,43 @@ export default {
 		const measureStatsModal = measureStatsEl ? new Modal(measureStatsEl, {}) : null;
 		const measureStatsModel = inject("measureStatsModel", null);
 
+		// Per-column Details modal — same singleton shape as measureStats, but its payload is fetched on open rather
+		// than read from the rendered view.
+		const columnDetailsEl = document.getElementById("columnDetailsModal");
+		const columnDetailsModal = columnDetailsEl ? new Modal(columnDetailsEl, {}) : null;
+		const columnDetailsModel = inject("columnDetailsModel", null);
+		const store = useAdhocStore();
+
+		/**
+		 * Opens the Details modal for a column, then fills it from `/schemas/columns`. The modal is shown before the
+		 * fetch resolves so the user gets immediate feedback, and it renders its own spinner meanwhile.
+		 *
+		 * @param {string} column
+		 */
+		const showColumnDetails = function (column) {
+			columnDetailsModel.column = column;
+			columnDetailsModel.details = null;
+			columnDetailsModel.error = "";
+			columnDetailsModel.loading = true;
+			// Schema-level, not per-cube: a tag names the same concept across every cube of a schema.
+			columnDetailsModel.tagDescriptions = store.schemas[ids.endpointId]?.tagDescriptions;
+			// Column descriptions ARE per-cube: the same column name means something else in another cube.
+			columnDetailsModel.description = store.schemas[ids.endpointId]?.cubes[ids.cubeId]?.columnDescriptions?.[column];
+			columnDetailsModal.show();
+
+			store
+				.loadColumnCoordinatesIfMissing(ids.cubeId, ids.endpointId, column)
+				.then((details) => {
+					columnDetailsModel.details = details;
+				})
+				.catch((e) => {
+					columnDetailsModel.error = e?.message || String(e);
+				})
+				.finally(() => {
+					columnDetailsModel.loading = false;
+				});
+		};
+
 		// Per-column action dispatcher. Shared between the legacy `onCommand` (in case some
 		// pre-existing call site still fires a direct command) and the new 3-dot-menu items.
 		const dispatchColumnCommand = function (command, column) {
@@ -830,8 +875,12 @@ export default {
 			} else if (command === "filter-column") {
 				columnFilterModel.column = column.id;
 				columnFilterModal.show();
+			} else if (command === "details-column") {
+				showColumnDetails(column.id);
 			} else if (command === "remove-measure") {
 				queryModel.selectedMeasures[column.id] = false;
+			} else if (command === "keep-only-measure") {
+				keepOnlyMeasure(queryModel.selectedMeasures, column.id);
 			} else if (command === "info-measure") {
 				measuresDagModel.main = column.id;
 				measuresDagModal.show();

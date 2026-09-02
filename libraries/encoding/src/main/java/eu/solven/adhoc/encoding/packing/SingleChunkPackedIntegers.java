@@ -80,7 +80,7 @@ public final class SingleChunkPackedIntegers implements IIntArray {
 		this.nbPerChunkMask = BITS_PER_INT / bitsPerInt - 1;
 		this.bitsPerIntAsBitShift = Integer.numberOfTrailingZeros(bitsPerInt);
 		this.maskForFirstBits = 0xFFFFFFFF >>> (BITS_PER_INT - bitsPerInt);
-		this.chunkIndexShift = (BITSSHIFT_PER_INT - bitsPerIntAsBitShift);
+		this.chunkIndexShift = BITSSHIFT_PER_INT - bitsPerIntAsBitShift;
 	}
 
 	@Override

@@ -75,6 +75,7 @@ import eu.solven.adhoc.measure.sum.CoalesceAggregation;
 import eu.solven.adhoc.measure.sum.CountAggregation;
 import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.model.measure.Aggregator;
+import eu.solven.adhoc.model.measure.IAdhocTags;
 import eu.solven.adhoc.model.measure.Columnator;
 import eu.solven.adhoc.model.measure.Combinator;
 import eu.solven.adhoc.model.measure.Dispatchor;
@@ -210,7 +211,7 @@ public class AtotiMeasureToAdhoc {
 
 	protected void transferTagProperties(IMeasureMemberDescription measure, Consumer<String> tagConsumer) {
 		if (!measure.isVisible()) {
-			tagConsumer.accept("hidden");
+			tagConsumer.accept(IAdhocTags.TAG_HIDDEN);
 		}
 		if (!Strings.isNullOrEmpty(measure.getGroup())) {
 			tagConsumer.accept("group=" + measure.getGroup());

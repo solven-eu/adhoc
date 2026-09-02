@@ -27,6 +27,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 import org.springframework.http.MediaType;
@@ -302,6 +303,8 @@ public class PivotableEndpointsController {
 						.column(column)
 						.type(MapPathGet.getRequiredString(columnDetails, "type"))
 						.tags(MapPathGet.getRequiredAs(columnDetails, "tags"))
+						// Optional: a holder reports no `aliases` entry for a column carrying none.
+						.aliases(MapPathGet.<Set<String>>getOptionalAs(columnDetails, "aliases").orElseGet(Set::of))
 						.coordinates(coordinates.getCoordinates())
 						.estimatedCardinality(coordinates.getEstimatedCardinality())
 						.build());

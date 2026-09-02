@@ -156,13 +156,11 @@ public class RedshiftTableWrapper extends JooqTableWrapper {
 		ImmutableList<String> groupedByColumns = sqlQuery.getFields().getColumns();
 		IMapBuilderPreKeys slice = queryPod.getSliceFactory().newMapBuilder(groupedByColumns);
 
-		{
-			for (int i = 0; i < groupedByColumns.size(); i++) {
-				Field field = row.get(groupedByColumns.size() + i);
+		for (int i = 0; i < groupedByColumns.size(); i++) {
+			Field field = row.get(groupedByColumns.size() + i);
 
-				Object value = toObject(field);
-				slice.append(value);
-			}
+			Object value = toObject(field);
+			slice.append(value);
 		}
 
 		if (!sqlQuery.getFields().getNonPushdowns().isEmpty()) {
