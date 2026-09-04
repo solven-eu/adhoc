@@ -25,6 +25,7 @@ package eu.solven.adhoc.engine.optimizer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Random;
 
 import org.assertj.core.api.Assertions;
@@ -133,6 +134,13 @@ public class TestFuzzMeasureForestFusion {
 	private static final List<String> PARTITIONOR_AGG_KEYS =
 			List.of(SumAggregation.KEY, MaxAggregation.KEY, MinAggregation.KEY);
 
+	/**
+	 * Relative tolerance when comparing floating-point outputs. The fuser may reorder associative operations (e.g. the
+	 * operands of a SUM feeding a DIVIDE), which legitimately perturbs the last ULPs of a double without changing the
+	 * semantics.
+	 */
+	private static final double RELATIVE_TOLERANCE = 1e-12;
+
 	@Test
 	public void testFuzz_fuserPreservesSemantics() {
 		long seed = Long.getLong("fuzz.seed", System.nanoTime());
@@ -218,7 +226,7 @@ public class TestFuzzMeasureForestFusion {
 		Map<Map<String, ?>, Map<String, ?>> noopMap = MapBasedTabularView.load(noopView).getCoordinatesToValues();
 		Map<Map<String, ?>, Map<String, ?>> fusedMap = MapBasedTabularView.load(fusedView).getCoordinatesToValues();
 
-		if (!noopMap.equals(fusedMap)) {
+		if (!sameWithinTolerance(noopMap, fusedMap)) {
 			Assertions.fail(
 					String.format("Fuser changed output (seed=%d iter=%d root=%s):%n  noop=%s%n  fused=%s%n  forest=%s",
 							seed,
@@ -237,6 +245,57 @@ public class TestFuzzMeasureForestFusion {
 		} catch (RuntimeException e) {
 			return e;
 		}
+	}
+
+	/**
+	 * Compares two views coordinate by coordinate.
+	 *
+	 * @return true if both views hold the same coordinates and, per coordinate, the same measure values, where
+	 *         floating-point numbers are compared within {@link #RELATIVE_TOLERANCE} and every other value with
+	 *         {@link Objects#equals(Object, Object)}.
+	 */
+	private static boolean sameWithinTolerance(Map<Map<String, ?>, Map<String, ?>> left,
+			Map<Map<String, ?>, Map<String, ?>> right) {
+		if (!left.keySet().equals(right.keySet())) {
+			return false;
+		}
+		for (Map.Entry<Map<String, ?>, Map<String, ?>> coordinate : left.entrySet()) {
+			Map<String, ?> leftValues = coordinate.getValue();
+			Map<String, ?> rightValues = right.get(coordinate.getKey());
+			if (!leftValues.keySet().equals(rightValues.keySet())) {
+				return false;
+			}
+			for (Map.Entry<String, ?> value : leftValues.entrySet()) {
+				if (!sameWithinTolerance(value.getValue(), rightValues.get(value.getKey()))) {
+					return false;
+				}
+			}
+		}
+		return true;
+	}
+
+	/**
+	 * @return true if both values are equal, allowing a relative difference of {@link #RELATIVE_TOLERANCE} when either
+	 *         side is a floating-point number.
+	 */
+	private static boolean sameWithinTolerance(Object left, Object right) {
+		boolean anyFloating =
+				left instanceof Double || left instanceof Float || right instanceof Double || right instanceof Float;
+		if (!anyFloating) {
+			return Objects.equals(left, right);
+		}
+		// Guard clause rather than `else if`: the pattern variables must stay in scope for the arithmetic below
+		if (!(left instanceof Number leftNumber) || !(right instanceof Number rightNumber)) {
+			return false;
+		}
+		double leftDouble = leftNumber.doubleValue();
+		double rightDouble = rightNumber.doubleValue();
+		// `Double.compare` handles NaN==NaN and identical infinities, which the arithmetic below would reject
+		if (Double.compare(leftDouble, rightDouble) == 0) {
+			return true;
+		}
+		double magnitude = Math.max(Math.abs(leftDouble), Math.abs(rightDouble));
+		return Math.abs(leftDouble - rightDouble) <= RELATIVE_TOLERANCE * magnitude;
 	}
 
 	private String describeForest(List<IMeasure> measures) {
