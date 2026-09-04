@@ -33,6 +33,7 @@ import java.util.Spliterator;
 import java.util.function.Consumer;
 
 import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 
 import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.ThreadSafe;
@@ -109,7 +110,7 @@ public final class PerfectHashKeyset implements SequencedSet<String>, IHasIndexO
 	}
 
 	@Override
-	public boolean contains(Object o) {
+	public boolean contains(@Nullable Object o) {
 		if (!(o instanceof String stringKey)) {
 			return false;
 		}
