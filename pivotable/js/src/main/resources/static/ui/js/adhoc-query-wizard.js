@@ -22,6 +22,8 @@ import { useUserStore } from "./store-user.js";
 
 import wizardHelper from "./adhoc-query-wizard-helper.js";
 
+import { collectCubeTags, defaultSelectedTags } from "./adhoc-baked-in-tags.js";
+
 // wizardOptions are stored in localStorage as they should not be shared by URL, as they are User-preferences
 const loadOptionsFromStorage = function () {
 	return JSON.parse(localStorage.getItem("adhoc.preferences.wizardOptions")) || {};
@@ -62,6 +64,12 @@ const initOptions = function () {
 	const optionsFromStorage = loadOptionsFromStorage();
 
 	return sanitizeOptions(optionsFromStorage);
+};
+
+// A first visit has nothing in localStorage. Used to decide whether Pivotable may pick the cube's default tags: on any
+// later visit the stored selection is the user's own, and must not be overridden.
+const isFirstVisit = function () {
+	return Object.keys(loadOptionsFromStorage()).length === 0;
 };
 
 export default {
@@ -128,7 +136,26 @@ export default {
 
 		store.loadCubeSchemaIfMissing(props.cubeId, props.endpointId);
 
+		const firstVisit = isFirstVisit();
 		const searchOptions = reactive(initOptions());
+
+		// On a first visit, open on the cube's `essential` subset rather than on its full measure and column list,
+		// which is unreadable on a large cube. Applied once the schema has loaded, since the cube has to be inspected
+		// for the tag: defaulting to a tag no item carries would filter the wizard down to nothing.
+		// The selection lands in `searchOptions.tags`, so it shows in the Tags dropdown and clears like any other.
+		if (firstVisit) {
+			const stopDefaulting = watch(
+				() => store.schemas[props.endpointId]?.cubes[props.cubeId],
+				(cube) => {
+					if (!cube || cube.error) {
+						return;
+					}
+					searchOptions.tags.push(...defaultSelectedTags(collectCubeTags(cube)));
+					stopDefaulting();
+				},
+				{ immediate: true },
+			);
+		}
 
 		// persist the whole state to the local storage whenever it changes
 		watch(

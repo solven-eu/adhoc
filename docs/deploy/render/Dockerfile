@@ -10,7 +10,7 @@
 #   (the heavyweight step) when only Java sources change.
 
 # ── Build stage ───────────────────────────────────────────────────────────────
-FROM eclipse-temurin:25.0.3_9-jdk AS build
+FROM eclipse-temurin:25.0.4_7-jdk AS build
 WORKDIR /src
 
 # Temurin's base image is JDK-only — bring Maven in via apt. No `./mvnw` wrapper is checked
@@ -43,7 +43,7 @@ RUN --mount=type=cache,target=/root/.m2 \
 RUN cp pivotable/server-webflux/target/pivotable-server-webflux-*-exec.jar /tmp/app.jar
 
 # ── Run stage ─────────────────────────────────────────────────────────────────
-FROM eclipse-temurin:25.0.3_9-jre
+FROM eclipse-temurin:25.0.4_7-jre
 WORKDIR /app
 COPY --from=build /tmp/app.jar /app/app.jar
 

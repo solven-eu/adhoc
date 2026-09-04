@@ -68,4 +68,13 @@ public class EndpointSchemaMetadata {
 	@NonNull
 	@Singular
 	NavigableMap<String, CustomMarkerMetadata> customMarkers;
+
+	/**
+	 * Tag name to a human-readable note stating what it means, so a client can explain a tag rather than showing a bare
+	 * word. Schema-wide, since a tag names the same concept across every cube. Carries the baked-in vocabulary plus
+	 * whatever the project described.
+	 */
+	@NonNull
+	@Singular
+	NavigableMap<String, String> tagDescriptions;
 }

@@ -63,6 +63,11 @@ public class ColumnStatistics {
 	@Singular
 	ImmutableSet<String> tags;
 
+	// The alternative names this column answers to, e.g. the qualified `table.column` behind an unqualified alias.
+	// Typically not exhaustive.
+	@Singular
+	ImmutableSet<String> aliases;
+
 	// The number of different coordinates. This is contextual to a cube/table.
 	// -1 means the cardinality has not been estimated
 	@Default

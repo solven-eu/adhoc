@@ -319,19 +319,17 @@ public class TableQueryEngine implements ITableQueryEngine {
 
 		// Switch to a ConcurrentMap as `walkUpInducedDag` may be concurrent
 		ConcurrentMap<TableQueryStep, ICuboid> stepToValues = new ConcurrentHashMap<>(stepToValuesFromtableWrapper);
-		{
-			if (queryPod.isDebugOrExplain()) {
-				explainDagSteps(tableQueryPod, withShared);
-			}
+		if (queryPod.isDebugOrExplain()) {
+			explainDagSteps(tableQueryPod, withShared);
+		}
 
-			// Evaluated the induced tableQueries
-			// BEWARE This will also register some shared nodes, which are irrelevant to the output but useful for the
-			// DAG of size-cost
-			walkUpInducedDag(stepToValues, withShared);
+		// Evaluated the induced tableQueries
+		// BEWARE This will also register some shared nodes, which are irrelevant to the output but useful for the
+		// DAG of size-cost
+		walkUpInducedDag(stepToValues, withShared);
 
-			if (queryPod.isDebugOrExplain()) {
-				explainDagPerfs(tableQueryPod, withShared);
-			}
+		if (queryPod.isDebugOrExplain()) {
+			explainDagPerfs(tableQueryPod, withShared);
 		}
 
 		// Publish the induced TableQuerySteps so the cube-side projector can graft them as

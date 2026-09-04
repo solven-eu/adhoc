@@ -10,6 +10,14 @@ We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format.
 Bump to 0.1.0 to mark the move to JDK 25 (still 0.x — Pivotable is not yet API-stable).
 
 ### Added
+- "Query is broken" banner now lists what the failing query carries — its selected measures and groupBy columns — each as a chip removing it in one click, so the offending entry can be dropped without leaving the error to hunt for the row in the wizard. Names occurring in the error message are highlighted and sorted first; that is a substring match presented as a suggestion, not an analysis of the error. Logic lives in the pure `adhoc-query-involved.js`, covered by `unit-tests/query-involved.spec.js`.
+- Baked-in tags are now known to the SPA (`adhoc-baked-in-tags.js`), each with a description surfaced as a tooltip in the wizard's Tags dropdown — previously `calculated`, `generated`, `meta`, `composite-full`, `hidden` and `technical` were emitted by the engine but shown as opaque, unexplained tags. Two now drive behaviour: **`essential`** is preselected on a first visit when the cube declares it, so a large cube opens on a workable subset (skipped when no item carries it, so the wizard is never filtered down to nothing; the selection lands in `searchOptions.tags`, hence visible in the dropdown and cleared like any other); **`hidden`** items are kept out of the wizard unless the `hidden` tag is explicitly selected. A cube may override any description through `tagDescriptions` on its cube description, which takes precedence over the baked-in text.
+- Grid measure header menu: new "Keep only this measure" action next to "Remove measure", narrowing the selection to the measure acted on. Only currently-selected measures are cleared, so it can only narrow what the grid shows. Logic lives in the pure `adhoc-query-keep-only-measure.js`, covered by `unit-tests/keep-only-measure.spec.js`.
+
+### Changed
+- Wizard tag selector (`adhoc-query-wizard-tags.js`): the dropdown is capped at `80vh` and scrolls, instead of growing past the bottom of the viewport on a cube with many tags. Each tag now occupies a full-width `dropdown-item` button, so the whole row toggles the tag rather than the badge alone being the target; the toggle stays open across several picks via `data-bs-auto-close="outside"`. The add/remove logic moved to the pure `adhoc-query-wizard-tag-toggle.js` shared by the row and the badge, covered by `unit-tests/wizard-tag-toggle.spec.js`.
+
+### Added
 - Query grid performance footer: when a query is completed, a "view age" indicator (clock icon + `Xs ago` up to 120s, `Xm ago` up to 120 min, `Xh ago` up to 48h, `Xd ago` beyond) is rendered next to the `total: Xms` total — surfacing how stale the displayed snapshot is. Hidden while a stage is in-flight; ticker cadence is coarse (1s for seconds, 30s for minutes, 60s for hours, 1h for days) to keep idle-tab CPU negligible.
 
 ## [0.0.19]

@@ -67,4 +67,55 @@ public interface IAdhocSchemaRegistrer {
 	 */
 	IAdhocSchemaRegistrer tagCube(String cubeName, Set<String> tags);
 
+	/**
+	 * Attaches a human-readable note to a tag, so a client can explain a tag to a user rather than showing a bare word.
+	 *
+	 * <p>
+	 * Descriptions are schema-wide: a tag names the same concept across every cube of a schema. The baked-in tags of
+	 * {@link eu.solven.adhoc.model.measure.IAdhocTags} are described out of the box; calling this for one of them
+	 * replaces the default, which is the hook for a project preferring its own wording.
+	 * </p>
+	 *
+	 * @param tag
+	 *            the tag being described
+	 * @param description
+	 *            a short note stating what the tag means
+	 */
+	IAdhocSchemaRegistrer describeTag(String tag, String description);
+
+	/**
+	 * Attaches a human-readable note to a column, for the cube or table naming it.
+	 *
+	 * <p>
+	 * Unlike {@link #describeTag(String, String)}, which is schema-wide, this is scoped to the holder carried by the
+	 * identifier: the same physical column can mean different things in two cubes, so the description belongs to the
+	 * pairing. Describing a column in one cube says nothing about the same column name elsewhere.
+	 * </p>
+	 *
+	 * <p>
+	 * The column itself is not modified — describing is a schema-side concern, mirroring how tags are attached.
+	 * </p>
+	 *
+	 * @param columnIdentifier
+	 *            the (holder, column) being described
+	 * @param description
+	 *            a short note stating what the column holds
+	 */
+	IAdhocSchemaRegistrer describeColumn(ColumnIdentifier columnIdentifier, String description);
+
+	/**
+	 * Attaches a human-readable note to a measure of a cube.
+	 *
+	 * <p>
+	 * Scoped to the cube carried by the identifier, for the same reason as {@link #describeColumn}: a measure name is
+	 * only meaningful within its cube. The measure object is not modified.
+	 * </p>
+	 *
+	 * @param measureIdentifier
+	 *            the (cube, measure) being described
+	 * @param description
+	 *            a short note stating what the measure computes
+	 */
+	IAdhocSchemaRegistrer describeMeasure(MeasureIdentifier measureIdentifier, String description);
+
 }
