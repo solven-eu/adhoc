@@ -2,6 +2,8 @@
 // Ordering of columns. Per-function import to avoid fetching the lodash root bundle.
 import sortBy from "lodashEs/sortBy.js";
 
+import { isExcludedAsHidden } from "./adhoc-baked-in-tags.js";
+
 // Waterfall match-rule tiers, highest-quality first. Each tier carries a score so that the wizard can show
 // a percentage badge ("ccy" matches "Currency" at 50%, "Total" matches "total" at 90%, etc.), and the result
 // list is ranked by descending score then alphabetically within each tier. Tier names mirror the spec in the
@@ -157,6 +159,12 @@ export default {
 
 			if (typeof inputElement === "boolean") {
 				return inputElement ? scoreItem([inputKey], searchedValue, caseSensitiveOnly) : 0;
+			}
+
+			// Checked before the tag filter and outside the `ignoreTags` guard: the tag-fallback pass relaxes the
+			// user's tag selection to surface near-misses, and it must not resurface items the cube asked to keep out.
+			if (typeof inputElement === "object" && isExcludedAsHidden(inputElement, searchOptions.tags)) {
+				return 0;
 			}
 
 			if (!ignoreTags && hasTags && typeof inputElement === "object") {

@@ -103,7 +103,6 @@ final class SymbolTableExternalizable implements IFsstConstants, Externalizable 
 		if ((ver >> 32) != FSST_VERSION) {
 			throw new IOException("fsst: unsupported table version");
 		}
-		int suffixLim = (int) ((ver >> 16) & fsstMask8);
 		t.nSymbols = (int) ((ver >> 8) & fsstMask8);
 
 		byte[] lh = new byte[8];
@@ -142,6 +141,8 @@ final class SymbolTableExternalizable implements IFsstConstants, Externalizable 
 		}
 
 		t.buildIndices();
+
+		int suffixLim = (int) ((ver >> 16) & fsstMask8);
 		SymbolTableDecoder decoded = t.buildDecoderTables(suffixLim);
 
 		this.symbolTable = new SymbolTable(new SymbolTableEncoder(t, suffixLim), decoded);

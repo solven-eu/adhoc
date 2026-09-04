@@ -57,6 +57,7 @@ import eu.solven.adhoc.measure.forest.MeasureForest;
 import eu.solven.adhoc.measure.sum.DivideCombination;
 import eu.solven.adhoc.model.measure.Aggregator;
 import eu.solven.adhoc.model.measure.Combinator;
+import eu.solven.adhoc.model.measure.IAdhocTags;
 import eu.solven.adhoc.model.measure.IMeasure;
 import eu.solven.adhoc.table.composite.CompositeCubesTableWrapper;
 import eu.solven.adhoc.table.sql.IDSLSupplier;
@@ -174,7 +175,9 @@ public class InjectPixarExampleCubesConfig {
 			schemaRegistrer.registerTable(filmsTable);
 
 			List<IMeasure> measuresFilm = new ArrayList<>();
-			measuresFilm.add(Aggregator.countAsterisk().toBuilder().name("count(films)").build());
+			// `essential` is what Pivotable preselects on a first visit: the measure to start from.
+			measuresFilm.add(
+					Aggregator.countAsterisk().toBuilder().name("count(films)").tag(IAdhocTags.TAG_ESSENTIAL).build());
 
 			schemaRegistrer.registerForest(MeasureForest.fromMeasures("films", measuresFilm));
 			filmsCube = schemaRegistrer.openCubeWrapperBuilder()
@@ -205,7 +208,8 @@ public class InjectPixarExampleCubesConfig {
 			schemaRegistrer.registerTable(peopleTable);
 
 			List<IMeasure> measuresPeople = new ArrayList<>();
-			measuresPeople.add(Aggregator.countAsterisk().toBuilder().name("count(people)").build());
+			measuresPeople.add(
+					Aggregator.countAsterisk().toBuilder().name("count(people)").tag(IAdhocTags.TAG_ESSENTIAL).build());
 
 			schemaRegistrer.registerForest(MeasureForest.fromMeasures("people", measuresPeople));
 			peopleCube = schemaRegistrer.openCubeWrapperBuilder()
@@ -225,11 +229,14 @@ public class InjectPixarExampleCubesConfig {
 			schemaRegistrer.registerTable(pixarTable);
 
 			List<IMeasure> measuresComposite = new ArrayList<>();
+			// The headline of the composite cube: the raw counts it divides are inherited from the sub-cubes and are
+			// detail by comparison, so they stay out of the first-visit subset.
 			measuresComposite.add(Combinator.builder()
 					.name("people per film")
 					.combinationKey(DivideCombination.KEY)
 					.underlying("count(people)")
 					.underlying("count(films)")
+					.tag(IAdhocTags.TAG_ESSENTIAL)
 					.build());
 
 			// `raw` includes only the additional measures of the composite cube, but no reference to the underlying

@@ -42,6 +42,7 @@ import eu.solven.adhoc.filter.value.IValueMatcher;
 import eu.solven.adhoc.measure.forest.IMeasureForest;
 import eu.solven.adhoc.measure.operator.IHasOperatorFactory;
 import eu.solven.adhoc.measure.operator.IOperatorFactory;
+import eu.solven.adhoc.model.measure.IAdhocTags;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.transcoder.AliasingContext;
 import eu.solven.adhoc.util.AdhocUnsafe;
@@ -186,7 +187,7 @@ public class CubeColumnsWrapper implements IHasCache {
 		// Then, register calculated columns (e.g. based on an expression)
 		columnsManager.getColumnTypes().forEach((columnName, type) -> {
 			columnToType.put(columnName,
-					ColumnMetadata.builder().name(columnName).tag("calculated").type(type).build());
+					ColumnMetadata.builder().name(columnName).tag(IAdhocTags.TAG_CALCULATED).type(type).build());
 		});
 
 		IOperatorFactory operatorFactory = IHasOperatorFactory.getOperatorsFactory(engine);
@@ -198,7 +199,11 @@ public class CubeColumnsWrapper implements IHasCache {
 							// TODO How conflicts should be handled? `ColumnMetadata.merge`?
 							columnGenerator.getColumnTypes().forEach((columnName, type) -> {
 								columnToType.put(columnName,
-										ColumnMetadata.builder().name(columnName).tag("generated").type(type).build());
+										ColumnMetadata.builder()
+												.name(columnName)
+												.tag(IAdhocTags.TAG_GENERATED)
+												.type(type)
+												.build());
 							});
 						});
 			} catch (RuntimeException e) {

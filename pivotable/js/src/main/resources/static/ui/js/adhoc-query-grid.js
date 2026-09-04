@@ -8,6 +8,7 @@ import AdhocCellModal from "./adhoc-query-grid-cell-modal.js";
 import AdhocGridTimingsBar from "./adhoc-query-grid-timings-bar.js";
 import AdhocGridControls from "./adhoc-query-grid-controls.js";
 import AdhocMeasureStatsModal from "./adhoc-query-grid-stats-modal.js";
+import AdhocColumnDetailsModal from "./adhoc-query-grid-column-details-modal.js";
 
 // Formatters
 import { SlickGrid, SlickDataView } from "slickgrid";
@@ -25,6 +26,7 @@ export default {
 		AdhocGridTimingsBar,
 		AdhocGridControls,
 		AdhocMeasureStatsModal,
+		AdhocColumnDetailsModal,
 	},
 	// https://vuejs.org/guide/components/props.html
 	props: {
@@ -87,6 +89,9 @@ export default {
 		// it without prop-drilling. Read here so the local AdhocMeasureStatsModal gets the
 		// same reactive object the header buttons mutate.
 		const measureStatsModel = inject("measureStatsModel");
+
+		// Same wiring for the per-column Details modal, mutated by the groupBy header menu.
+		const columnDetailsModel = inject("columnDetailsModel");
 
 		let grid;
 		/** @type {any} reactive bag of grid-side metadata populated incrementally by resyncData (`nb_rows`, etc.) */
@@ -1057,6 +1062,7 @@ export default {
 
 			<AdhocCellModal :queryModel="queryModel" :clickedCell="clickedCell" :cube="cube" />
 			<AdhocMeasureStatsModal :statsModel="measureStatsModel" :formatOptions="formatOptions" />
+			<AdhocColumnDetailsModal :detailsModel="columnDetailsModel" />
 
 			<!--
 				Block-level positioned wrapper. Previously a span element, which is inline by

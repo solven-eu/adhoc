@@ -82,6 +82,7 @@ import eu.solven.adhoc.measure.transformator.IHasAggregationKey;
 import eu.solven.adhoc.measure.transformator.IHasUnderlyingMeasures;
 import eu.solven.adhoc.model.column.IAdhocColumn;
 import eu.solven.adhoc.model.measure.Filtrator;
+import eu.solven.adhoc.model.measure.IAdhocTags;
 import eu.solven.adhoc.model.measure.IMeasure;
 import eu.solven.adhoc.model.query.IGroupBy;
 import eu.solven.adhoc.model.query.groupby.GroupByColumns;
@@ -169,7 +170,7 @@ public class CompositeCubesTableWrapper implements ITableWrapper, IHasHealthDeta
 
 		// Add a column enables to groupBy/filter through subCubes
 		optCubeSlicer.ifPresent(cubeColumn -> columnToMeta.put(cubeColumn,
-				ColumnMetadata.builder().name(cubeColumn).tag("meta").type(String.class).build()));
+				ColumnMetadata.builder().name(cubeColumn).tag(IAdhocTags.TAG_META).type(String.class).build()));
 
 		return columnToMeta.asMap()
 				.entrySet()
@@ -190,7 +191,7 @@ public class CompositeCubesTableWrapper implements ITableWrapper, IHasHealthDeta
 		Set<String> cubesWithColumn = columnToCubes.get(c.getName());
 		if (optCubeSlicer.isPresent() && optCubeSlicer.get().equals(c.getName())
 				|| cubesWithColumn.size() == cubes.size()) {
-			return builder.tag("composite-full").build();
+			return builder.tag(IAdhocTags.TAG_COMPOSITE_FULL).build();
 		} else {
 			// Current column is unknown by some cube
 			builder.tag("composite-partial");
@@ -767,7 +768,7 @@ public class CompositeCubesTableWrapper implements ITableWrapper, IHasHealthDeta
 		cubes.forEach(cube -> cube.getColumns().forEach(metadata -> {
 			Set<String> tags = metadata.getTags();
 			// Tag strings are produced by CubeWrapper.getColumnsWithoutAliases; no shared constant exists today.
-			if (tags.contains("generated") || tags.contains("calculated")) {
+			if (tags.contains(IAdhocTags.TAG_GENERATED) || tags.contains(IAdhocTags.TAG_CALCULATED)) {
 				calculated.add(metadata.getName());
 			}
 		}));

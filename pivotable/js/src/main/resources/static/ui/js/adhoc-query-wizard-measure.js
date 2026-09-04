@@ -21,6 +21,12 @@ export default {
 			type: Boolean,
 			default: true,
 		},
+		// Schema-authored note for this measure, per cube. Empty when the project described nothing.
+		description: {
+			type: String,
+			required: false,
+			default: "",
+		},
 		searchOptions: {
 			type: Object,
 			required: true,
@@ -116,6 +122,8 @@ export default {
 		&nbsp;
 		<AdhocQueryWizardMeasureTag v-for="tag in measure.tags" :tag="tag" :searchOptions="searchOptions" />
 		<div v-if="showDetails" class="text-muted">
+			<!-- The schema-authored note first: it says what the measure is FOR, which the definition below does not. -->
+			<div v-if="description"><small>{{description}}</small></div>
 			<span v-if="measure.type == '.Aggregator' ">
 				<small v-html="mark(measure.aggregationKey + '(' + measure.columnName + ')')" />
 			</span>

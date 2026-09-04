@@ -68,9 +68,7 @@ public class PivotableWebclientServerProperties {
 			RefreshTokenWrapper wrappedRefreshToken = kumiteTokenService.wrapInJwtRefreshToken(FakeUser.ACCOUNT_ID);
 			refreshToken = wrappedRefreshToken.getRefreshToken();
 		} else if (PLACEHOLDER_GENERATERANDOMPLAYER.equals(refreshToken)) {
-			{
-				log.info("Generating on-the-fly a fakeUser refreshToken");
-			}
+			log.info("Generating on-the-fly a fakeUser refreshToken");
 			PivotableTokenService kumiteTokenService = new PivotableTokenService(env, uuidGenerator);
 			RefreshTokenWrapper wrappedRefreshToken = kumiteTokenService.wrapInJwtRefreshToken(RandomUser.ACCOUNT_ID);
 			refreshToken = wrappedRefreshToken.getRefreshToken();

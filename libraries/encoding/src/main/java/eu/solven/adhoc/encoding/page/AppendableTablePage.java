@@ -126,24 +126,46 @@ public class AppendableTablePage implements IAppendableTablePage {
 			} else {
 				String expectedColumnName = columnNames.get(currentColumnIndex);
 				if (!key.equals(expectedColumnName)) {
-					log.warn("Mis-ordered columns %s != %s".formatted(key, expectedColumnName));
-					if (AdhocUnsafe.isFailFast()) {
-						throw new IllegalStateException("%s != %s".formatted(key, expectedColumnName));
-					} else {
-						currentColumnIndex = columnNames.indexOf(key);
-
-						if (currentColumnIndex < 0) {
-							currentColumnIndex = columnNames.size();
-							columnNames.add(key);
-							writeColumns.add(makeColumn(key));
-						}
-					}
+					currentColumnIndex = resolveMisorderedColumn(key, expectedColumnName, writeColumns);
 				}
 			}
 
 			writeColumns.get(currentColumnIndex).append(normalizedValue);
 
 			return currentColumnIndex;
+		}
+
+		/**
+		 * Called when a key arrives at a position already claimed by a different column, which happens when the
+		 * producer does not emit columns in a stable order.
+		 *
+		 * @param key
+		 *            the column name being written
+		 * @param expectedColumnName
+		 *            the column name already registered at the current position
+		 * @param writeColumns
+		 *            the columns being appended to, extended when {@code key} is not registered yet
+		 * @return the index of the column holding {@code key}
+		 */
+		// private: TablePageRow is final, so there is no subclass to override this.
+		private int resolveMisorderedColumn(String key,
+				String expectedColumnName,
+				List<IAppendableColumn> writeColumns) {
+			log.warn("Mis-ordered columns %s != %s".formatted(key, expectedColumnName));
+			if (AdhocUnsafe.isFailFast()) {
+				throw new IllegalStateException("%s != %s".formatted(key, expectedColumnName));
+			}
+
+			int knownColumnIndex = columnNames.indexOf(key);
+			if (knownColumnIndex >= 0) {
+				return knownColumnIndex;
+			}
+
+			// The key was never seen: register it as an additional column.
+			int additionalColumnIndex = columnNames.size();
+			columnNames.add(key);
+			writeColumns.add(makeColumn(key));
+			return additionalColumnIndex;
 		}
 
 		@Override

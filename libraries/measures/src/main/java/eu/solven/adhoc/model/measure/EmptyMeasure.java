@@ -53,7 +53,7 @@ public class EmptyMeasure implements IMeasure, IHasUnderlyingMeasures {
 	@NonNull
 	@Default
 	@With
-	ImmutableSet<String> tags = ImmutableSet.of("technical");
+	ImmutableSet<String> tags = ImmutableSet.of(IAdhocTags.TAG_TECHNICAL);
 
 	@Override
 	public List<String> getUnderlyingNames() {

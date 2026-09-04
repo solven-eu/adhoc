@@ -3,6 +3,9 @@ import { reactive, ref } from "vue";
 
 import { useAdhocStore } from "./store-adhoc.js";
 
+import { toggleTag } from "./adhoc-query-wizard-tag-toggle.js";
+import { collectCubeTags, describeTag } from "./adhoc-baked-in-tags.js";
+
 import AdhocQueryWizardMeasureTag from "./adhoc-query-wizard-measure-tag.js";
 
 export default {
@@ -33,24 +36,13 @@ export default {
 		const tagFilter = ref("");
 
 		const availableTags = function () {
-			// https://developer.mozilla.org/fr/docs/Web/JavaScript/Reference/Global_Objects/Set
-			const tags = new Set();
+			return collectCubeTags(store.schemas[props.endpointId]?.cubes[props.cubeId]);
+		};
 
-			const cube = store.schemas[props.endpointId]?.cubes[props.cubeId];
-			for (const measure of Object.values(cube.measures)) {
-				for (const tag of measure.tags) {
-					tags.add(tag);
-				}
-			}
-			for (const column of Object.values(cube.columns.columns)) {
-				// tags may be empty in case of error column
-				for (const tag of column.tags || []) {
-					tags.add(tag);
-				}
-			}
-
-			// https://stackoverflow.com/questions/20069828/how-to-convert-set-to-array
-			return Array.from(tags);
+		// Tooltip explaining what a tag means. Served by the schema, which merges Adhoc's baked-in vocabulary with
+		// whatever the project described — so a project's own tags are explained without any SPA change.
+		const tagDescription = function (tag) {
+			return describeTag(tag, store.schemas[props.endpointId]?.tagDescriptions);
 		};
 
 		const filteredTags = function () {
@@ -64,21 +56,35 @@ export default {
 			return asArray;
 		};
 
+		const toggle = function (tag) {
+			toggleTag(props.searchOptions.tags, tag);
+		};
+
 		return {
 			availableTags,
 			filteredTags,
 			tagFilter,
+			tagDescription,
+			toggle,
 		};
 	},
 	template: /* HTML */ `
 		<div>
 			<div class="dropdown">
-				<button class="btn btn-secondary dropdown-toggle btn-sm" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+				<!-- auto-close=outside keeps the menu open while several tags are toggled; it is a multi-select. -->
+				<button
+					class="btn btn-secondary dropdown-toggle btn-sm"
+					type="button"
+					data-bs-toggle="dropdown"
+					data-bs-auto-close="outside"
+					aria-expanded="false"
+				>
 					Tags
 					<span v-if="searchOptions.tags.length == 0"> {{availableTags().length}} </span>
 					<span v-else> {{searchOptions.tags.length}} / {{availableTags().length}} </span>
 				</button>
-				<ul class="dropdown-menu">
+				<!-- Capped height: a cube with many tags would otherwise run the menu past the bottom of the viewport. -->
+				<ul class="dropdown-menu" style="max-height: 80vh; overflow-y: auto">
 					<li class="dropdown-item">
 						<div class="mb-3">
 							<label for="tagsFilterInput" class="form-label">Filter tags in the Wizard</label>
@@ -86,8 +92,12 @@ export default {
 						</div>
 					</li>
 					<li><hr class="dropdown-divider" /></li>
-					<li class="dropdown-item" v-for="tag in filteredTags()">
-						<AdhocQueryWizardMeasureTag :tag="tag" :searchOptions="searchOptions" />
+					<!-- One tag per row, so the whole row toggles it rather than the badge alone being a target. -->
+					<li v-for="tag in filteredTags()">
+						<!-- Description as a tooltip rather than a second line: the menu is already height-capped. -->
+						<button type="button" class="dropdown-item" :title="tagDescription(tag)" @click.prevent="toggle(tag)">
+							<AdhocQueryWizardMeasureTag :tag="tag" :searchOptions="searchOptions" />
+						</button>
 					</li>
 					<li class="dropdown-item text-secondary">
 						<small>{{availableTags().length - filteredTags().length }} tags are filtered out</small>

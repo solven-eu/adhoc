@@ -31,7 +31,10 @@ import java.util.Set;
  */
 @FunctionalInterface
 public interface IHasTags {
-	String TAG_DEBUG = "debug";
+	/**
+	 * @see IAdhocTags#TAG_DEBUG
+	 */
+	String TAG_DEBUG = IAdhocTags.TAG_DEBUG;
 
 	/**
 	 * Tags are useful for various operations, like documentation (e.g. coloring some graphviz by tag).
