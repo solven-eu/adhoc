@@ -296,7 +296,7 @@ public final class SequencedSetLikeList extends ForwardingSet<String>
 
 	// ensure toArray is sequenced
 	@Override
-	public <T> T[] toArray(T[] array) {
+	public <T extends @Nullable Object> T[] toArray(T[] array) {
 		return asList().toArray(array);
 	}
 

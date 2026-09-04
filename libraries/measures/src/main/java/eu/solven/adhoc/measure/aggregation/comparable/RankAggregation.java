@@ -194,7 +194,7 @@ public class RankAggregation implements IAggregation, IAggregationCarrier.IHasCa
 		}
 
 		@Override
-		public RankedElementsCarrier add(Object element) {
+		public RankedElementsCarrier add(@Nullable Object element) {
 			if (element == null) {
 				return this;
 			} else if (element instanceof Array) {
