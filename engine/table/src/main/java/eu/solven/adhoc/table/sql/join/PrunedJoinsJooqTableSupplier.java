@@ -91,9 +91,10 @@ import lombok.extern.slf4j.Slf4j;
  * @author Benoit Lacelle
  */
 @Slf4j
-// Custom builder class name avoids the clash with the standalone `PrunedJoinsJooqTableSupplierBuilder`
-// (the schema-source class) that the `schema` field references.
-@Builder(builderClassName = "Builder")
+// Custom builder class name avoids two clashes: the standalone `PrunedJoinsJooqTableSupplierBuilder`
+// (the schema-source class) that the `schema` field references, and Lombok 1.18.48+ which now
+// rejects "Builder" as an explicit builderClassName.
+@Builder(builderClassName = "PrunedJoinsSupplierBuilder")
 public class PrunedJoinsJooqTableSupplier implements IJooqTableSupplier, IHasCache {
 
 	/** The snowflake-schema source: provides the {@link JoinNode} list and materialises {@code Table}s on demand. */
