@@ -236,4 +236,49 @@ public class TestMutablePerfectHashMap {
 		Assertions.assertThat(map.get("c")).isEqualTo(3);
 		Assertions.assertThat(map.get("d")).isEqualTo(4);
 	}
+
+	@Test
+	public void testEquals_selfReference() {
+		MutablePerfectHashMap<String, Integer> map = new MutablePerfectHashMap<>();
+		map.put("a", 1);
+		// Exercises the `o == this` fast-path in equals()
+		Assertions.assertThat(map.equals(map)).isTrue();
+	}
+
+	@Test
+	public void testEquals_nonMapType() {
+		MutablePerfectHashMap<String, Integer> map = new MutablePerfectHashMap<>();
+		map.put("a", 1);
+		// Non-Map argument and null → false (covers both sides of the instanceof branch)
+		Assertions.assertThat("not a map".equals(map)).isFalse();
+		Assertions.assertThat(map.equals(null)).isFalse();
+	}
+
+	@Test
+	public void testEquals_differentSize() {
+		MutablePerfectHashMap<String, Integer> map = new MutablePerfectHashMap<>();
+		map.put("a", 1);
+		// Other map has more entries → size-mismatch branch returns false
+		Map<String, Integer> other = Map.of("a", 1, "b", 2);
+		Assertions.assertThat(map.equals(other)).isFalse();
+	}
+
+	@Test
+	public void testToString_emptyAndNonEmpty() {
+		MutablePerfectHashMap<String, Integer> map = new MutablePerfectHashMap<>();
+		Assertions.assertThat(map.toString()).isEqualTo("{}");
+		map.put("x", 7);
+		Assertions.assertThat(map.toString()).isEqualTo("{x=7}");
+		map.put("y", 8);
+		Assertions.assertThat(map.toString()).isEqualTo("{x=7, y=8}");
+	}
+
+	@Test
+	public void testEntrySet_iteration() {
+		MutablePerfectHashMap<String, Integer> map = new MutablePerfectHashMap<>();
+		map.put("a", 1);
+		map.put("b", 2);
+		// Exercises EntrySet.iterator() / computeNext() and endOfData()
+		Assertions.assertThat(map.entrySet()).containsExactly(Map.entry("a", 1), Map.entry("b", 2));
+	}
 }
