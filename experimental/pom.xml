@@ -144,7 +144,7 @@
 			workbooks that mirror a measure forest as Excel formulas. -->
 			<groupId>org.apache.poi</groupId>
 			<artifactId>poi-ooxml</artifactId>
-			<version>5.4.0</version>
+			<version>5.5.1</version>
 			<optional>true</optional>
 		</dependency>
 
