@@ -25,8 +25,8 @@ package eu.solven.adhoc.export.excel;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -38,6 +38,9 @@ import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.util.CellReference;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.cube.ICubeWrapper;
 import eu.solven.adhoc.dataframe.tabular.ITabularView;
@@ -104,7 +107,7 @@ public class MeasureForestExcelLogicExporter {
 
 	protected List<IMeasure> collectPostOrder(CubeQuery query, Map<String, IMeasure> nameToMeasure) {
 		List<IMeasure> result = new ArrayList<>();
-		Set<String> visited = new HashSet<>();
+		Set<String> visited = new LinkedHashSet<>();
 		for (IMeasure root : query.getMeasures()) {
 			IMeasure resolved = nameToMeasure.get(root.getName());
 			if (resolved == null) {
@@ -207,7 +210,7 @@ public class MeasureForestExcelLogicExporter {
 			header.createCell(col).setCellValue(gbCol);
 			col++;
 		}
-		Map<String, Integer> measureNameToColumn = new HashMap<>();
+		Map<String, Integer> measureNameToColumn = new LinkedHashMap<>();
 		for (IMeasure m : measures) {
 			measureNameToColumn.put(m.getName(), col);
 			header.createCell(col).setCellValue(m.getName());
@@ -252,11 +255,11 @@ public class MeasureForestExcelLogicExporter {
 			Map<String, Integer> measureNameToColumn,
 			Map<String, ?> sliceValues) {
 		// Cache groupBy cell refs once per row — every measure on the row may need them.
-		Map<String, String> groupByCellRefs = new HashMap<>();
+		Map<String, String> groupByCellRefs = new LinkedHashMap<>();
 		for (int i = 0; i < groupByCols.size(); i++) {
 			groupByCellRefs.put(groupByCols.get(i), CellReference.convertNumToColString(i) + (rowIdx + 1));
 		}
-		Set<String> groupByColumnSet = Set.copyOf(groupByCols);
+		Set<String> groupByColumnSet = ImmutableSet.copyOf(groupByCols);
 
 		for (IMeasure measure : measures) {
 			int col = measureNameToColumn.get(measure.getName());
@@ -297,7 +300,7 @@ public class MeasureForestExcelLogicExporter {
 			return List.copyOf(combinator.getUnderlyings());
 		}
 		if (measure instanceof Filtrator filtrator) {
-			return List.of(filtrator.getUnderlying());
+			return ImmutableList.of(filtrator.getUnderlying());
 		}
 		throw new IllegalStateException("Unexpected non-leaf measure type: " + measure);
 	}
