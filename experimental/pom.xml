@@ -41,7 +41,7 @@
 			<dependency>
 				<groupId>com.google.cloud</groupId>
 				<artifactId>libraries-bom</artifactId>
-				<version>26.87.0</version>
+				<version>26.88.0</version>
 				<type>pom</type>
 				<scope>import</scope>
 			</dependency>
@@ -144,7 +144,7 @@
 			workbooks that mirror a measure forest as Excel formulas. -->
 			<groupId>org.apache.poi</groupId>
 			<artifactId>poi-ooxml</artifactId>
-			<version>5.4.0</version>
+			<version>5.5.1</version>
 			<optional>true</optional>
 		</dependency>
 
