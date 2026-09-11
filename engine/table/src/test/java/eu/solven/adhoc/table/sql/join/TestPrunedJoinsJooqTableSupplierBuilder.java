@@ -44,6 +44,7 @@ import eu.solven.adhoc.query.table.TableQueryV4;
 import eu.solven.adhoc.table.sql.AdhocJooqHelper;
 import eu.solven.adhoc.table.sql.JooqColumnsHelpers;
 import eu.solven.adhoc.table.sql.duckdb.DuckDBHelper;
+import eu.solven.adhoc.util.IHasCache;
 
 public class TestPrunedJoinsJooqTableSupplierBuilder {
 	static {
@@ -64,6 +65,15 @@ public class TestPrunedJoinsJooqTableSupplierBuilder {
 				.baseTableAlias("fact")
 				.build()
 				.baseProvidedColumns(Set.of("amount", "region", "id", "k1", "country", "k1_count"));
+	}
+
+	@Test
+	public void testDefaultResolver_isCaching() {
+		PrunedJoinsJooqTableSupplier defaultSupplier =
+				PrunedJoinsJooqTableSupplier.builder().schema(newBuilder()).build();
+
+		// The DB probe is wrapped in a caching decorator, so a table joined under several aliases is probed once
+		Assertions.assertThat(defaultSupplier.getColumnsResolver()).isInstanceOf(IHasCache.class);
 	}
 
 	/** Default-resolver supplier bound to {@code builder}. */
