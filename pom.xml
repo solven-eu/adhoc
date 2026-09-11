@@ -68,7 +68,7 @@
 	<properties>
 		<java.version>25</java.version>
 
-		<lombok.version>1.18.46</lombok.version>
+		<lombok.version>1.18.48</lombok.version>
 		<!-- Error Prone — enabled only under the `errorprone` profile. Kept here so Dependabot can bump a single version token. -->
 		<errorprone.version>2.49.0</errorprone.version>
 		<!-- NullAway — Error Prone plugin doing flow-sensitive nullness analysis driven by JSpecify @NullMarked. -->
