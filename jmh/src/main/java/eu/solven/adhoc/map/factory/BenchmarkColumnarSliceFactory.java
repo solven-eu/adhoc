@@ -22,7 +22,6 @@
  */
 package eu.solven.adhoc.map.factory;
 
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -66,8 +65,8 @@ public class BenchmarkColumnarSliceFactory {
 	Map<String, ?> javaMap = Map.of("a", "a1", "b", "b1");
 	Map<String, ?> guavaMap = ImmutableMap.of("a", "a1", "b", "b1");
 
-	Map<String, ?> adhocMap = factory.newMapBuilder(List.of("a", "b")).append("a1").append("b1").build();
-	IAdhocMap adhocBeforeRetain = factory.newMapBuilder(List.of("a", "b", "c", "d"))
+	Map<String, ?> adhocMap = factory.newMapBuilder(ImmutableList.of("a", "b")).append("a1").append("b1").build();
+	IAdhocMap adhocBeforeRetain = factory.newMapBuilder(ImmutableList.of("a", "b", "c", "d"))
 			.append("a1")
 			.append("b1")
 			.append("c1")
