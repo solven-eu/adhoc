@@ -53,6 +53,7 @@ Bump to 0.1.0 to mark the move to JDK 25 (still 0.x — Adhoc is not yet API-sta
 - Pivotable plan Mermaid: nodes grouped under engine-stage subgraphs ("Cube query steps", "Table query steps", "Table queries"). The CUBE_QUERY root and uncategorised "other" nodes stay at the top level. Empty subgraphs are omitted.
 
 ### Fixed
+- `ArrowReflection`: grouping-set absence is now detected by comparing the grouping indicator through `Number.longValue()`, as Arrow may materialize the indicator as an `Int` rather than a `BigInt`. Previously the `Long`-only equality reported every column as absent when the indicator came back as an `Integer`.
 - Pivotable plan Mermaid: deep-equal subjects collapse to a single Mermaid node. Previously the SPA dedup'd on `node.subject` by reference, so N Jackson copies of the same Java step produced N Mermaid nodes. New `nodeDedupKey(node)` uses a stable string (`details.sql` for SQL leaves, `JSON.stringify(subject)` otherwise).
 - Pivotable plan Mermaid: SQL leaf now reaches the plan tree even when the cube wires a column aliaser (e.g. `WorldCupPlayersSchema`). `ColumnsManager.openStreamInternal` publishes a bridge fragment from the original V4 to the transcoded V4 so the SQL leaf is reachable via the existing anchor. Skipped when no aliaser is configured.
 - `QueryPlanProjector`: cycle guard against fragments whose root subject equals their own anchor (previously hanged `executeAsync` on the `publishInducedFragments` path). Re-entries are skipped with an SLF4J warn pointing the publisher at the unique-subject pattern.
