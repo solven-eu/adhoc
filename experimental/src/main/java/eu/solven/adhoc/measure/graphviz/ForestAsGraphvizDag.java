@@ -163,6 +163,13 @@ public class ForestAsGraphvizDag {
 				node.add("color", "red").add("penwidth", "3").add("peripheries", "2");
 			}
 
+			if (node.get("shape") == null) {
+				log.debug("Lack of shape for m={}", measure);
+			}
+			if (node.get("fillcolor") == null) {
+				log.debug("Lack of fillcolor for m={}", measure);
+			}
+
 			g.add(node);
 		});
 
