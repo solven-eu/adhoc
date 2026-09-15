@@ -240,7 +240,6 @@ export default {
 				store.queries["" + stringifiedQuery.hashCode()].result = responseTabularView;
 				//state.contests[contestId].stale = true;
 			});
-			sendQueryError.value = "";
 
 			// We need to couple the columns with the result
 			// as the wizard may have been edited while receiving the result
@@ -250,7 +249,6 @@ export default {
 			// props.tabularView.value = {query: queryForApi.query, view: responseTabularView};
 		};
 
-		const sendQueryError = ref("");
 		function sendQuery() {
 			let queryForApi = {};
 
@@ -477,7 +475,6 @@ export default {
 					}
 				} catch (e) {
 					console.error("Issue on Network:", e);
-					sendQueryError.value = e.message;
 					// Surface the error on `tabularView` so the parent can render a prominent "query broken"
 					// banner over the grid. The grid intentionally keeps rendering the last successful view
 					// so the user retains context. The full server-side stack (when available) is exposed
@@ -546,7 +543,6 @@ export default {
 					props.tabularView.view = null;
 					props.tabularView.error = "";
 					props.tabularView.errorStack = null;
-					sendQueryError.value = "";
 					return;
 				}
 				sendQuery();
@@ -624,7 +620,6 @@ export default {
 			sendQuery,
 			submitQuery,
 			closeOpenAccordions,
-			sendQueryError,
 			accordionState,
 			isQueryInFlight,
 			isSameAsLastQuery,
@@ -708,7 +703,11 @@ export default {
 							</span>
 							<span v-else>{{ autoQuery ? "Refresh" : "Submit" }}</span>
 						</button>
-						<span v-if="sendQueryError" class="alert alert-warning" role="alert">{{sendQueryError}}</span>
+						<!--
+							No inline error next to the button: a failed query is surfaced by the parent's
+							prominent "Query is broken" banner over the grid (fed by tabularView.error), and a
+							second copy here would only clutter the Submit row.
+						-->
 					</div>
 
 					<div class="form-check form-switch">
