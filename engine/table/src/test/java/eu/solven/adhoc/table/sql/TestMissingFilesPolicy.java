@@ -40,7 +40,8 @@ public class TestMissingFilesPolicy {
 
 	@Test
 	public void testIsMissingFilesError_unrelated() {
-		Assertions.assertThat(MissingFilesPolicy.isMissingFilesError(new DataAccessException("Syntax error"))).isFalse();
+		Assertions.assertThat(MissingFilesPolicy.isMissingFilesError(new DataAccessException("Syntax error")))
+				.isFalse();
 		Assertions.assertThat(MissingFilesPolicy.isMissingFilesError(new DataAccessException(null))).isFalse();
 	}
 

@@ -105,7 +105,8 @@ public final class JooqColumnsHelpers {
 	}
 
 	/**
-	 * Memoizing decorator over another {@link IJooqColumnsResolver}. Exposed via {@link #caching(IJooqColumnsResolver)}.
+	 * Memoizing decorator over another {@link IJooqColumnsResolver}. Exposed via
+	 * {@link #caching(IJooqColumnsResolver)}.
 	 */
 	@RequiredArgsConstructor
 	static final class CachingColumnsResolver implements IJooqColumnsResolver, IHasCache {

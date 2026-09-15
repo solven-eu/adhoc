@@ -29,9 +29,9 @@ import org.jspecify.annotations.Nullable;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * How a {@link JooqTableWrapper} reacts when the SQL engine reports that a file-backed table matches not a single
- * file. The typical case is DuckDB reading a glob of Parquet files (e.g. {@code read_parquet('folder/*.parquet')})
- * while the folder is empty or absent: DuckDB fails with {@code IO Error: No files found that match the pattern}.
+ * How a {@link JooqTableWrapper} reacts when the SQL engine reports that a file-backed table matches not a single file.
+ * The typical case is DuckDB reading a glob of Parquet files (e.g. {@code read_parquet('folder/*.parquet')}) while the
+ * folder is empty or absent: DuckDB fails with {@code IO Error: No files found that match the pattern}.
  * <p>
  * Tolerant policies turn that failure into "the table is empty": column discovery reports no column, queries stream no
  * row, and join-pruning probes resolve no column.

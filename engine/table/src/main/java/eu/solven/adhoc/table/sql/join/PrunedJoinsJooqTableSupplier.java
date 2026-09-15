@@ -209,7 +209,8 @@ public class PrunedJoinsJooqTableSupplier implements IJooqTableSupplier, IHasCac
 	/**
 	 * Drops the column→alias index, the per-query needed-alias cache, the per-alias resolver cache, and the entries of
 	 * {@link #columnsResolver} when it implements {@link IHasCache}. Call this after a late {@code leftJoin} on the
-	 * underlying schema, after swapping {@link #columnsResolver}, or after the joined tables' columns change at runtime.
+	 * underlying schema, after swapping {@link #columnsResolver}, or after the joined tables' columns change at
+	 * runtime.
 	 */
 	@Override
 	@SuppressWarnings("PMD.NullAssignment")
