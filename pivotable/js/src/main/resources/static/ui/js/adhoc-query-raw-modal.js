@@ -384,8 +384,7 @@ export default {
 										style="overflow-y: scroll; cursor: not-allowed;"
 										title="Read-only — click Edit JSON to modify"
 									>
-{{queryJson}}</pre
-									>
+{{queryJson}}</pre>
 								</div>
 							</div>
 
@@ -413,8 +412,7 @@ export default {
 										style="overflow-y: scroll; cursor: not-allowed;"
 										title="Read-only — MDX derived from the queryModel (informative only)"
 									>
-{{mdxString}}</pre
-									>
+{{mdxString}}</pre>
 								</div>
 							</div>
 
@@ -441,8 +439,7 @@ export default {
 									style="max-height: 200px; overflow-y: scroll; cursor: not-allowed;"
 									title="Read-only — Mermaid source derived from the queryModel (informative only)"
 								>
-{{mermaidSource}}</pre
-								>
+{{mermaidSource}}</pre>
 							</div>
 
 							<!--
@@ -462,8 +459,7 @@ export default {
 										style="overflow-y: scroll; cursor: not-allowed;"
 										title="Read-only — SQL derived from the queryModel (informative only)"
 									>
-{{sqlString}}</pre
-									>
+{{sqlString}}</pre>
 								</div>
 							</div>
 
@@ -497,8 +493,7 @@ export default {
 										style="max-height: 240px; overflow-y: scroll; cursor: not-allowed;"
 										data-testid="share-json"
 									>
-{{shareJson}}</pre
-									>
+{{shareJson}}</pre>
 									<button
 										type="button"
 										class="btn btn-outline-primary btn-sm position-absolute top-0 end-0 m-2"
