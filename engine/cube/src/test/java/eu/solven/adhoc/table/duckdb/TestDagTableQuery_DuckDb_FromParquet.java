@@ -43,6 +43,7 @@ import eu.solven.adhoc.engine.query.CubeQuery;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
+import eu.solven.adhoc.table.sql.MissingFilesPolicy;
 import eu.solven.adhoc.table.sql.duckdb.DuckDBHelper;
 
 public class TestDagTableQuery_DuckDb_FromParquet extends ATestDagDuckDb implements IAdhocTestConstants {
@@ -60,9 +61,19 @@ public class TestDagTableQuery_DuckDb_FromParquet extends ATestDagDuckDb impleme
 
 	@Override
 	public ITableWrapper makeTable() {
+		return makeTable(MissingFilesPolicy.WARN);
+	}
+
+	/**
+	 * @return a table over the same Parquet path, reacting to missing files with {@code missingFilesPolicy}
+	 */
+	protected ITableWrapper makeTable(MissingFilesPolicy missingFilesPolicy) {
 		String tableName = "%s".formatted(tmpParquetPath.toAbsolutePath());
 		return new JooqTableWrapper(tableName,
-				DuckDBHelper.parametersBuilder(dslSupplier).tableName(tableName).build());
+				DuckDBHelper.parametersBuilder(dslSupplier)
+						.tableName(tableName)
+						.missingFilesPolicy(missingFilesPolicy)
+						.build());
 	}
 
 	@AfterEach
@@ -82,7 +93,23 @@ public class TestDagTableQuery_DuckDb_FromParquet extends ATestDagDuckDb impleme
 	public void testTableDoesNotExists() throws IOException {
 		Files.delete(tmpParquetPath);
 
-		Assertions.assertThatThrownBy(() -> table().streamSlices(qK1).toList())
+		// Default policy: behave as an empty table
+		Assertions.assertThat(table().streamSlices(qK1).toList()).isEmpty();
+	}
+
+	@Test
+	public void testTableDoesNotExists_silent() throws IOException {
+		Files.delete(tmpParquetPath);
+
+		Assertions.assertThat(makeTable(MissingFilesPolicy.SILENT).streamSlices(qK1).toList()).isEmpty();
+	}
+
+	@Test
+	public void testTableDoesNotExists_throw() throws IOException {
+		Files.delete(tmpParquetPath);
+
+		// DuckDB default behavior
+		Assertions.assertThatThrownBy(() -> makeTable(MissingFilesPolicy.THROW).streamSlices(qK1).toList())
 				.isInstanceOf(DataAccessException.class)
 				.hasMessageContaining("IO Error: No files found that match the pattern");
 	}
@@ -93,6 +120,16 @@ public class TestDagTableQuery_DuckDb_FromParquet extends ATestDagDuckDb impleme
 
 		// This should not throw not to prevent Pivotable from loading
 		Assertions.assertThat(table().getColumnTypes()).isEmpty();
+	}
+
+	@Test
+	public void testGetColumns_TableDoesNotExists_throw() throws IOException {
+		Files.delete(tmpParquetPath);
+
+		// The fields cache wraps the loader failure: the DuckDB message is somewhere in the causes
+		Assertions.assertThatThrownBy(() -> makeTable(MissingFilesPolicy.THROW).getColumnTypes())
+				.isInstanceOf(RuntimeException.class)
+				.hasStackTraceContaining("IO Error: No files found that match the pattern");
 	}
 
 	@Test

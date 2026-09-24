@@ -180,14 +180,8 @@ public class JooqTableColumnsWrapper {
 				return List.copyOf(fields);
 			}
 		} catch (DataAccessException e) {
-			if (Objects.requireNonNullElse(e.getMessage(), "")
-					.contains("IO Error: No files found that match the pattern")) {
-				if (log.isDebugEnabled()) {
-					log.warn("No column for table=`{}` due to missing files", tableName, e);
-				} else {
-					// The failure may be missing anywhere in the SQL (e.g. the main `FROM`, or any `JOIN`)
-					log.warn("No column for table=`{}` due to missing files. sqlMsg={}", tableName, e.getMessage());
-				}
+			if (MissingFilesPolicy.isMissingFilesError(e)) {
+				tableParameters.getMissingFilesPolicy().onMissingFiles(e, "columns of table=`" + tableName + "`");
 				return Collections.emptyList();
 			} else {
 				throw e;

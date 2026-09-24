@@ -40,6 +40,7 @@ import org.jooq.Field;
 import org.jooq.Record;
 import org.jooq.Table;
 import org.jooq.TableLike;
+import org.jooq.exception.DataAccessException;
 import org.jooq.impl.DSL;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
@@ -59,6 +60,7 @@ import eu.solven.adhoc.table.sql.IJooqColumnsResolver;
 import eu.solven.adhoc.table.sql.IJooqTableSupplier;
 import eu.solven.adhoc.table.sql.JooqColumnsHelpers;
 import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
+import eu.solven.adhoc.table.sql.MissingFilesPolicy;
 import eu.solven.adhoc.table.sql.join.PrunedJoinsJooqTableSupplierBuilder.JoinNode;
 import eu.solven.adhoc.util.IHasCache;
 import lombok.Builder;
@@ -102,16 +104,25 @@ public class PrunedJoinsJooqTableSupplier implements IJooqTableSupplier, IHasCac
 
 	/**
 	 * Strategy used to discover a join's columns when no {@code columnsOverride} was supplied on the {@link JoinNode}.
-	 * Defaults to {@link JooqColumnsHelpers#fromJooqFields()}. Swap in
-	 * {@link JooqColumnsHelpers#dbProbe(eu.solven.adhoc.table.sql.IDSLSupplier)} when the jOOQ tables carry no declared
-	 * fields. Non-final on purpose: {@link JooqTableWrapperParameters.JooqTableWrapperParametersBuilder#tableSupplier}
-	 * auto-replaces the default with a DB probe wired to the params' {@code dslSupplier} so users get correct pruning
-	 * out of the box without an explicit resolver.
+	 * Defaults to {@link JooqColumnsHelpers#caching(IJooqColumnsResolver)} over {@link JooqColumnsHelpers#dbProbe()},
+	 * so a table joined under several aliases is probed once. Swap in {@link JooqColumnsHelpers#fromJooqFields()} when
+	 * the jOOQ tables carry their declared fields. When the resolver implements {@link IHasCache},
+	 * {@link #invalidateAll()} drops its entries too.
 	 */
 	@NonNull
 	@Default
 	@Getter
-	private IJooqColumnsResolver columnsResolver = JooqColumnsHelpers.dbProbe();
+	private IJooqColumnsResolver columnsResolver = JooqColumnsHelpers.caching(JooqColumnsHelpers.dbProbe());
+
+	/**
+	 * How to react when {@link #columnsResolver} fails because a file-backed table matches not a single file. Tolerant
+	 * policies leave the alias with no resolved column, hence not prunable. Mirrors
+	 * {@link JooqTableWrapperParameters#getMissingFilesPolicy()}.
+	 */
+	@NonNull
+	@Default
+	@Getter
+	private MissingFilesPolicy missingFilesPolicy = MissingFilesPolicy.WARN;
 
 	/**
 	 * Executor used by {@link #columnToAlias()} to resolve each {@link JoinNode}'s column set in parallel during the
@@ -196,9 +207,10 @@ public class PrunedJoinsJooqTableSupplier implements IJooqTableSupplier, IHasCac
 	}
 
 	/**
-	 * Drops the column→alias index, the per-query needed-alias cache, and the per-alias resolver cache. Call this after
-	 * a late {@code leftJoin} on the underlying schema, after swapping {@link #columnsResolver}, or after the joined
-	 * tables' columns change at runtime.
+	 * Drops the column→alias index, the per-query needed-alias cache, the per-alias resolver cache, and the entries of
+	 * {@link #columnsResolver} when it implements {@link IHasCache}. Call this after a late {@code leftJoin} on the
+	 * underlying schema, after swapping {@link #columnsResolver}, or after the joined tables' columns change at
+	 * runtime.
 	 */
 	@Override
 	@SuppressWarnings("PMD.NullAssignment")
@@ -207,6 +219,9 @@ public class PrunedJoinsJooqTableSupplier implements IJooqTableSupplier, IHasCac
 		fullTableCache = null;
 		neededAliasCache.invalidateAll();
 		resolvedColumnsByAlias.clear();
+		if (columnsResolver instanceof IHasCache cachingResolver) {
+			cachingResolver.invalidateAll();
+		}
 	}
 
 	// ── Pruning algorithm ───────────────────────────────────────────────────
@@ -382,7 +397,7 @@ public class PrunedJoinsJooqTableSupplier implements IJooqTableSupplier, IHasCac
 			if (override != null && !override.isEmpty()) {
 				return override;
 			}
-			List<Field<?>> fields = columnsResolver.columnsOf(schema.getDslSupplier(), schema.getBaseTable());
+			List<Field<?>> fields = probeColumns(schema.getBaseTable(), alias);
 			if (fields == null || fields.isEmpty()) {
 				log.debug(
 						"Join-pruning: columnsResolver returned no fields for baseTable={} (alias={}) —"
@@ -411,7 +426,7 @@ public class PrunedJoinsJooqTableSupplier implements IJooqTableSupplier, IHasCac
 			return node.getColumnsOverride();
 		}
 		return resolvedColumnsByAlias.computeIfAbsent(node.getAlias(), alias -> {
-			List<Field<?>> fields = columnsResolver.columnsOf(schema.getDslSupplier(), node.getJoinedTable());
+			List<Field<?>> fields = probeColumns(node.getJoinedTable(), alias);
 			if (fields == null || fields.isEmpty()) {
 				log.debug("Join-pruning: columnsResolver returned no fields for joinedTable={} (alias={}) —"
 						+ " this join will not be prunable unless a columnsOverride is supplied on leftJoin(...)",
@@ -423,6 +438,25 @@ public class PrunedJoinsJooqTableSupplier implements IJooqTableSupplier, IHasCac
 			// It is actually done in `columnToAlias`
 			return fields.stream().map(Field::getName).collect(ImmutableSet.toImmutableSet());
 		});
+	}
+
+	/**
+	 * Runs {@link #columnsResolver} over {@code table}, honouring {@link #missingFilesPolicy} when the probe fails
+	 * because the table matches not a single file.
+	 *
+	 * @return the resolved fields, or an empty list when the failure is tolerated by the policy
+	 */
+	protected List<Field<?>> probeColumns(TableLike<?> table, String alias) {
+		try {
+			return columnsResolver.columnsOf(schema.getDslSupplier(), table);
+		} catch (DataAccessException e) {
+			if (MissingFilesPolicy.isMissingFilesError(e)) {
+				missingFilesPolicy.onMissingFiles(e, "join-pruning columns of alias=" + alias + " table=" + table);
+				return List.of();
+			} else {
+				throw e;
+			}
+		}
 	}
 
 	// ── Small helpers ───────────────────────────────────────────────────────

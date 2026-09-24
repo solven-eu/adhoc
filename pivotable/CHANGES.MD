@@ -15,6 +15,7 @@ Bump to 0.1.0 to mark the move to JDK 25 (still 0.x — Pivotable is not yet API
 - Grid measure header menu: new "Keep only this measure" action next to "Remove measure", narrowing the selection to the measure acted on. Only currently-selected measures are cleared, so it can only narrow what the grid shows. Logic lives in the pure `adhoc-query-keep-only-measure.js`, covered by `unit-tests/keep-only-measure.spec.js`.
 
 ### Changed
+- A failed query is now reported only by the red "Query is broken" banner over the grid. The yellow inline alert that used to appear next to the Submit/Refresh button (`adhoc-query-executor.js`) duplicated the same message and overlapped the surrounding controls; it is removed along with its `sendQueryError` state.
 - Wizard tag selector (`adhoc-query-wizard-tags.js`): the dropdown is capped at `80vh` and scrolls, instead of growing past the bottom of the viewport on a cube with many tags. Each tag now occupies a full-width `dropdown-item` button, so the whole row toggles the tag rather than the badge alone being the target; the toggle stays open across several picks via `data-bs-auto-close="outside"`. The add/remove logic moved to the pure `adhoc-query-wizard-tag-toggle.js` shared by the row and the badge, covered by `unit-tests/wizard-tag-toggle.spec.js`.
 
 ### Added

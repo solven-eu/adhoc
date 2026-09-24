@@ -33,22 +33,27 @@ import org.jooq.TableLike;
 import org.jooq.conf.RenderFormatting;
 import org.jooq.impl.DSL;
 
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableList;
 
 import eu.solven.adhoc.table.sql.join.PrunedJoinsJooqTableSupplierBuilder;
 import eu.solven.adhoc.util.Blocking;
+import eu.solven.adhoc.util.IHasCache;
 import eu.solven.pepper.core.PepperLogHelper;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Factory helpers for {@link IJooqColumnsResolver}. Two strategies are provided:
+ * Factory helpers for {@link IJooqColumnsResolver}. Three strategies and one decorator are provided:
  * <ul>
  * <li>{@link #fromJooqFields()} — reads {@code table.asTable().fields()} directly. Works for code-generated or
  * {@code VALUES}-based tables.</li>
- * <li>{@link #dbProbe(IDSLSupplier)} — runs a {@code SELECT * LIMIT 0} probe through an {@link IDSLSupplier}. Required
- * when the jOOQ {@link TableLike} has no declared fields (typical for plain {@code DSL.table(Name)}).</li>
+ * <li>{@link #dbProbe()} — runs a {@code SELECT * LIMIT 0} probe through an {@link IDSLSupplier}. Required when the
+ * jOOQ {@link TableLike} has no declared fields (typical for plain {@code DSL.table(Name)}).</li>
+ * <li>{@link #predefinedSql(Function)} — runs a caller-supplied raw SQL probe.</li>
+ * <li>{@link #caching(IJooqColumnsResolver)} — memoizes another resolver's results per table.</li>
  * </ul>
  *
  * @author Benoit Lacelle
@@ -65,12 +70,24 @@ public final class JooqColumnsHelpers {
 	}
 
 	/**
-	 * @return a fresh {@link IJooqColumnsResolver} running {@code SELECT * FROM <table> LIMIT 0} per lookup. Probe
-	 *         results are cached upstream by {@link PrunedJoinsJooqTableSupplierBuilder} and by
-	 *         {@link JooqTableWrapper}; this resolver itself performs no caching.
+	 * @return a fresh {@link IJooqColumnsResolver} running {@code SELECT * FROM <table> LIMIT 0} per lookup. This
+	 *         resolver itself performs no caching: wrap it with {@link #caching(IJooqColumnsResolver)}, or rely on the
+	 *         caches of {@link PrunedJoinsJooqTableSupplierBuilder} and {@link JooqTableWrapper}.
 	 */
 	public static IJooqColumnsResolver dbProbe() {
 		return new DbProbeResolver();
+	}
+
+	/**
+	 * @param delegate
+	 *            the resolver doing the actual work, typically {@link #dbProbe()}
+	 * @return an {@link IJooqColumnsResolver} memoizing {@code delegate}'s non-empty results per
+	 *         {@code (dslSupplier, table)}. Failures and empty results are not cached, so a transient state (e.g.
+	 *         missing files) is re-probed on the next call. The returned resolver implements {@link IHasCache} to drop
+	 *         the memoized results.
+	 */
+	public static IJooqColumnsResolver caching(IJooqColumnsResolver delegate) {
+		return new CachingColumnsResolver(delegate);
 	}
 
 	/**
@@ -85,6 +102,47 @@ public final class JooqColumnsHelpers {
 	 */
 	public static IJooqColumnsResolver predefinedSql(Function<TableLike<?>, String> sqlBuilder) {
 		return new PredefinedSqlResolver(sqlBuilder);
+	}
+
+	/**
+	 * Memoizing decorator over another {@link IJooqColumnsResolver}. Exposed via
+	 * {@link #caching(IJooqColumnsResolver)}.
+	 */
+	@RequiredArgsConstructor
+	static final class CachingColumnsResolver implements IJooqColumnsResolver, IHasCache {
+		private final IJooqColumnsResolver delegate;
+
+		private final Cache<ProbeKey, List<Field<?>>> cache = CacheBuilder.newBuilder().build();
+
+		/**
+		 * jOOQ {@link TableLike} equality relies on the rendered SQL, which is the identity of a probe: two distinct
+		 * objects rendering the same table share the entry.
+		 */
+		private record ProbeKey(IDSLSupplier dslSupplier, TableLike<?> table) {
+		}
+
+		@Blocking
+		@Override
+		public List<Field<?>> columnsOf(IDSLSupplier dslSupplier, TableLike<?> table) {
+			ProbeKey key = new ProbeKey(dslSupplier, table);
+			List<Field<?>> cached = cache.getIfPresent(key);
+			if (cached != null) {
+				return cached;
+			}
+
+			// Not `Cache.get(key, loader)`: it would wrap the delegate's failures (e.g. a `DataAccessException` on
+			// missing files) into an `UncheckedExecutionException`, hiding them from callers reacting to them
+			List<Field<?>> fields = delegate.columnsOf(dslSupplier, table);
+			if (fields != null && !fields.isEmpty()) {
+				cache.put(key, fields);
+			}
+			return fields;
+		}
+
+		@Override
+		public void invalidateAll() {
+			cache.invalidateAll();
+		}
 	}
 
 	/**
