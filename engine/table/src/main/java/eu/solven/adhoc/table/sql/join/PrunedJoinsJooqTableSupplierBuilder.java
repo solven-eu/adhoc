@@ -30,6 +30,10 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 
+import eu.solven.adhoc.table.sql.IJooqColumnsResolver;
+import eu.solven.adhoc.table.sql.JooqColumnsHelpers;
+import eu.solven.adhoc.table.sql.MissingFilesPolicy;
+import lombok.Setter;
 import org.jooq.Condition;
 import org.jooq.Name;
 import org.jooq.Record;
@@ -91,17 +95,18 @@ import lombok.extern.slf4j.Slf4j;
  * @author Benoit Lacelle
  */
 @Slf4j
+//@Builder
 public class PrunedJoinsJooqTableSupplierBuilder extends JooqTableSupplierBuilder {
 
 	/**
-	 * Declaration order matters: when materialising, joins are folded onto the base in the order they were declared.
+	 * Declaration order matters: when materializing, joins are folded onto the base in the order they were declared.
 	 */
 	@Getter
 	private final List<JoinNode> joinNodes = new ArrayList<>();
 
 	/**
 	 * Optional explicit list of columns the BASE table provides — escape hatch mirroring per-join
-	 * {@code providedColumns}. Honoured by {@link PrunedJoinsJooqTableSupplier#resolveBaseColumns()}: when non-empty,
+	 * {@code providedColumns}. Honored by {@link PrunedJoinsJooqTableSupplier#resolveBaseColumns()}: when non-empty,
 	 * the supplier uses this set verbatim and skips the resolver. Useful when the resolver cannot discover the base
 	 * table's fields (typical with {@code DSL.table(name)} that carries no declared fields and no DB probe).
 	 * <p>
@@ -110,6 +115,17 @@ public class PrunedJoinsJooqTableSupplierBuilder extends JooqTableSupplierBuilde
 	@Getter
 	@SuppressWarnings("PMD.AvoidFieldNameMatchingMethodName")
 	private Set<String> baseProvidedColumns = ImmutableSet.of();
+
+	@NonNull
+//	@Default
+//	@Setter
+	@Getter
+	private IJooqColumnsResolver columnsResolver = JooqColumnsHelpers.caching(JooqColumnsHelpers.dbProbe());
+
+	@NonNull
+//	@Default
+//	@Setter
+	private MissingFilesPolicy missingFilesPolicy = MissingFilesPolicy.WARN;
 
 	/**
 	 * Declare the columns the base table provides. Subsequent {@code build()} / re-probes will see them. Calling this
@@ -183,6 +199,16 @@ public class PrunedJoinsJooqTableSupplierBuilder extends JooqTableSupplierBuilde
 	 */
 	public String getBaseTableAlias() {
 		return baseTableAlias;
+	}
+
+	public PrunedJoinsJooqTableSupplierBuilder columnsResolver(IJooqColumnsResolver columnsResolver) {
+		this.columnsResolver = columnsResolver;
+		return this;
+	}
+
+	public PrunedJoinsJooqTableSupplierBuilder missingFilesPolicy(MissingFilesPolicy missingFilesPolicy) {
+		this.missingFilesPolicy = missingFilesPolicy;
+		return this;
 	}
 
 	// ── Recording joins (override the high-level path only) ─────────────────
@@ -318,7 +344,10 @@ public class PrunedJoinsJooqTableSupplierBuilder extends JooqTableSupplierBuilde
 	 */
 	@Override
 	public PrunedJoinsJooqTableSupplier build() {
-		return PrunedJoinsJooqTableSupplier.builder().schema(this).build();
+        return PrunedJoinsJooqTableSupplier.builder().schema(this)
+				.columnsResolver(columnsResolver)
+				.missingFilesPolicy(missingFilesPolicy)
+				.build();
 	}
 
 	@Override
