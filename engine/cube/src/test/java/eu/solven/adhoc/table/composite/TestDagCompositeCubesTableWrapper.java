@@ -29,6 +29,12 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import eu.solven.adhoc.engine.step.ICubeQuery;
+import eu.solven.adhoc.measure.sum.EmptyAggregation;
+import eu.solven.adhoc.model.measure.ReferencedMeasure;
+import eu.solven.adhoc.query.AdhocSubQuery;
+import eu.solven.adhoc.table.IQueryPod;
+import eu.solven.adhoc.table.SimpleQueryPod;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -400,6 +406,43 @@ public class TestDagCompositeCubesTableWrapper extends ATestDagRaw implements IA
 				Assertions.assertThat(mapBased.getCoordinatesToValues()).isEmpty();
 			}
 		}
+	}
+
+	@Test
+	public void testIsEligible_empty_filterSlicer() {
+		String tableName1 = "someTableName1";
+		InMemoryTable table1 = InMemoryTable.builder().name(tableName1).build();
+
+		String tableName2 = "someTableName2";
+		InMemoryTable table2 = InMemoryTable.builder().name(tableName2).build();
+
+		CubeWrapper cube1;
+		{
+			UnsafeMeasureForest measureBag = UnsafeMeasureForest.builder().name(tableName1).build();
+			measureBag.addMeasure(k1Sum);
+			cube1 = wrapInCube(measureBag, table1);
+		}
+		CubeWrapper cube2;
+		{
+			UnsafeMeasureForest measureBag = UnsafeMeasureForest.builder().name(tableName2).build();
+			measureBag.addMeasure(k1Sum);
+			cube2 = wrapInCube(measureBag, table2);
+		}
+
+		CompositeCubesTableWrapper compositeCubesTable =
+				CompositeCubesTableWrapper.builder().cube(cube1).cube(cube2).build();
+
+		TableQueryV2 queryV2 = TableQueryV2.builder().filter(AndFilter.and(CompositeCubesTableWrapper.DEFAULT_SLICER, "someTableName2" + ".cube"))
+				.aggregator(FilteredAggregator.builder().aggregator(Aggregator.empty()).build())
+				.build();
+		boolean sliceOtherOnEmpty = compositeCubesTable.isEligible(cube1, queryV2);
+
+		Assertions.assertThat(sliceOtherOnEmpty)
+				.isTrue();
+
+		Map<String, ICubeQuery> subQueries = compositeCubesTable.makeSubQueries(SimpleQueryPod.forTable(compositeCubesTable), queryV2);
+
+		Assertions.assertThat(subQueries).hasSize(1).containsKey("someTableName2" + ".cube");
 	}
 
 	@Test
