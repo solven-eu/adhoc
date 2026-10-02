@@ -23,17 +23,12 @@
 package eu.solven.adhoc.beta.schema;
 
 import java.time.Duration;
-import java.util.Collection;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.TreeMap;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.stream.Collectors;
 
 import org.jspecify.annotations.NonNull;
 import org.springframework.core.env.Environment;
@@ -117,12 +112,13 @@ public class AdhocSchema implements IAdhocSchema, IAdhocSchemaRegistrer {
 				if (cube == null) {
 					return ImmutableList.of();
 				} else {
+					// BEWARE Next row can be slow
 					Collection<ColumnMetadata> rawColumns = cube.getColumns();
 
 					ColumnIdentifier columnIdTemplate = ColumnIdentifier.builder()
 							.isCubeElseTable(true)
 							.holder(cubeName)
-							.column("netYetDefined")
+							.column("notYetDefined")
 							.build();
 
 					return rawColumns.stream().map(c -> enrichColumn(columnIdTemplate, c)).toList();
@@ -221,17 +217,48 @@ public class AdhocSchema implements IAdhocSchema, IAdhocSchemaRegistrer {
 		boolean hasAnyFilter =
 				query.getCube().isPresent() || query.getForest().isPresent() || query.getTable().isPresent();
 
-		nameToCube.entrySet()
-				.stream()
-				.filter(c -> isRequested(query.getCube(), allIfEmpty, hasAnyFilter, c))
-				.forEach(c -> {
-					String cubeName = c.getKey();
-					ICubeWrapper cube = c.getValue();
+		// Fetch columns each cube in parallel as it can be slow
+		List<CompletableFuture<? extends Map.Entry<String, ColumnarMetadata>>> cubeToColumns =
+				nameToCube.entrySet()
+						.stream()
+						.filter(c -> isRequested(query.getCube(), allIfEmpty, hasAnyFilter, c))
+						.map(c -> CompletableFuture.supplyAsync(
+								() -> {
+									String cubeName = c.getKey();
+
+									ColumnarMetadata columns;
+									try {
+										// BEWARE Next row can be slow
+										columns = ColumnarMetadata.from(cacheCubeToColumnToType.getUnchecked(cubeName)).build();
+									} catch (RuntimeException e) {
+										if (AdhocUnsafe.isFailFast()) {
+											throw e;
+										} else {
+											log.warn("Issue fetching columns from cube={}", cubeName, e);
+											columns = ColumnarMetadata.from(Map.of("error", e.getClass())).build();
+										}
+									}
+
+									return new AbstractMap.SimpleEntry<>(cubeName, columns);
+								},
+								AdhocUnsafe.getMixedPool()
+						))
+						.collect(Collectors.toList());
+
+		// Join the slow column fetching through cubes
+		CompletableFuture.allOf(cubeToColumns.toArray(new CompletableFuture[0])).join();
+
+		cubeToColumns
+				.forEach(cubeTask -> {
+					Map.Entry<String, ColumnarMetadata> joined = cubeTask.join();
+					String cubeName = joined.getKey();
+					ICubeWrapper cube = nameToCube.get(cubeName);
 
 					CubeSchemaMetadata.CubeSchemaMetadataBuilder cubeSchema = CubeSchemaMetadata.builder();
 
 					ColumnarMetadata columns;
 					try {
+						// BEWARE Next row can be slow
 						columns = ColumnarMetadata.from(cacheCubeToColumnToType.getUnchecked(cubeName)).build();
 					} catch (RuntimeException e) {
 						if (AdhocUnsafe.isFailFast()) {

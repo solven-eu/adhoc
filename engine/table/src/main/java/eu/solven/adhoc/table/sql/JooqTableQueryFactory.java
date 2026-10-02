@@ -113,7 +113,7 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 	/**
 	 * Optional per-query table provider. When set, {@link #prepareSliceQuery(TableQueryV4)} substitutes the
 	 * {@link #table} field with {@link IJooqTableSupplier#tableFor(TableQueryV4)}. When {@code null}, the constant
-	 * {@link #table} is always used (current behaviour).
+	 * {@link #table} is always used (current behavior).
 	 */
 	@NonNull
 	final IJooqTableSupplier tableSupplier;

@@ -103,7 +103,7 @@ public class AdhocColumnUnsafe {
 	public static void checkColumnSize(long size) {
 		if (size >= getLimitColumnSize()) {
 			throw new IllegalStateException(
-					"Can not add as size=%s and limit=%s Consider `AdhocUnsafe.setLimitColumnSize(X)` or -Dadhoc.limitColumnSize=X"
+					"Can not add as size=%s and limit=%s Consider `AdhocColumnUnsafe.setLimitColumnSize(X)` or -Dadhoc.limitColumnSize=X"
 							.formatted(size, AdhocColumnUnsafe.getLimitColumnSize()));
 		}
 	}

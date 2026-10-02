@@ -192,9 +192,12 @@ public final class JooqColumnsHelpers {
 			// Log in INFO as the round-trip may be slow on large-schema JDBC drivers.
 			SelectLimitPercentStep<Record> query = dslContext.select().from(table).limit(0);
 
-			log.info("Fetching fields via SQL=`{}`", PepperLogHelper.lazyToString(() -> escapeEOL(query.toString())));
+			Object lazySQLAsString = PepperLogHelper.lazyToString(() -> escapeEOL(query.toString()));
+			log.info("Fetching fields via SQL=`{}`", lazySQLAsString);
+			Field<?>[] fields = query.fetch().fields();
+			log.info("Fetched fields via SQL=`{}`", lazySQLAsString);
 
-			return ImmutableList.copyOf(query.fetch().fields());
+			return ImmutableList.copyOf(fields);
 		}
 	}
 

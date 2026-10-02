@@ -29,7 +29,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
+import eu.solven.adhoc.query.table.TableQueryV4;
 import eu.solven.adhoc.table.sql.IJooqColumnsResolver;
 import eu.solven.adhoc.table.sql.JooqColumnsHelpers;
 import eu.solven.adhoc.table.sql.MissingFilesPolicy;
@@ -127,6 +129,10 @@ public class PrunedJoinsJooqTableSupplierBuilder extends JooqTableSupplierBuilde
 //	@Setter
 	private MissingFilesPolicy missingFilesPolicy = MissingFilesPolicy.WARN;
 
+	@NonNull
+//	@Default
+	private Function<TableQueryV4, TableQueryV4> queryPreprocessor = Function.identity();
+
 	/**
 	 * Declare the columns the base table provides. Subsequent {@code build()} / re-probes will see them. Calling this
 	 * after queries have flowed requires {@link PrunedJoinsJooqTableSupplier#invalidateAll()} to drop the stale index.
@@ -208,6 +214,11 @@ public class PrunedJoinsJooqTableSupplierBuilder extends JooqTableSupplierBuilde
 
 	public PrunedJoinsJooqTableSupplierBuilder missingFilesPolicy(MissingFilesPolicy missingFilesPolicy) {
 		this.missingFilesPolicy = missingFilesPolicy;
+		return this;
+	}
+
+	public PrunedJoinsJooqTableSupplierBuilder queryPreprocessor(Function<TableQueryV4, TableQueryV4> queryPreprocessor) {
+		this.queryPreprocessor = queryPreprocessor;
 		return this;
 	}
 
@@ -347,6 +358,7 @@ public class PrunedJoinsJooqTableSupplierBuilder extends JooqTableSupplierBuilde
         return PrunedJoinsJooqTableSupplier.builder().schema(this)
 				.columnsResolver(columnsResolver)
 				.missingFilesPolicy(missingFilesPolicy)
+				.queryPreprocessor(queryPreprocessor)
 				.build();
 	}
 

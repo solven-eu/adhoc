@@ -34,6 +34,7 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.ExecutionException;
+import java.util.function.Function;
 import java.util.function.Predicate;
 
 import org.jooq.Field;
@@ -162,7 +163,7 @@ public class PrunedJoinsJooqTableSupplier implements IJooqTableSupplier, IHasCac
 
 	/**
 	 * Bounded cache keyed by referenced-column set → needed-alias set. Per the design note, the {@code Table<Record>}
-	 * rebuild cost is negligible, so we cache only the pruning decision, not the materialised table.
+	 * rebuild cost is negligible, so we cache only the pruning decision, not the materialized table.
 	 */
 	private final Cache<Set<String>, Set<String>> neededAliasCache =
 			CacheBuilder.newBuilder().maximumSize(MAX_CACHE_ENTRY).build();
@@ -170,17 +171,22 @@ public class PrunedJoinsJooqTableSupplier implements IJooqTableSupplier, IHasCac
 	/** Memoised full-joins table (all joins included). Invalidated whenever a new {@code leftJoin} is declared. */
 	private @Nullable Table<Record> fullTableCache;
 
+	@Default
+	private Function<TableQueryV4, TableQueryV4> queryPreprocessor = Function.identity();
+
 	// ── IJooqTableSupplier ──────────────────────────────────────────────────
 
 	@Override
 	public TableLike<?> tableFor(TableQueryV4 tableQuery) {
-		Set<String> referenced = ImmutableSet.copyOf(collectReferencedColumns(tableQuery));
+		TableQueryV4 processed = queryPreprocessor.apply(tableQuery);
+
+		Set<String> referenced = ImmutableSet.copyOf(collectReferencedColumns(processed));
 		Set<String> neededAliases;
 		try {
 			neededAliases =
 					neededAliasCache.get(referenced, () -> ImmutableSet.copyOf(computeNeededAliases(referenced)));
 		} catch (ExecutionException e) {
-			throw new IllegalArgumentException("Issue with t=" + tableQuery, e);
+			throw new IllegalArgumentException("Issue with t=" + tableQuery + " processed=" + processed, e);
 		}
 		return schema.materialise(neededAliases);
 	}
