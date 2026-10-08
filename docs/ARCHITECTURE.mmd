@@ -102,6 +102,7 @@ classDiagram
         IJooqColumnsResolver columnsResolver
         IDSLSupplier dslSupplier
         IFilterOptimizerFactory filterOptimizerFactory
+        MissingFilesPolicy missingFilesPolicy
         IOperatorFactory operatorFactory
         IJooqTableSupplier tableSupplier
     }
@@ -109,11 +110,14 @@ classDiagram
     }
     class MeasureForest {
     }
+    class MissingFilesPolicy {
+    }
     class NoopQueryPlanRegistry {
     }
     class PrunedJoinsJooqTableSupplier {
         IJooqColumnsResolver columnsResolver
         IExpressionColumnExtractor expressionColumnExtractor
+        MissingFilesPolicy missingFilesPolicy
         PrunedJoinsJooqTableSupplierBuilder schema
     }
     class PrunedJoinsJooqTableSupplierBuilder {
@@ -204,6 +208,8 @@ classDiagram
     StandardQueryPreparator *-- IImplicitOptions : implicitOptions
     TableQueryEngineFactory *-- TableQueryInducerFactory : inducerFactory
     ColumnsManager *-- StandardMissingColumnManager : missingColumnManager
+    JooqTableWrapperParameters *-- MissingFilesPolicy : missingFilesPolicy
+    PrunedJoinsJooqTableSupplier *-- MissingFilesPolicy : missingFilesPolicy
     AdhocFactories *-- IOperatorFactory : operatorFactory
     JooqTableWrapperParameters *-- IOperatorFactory : operatorFactory
     TableQueryEngineFactory *-- TableQueryFactoryFactory : queryFactoryFactory
