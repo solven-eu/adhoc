@@ -31,7 +31,7 @@ import java.util.Set;
 
 import eu.solven.adhoc.engine.step.ICubeQuery;
 import eu.solven.adhoc.measure.sum.EmptyAggregation;
-import eu.solven.adhoc.model.measure.ReferencedMeasure;
+import eu.solven.adhoc.model.measure.*;
 import eu.solven.adhoc.query.AdhocSubQuery;
 import eu.solven.adhoc.table.IQueryPod;
 import eu.solven.adhoc.table.SimpleQueryPod;
@@ -64,9 +64,6 @@ import eu.solven.adhoc.measure.forest.UnsafeMeasureForest;
 import eu.solven.adhoc.measure.model.MeasureHelpers;
 import eu.solven.adhoc.measure.ratio.AdhocExplainerTestHelper;
 import eu.solven.adhoc.measure.sum.SumAggregation;
-import eu.solven.adhoc.model.measure.Aggregator;
-import eu.solven.adhoc.model.measure.Combinator;
-import eu.solven.adhoc.model.measure.Filtrator;
 import eu.solven.adhoc.options.StandardQueryOptions;
 import eu.solven.adhoc.query.table.FilteredAggregator;
 import eu.solven.adhoc.query.table.TableQueryV2;
@@ -274,6 +271,29 @@ public class TestDagCompositeCubesTableWrapper extends ATestDagRaw implements IA
 				.contains(MeasureHelpers.alias("max", k1Sum.getName()))
 				.hasSize(2);
 		Assertions.assertThat(compatibleMeasures.getDefined()).isEmpty();
+	}
+
+	@Test
+	public void testSubQuery_emptyMeasure() {
+		CompositeCubesTableWrapper composite = CompositeCubesTableWrapper.builder().build();
+
+		// The subCube has a measure named `k1`
+		ICubeWrapper subCube = Mockito.mock(ICubeWrapper.class);
+		Mockito.when(subCube.getNameToMeasure()).thenReturn(Map.of(k1Sum.getName(), k1Sum));
+
+		// Request the min and the max of the same measure cross cubes
+		TableQueryV2 compositeQuery = TableQueryV2.builder()
+				.aggregator(FilteredAggregator.builder()
+						.aggregator(Aggregator.empty())
+						.build())
+				.build();
+
+		CompatibleMeasures compatibleMeasures =
+				composite.computeSubMeasures(compositeQuery, subCube, _ -> true);
+		Assertions.assertThat(compatibleMeasures.getPredefined()).isEmpty();
+		Assertions.assertThat(compatibleMeasures.getDefined())
+				.contains(Aggregator.empty())
+				.hasSize(1);
 	}
 
 	// Test ensuring the computation of the filter for given subCube is also applied on a per-measure filter

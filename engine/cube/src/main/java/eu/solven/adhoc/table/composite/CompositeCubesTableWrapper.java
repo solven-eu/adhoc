@@ -563,7 +563,7 @@ public class CompositeCubesTableWrapper implements ITableWrapper, IHasHealthDeta
 			Predicate<String> isSubColumn) {
 		Set<String> cubeMeasures = subCube.getNameToMeasure().keySet();
 
-		Map<Boolean, List<FilteredAggregator>> isPredefined = compositeQuery.getAggregators().stream().collect(Collectors.partitioningBy(a -> EmptyAggregation.isEmpty(a.getAggregator()) || cubeMeasures.contains(a.getAggregator().getColumnName())));
+		Map<Boolean, List<FilteredAggregator>> isPredefined = compositeQuery.getAggregators().stream().collect(Collectors.partitioningBy(a -> cubeMeasures.contains(a.getAggregator().getColumnName())));
 
 		// Measures which are known by the subCube
 		Set<IMeasure> predefinedMeasures =
@@ -594,7 +594,7 @@ public class CompositeCubesTableWrapper implements ITableWrapper, IHasHealthDeta
 				// subCube unconditionally (even those that do not declare any matching measure or column).
 				// Otherwise: the subCube has a `column=k1` and we want to aggregate over `k1`,
 				// so we propagate the provided definition to the subCube.
-				// TODO Could we also add some transformators?
+				// TODO Could we also propagate some transformators?
 				.filter(a -> EmptyAggregation.isEmpty(a.getAggregator())
 						|| isColumnAvailable(isSubColumn, a.getAggregator().getColumnName()))
 				.collect(Collectors.toCollection(LinkedHashSet::new));
