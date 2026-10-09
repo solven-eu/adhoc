@@ -113,7 +113,7 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 	/**
 	 * Optional per-query table provider. When set, {@link #prepareSliceQuery(TableQueryV4)} substitutes the
 	 * {@link #table} field with {@link IJooqTableSupplier#tableFor(TableQueryV4)}. When {@code null}, the constant
-	 * {@link #table} is always used (current behaviour).
+	 * {@link #table} is always used (current behavior).
 	 */
 	@NonNull
 	final IJooqTableSupplier tableSupplier;
@@ -220,17 +220,17 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 
 	@Override
 	public QueryWithLeftover prepareSliceQuery(TableQueryV4 tableQuery) {
-		TableLike<?> fromTable = resolveTable(tableQuery);
-
 		// Perfect V4: every groupBy shares the same FA set — one GROUPING-SET SQL with no wasteful cartesian.
 		if (tableQuery.isPerfectV3()) {
+			TableLike<?> fromTable = resolveTable(tableQuery);
+
 			return prepareSliceQuery(tableQuery.toV3(), fromTable);
 		}
 
 		// Non-perfect V4: emit a SQL UNION ALL across the streamV3() branches so the DB only computes the
 		// (groupBy, aggregator) pairs each branch actually requires. Replaces the prior asCoveringV3() shape,
-		// which silently inflated to the full cartesian product.
-		return prepareUnionAllSliceQuery(tableQuery, fromTable);
+		// which silently inflated to the full Cartesian product.
+		return prepareUnionAllSliceQuery(tableQuery);
 	}
 
 	@SuppressWarnings("checkstyle:MagicNumber")
@@ -369,7 +369,7 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 	 * Only used when {@link TableQueryV4#isPerfectV3()} is false — when it is true, {@link #prepareSliceQuery} routes
 	 * directly through a single GROUPING-SET query via {@link TableQueryV4#toV3()}.
 	 */
-	protected QueryWithLeftover prepareUnionAllSliceQuery(TableQueryV4 tableQuery, TableLike<?> fromTable) {
+	protected QueryWithLeftover prepareUnionAllSliceQuery(TableQueryV4 tableQuery) {
 		List<TableQueryV3> branchV3s = tableQuery.streamV3().toList();
 		if (branchV3s.isEmpty()) {
 			throw new IllegalStateException("Expected at least one streamV3 branch: %s".formatted(tableQuery));
@@ -382,8 +382,8 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 		AggregatedRecordFields unifiedFields = unifyFields(branches.stream().map(BranchContext::fields).toList());
 
 		List<Select<Record>> branchSelects =
-				branches.stream().map(b -> buildUnionBranchSelect(b, unifiedFields, fromTable)).toList();
-		Select<Record> union = branchSelects.get(0);
+				branches.stream().map(b -> buildUnionBranchSelect(b, unifiedFields)).toList();
+		Select<Record> union = branchSelects.getFirst();
 		for (int i = 1; i < branchSelects.size(); i++) {
 			union = union.unionAll(branchSelects.get(i));
 		}
@@ -403,7 +403,7 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 		}
 
 		// All branches share V4.filter, so their non-pushdown leftovers on the WHERE clause are identical — pick any.
-		ISliceFilter sharedNonPushdown = branches.get(0).conditionAndNonPushdown().getNonPushdown();
+		ISliceFilter sharedNonPushdown = branches.getFirst().conditionAndNonPushdown().getNonPushdown();
 		// Aliases of FAs that belong to more than one branch resolve to the same leftover (a function of the FA's
 		// filter), so the union is well-defined; otherwise each branch contributes its own.
 		Map<String, ISliceFilter> mergedAggregateLeftovers = new LinkedHashMap<>();
@@ -494,9 +494,10 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 	 * what the branch actually needs.
 	 */
 	protected Select<Record> buildUnionBranchSelect(BranchContext branch,
-			AggregatedRecordFields unified,
-			TableLike<?> fromTable) {
+			AggregatedRecordFields unified ) {
 		List<SelectFieldOrAsterisk> selectedFields = selectedUnionBranchFields(branch, unified);
+
+		TableLike<?> fromTable = tableSupplier.tableFor(branch.v3().toV4());
 
 		SelectJoinStep<Record> selectFrom = dslContext.select(selectedFields).from(fromTable);
 		SelectConnectByStep<Record> selectFromWhere;

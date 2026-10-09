@@ -23,8 +23,11 @@
 package eu.solven.adhoc.table.sql;
 
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 
+import com.google.common.base.Throwables;
+import com.google.common.util.concurrent.UncheckedExecutionException;
 import org.jooq.DSLContext;
 import org.jooq.Field;
 import org.jooq.Record;
@@ -59,6 +62,7 @@ import lombok.extern.slf4j.Slf4j;
  * @author Benoit Lacelle
  */
 @UtilityClass
+@Slf4j
 public final class JooqColumnsHelpers {
 
 	/**
@@ -125,18 +129,24 @@ public final class JooqColumnsHelpers {
 		@Override
 		public List<Field<?>> columnsOf(IDSLSupplier dslSupplier, TableLike<?> table) {
 			ProbeKey key = new ProbeKey(dslSupplier, table);
-			List<Field<?>> cached = cache.getIfPresent(key);
-			if (cached != null) {
-				return cached;
-			}
 
-			// Not `Cache.get(key, loader)`: it would wrap the delegate's failures (e.g. a `DataAccessException` on
-			// missing files) into an `UncheckedExecutionException`, hiding them from callers reacting to them
-			List<Field<?>> fields = delegate.columnsOf(dslSupplier, table);
-			if (fields != null && !fields.isEmpty()) {
-				cache.put(key, fields);
+            try {
+                List<Field<?>> fields = cache.get(key, () -> delegate.columnsOf(dslSupplier, table));
+
+				if (fields.isEmpty()) {
+					log.warn("Not a single field from table={}", table);
+					// Discard the cache as it is typically a transient issue
+					cache.invalidate(key);
+				}
+				return fields;
+            } catch (ExecutionException e) {
+				throw new RuntimeException("Issue fetching fields from table=%s".formatted(table), e);
+			} catch (UncheckedExecutionException e) {
+				// Not `Cache.get(key, loader)`: it would wrap the delegate's failures (e.g. a `DataAccessException` on
+				// missing files) into an `UncheckedExecutionException`, hiding them from callers reacting to them
+				Throwables.throwIfUnchecked(e);
+				throw new RuntimeException("Issue fetching fields from table=%s".formatted(table), e);
 			}
-			return fields;
 		}
 
 		@Override
@@ -182,9 +192,12 @@ public final class JooqColumnsHelpers {
 			// Log in INFO as the round-trip may be slow on large-schema JDBC drivers.
 			SelectLimitPercentStep<Record> query = dslContext.select().from(table).limit(0);
 
-			log.info("Fetching fields via SQL=`{}`", PepperLogHelper.lazyToString(() -> escapeEOL(query.toString())));
+			Object lazySQLAsString = PepperLogHelper.lazyToString(() -> escapeEOL(query.toString()));
+			log.info("Fetching fields via SQL=`{}`", lazySQLAsString);
+			Field<?>[] fields = query.fetch().fields();
+			log.info("Fetched fields via SQL=`{}`", lazySQLAsString);
 
-			return ImmutableList.copyOf(query.fetch().fields());
+			return ImmutableList.copyOf(fields);
 		}
 	}
 

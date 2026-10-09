@@ -31,6 +31,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 
+import eu.solven.adhoc.util.IHasCache;
 import org.jooq.Field;
 import org.jooq.exception.DataAccessException;
 import org.jspecify.annotations.NonNull;
@@ -76,7 +77,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @RequiredArgsConstructor
 @Slf4j
-public class JooqTableColumnsWrapper {
+public class JooqTableColumnsWrapper implements IHasCache {
 
 	@NonNull
 	private final JooqTableWrapperParameters tableParameters;
@@ -100,6 +101,7 @@ public class JooqTableColumnsWrapper {
 	private final Supplier<LoadingCache<Object, List<Field<?>>>> fieldsCache = Suppliers.memoize(this::makeFieldsCache);
 
 	/** Drops every cached entry — call after a schema change so the next {@link #getColumns()} re-probes. */
+	@Override
 	public void invalidateAll() {
 		fieldsCache.get().invalidateAll();
 	}

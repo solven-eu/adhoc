@@ -135,3 +135,17 @@ spring:
                         clientId: someClientId
                         clientSecret: someClientSecret
 ```
+
+# Logging
+
+Adhoc and Pivotable rely on SLF4J bindings.
+
+## `AdhocEventsFromGuavaEventBusToSfl4j`
+
+The class `AdhocEventsFromGuavaEventBusToSfl4j` is used to help logging by relying on an EventBus pattern. In order to
+write relevant logs, you may have to ensure the logging template refers to the `class` and not the `logger`, else logs
+will keep reference to boilerplate classes instead ot the actual class (e.g. FQDN concept in LogBack).
+
+With LogBack:
+- Do NOT go for `<pattern>%d{HH:mm:ss.SSS} [%-10.10thread]%-4.4level %-43.43(%loggers{40}\(%line\)) %msg%n</pattern>`
+- But prefer: `<pattern>%d{HH:mm:ss.SSS} [%-10.10thread]%-4.4level %-43.43(%class{40}\(%line\)) %msg%n</pattern>`

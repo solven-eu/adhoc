@@ -52,6 +52,8 @@ import lombok.extern.slf4j.Slf4j;
  * {@link ArrowBatchSpliterator#trySplit()} takes over and pre-fetches each batch on a virtual thread from
  * {@code adhocMixedPool}, while FJP processes already-loaded batches via {@link ArrowFixedBatchSpliterator#trySplit()}.
  *
+ * You may encounter runtime issues due to lack of proper JVM toggles. Typically 'java.lang.UnsupportedOperationException: sun.misc.Unsafe or java.nio.DirectByteBuffer.<init>(long, int) not available'
+ * would happen on JDK17+. One should follow instructions from <a href="https://arrow.apache.org/java/main/install.html#java-compatibility">...</a>
  * @author Benoit Lacelle
  */
 @Slf4j
@@ -98,10 +100,10 @@ public abstract class AArrowJooqTableWrapper extends JooqTableWrapper {
 			}).closeHandler(() -> closeAll(resources)).build();
 		} catch (SQLException e) {
 			closeAll(resources);
-			throw onArrowSqlException(e);
+			throw onArrowSqlException(sql, e);
 		} catch (Throwable e) {
 			closeAll(resources);
-			throw new IllegalArgumentException("Failed to open Arrow stream for table=" + getName(), e);
+			throw new IllegalArgumentException("Failed to open Arrow stream for table=%s on SQL='%s'".formatted(getName(), sql), e);
 		}
 	}
 
@@ -128,7 +130,7 @@ public abstract class AArrowJooqTableWrapper extends JooqTableWrapper {
 	/**
 	 * Allows subclasses to customize how SQL exceptions are reported when opening the Arrow stream fails.
 	 */
-	protected RuntimeException onArrowSqlException(SQLException e) {
-		return new IllegalStateException("Failed to open Arrow stream for table=" + getName(), e);
+	protected RuntimeException onArrowSqlException(String sql, SQLException e) {
+		return new IllegalStateException("Failed to open Arrow stream for table=%s sql='%s'".formatted(getName(), sql), e);
 	}
 }
