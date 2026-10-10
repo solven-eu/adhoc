@@ -50,6 +50,7 @@ import org.jspecify.annotations.Nullable;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.MoreObjects;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.primitives.Ints;
 import com.google.common.util.concurrent.AtomicLongMap;
@@ -774,7 +775,7 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 					// Return the shortest path, as it is the simplest to analyze by a human
 					.min(Comparator.comparing(gp -> gp.getVertexList().size()))
 					.map(GraphPath::getVertexList)
-					.orElse(List.of());
+					.orElse(ImmutableList.of());
 		}
 		if (!pathFromRoot.isEmpty()) {
 			describeStep.append("Path from root:");
@@ -809,7 +810,7 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 			reversed.add(current);
 		}
 		if (reversed.size() == 1) {
-			return List.of();
+			return ImmutableList.of();
 		}
 		Collections.reverse(reversed);
 		return reversed;
