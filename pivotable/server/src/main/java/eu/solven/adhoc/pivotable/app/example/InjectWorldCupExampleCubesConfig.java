@@ -22,12 +22,12 @@
  */
 package eu.solven.adhoc.pivotable.app.example;
 
-import java.util.Set;
-
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Profile;
+
+import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.app.IPivotableSpringProfiles;
 import eu.solven.adhoc.beta.schema.IAdhocSchema;
@@ -71,7 +71,7 @@ public class InjectWorldCupExampleCubesConfig {
 		IMeasureForest forest = worldCupSchema.getForest(worldCupSchema.getName());
 		registrer.registerForest(forest);
 		CubeWrapper cube = worldCupSchema.makeCube(registrer, worldCupSchema, table, forest).build();
-		registrer.registerCube(cube).tagCube(cube.getName(), Set.of("duckdb"));
+		registrer.registerCube(cube).tagCube(cube.getName(), ImmutableSet.of("duckdb"));
 
 	}
 

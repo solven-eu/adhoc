@@ -33,6 +33,8 @@ import java.util.function.IntUnaryOperator;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 
+import com.google.common.collect.ImmutableList;
+
 import eu.solven.adhoc.encoding.IIntArray;
 import eu.solven.adhoc.encoding.column.IReadableColumn;
 import eu.solven.adhoc.encoding.column.ObjectArrayColumn;
@@ -62,7 +64,7 @@ public class DictionarizedObjectColumn implements IReadableColumn {
 	}
 
 	public static IReadableColumn fromArray(List<?> asList) {
-		return fromArray(asList, List.of());
+		return fromArray(asList, ImmutableList.of());
 	}
 
 	/**
