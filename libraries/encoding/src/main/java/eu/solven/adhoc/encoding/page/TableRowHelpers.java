@@ -102,7 +102,7 @@ public class TableRowHelpers {
 			if (obj == null) {
 				return false;
 			} else if (obj instanceof ITableRowWrite otherRow) {
-				return otherRow.size() == 0;
+				return otherRow.isEmpty();
 			} else {
 				return false;
 			}
