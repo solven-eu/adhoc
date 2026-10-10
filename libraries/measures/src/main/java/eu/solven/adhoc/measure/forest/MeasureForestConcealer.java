@@ -419,7 +419,7 @@ public class MeasureForestConcealer {
 	 * This method is intentionally {@code static}: it operates purely on {@link ISliceFilter} with no dependency on
 	 * concealer state.
 	 */
-	static void collectFilterColumns(ISliceFilter filter, Set<String> columns) {
+	protected static void collectFilterColumns(ISliceFilter filter, Set<String> columns) {
 		if (filter instanceof ColumnFilter cf) {
 			columns.add(cf.getColumn());
 		} else if (filter instanceof IAndFilter af) {

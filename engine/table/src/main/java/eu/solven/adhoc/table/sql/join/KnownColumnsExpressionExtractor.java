@@ -26,6 +26,8 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.regex.Pattern;
 
+import com.google.common.collect.ImmutableSet;
+
 /**
  * Default {@link IExpressionColumnExtractor} — extracts column references from an SQL expression by scanning the
  * known-columns set for token-boundary substring matches.
@@ -65,7 +67,7 @@ public final class KnownColumnsExpressionExtractor implements IExpressionColumnE
 	@Override
 	public Set<String> extractColumns(String expression, Set<String> knownColumns) {
 		if (expression == null || expression.isEmpty() || knownColumns.isEmpty()) {
-			return Set.of();
+			return ImmutableSet.of();
 		}
 		Set<String> found = new LinkedHashSet<>();
 		for (String col : knownColumns) {
