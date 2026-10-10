@@ -57,7 +57,7 @@ public class AdhocPrimitiveHelpers {
 		}
 	}
 
-	public static long asLong(@Nullable Object o) {
+	public static long asLong(Object o) {
 		if (o instanceof BigInteger bigInteger) {
 			return bigInteger.longValueExact();
 		} else {
@@ -73,7 +73,7 @@ public class AdhocPrimitiveHelpers {
 		return Number.class.isInstance(o);
 	}
 
-	public static double asDouble(@Nullable Object o) {
+	public static double asDouble(Object o) {
 		return ((Number) Objects.requireNonNull(o, "value must be double-like")).doubleValue();
 	}
 
