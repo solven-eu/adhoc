@@ -31,11 +31,6 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-import eu.solven.adhoc.query.table.TableQueryV4;
-import eu.solven.adhoc.table.sql.IJooqColumnsResolver;
-import eu.solven.adhoc.table.sql.JooqColumnsHelpers;
-import eu.solven.adhoc.table.sql.MissingFilesPolicy;
-import lombok.Setter;
 import org.jooq.Condition;
 import org.jooq.Name;
 import org.jooq.Record;
@@ -45,7 +40,11 @@ import org.jspecify.annotations.NonNull;
 
 import com.google.common.collect.ImmutableSet;
 
+import eu.solven.adhoc.query.table.TableQueryV4;
 import eu.solven.adhoc.table.sql.IDSLSupplier;
+import eu.solven.adhoc.table.sql.IJooqColumnsResolver;
+import eu.solven.adhoc.table.sql.JooqColumnsHelpers;
+import eu.solven.adhoc.table.sql.MissingFilesPolicy;
 import eu.solven.adhoc.util.NotYetImplementedException;
 import lombok.Builder;
 import lombok.Builder.Default;
@@ -97,7 +96,9 @@ import lombok.extern.slf4j.Slf4j;
  * @author Benoit Lacelle
  */
 @Slf4j
-//@Builder
+// @Builder
+// Fluent builder: each configurable field has a same-name chained setter (`.columnsResolver(...)`, ...), by design.
+@SuppressWarnings("PMD.AvoidFieldNameMatchingMethodName")
 public class PrunedJoinsJooqTableSupplierBuilder extends JooqTableSupplierBuilder {
 
 	/**
@@ -115,22 +116,21 @@ public class PrunedJoinsJooqTableSupplierBuilder extends JooqTableSupplierBuilde
 	 * Empty default — falls back to the configured {@code columnsResolver}.
 	 */
 	@Getter
-	@SuppressWarnings("PMD.AvoidFieldNameMatchingMethodName")
 	private Set<String> baseProvidedColumns = ImmutableSet.of();
 
 	@NonNull
-//	@Default
-//	@Setter
+	// @Default
+	// @Setter
 	@Getter
 	private IJooqColumnsResolver columnsResolver = JooqColumnsHelpers.caching(JooqColumnsHelpers.dbProbe());
 
 	@NonNull
-//	@Default
-//	@Setter
+	// @Default
+	// @Setter
 	private MissingFilesPolicy missingFilesPolicy = MissingFilesPolicy.WARN;
 
 	@NonNull
-//	@Default
+	// @Default
 	private Function<TableQueryV4, TableQueryV4> queryPreprocessor = Function.identity();
 
 	/**
@@ -217,7 +217,8 @@ public class PrunedJoinsJooqTableSupplierBuilder extends JooqTableSupplierBuilde
 		return this;
 	}
 
-	public PrunedJoinsJooqTableSupplierBuilder queryPreprocessor(Function<TableQueryV4, TableQueryV4> queryPreprocessor) {
+	public PrunedJoinsJooqTableSupplierBuilder queryPreprocessor(
+			Function<TableQueryV4, TableQueryV4> queryPreprocessor) {
 		this.queryPreprocessor = queryPreprocessor;
 		return this;
 	}
@@ -355,7 +356,8 @@ public class PrunedJoinsJooqTableSupplierBuilder extends JooqTableSupplierBuilde
 	 */
 	@Override
 	public PrunedJoinsJooqTableSupplier build() {
-        return PrunedJoinsJooqTableSupplier.builder().schema(this)
+		return PrunedJoinsJooqTableSupplier.builder()
+				.schema(this)
 				.columnsResolver(columnsResolver)
 				.missingFilesPolicy(missingFilesPolicy)
 				.queryPreprocessor(queryPreprocessor)

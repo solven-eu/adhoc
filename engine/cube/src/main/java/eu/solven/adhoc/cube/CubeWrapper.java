@@ -30,7 +30,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 
-import lombok.*;
 import org.jspecify.annotations.NonNull;
 
 import com.google.common.base.Supplier;
@@ -68,7 +67,12 @@ import eu.solven.adhoc.options.StandardQueryOptions;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.transcoder.AliasingContext;
 import eu.solven.adhoc.util.IHasCache;
+import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Builder.Default;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 
 /**

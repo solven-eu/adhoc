@@ -493,8 +493,7 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 	 * natural grouping set. The branch's WHERE / GROUP BY stay natural to its V3 so the DB still only groups/scans on
 	 * what the branch actually needs.
 	 */
-	protected Select<Record> buildUnionBranchSelect(BranchContext branch,
-			AggregatedRecordFields unified ) {
+	protected Select<Record> buildUnionBranchSelect(BranchContext branch, AggregatedRecordFields unified) {
 		List<SelectFieldOrAsterisk> selectedFields = selectedUnionBranchFields(branch, unified);
 
 		TableLike<?> fromTable = tableSupplier.tableFor(branch.v3().toV4());

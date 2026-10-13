@@ -31,7 +31,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 
-import eu.solven.adhoc.util.IHasCache;
 import org.jooq.Field;
 import org.jooq.exception.DataAccessException;
 import org.jspecify.annotations.NonNull;
@@ -47,6 +46,7 @@ import com.google.common.cache.RemovalNotification;
 
 import eu.solven.adhoc.column.ColumnMetadata;
 import eu.solven.adhoc.util.AdhocUnsafe;
+import eu.solven.adhoc.util.IHasCache;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 

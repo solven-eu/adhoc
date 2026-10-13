@@ -83,7 +83,9 @@ public class DuckDBTableWrapper extends AArrowJooqTableWrapper {
 	protected RuntimeException onArrowSqlException(String sql, SQLException e) {
 		String message = e.getMessage();
 		if (message != null && message.contains("Binder Error")) {
-			return new IllegalArgumentException("Issue with columns or aggregates in table=" + getName() + " sql=%s".formatted(sql), e);
+			return new IllegalArgumentException(
+					"Issue with columns or aggregates in table=" + getName() + " sql=%s".formatted(sql),
+					e);
 		} else if (message != null && message.contains("Catalog Error")) {
 			return new IllegalArgumentException("Issue with table in table=" + getName() + " sql=%s".formatted(sql), e);
 		} else {

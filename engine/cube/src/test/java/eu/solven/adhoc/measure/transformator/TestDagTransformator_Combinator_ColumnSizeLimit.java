@@ -88,7 +88,7 @@ public class TestDagTransformator_Combinator_ColumnSizeLimit extends ATestDagInM
 				() -> cube().execute(CubeQuery.builder().groupByAlso("k").measure(countAsterisk.getName()).build()))
 				.isInstanceOf(IllegalStateException.class)
 				.hasRootCauseMessage(
-						"Can not add as size=2 and limit=2 Consider `AdhocUnsafe.setLimitColumnSize(X)` or -Dadhoc.limitColumnSize=X");
+						"Can not add as size=2 and limit=2 Consider `AdhocColumnUnsafe.setLimitColumnSize(X)` or -Dadhoc.limitColumnSize=X");
 	}
 
 	@Test
@@ -98,7 +98,7 @@ public class TestDagTransformator_Combinator_ColumnSizeLimit extends ATestDagInM
 		Assertions.assertThatThrownBy(() -> cube().execute(CubeQuery.builder().groupByAlso("k").build()))
 				.isInstanceOf(IllegalStateException.class)
 				.hasRootCauseMessage(
-						"Can not add as size=2 and limit=2 Consider `AdhocUnsafe.setLimitColumnSize(X)` or -Dadhoc.limitColumnSize=X");
+						"Can not add as size=2 and limit=2 Consider `AdhocColumnUnsafe.setLimitColumnSize(X)` or -Dadhoc.limitColumnSize=X");
 	}
 
 	@Test
@@ -109,7 +109,7 @@ public class TestDagTransformator_Combinator_ColumnSizeLimit extends ATestDagInM
 				.isInstanceOf(IllegalStateException.class)
 				.hasRootCauseInstanceOf(IllegalStateException.class)
 				.hasRootCauseMessage(
-						"Can not add as size=2 and limit=2 Consider `AdhocUnsafe.setLimitColumnSize(X)` or -Dadhoc.limitColumnSize=X");
+						"Can not add as size=2 and limit=2 Consider `AdhocColumnUnsafe.setLimitColumnSize(X)` or -Dadhoc.limitColumnSize=X");
 	}
 
 }

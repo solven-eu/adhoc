@@ -33,7 +33,6 @@ import java.util.TreeMap;
 
 import javax.sql.DataSource;
 
-import lombok.extern.slf4j.Slf4j;
 import org.duckdb.DuckDBConnection;
 import org.jooq.Name;
 import org.jooq.SQLDialect;
@@ -62,6 +61,7 @@ import eu.solven.adhoc.table.sql.StandardDSLSupplier;
 import eu.solven.adhoc.util.NotYetImplementedException;
 import eu.solven.pepper.core.PepperLogHelper;
 import lombok.experimental.UtilityClass;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Helps working with DuckDB.
@@ -188,11 +188,10 @@ public class DuckDBHelper {
 
 				// TODO Is it important to call `Array.free()`?
 				// TODO This may also be a org.apache.arrow.vector.util.JsonStringArrayList
-				Object rawArray = IValueProvider
-						.getValue(tabularRecord.onAggregate("approx_top_k" + measuresSuffix));
+				Object rawArray = IValueProvider.getValue(tabularRecord.onAggregate("approx_top_k" + measuresSuffix));
 
 				List<Object> coordinates;
-				if (rawArray == null){
+				if (rawArray == null) {
 					// BEWARE When does this happen?
 					coordinates = ImmutableList.of();
 				} else if (rawArray instanceof List<?> list) {

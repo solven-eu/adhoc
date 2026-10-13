@@ -563,14 +563,15 @@ public class CompositeCubesTableWrapper implements ITableWrapper, IHasHealthDeta
 			Predicate<String> isSubColumn) {
 		Set<String> cubeMeasures = subCube.getNameToMeasure().keySet();
 
-		Map<Boolean, List<FilteredAggregator>> isPredefined = compositeQuery.getAggregators().stream().collect(Collectors.partitioningBy(a -> cubeMeasures.contains(a.getAggregator().getColumnName())));
+		Map<Boolean, List<FilteredAggregator>> predefinedToAggregators = compositeQuery.getAggregators()
+				.stream()
+				.collect(Collectors.partitioningBy(a -> cubeMeasures.contains(a.getAggregator().getColumnName())));
 
 		// Measures which are known by the subCube
 		Set<IMeasure> predefinedMeasures =
 				// The subCube measure is in the Aggregator columnName
 				// the Aggregator name may be an alias in the compositeCube (e.g. in case of conflict)
-		isPredefined.get(true).stream()
-				.map(fa -> {
+				predefinedToAggregators.get(true).stream().map(fa -> {
 					ISliceFilter compositeFilter = fa.getFilter();
 					if (compositeFilter.isMatchAll()) {
 						return MeasureHelpers.alias(fa.getAlias(), fa.getAggregator().getColumnName());
@@ -583,21 +584,22 @@ public class CompositeCubesTableWrapper implements ITableWrapper, IHasHealthDeta
 								.filter(subFilter)
 								.build();
 					}
-				})
-				.collect(Collectors.toCollection(LinkedHashSet::new));
+				}).collect(Collectors.toCollection(LinkedHashSet::new));
 
 		// We also propagate to the subCube some measures which definition can be computed on the fly
 		Set<FilteredAggregator> defined =
 				// subCube does not know about `measure=k1`
-				isPredefined.get(false).stream()
-				// EmptyAggregation needs no underlying column — it only materializes slices, so it must reach every
-				// subCube unconditionally (even those that do not declare any matching measure or column).
-				// Otherwise: the subCube has a `column=k1` and we want to aggregate over `k1`,
-				// so we propagate the provided definition to the subCube.
-				// TODO Could we also propagate some transformators?
-				.filter(a -> EmptyAggregation.isEmpty(a.getAggregator())
-						|| isColumnAvailable(isSubColumn, a.getAggregator().getColumnName()))
-				.collect(Collectors.toCollection(LinkedHashSet::new));
+				predefinedToAggregators.get(false)
+						.stream()
+						// EmptyAggregation needs no underlying column — it only materializes slices, so it must reach
+						// every
+						// subCube unconditionally (even those that do not declare any matching measure or column).
+						// Otherwise: the subCube has a `column=k1` and we want to aggregate over `k1`,
+						// so we propagate the provided definition to the subCube.
+						// TODO Could we also propagate some transformators?
+						.filter(a -> EmptyAggregation.isEmpty(a.getAggregator())
+								|| isColumnAvailable(isSubColumn, a.getAggregator().getColumnName()))
+						.collect(Collectors.toCollection(LinkedHashSet::new));
 
 		return CompatibleMeasures.builder()
 				.predefined(predefinedMeasures)

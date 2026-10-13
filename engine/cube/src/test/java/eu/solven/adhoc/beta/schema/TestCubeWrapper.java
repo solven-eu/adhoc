@@ -278,7 +278,6 @@ public class TestCubeWrapper {
 				.hasMessageContaining("BLOCKING");
 	}
 
-
 	@Test
 	public void testHashCode_noColumns() {
 		InMemoryTable table = InMemoryTable.builder().build();
@@ -289,10 +288,10 @@ public class TestCubeWrapper {
 				.table(table)
 				.build();
 
-		Assertions.assertThat(cube.hashCode()).isEqualTo(1470172871);
+		Assertions.assertThat(cube.hashCode()).isEqualTo(1_470_172_871);
 
 		// Ensure the hashCode does not depend on visible columns, else it may change dynamically
 		table.add(Map.of("k1", "v1"));
-		Assertions.assertThat(cube.hashCode()).isEqualTo(1470172871);
+		Assertions.assertThat(cube.hashCode()).isEqualTo(1_470_172_871);
 	}
 }

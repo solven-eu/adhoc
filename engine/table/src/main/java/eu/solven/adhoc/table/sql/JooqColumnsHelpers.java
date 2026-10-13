@@ -26,8 +26,6 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 
-import com.google.common.base.Throwables;
-import com.google.common.util.concurrent.UncheckedExecutionException;
 import org.jooq.DSLContext;
 import org.jooq.Field;
 import org.jooq.Record;
@@ -36,9 +34,11 @@ import org.jooq.TableLike;
 import org.jooq.conf.RenderFormatting;
 import org.jooq.impl.DSL;
 
+import com.google.common.base.Throwables;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableList;
+import com.google.common.util.concurrent.UncheckedExecutionException;
 
 import eu.solven.adhoc.table.sql.join.PrunedJoinsJooqTableSupplierBuilder;
 import eu.solven.adhoc.util.Blocking;
@@ -130,8 +130,8 @@ public final class JooqColumnsHelpers {
 		public List<Field<?>> columnsOf(IDSLSupplier dslSupplier, TableLike<?> table) {
 			ProbeKey key = new ProbeKey(dslSupplier, table);
 
-            try {
-                List<Field<?>> fields = cache.get(key, () -> delegate.columnsOf(dslSupplier, table));
+			try {
+				List<Field<?>> fields = cache.get(key, () -> delegate.columnsOf(dslSupplier, table));
 
 				if (fields.isEmpty()) {
 					log.warn("Not a single field from table={}", table);
@@ -139,12 +139,16 @@ public final class JooqColumnsHelpers {
 					cache.invalidate(key);
 				}
 				return fields;
-            } catch (ExecutionException e) {
+			} catch (ExecutionException e) {
 				throw new RuntimeException("Issue fetching fields from table=%s".formatted(table), e);
 			} catch (UncheckedExecutionException e) {
-				// Not `Cache.get(key, loader)`: it would wrap the delegate's failures (e.g. a `DataAccessException` on
-				// missing files) into an `UncheckedExecutionException`, hiding them from callers reacting to them
-				Throwables.throwIfUnchecked(e);
+				// `Cache.get(key, loader)` wraps the delegate's unchecked failures (e.g. a `DataAccessException` on
+				// missing files) into an `UncheckedExecutionException`: unwrap it so callers reacting to the original
+				// type (e.g. `MissingFilesPolicy` in `PrunedJoinsJooqTableSupplier.probeColumns`) still see it
+				Throwable cause = e.getCause();
+				if (cause != null) {
+					Throwables.throwIfUnchecked(cause);
+				}
 				throw new RuntimeException("Issue fetching fields from table=%s".formatted(table), e);
 			}
 		}

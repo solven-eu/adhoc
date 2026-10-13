@@ -23,7 +23,15 @@
 package eu.solven.adhoc.beta.schema;
 
 import java.time.Duration;
-import java.util.*;
+import java.util.AbstractMap;
+import java.util.Collection;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.TreeMap;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
@@ -218,43 +226,11 @@ public class AdhocSchema implements IAdhocSchema, IAdhocSchemaRegistrer {
 				query.getCube().isPresent() || query.getForest().isPresent() || query.getTable().isPresent();
 
 		// Fetch columns each cube in parallel as it can be slow
-		List<CompletableFuture<? extends Map.Entry<String, ColumnarMetadata>>> cubeToColumns =
-				nameToCube.entrySet()
-						.stream()
-						.filter(c -> isRequested(query.getCube(), allIfEmpty, hasAnyFilter, c))
-						.map(c -> CompletableFuture.supplyAsync(
-								() -> {
-									String cubeName = c.getKey();
-
-									ColumnarMetadata columns;
-									try {
-										// BEWARE Next row can be slow
-										columns = ColumnarMetadata.from(cacheCubeToColumnToType.getUnchecked(cubeName)).build();
-									} catch (RuntimeException e) {
-										if (AdhocUnsafe.isFailFast()) {
-											throw e;
-										} else {
-											log.warn("Issue fetching columns from cube={}", cubeName, e);
-											columns = ColumnarMetadata.from(Map.of("error", e.getClass())).build();
-										}
-									}
-
-									return new AbstractMap.SimpleEntry<>(cubeName, columns);
-								},
-								AdhocUnsafe.getMixedPool()
-						))
-						.collect(Collectors.toList());
-
-		// Join the slow column fetching through cubes
-		CompletableFuture.allOf(cubeToColumns.toArray(new CompletableFuture[0])).join();
-
-		cubeToColumns
-				.forEach(cubeTask -> {
-					Map.Entry<String, ColumnarMetadata> joined = cubeTask.join();
-					String cubeName = joined.getKey();
-					ICubeWrapper cube = nameToCube.get(cubeName);
-
-					CubeSchemaMetadata.CubeSchemaMetadataBuilder cubeSchema = CubeSchemaMetadata.builder();
+		List<CompletableFuture<? extends Map.Entry<String, ColumnarMetadata>>> cubeToColumns = nameToCube.entrySet()
+				.stream()
+				.filter(c -> isRequested(query.getCube(), allIfEmpty, hasAnyFilter, c))
+				.map(c -> CompletableFuture.supplyAsync(() -> {
+					String cubeName = c.getKey();
 
 					ColumnarMetadata columns;
 					try {
@@ -268,44 +244,70 @@ public class AdhocSchema implements IAdhocSchema, IAdhocSchemaRegistrer {
 							columns = ColumnarMetadata.from(Map.of("error", e.getClass())).build();
 						}
 					}
-					cubeSchema.columns(columns);
-					cubeSchema.measures(cube.getNameToMeasure()
-							.entrySet()
-							.stream()
-							.collect(ImmutableMap.toImmutableMap(Map.Entry::getKey,
-									e -> enrichMeasure(cube.getName(), e.getValue()))));
 
-					Map<String, CustomMarkerMetadata> customMarkerNameToMetadata = new TreeMap<>();
+					return new AbstractMap.SimpleEntry<>(cubeName, columns);
+				}, AdhocUnsafe.getMixedPool()))
+				.collect(Collectors.toList());
 
-					nameToCustomMarker.stream()
-							.filter(customMarker -> customMarker.getKey().getCubeMatcher().match(cubeName))
-							.forEach(customMarker -> {
-								String customMarkerName = customMarker.getKey().getName();
-								CustomMarkerMetadata customMarkerMetadata =
-										customMarker.getValue().snapshot(customMarkerName);
-								CustomMarkerMetadata previous =
-										customMarkerNameToMetadata.put(customMarkerName, customMarkerMetadata);
+		// Join the slow column fetching through cubes
+		CompletableFuture.allOf(cubeToColumns.toArray(new CompletableFuture[0])).join();
 
-								if (previous != null && !previous.equals(customMarkerMetadata)) {
-									log.warn("cube={} customMarker={} matches multiple metadata: {} and {}",
-											cubeName,
-											customMarkerName,
-											customMarkerMetadata,
-											previous);
-								}
-							});
-					cubeSchema.customMarkers(customMarkerNameToMetadata);
+		cubeToColumns.forEach(cubeTask -> {
+			Map.Entry<String, ColumnarMetadata> joined = cubeTask.join();
+			String cubeName = joined.getKey();
+			ICubeWrapper cube = nameToCube.get(cubeName);
 
-					Set<String> tags = cubeToTags.get(cubeName);
-					if (tags != null && !tags.isEmpty()) {
-						cubeSchema.tags(ImmutableSet.copyOf(tags));
-					}
+			CubeSchemaMetadata.CubeSchemaMetadataBuilder cubeSchema = CubeSchemaMetadata.builder();
 
-					cubeSchema.columnDescriptions(getColumnDescriptions(cubeName));
-					cubeSchema.measureDescriptions(getMeasureDescriptions(cubeName));
+			ColumnarMetadata columns;
+			try {
+				// BEWARE Next row can be slow
+				columns = ColumnarMetadata.from(cacheCubeToColumnToType.getUnchecked(cubeName)).build();
+			} catch (RuntimeException e) {
+				if (AdhocUnsafe.isFailFast()) {
+					throw e;
+				} else {
+					log.warn("Issue fetching columns from cube={}", cubeName, e);
+					columns = ColumnarMetadata.from(Map.of("error", e.getClass())).build();
+				}
+			}
+			cubeSchema.columns(columns);
+			cubeSchema.measures(cube.getNameToMeasure()
+					.entrySet()
+					.stream()
+					.collect(ImmutableMap.toImmutableMap(Map.Entry::getKey,
+							e -> enrichMeasure(cube.getName(), e.getValue()))));
 
-					metadata.cube(cubeName, cubeSchema.build());
-				});
+			Map<String, CustomMarkerMetadata> customMarkerNameToMetadata = new TreeMap<>();
+
+			nameToCustomMarker.stream()
+					.filter(customMarker -> customMarker.getKey().getCubeMatcher().match(cubeName))
+					.forEach(customMarker -> {
+						String customMarkerName = customMarker.getKey().getName();
+						CustomMarkerMetadata customMarkerMetadata = customMarker.getValue().snapshot(customMarkerName);
+						CustomMarkerMetadata previous =
+								customMarkerNameToMetadata.put(customMarkerName, customMarkerMetadata);
+
+						if (previous != null && !previous.equals(customMarkerMetadata)) {
+							log.warn("cube={} customMarker={} matches multiple metadata: {} and {}",
+									cubeName,
+									customMarkerName,
+									customMarkerMetadata,
+									previous);
+						}
+					});
+			cubeSchema.customMarkers(customMarkerNameToMetadata);
+
+			Set<String> tags = cubeToTags.get(cubeName);
+			if (tags != null && !tags.isEmpty()) {
+				cubeSchema.tags(ImmutableSet.copyOf(tags));
+			}
+
+			cubeSchema.columnDescriptions(getColumnDescriptions(cubeName));
+			cubeSchema.measureDescriptions(getMeasureDescriptions(cubeName));
+
+			metadata.cube(cubeName, cubeSchema.build());
+		});
 
 		nameToForest.entrySet()
 				.stream()
