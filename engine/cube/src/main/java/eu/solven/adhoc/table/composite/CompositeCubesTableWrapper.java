@@ -415,18 +415,17 @@ public class CompositeCubesTableWrapper implements ITableWrapper, IHasHealthDeta
 		cubes.stream().filter(subCube -> isEligible(subCube, compositeQuery)).forEach(subCube -> {
 			ICubeQuery subQuery = makeSubQuery(queryPod, compositeQuery, subCube);
 
-			if (subQuery.getFilter().isMatchNone()) {
-				// Happens typically on a filter on compositeSlicer, which is awkward to catch in '.isEligible'
-				log.debug("Skipping query={}", subQuery);
-			} else {
-				var previous = cubeToQuery.put(subCube.getName(), subQuery);
-				if (previous != null) {
-					throw new IllegalStateException("Multiple cubes are named: " + subCube.getName());
-				}
+			var previous = cubeToQuery.put(subCube.getName(), subQuery);
+			if (previous != null) {
+				throw new IllegalStateException("Multiple cubes are named: " + subCube.getName());
 			}
 		});
 
+		// Checked before pruning: a subCube whose subQuery is pruned below still recognises its measures, they simply
+		// contribute nothing to this query
 		checkAllMeasuresHaveSubQuery(compositeQuery, cubeToQuery);
+
+		pruneMatchNoneSubQueries(cubeToQuery);
 
 		return cubeToQuery;
 	}
@@ -453,6 +452,22 @@ public class CompositeCubesTableWrapper implements ITableWrapper, IHasHealthDeta
 			throw new IllegalArgumentException(
 					"Measures %s are not known by any subCube — check measure definitions.".formatted(orphans));
 		}
+	}
+
+	/**
+	 * Drops the subQueries whose filter is {@code matchNone}: they would return no row, so the round-trip to the subCube
+	 * is spared. Happens typically on a filter on the compositeSlicer, which is awkward to catch in
+	 * {@link #isEligible(ICubeWrapper, TableQueryV2)}.
+	 */
+	protected void pruneMatchNoneSubQueries(Map<String, ICubeQuery> cubeToQuery) {
+		List<String> prunedCubes = cubeToQuery.entrySet()
+				.stream()
+				.filter(cubeAndQuery -> cubeAndQuery.getValue().getFilter().isMatchNone())
+				.map(Map.Entry::getKey)
+				.toList();
+
+		prunedCubes.forEach(cube -> log.debug("Skipping subQuery on cube={} as its filter is matchNone", cube));
+		cubeToQuery.keySet().removeAll(prunedCubes);
 	}
 
 	/**
