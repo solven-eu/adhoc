@@ -305,7 +305,7 @@ public class CompositeCubesTableWrapper implements ITableWrapper, IHasHealthDeta
 	}
 
 	/**
-	 * Synthesises the {@link #optCubeSlicer cube-slicer} virtual column's coordinates from the list of sub-cube names.
+	 * Synthesizes the {@link #optCubeSlicer cube-slicer} virtual column's coordinates from the list of sub-cube names.
 	 * Honours {@code valueMatcher} (returning the matching names) and the {@code limit} (truncating the sample to the
 	 * first {@code limit} matches while still counting them all into {@code estimatedCardinality}).
 	 */
@@ -421,7 +421,11 @@ public class CompositeCubesTableWrapper implements ITableWrapper, IHasHealthDeta
 			}
 		});
 
+		// Checked before pruning: a subCube whose subQuery is pruned below still recognises its measures, they simply
+		// contribute nothing to this query
 		checkAllMeasuresHaveSubQuery(compositeQuery, cubeToQuery);
+
+		pruneMatchNoneSubQueries(cubeToQuery);
 
 		return cubeToQuery;
 	}
@@ -448,6 +452,22 @@ public class CompositeCubesTableWrapper implements ITableWrapper, IHasHealthDeta
 			throw new IllegalArgumentException(
 					"Measures %s are not known by any subCube — check measure definitions.".formatted(orphans));
 		}
+	}
+
+	/**
+	 * Drops the subQueries whose filter is {@code matchNone}: they would return no row, so the round-trip to the
+	 * subCube is spared. Happens typically on a filter on the compositeSlicer, which is awkward to catch in
+	 * {@link #isEligible(ICubeWrapper, TableQueryV2)}.
+	 */
+	protected void pruneMatchNoneSubQueries(Map<String, ICubeQuery> cubeToQuery) {
+		List<String> prunedCubes = cubeToQuery.entrySet()
+				.stream()
+				.filter(cubeAndQuery -> cubeAndQuery.getValue().getFilter().isMatchNone())
+				.map(Map.Entry::getKey)
+				.toList();
+
+		prunedCubes.forEach(cube -> log.debug("Skipping subQuery on cube={} as its filter is matchNone", cube));
+		cubeToQuery.keySet().removeAll(prunedCubes);
 	}
 
 	/**
@@ -558,13 +578,18 @@ public class CompositeCubesTableWrapper implements ITableWrapper, IHasHealthDeta
 			Predicate<String> isSubColumn) {
 		Set<String> cubeMeasures = subCube.getNameToMeasure().keySet();
 
-		// Measures which are known by the subCube
-		Set<IMeasure> predefinedMeasures = compositeQuery.getAggregators()
+		Map<Boolean, List<FilteredAggregator>> predefinedToAggregators = compositeQuery.getAggregators()
 				.stream()
+				.collect(Collectors.partitioningBy(a -> cubeMeasures.contains(a.getAggregator().getColumnName())));
+		// `Collectors.partitioningBy` always populates both keys; narrow @Nullable Map.get into non-null locals.
+		List<FilteredAggregator> predefinedAggregators = Objects.requireNonNull(predefinedToAggregators.get(true));
+		List<FilteredAggregator> notPredefinedAggregators = Objects.requireNonNull(predefinedToAggregators.get(false));
+
+		// Measures which are known by the subCube
+		Set<IMeasure> predefinedMeasures =
 				// The subCube measure is in the Aggregator columnName
 				// the Aggregator name may be an alias in the compositeCube (e.g. in case of conflict)
-				.filter(a -> cubeMeasures.contains(a.getAggregator().getColumnName()))
-				.map(fa -> {
+				predefinedAggregators.stream().map(fa -> {
 					ISliceFilter compositeFilter = fa.getFilter();
 					if (compositeFilter.isMatchAll()) {
 						return MeasureHelpers.alias(fa.getAlias(), fa.getAggregator().getColumnName());
@@ -577,22 +602,21 @@ public class CompositeCubesTableWrapper implements ITableWrapper, IHasHealthDeta
 								.filter(subFilter)
 								.build();
 					}
-				})
-				.collect(Collectors.toCollection(LinkedHashSet::new));
+				}).collect(Collectors.toCollection(LinkedHashSet::new));
 
 		// We also propagate to the subCube some measures which definition can be computed on the fly
-		Set<FilteredAggregator> defined = compositeQuery.getAggregators()
-				.stream()
+		Set<FilteredAggregator> defined =
 				// subCube does not know about `measure=k1`
-				.filter(a -> !cubeMeasures.contains(a.getAggregator().getColumnName()))
-				// EmptyAggregation needs no underlying column — it only materializes slices, so it must reach every
-				// subCube unconditionally (even those that do not declare any matching measure or column).
-				// Otherwise: the subCube has a `column=k1` and we want to aggregate over `k1`,
-				// so we propagate the provided definition to the subCube.
-				// TODO Could we also add some transformators?
-				.filter(a -> EmptyAggregation.isEmpty(a.getAggregator())
-						|| isColumnAvailable(isSubColumn, a.getAggregator().getColumnName()))
-				.collect(Collectors.toCollection(LinkedHashSet::new));
+				notPredefinedAggregators.stream()
+						// EmptyAggregation needs no underlying column — it only materializes slices, so it must reach
+						// every
+						// subCube unconditionally (even those that do not declare any matching measure or column).
+						// Otherwise: the subCube has a `column=k1` and we want to aggregate over `k1`,
+						// so we propagate the provided definition to the subCube.
+						// TODO Could we also propagate some transformators?
+						.filter(a -> EmptyAggregation.isEmpty(a.getAggregator())
+								|| isColumnAvailable(isSubColumn, a.getAggregator().getColumnName()))
+						.collect(Collectors.toCollection(LinkedHashSet::new));
 
 		return CompatibleMeasures.builder()
 				.predefined(predefinedMeasures)
@@ -603,20 +627,15 @@ public class CompositeCubesTableWrapper implements ITableWrapper, IHasHealthDeta
 	}
 
 	protected boolean isEligible(ICubeWrapper subCube, TableQueryV2 compositeQuery) {
-		if (EmptyAggregation.isEmpty(compositeQuery.getAggregators())) {
-			// Requesting for slices: to be propagated to each underlying cube
-			return true;
-		} else {
-			Predicate<String> isSubColumn = makeSubColumnPredicate(subCube);
-			CompatibleMeasures compatible = computeSubMeasures(compositeQuery, subCube, isSubColumn);
+		Predicate<String> isSubColumn = makeSubColumnPredicate(subCube);
+		CompatibleMeasures compatible = computeSubMeasures(compositeQuery, subCube, isSubColumn);
 
-			// The cube is eligible if it has at least one relevant measure amongst the queried ones
-			return !compatible.isEmpty();
-		}
+		// The cube is eligible if it has at least one relevant measure amongst the queried ones
+		return !compatible.isEmpty();
 	}
 
 	protected ICubeQuery makeSubQuery(IQueryPod queryPod, TableQueryV2 compositeQuery, ICubeWrapper subCube) {
-		Predicate<String> subCubeKnownMeasure = makeSubColumnPredicate(subCube);
+		Predicate<String> subCubeKnownColumns = makeSubColumnPredicate(subCube);
 
 		// groupBy only by relevant columns. Other columns are ignored
 		NavigableMap<String, IAdhocColumn> subGroupBy = new TreeMap<>();
@@ -624,12 +643,12 @@ public class CompositeCubesTableWrapper implements ITableWrapper, IHasHealthDeta
 		compositeQuery.getGroupBys()
 				.forEach(compositeGroupBy -> subGroupBy.putAll(compositeGroupBy.getSortedNameToColumn()));
 
-		subGroupBy.keySet().removeIf(Predicate.not(subCubeKnownMeasure::test));
+		subGroupBy.keySet().removeIf(Predicate.not(subCubeKnownColumns));
 
 		ISliceFilter compositeFilter = compositeQuery.getFilter();
-		ISliceFilter subFilter = filterForColumns(subCube, compositeFilter, subCubeKnownMeasure);
+		ISliceFilter subFilter = filterForColumns(subCube, compositeFilter, subCubeKnownColumns);
 
-		CompatibleMeasures subMeasures = computeSubMeasures(compositeQuery, subCube, subCubeKnownMeasure);
+		CompatibleMeasures subMeasures = computeSubMeasures(compositeQuery, subCube, subCubeKnownColumns);
 
 		ICubeQuery query = CubeQuery.edit(compositeQuery)
 				.filter(subFilter)
