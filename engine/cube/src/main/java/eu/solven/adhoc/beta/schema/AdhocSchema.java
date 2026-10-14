@@ -255,7 +255,7 @@ public class AdhocSchema implements IAdhocSchema, IAdhocSchemaRegistrer {
 		cubeToColumns.forEach(cubeTask -> {
 			Map.Entry<String, ColumnarMetadata> joined = cubeTask.join();
 			String cubeName = joined.getKey();
-			ICubeWrapper cube = nameToCube.get(cubeName);
+			ICubeWrapper cube = Objects.requireNonNull(nameToCube.get(cubeName), () -> "Unknown cube=" + cubeName);
 
 			CubeSchemaMetadata.CubeSchemaMetadataBuilder cubeSchema = CubeSchemaMetadata.builder();
 

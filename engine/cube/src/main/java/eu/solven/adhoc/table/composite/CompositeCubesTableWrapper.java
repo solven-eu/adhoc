@@ -455,8 +455,8 @@ public class CompositeCubesTableWrapper implements ITableWrapper, IHasHealthDeta
 	}
 
 	/**
-	 * Drops the subQueries whose filter is {@code matchNone}: they would return no row, so the round-trip to the subCube
-	 * is spared. Happens typically on a filter on the compositeSlicer, which is awkward to catch in
+	 * Drops the subQueries whose filter is {@code matchNone}: they would return no row, so the round-trip to the
+	 * subCube is spared. Happens typically on a filter on the compositeSlicer, which is awkward to catch in
 	 * {@link #isEligible(ICubeWrapper, TableQueryV2)}.
 	 */
 	protected void pruneMatchNoneSubQueries(Map<String, ICubeQuery> cubeToQuery) {
@@ -581,12 +581,15 @@ public class CompositeCubesTableWrapper implements ITableWrapper, IHasHealthDeta
 		Map<Boolean, List<FilteredAggregator>> predefinedToAggregators = compositeQuery.getAggregators()
 				.stream()
 				.collect(Collectors.partitioningBy(a -> cubeMeasures.contains(a.getAggregator().getColumnName())));
+		// `Collectors.partitioningBy` always populates both keys; narrow @Nullable Map.get into non-null locals.
+		List<FilteredAggregator> predefinedAggregators = Objects.requireNonNull(predefinedToAggregators.get(true));
+		List<FilteredAggregator> notPredefinedAggregators = Objects.requireNonNull(predefinedToAggregators.get(false));
 
 		// Measures which are known by the subCube
 		Set<IMeasure> predefinedMeasures =
 				// The subCube measure is in the Aggregator columnName
 				// the Aggregator name may be an alias in the compositeCube (e.g. in case of conflict)
-				predefinedToAggregators.get(true).stream().map(fa -> {
+				predefinedAggregators.stream().map(fa -> {
 					ISliceFilter compositeFilter = fa.getFilter();
 					if (compositeFilter.isMatchAll()) {
 						return MeasureHelpers.alias(fa.getAlias(), fa.getAggregator().getColumnName());
@@ -604,8 +607,7 @@ public class CompositeCubesTableWrapper implements ITableWrapper, IHasHealthDeta
 		// We also propagate to the subCube some measures which definition can be computed on the fly
 		Set<FilteredAggregator> defined =
 				// subCube does not know about `measure=k1`
-				predefinedToAggregators.get(false)
-						.stream()
+				notPredefinedAggregators.stream()
 						// EmptyAggregation needs no underlying column — it only materializes slices, so it must reach
 						// every
 						// subCube unconditionally (even those that do not declare any matching measure or column).
