@@ -25,6 +25,8 @@ package eu.solven.adhoc.pivotable.chat;
 import java.util.List;
 import java.util.regex.Pattern;
 
+import com.google.common.collect.ImmutableList;
+
 /**
  * Server-side filter applied to each {@code text} chunk streamed back from the model. Mechanism (4) of the scoping
  * demonstration — a defence-in-depth layer that redacts known-dangerous substrings (credentials, AWS keys, plausible
@@ -46,7 +48,7 @@ public class ChatOutputFilter {
 	 * Pattern catalogue, kept intentionally small. Add domain-specific patterns (internal hostnames, project secrets,
 	 * regex of customer PII formats) as the deployment requires.
 	 */
-	static final List<Pattern> PATTERNS = List.of(
+	static final List<Pattern> PATTERNS = ImmutableList.of(
 			// AWS access-key IDs (AKIA / ASIA prefix, 20 char base32)
 			Pattern.compile("\\bA[KS]IA[0-9A-Z]{16}\\b"),
 			// AWS secret keys (40 char base64-ish)
