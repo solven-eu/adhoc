@@ -190,7 +190,7 @@ public final class ArrowReflection {
 				return false;
 			}
 			Object indicatorValue = getVectorValue(vectors, indicatorIdx, rowIndex);
-			return !Long.valueOf(0).equals(indicatorValue);
+			return isAbsentFromGroupingSet(indicatorValue);
 		}).collect(ImmutableSet.toImmutableSet());
 
 		TabularRecordBuilder builder = factory.makeTabularRecordBuilder(absentColumns);
@@ -218,6 +218,22 @@ public final class ArrowReflection {
 		}
 
 		return builder.build();
+	}
+
+	/**
+	 * @param indicatorValue
+	 *            the value of a grouping indicator vector for a given row
+	 * @return true if the indicator reports the column as absent from the grouping set, i.e. the indicator is not
+	 *         {@code 0}. The comparison goes through {@link Number#longValue()} as Arrow materializes the indicator as
+	 *         any integral type ({@code Int}, {@code BigInt}, ...) depending on the engine and the query.
+	 */
+	static boolean isAbsentFromGroupingSet(Object indicatorValue) {
+		if (indicatorValue instanceof Number number) {
+			return number.longValue() != 0;
+		} else {
+			// Not a number (e.g. null): not a `0`, hence the column is considered absent
+			return true;
+		}
 	}
 
 	/**

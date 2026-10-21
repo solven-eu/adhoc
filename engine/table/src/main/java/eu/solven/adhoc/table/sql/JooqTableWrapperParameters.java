@@ -112,6 +112,15 @@ public class JooqTableWrapperParameters {
 	Duration fieldsCacheRefreshAfterWrite = Duration.ofMinutes(1);
 
 	/**
+	 * How to react when the SQL engine reports that a file-backed table (e.g. DuckDB reading a glob of Parquet files)
+	 * matches not a single file. Default: {@link MissingFilesPolicy#WARN}, i.e. behave as an empty table and log a
+	 * warning. Applies to column discovery and to query execution.
+	 */
+	@Default
+	@NonNull
+	MissingFilesPolicy missingFilesPolicy = MissingFilesPolicy.WARN;
+
+	/**
 	 * Lombok @Builder
 	 *
 	 * @author Benoit Lacelle

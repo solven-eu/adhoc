@@ -61,12 +61,14 @@ import eu.solven.adhoc.table.sql.StandardDSLSupplier;
 import eu.solven.adhoc.util.NotYetImplementedException;
 import eu.solven.pepper.core.PepperLogHelper;
 import lombok.experimental.UtilityClass;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Helps working with DuckDB.
  *
  * @author Benoit Lacelle
  */
+@Slf4j
 @UtilityClass
 public class DuckDBHelper {
 
@@ -185,19 +187,22 @@ public class DuckDBHelper {
 						IValueProvider.getValue(tabularRecord.onAggregate("approx_count_distinct" + measuresSuffix)));
 
 				// TODO Is it important to call `Array.free()`?
-				java.sql.Array array = (java.sql.Array) IValueProvider
-						.getValue(tabularRecord.onAggregate("approx_top_k" + measuresSuffix));
+				// TODO This may also be a org.apache.arrow.vector.util.JsonStringArrayList
+				Object rawArray = IValueProvider.getValue(tabularRecord.onAggregate("approx_top_k" + measuresSuffix));
 
 				List<Object> coordinates;
-				if (array == null) {
+				if (rawArray == null) {
 					// BEWARE When does this happen?
 					coordinates = ImmutableList.of();
-				} else {
+				} else if (rawArray instanceof List<?> list) {
+					// e.g. org.apache.arrow.vector.util.JsonStringArrayList
+					coordinates = ImmutableList.copyOf(list);
+				} else if (rawArray instanceof java.sql.Array array) {
 					try {
 						Object[] nativeArray = (Object[]) array.getArray();
 
 						if (nativeArray.length >= 1 && nativeArray[0] instanceof java.sql.Blob) {
-							// BEWARE We should have skip the search altogether
+							// BEWARE We should have skipped the search alltogether
 							// Returning a Blob, or a `byte[]` has unclear usage/support
 							coordinates = ImmutableList.of();
 						} else {
@@ -206,6 +211,9 @@ public class DuckDBHelper {
 					} catch (SQLException e) {
 						throw new IllegalArgumentException(e);
 					}
+				} else {
+					log.warn("Not managed: rawArray={}", PepperLogHelper.getObjectAndClass(rawArray));
+					coordinates = ImmutableList.of();
 				}
 
 				columnToCoordinates.put(columns.get(columnIndex),
