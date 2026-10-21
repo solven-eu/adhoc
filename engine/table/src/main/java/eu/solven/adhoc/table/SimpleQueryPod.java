@@ -58,7 +58,7 @@ import lombok.Singular;
  * {@code table.getName()}.
  *
  * @author Benoit Lacelle
- * @see IQueryPod#forTable(ITableWrapper)
+ * @see SimpleQueryPod#forTable(ITableWrapper)
  */
 @Builder(toBuilder = true)
 @Getter

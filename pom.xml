@@ -68,11 +68,11 @@
 	<properties>
 		<java.version>25</java.version>
 
-		<lombok.version>1.18.46</lombok.version>
+		<lombok.version>1.18.48</lombok.version>
 		<!-- Error Prone — enabled only under the `errorprone` profile. Kept here so Dependabot can bump a single version token. -->
 		<errorprone.version>2.49.0</errorprone.version>
 		<!-- NullAway — Error Prone plugin doing flow-sensitive nullness analysis driven by JSpecify @NullMarked. -->
-		<nullaway.version>0.14.1</nullaway.version>
+		<nullaway.version>0.14.2</nullaway.version>
 
 		<spring-boot.version>4.1.1</spring-boot.version>
 		<pepper.version>5.7</pepper.version>
@@ -82,13 +82,13 @@
 		take SpringBoot default-->
 		<jooq.version>3.21.8</jooq.version>
 
-		<spotless.version>3.10.2</spotless.version>
+		<spotless.version>3.10.4</spotless.version>
 		<cleanthat.version>2.24</cleanthat.version>
 
 		<!-- Optional dependencies -->
 		<!-- Typically not optional when referred by pivotable-server-->
 		<evalex.ezylang.version>3.7.0</evalex.ezylang.version>
-		<duckdb.version>1.5.5.1</duckdb.version>
+		<duckdb.version>1.5.6.0</duckdb.version>
 		<guava.version>33.6.0-jre</guava.version>
 
 		<arrow.version>19.0.0</arrow.version>
@@ -158,7 +158,7 @@
 		<dependency>
 			<groupId>com.github.spotbugs</groupId>
 			<artifactId>spotbugs-annotations</artifactId>
-			<version>4.10.4</version>
+			<version>4.10.5</version>
 			<scope>provided</scope>
 		</dependency>
 	</dependencies>
@@ -334,7 +334,7 @@
 							https://www.mojohaus.org/extra-enforcer-rules/banDuplicateClasses.html -->
 							<groupId>org.codehaus.mojo</groupId>
 							<artifactId>extra-enforcer-rules</artifactId>
-							<version>1.12.0</version>
+							<version>1.12.1</version>
 						</dependency>
 					</dependencies>
 					<executions>

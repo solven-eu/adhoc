@@ -192,6 +192,13 @@ NOT trigger renaming — they're identity mappings, not user-declared shadowings
   `.leftJoin(Consumer<JooqJoinBuilder>)` whenever possible.
 - **Late `.leftJoin(...)`s** registered after queries have flowed need
   `PrunedJoinsJooqTableSupplier#invalidateAll()` to drop the stale column→alias index.
+- **File-backed tables matching no file.** DuckDB fails a `read_parquet('folder/*.parquet')`
+  over an empty or absent folder with `IO Error: No files found that match the pattern`. By
+  default Adhoc behaves as if the table were empty (no column, no row, no prunable join) and
+  logs a WARN. Tune it with `MissingFilesPolicy` on
+  `JooqTableWrapperParameters.builder().missingFilesPolicy(...)` (and on
+  `PrunedJoinsJooqTableSupplier.builder()` for the join-pruning probes): `SILENT` demotes the
+  log to DEBUG, `THROW` restores DuckDB's exception.
 
 ## Related reading
 

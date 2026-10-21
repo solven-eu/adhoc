@@ -43,6 +43,7 @@ import org.jooq.Record;
 import org.jooq.ResultQuery;
 import org.jooq.SQLDialect;
 import org.jooq.conf.ParamType;
+import org.jooq.exception.DataAccessException;
 import org.jspecify.annotations.NonNull;
 
 import com.google.common.base.Supplier;
@@ -502,7 +503,23 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache, IHasHealthDet
 
 		AtomicBoolean isSecondCancellationListenerRegistered = new AtomicBoolean();
 
-		return resultQuery.fetchSize(this.tableParameters.getStatementFetchSize()).stream().onClose(() -> {
+		Stream<Record> records;
+		try {
+			// `fetchLazy()` executes the query now, while `ResultQuery.stream()` would defer the execution to the first
+			// consumption: a missing-files failure has to surface here to be turned into an empty stream. The
+			// cursor-backed stream still closes the cursor when closed.
+			records = resultQuery.fetchSize(this.tableParameters.getStatementFetchSize()).fetchLazy().stream();
+		} catch (DataAccessException e) {
+			if (MissingFilesPolicy.isMissingFilesError(e)) {
+				tableParameters.getMissingFilesPolicy().onMissingFiles(e, "query on table=`" + name + "`");
+				queryPod.removeCancellationListener(cancellationListener);
+				return Stream.empty();
+			} else {
+				throw e;
+			}
+		}
+
+		return records.onClose(() -> {
 			queryPod.removeCancellationListener(cancellationListener);
 			queryPod.removeCancellationListener(cancellationListenerOnceStarted);
 

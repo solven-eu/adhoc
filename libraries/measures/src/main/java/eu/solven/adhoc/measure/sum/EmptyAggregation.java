@@ -82,7 +82,7 @@ public class EmptyAggregation implements IAggregation, ILongAggregation, IDouble
 
 	@Override
 	public double aggregateDoubles(double left, double right) {
-		// BEWARE SHould we throw?
+		// BEWARE Should we throw?
 		return 0;
 	}
 

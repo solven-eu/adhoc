@@ -23,14 +23,17 @@
 package eu.solven.adhoc.table.sql;
 
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.assertj.core.api.Assertions;
 import org.jooq.Field;
+import org.jooq.exception.DataAccessException;
 import org.jooq.impl.DSL;
 import org.jooq.impl.SQLDataType;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.table.sql.duckdb.DuckDBHelper;
+import eu.solven.adhoc.util.IHasCache;
 
 /**
  * Verifies the {@link IJooqColumnsResolver} factories exposed by {@link JooqColumnsHelpers}.
@@ -80,6 +83,94 @@ public class TestJooqColumnsHelpers {
 		List<Field<?>> fields = resolver.columnsOf(dslSupplier, DSL.table(DSL.name(someTable)));
 
 		Assertions.assertThat(fields).extracting(Field::getName).containsExactly("only_col");
+	}
+
+	// ── caching ──────────────────────────────────────────────────────────────
+
+	/** @return a resolver counting its invocations in {@code calls}, and always returning {@code fields} */
+	private static IJooqColumnsResolver countingResolver(AtomicInteger calls, List<Field<?>> fields) {
+		return (dslSupplier, table) -> {
+			calls.incrementAndGet();
+			return fields;
+		};
+	}
+
+	@Test
+	public void testCaching_probesOncePerTable() {
+		AtomicInteger calls = new AtomicInteger();
+		List<Field<?>> fields = List.of(DSL.field("col_a"));
+		IJooqColumnsResolver resolver = JooqColumnsHelpers.caching(countingResolver(calls, fields));
+		IDSLSupplier dslSupplier = DuckDBHelper.inMemoryDSLSupplier();
+
+		Assertions.assertThat(resolver.columnsOf(dslSupplier, DSL.table("t1"))).isEqualTo(fields);
+		Assertions.assertThat(resolver.columnsOf(dslSupplier, DSL.table("t1"))).isEqualTo(fields);
+		Assertions.assertThat(calls).hasValue(1);
+
+		// A different table is probed on its own
+		Assertions.assertThat(resolver.columnsOf(dslSupplier, DSL.table("t2"))).isEqualTo(fields);
+		Assertions.assertThat(calls).hasValue(2);
+	}
+
+	@Test
+	public void testCaching_equalTablesShareTheEntry() {
+		AtomicInteger calls = new AtomicInteger();
+		IJooqColumnsResolver resolver =
+				JooqColumnsHelpers.caching(countingResolver(calls, List.of(DSL.field("col_a"))));
+		IDSLSupplier dslSupplier = DuckDBHelper.inMemoryDSLSupplier();
+
+		// Two distinct jOOQ objects rendering the same SQL are the same probe
+		resolver.columnsOf(dslSupplier, DSL.table(DSL.name("t1")));
+		resolver.columnsOf(dslSupplier, DSL.table(DSL.name("t1")));
+
+		Assertions.assertThat(calls).hasValue(1);
+	}
+
+	@Test
+	public void testCaching_emptyResultNotCached() {
+		AtomicInteger calls = new AtomicInteger();
+		IJooqColumnsResolver resolver = JooqColumnsHelpers.caching(countingResolver(calls, List.of()));
+		IDSLSupplier dslSupplier = DuckDBHelper.inMemoryDSLSupplier();
+
+		Assertions.assertThat(resolver.columnsOf(dslSupplier, DSL.table("t1"))).isEmpty();
+		Assertions.assertThat(resolver.columnsOf(dslSupplier, DSL.table("t1"))).isEmpty();
+
+		Assertions.assertThat(calls).hasValue(2);
+	}
+
+	@Test
+	public void testCaching_failurePropagatedAndNotCached() {
+		AtomicInteger calls = new AtomicInteger();
+		IJooqColumnsResolver resolver = JooqColumnsHelpers.caching((dslSupplier, table) -> {
+			calls.incrementAndGet();
+			throw new DataAccessException("boom");
+		});
+		IDSLSupplier dslSupplier = DuckDBHelper.inMemoryDSLSupplier();
+
+		// The delegate's exception reaches the caller as-is, not wrapped by the cache
+		Assertions.assertThatThrownBy(() -> resolver.columnsOf(dslSupplier, DSL.table("t1")))
+				.isInstanceOf(DataAccessException.class)
+				.hasMessage("boom");
+		Assertions.assertThatThrownBy(() -> resolver.columnsOf(dslSupplier, DSL.table("t1")))
+				.isInstanceOf(DataAccessException.class);
+
+		Assertions.assertThat(calls).hasValue(2);
+	}
+
+	@Test
+	public void testCaching_invalidateAll() {
+		AtomicInteger calls = new AtomicInteger();
+		IJooqColumnsResolver resolver =
+				JooqColumnsHelpers.caching(countingResolver(calls, List.of(DSL.field("col_a"))));
+		IDSLSupplier dslSupplier = DuckDBHelper.inMemoryDSLSupplier();
+
+		resolver.columnsOf(dslSupplier, DSL.table("t1"));
+		Assertions.assertThat(calls).hasValue(1);
+
+		Assertions.assertThat(resolver).isInstanceOf(IHasCache.class);
+		((IHasCache) resolver).invalidateAll();
+
+		resolver.columnsOf(dslSupplier, DSL.table("t1"));
+		Assertions.assertThat(calls).hasValue(2);
 	}
 
 	// ── escapeEOL ────────────────────────────────────────────────────────────

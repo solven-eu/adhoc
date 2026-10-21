@@ -30,7 +30,7 @@ import eu.solven.adhoc.query.table.TableQueryV2;
  * Helps managing how a customMarker would impact the cache.
  * 
  * Typical usage is in {@link ITableWrapper} and {@link CachingTableWrapper}: a typical cache key is
- * {@link TableQueryV2}, but the received cutomerMarker is generally without impact.
+ * {@link TableQueryV2}, but the received customMarker is generally without impact.
  * 
  * @author Benoit Lacelle
  */

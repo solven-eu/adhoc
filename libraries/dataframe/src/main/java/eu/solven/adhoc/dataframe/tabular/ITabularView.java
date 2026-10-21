@@ -35,6 +35,7 @@ import eu.solven.adhoc.model.measure.IMeasure;
  * {@link ITabularView} implementations are generally immutable.
  *
  * @author Benoit Lacelle
+ * @see MapBasedTabularView
  *
  */
 public interface ITabularView extends IReadableTabularView, IWritableTabularView {

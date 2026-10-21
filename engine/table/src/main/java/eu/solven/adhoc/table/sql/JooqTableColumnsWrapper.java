@@ -46,6 +46,7 @@ import com.google.common.cache.RemovalNotification;
 
 import eu.solven.adhoc.column.ColumnMetadata;
 import eu.solven.adhoc.util.AdhocUnsafe;
+import eu.solven.adhoc.util.IHasCache;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -76,7 +77,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @RequiredArgsConstructor
 @Slf4j
-public class JooqTableColumnsWrapper {
+public class JooqTableColumnsWrapper implements IHasCache {
 
 	@NonNull
 	private final JooqTableWrapperParameters tableParameters;
@@ -100,6 +101,7 @@ public class JooqTableColumnsWrapper {
 	private final Supplier<LoadingCache<Object, List<Field<?>>>> fieldsCache = Suppliers.memoize(this::makeFieldsCache);
 
 	/** Drops every cached entry — call after a schema change so the next {@link #getColumns()} re-probes. */
+	@Override
 	public void invalidateAll() {
 		fieldsCache.get().invalidateAll();
 	}
@@ -180,14 +182,8 @@ public class JooqTableColumnsWrapper {
 				return List.copyOf(fields);
 			}
 		} catch (DataAccessException e) {
-			if (Objects.requireNonNullElse(e.getMessage(), "")
-					.contains("IO Error: No files found that match the pattern")) {
-				if (log.isDebugEnabled()) {
-					log.warn("No column for table=`{}` due to missing files", tableName, e);
-				} else {
-					// The failure may be missing anywhere in the SQL (e.g. the main `FROM`, or any `JOIN`)
-					log.warn("No column for table=`{}` due to missing files. sqlMsg={}", tableName, e.getMessage());
-				}
+			if (MissingFilesPolicy.isMissingFilesError(e)) {
+				tableParameters.getMissingFilesPolicy().onMissingFiles(e, "columns of table=`" + tableName + "`");
 				return Collections.emptyList();
 			} else {
 				throw e;
