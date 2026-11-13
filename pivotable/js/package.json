@@ -11,7 +11,7 @@
         "@vitejs/plugin-vue": "6.0.11",
         "@vitest/coverage-v8": "4.1.11",
         "@vitest/ui": "4.1.11",
-        "bootstrap": "5.3.8",
+        "bootstrap": "5.3.9",
         "monocart-coverage-reports": "^2.12.0",
         "@eslint/js": "10.0.1",
         "eslint": "10.10.0",
