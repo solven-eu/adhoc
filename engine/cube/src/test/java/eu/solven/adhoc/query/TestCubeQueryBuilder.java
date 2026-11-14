@@ -34,7 +34,7 @@ import eu.solven.adhoc.filter.AndFilter;
 import eu.solven.adhoc.model.query.groupby.GroupByColumns;
 import eu.solven.adhoc.options.StandardQueryOptions;
 import eu.solven.adhoc.resource.AdhocJackson;
-import io.cucumber.core.internal.com.fasterxml.jackson.core.JsonProcessingException;
+import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
 
 public class TestCubeQueryBuilder {
@@ -126,7 +126,7 @@ public class TestCubeQueryBuilder {
 	}
 
 	@Test
-	public void testJackson_empty() throws JsonProcessingException {
+	public void testJackson_empty() throws JacksonException {
 		CubeQuery q1 = CubeQuery.builder().build();
 
 		ObjectMapper objectMapper = AdhocJackson.makeObjectMapper("json");
@@ -137,7 +137,7 @@ public class TestCubeQueryBuilder {
 	}
 
 	@Test
-	public void testJackson() throws JsonProcessingException {
+	public void testJackson() throws JacksonException {
 		CubeQuery q1 = CubeQuery.builder().measure("k1").andFilter("c1", "v1").groupByAlso("a").build();
 
 		ObjectMapper objectMapper = AdhocJackson.makeObjectMapper("json");
@@ -148,7 +148,7 @@ public class TestCubeQueryBuilder {
 	}
 
 	@Test
-	public void testJackson_complex() throws JsonProcessingException {
+	public void testJackson_complex() throws JacksonException {
 		CubeQuery query = fullyCustomized();
 
 		ObjectMapper objectMapper = AdhocJackson.makeObjectMapper("json");
